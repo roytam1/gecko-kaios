@@ -110,6 +110,7 @@ DIRS += [
     'xbl',
     'xml',
     'xslt',
+    'xt9connect',
     'xul',
     'resourcestats',
     'manifest',

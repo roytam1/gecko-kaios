@@ -618,6 +618,7 @@ WEBIDL_FILES = [
     'XPathNSResolver.webidl',
     'XPathResult.webidl',
     'XSLTProcessor.webidl',
+    'Xt9Connect.webidl',
     'XULCommandEvent.webidl',
     'XULDocument.webidl',
     'XULElement.webidl',

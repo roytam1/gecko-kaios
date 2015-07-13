@@ -261,6 +261,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
         'binder',
         'gui',
         'mtp',
+        'xt9',
     ]
 
     if int(CONFIG['ANDROID_VERSION']) >= 17:

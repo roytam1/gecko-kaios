@@ -1346,3 +1346,8 @@ unicode/utypes.h
 #endif
 libutil.h
 unwind.h
+et9api.h
+et9awapi.h
+et9kbdef.h
+et9traceapi.h
+xxet9oem.h
