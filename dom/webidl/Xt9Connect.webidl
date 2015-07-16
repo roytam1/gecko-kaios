@@ -6,4 +6,6 @@ interface Xt9Connect {
 	readonly attribute DOMString wholeWord;
 
 	readonly attribute DOMString candidateWord;
+
+	readonly attribute short totalWord;
 };

@@ -9,6 +9,7 @@ static demoEditorInfo      sEditor;
 
 nsCString Xt9Connect::mWholeWord;
 nsCString Xt9Connect::mCandidateWord;
+uint16_t  Xt9Connect::mTotalWord;
 
 uint32_t GetTickCount()
 {
@@ -452,6 +453,8 @@ void PrintCandidateList(demoIMEInfo *pIME)
     if (!pIME->bTotWords) {
         return;
     }
+
+    Xt9Connect::mTotalWord = pIME->bTotWords;
 
     for (bCandidateIndex = (pIME->bActiveWordIndex/5)*5;
          bCandidateIndex < (pIME->bActiveWordIndex/5)*5 + 5 && bCandidateIndex < pIME->bTotWords;

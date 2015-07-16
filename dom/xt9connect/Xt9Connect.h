@@ -154,6 +154,11 @@ class Xt9Connect MOZ_FINAL : public nsISupports, public nsWrapperCache
 			mCandidateWord.Assign("");
 		}
 
+		uint16_t TotalWord()
+		{
+			return mTotalWord;
+		}
+
 		virtual JSObject* WrapObject(JSContext* aCx) MOZ_OVERRIDE;
 
 		nsCOMPtr<nsPIDOMWindow> mWindow;
@@ -172,6 +177,7 @@ class Xt9Connect MOZ_FINAL : public nsISupports, public nsWrapperCache
 
 		static nsCString mWholeWord;
 		static nsCString mCandidateWord;
+		static uint16_t mTotalWord;
 
 	private:
 
