@@ -10,6 +10,7 @@ static demoEditorInfo      sEditor;
 nsCString Xt9Connect::mWholeWord;
 nsCString Xt9Connect::mCandidateWord;
 uint16_t  Xt9Connect::mTotalWord;
+uint32_t  Xt9Connect::mCursorPostion;
 
 uint32_t GetTickCount()
 {
@@ -502,7 +503,7 @@ void PrintCandidateList(demoIMEInfo *pIME)
             dbgWord.Append("]");
         }
 
-        jsWord.Append(";");
+        jsWord.Append(" ");
 
         LOG_DBG("%s", dbgWord.get());
         Xt9Connect::mCandidateWord.Append(jsWord);
@@ -522,6 +523,7 @@ void PrintEditorBuffer(demoEditorInfo *pEditor)
 {
     ET9U16    wIndex;
 
+    nsCString dbgWord;
     nsCString jsWord;
 
     if (!pEditor->snBufferLen) {
@@ -529,21 +531,24 @@ void PrintEditorBuffer(demoEditorInfo *pEditor)
     }
 
     if (!pEditor->snCursorPos) {
-        jsWord.Append("|");
+        dbgWord.Append("|");
     }
 
     for (wIndex = 0; wIndex < pEditor->snBufferLen; ++wIndex) {
 
         jsWord.Append(pEditor->psBuffer[wIndex]);
+        dbgWord.Append(pEditor->psBuffer[wIndex]);
 
         if (wIndex + 1 == pEditor->snCursorPos) {
-            jsWord.Append("|");
+            dbgWord.Append("|");
         }
     }
 
-    LOG_DBG("%s", jsWord.get());
+    LOG_DBG("%s", dbgWord.get());
 
     Xt9Connect::mWholeWord.Append(jsWord);
+
+    Xt9Connect::mCursorPostion = pEditor->snCursorPos;
 }
 
 void PrintScreen(demoIMEInfo *pIME)

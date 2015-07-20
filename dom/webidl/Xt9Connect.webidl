@@ -8,4 +8,6 @@ interface Xt9Connect {
 	readonly attribute DOMString candidateWord;
 
 	readonly attribute short totalWord;
+
+	readonly attribute long cursorPosition;
 };
