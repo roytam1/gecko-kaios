@@ -169,10 +169,9 @@ ET9STATUS ET9Handle_IMU_Request(ET9WordSymbInfo * const pWordSymbInfo,
 
                 pRequest->data.sAutoCapInfo.dwBufLen = dwContextLen - dwStartIndex;
 
-                //commented for a while, because of crashing
-                // wmemcpy(pRequest->data.sAutoCapInfo.psBuf,
-                //         &pIME->pEditor->psBuffer[dwStartIndex],
-                //         pRequest->data.sAutoCapInfo.dwBufLen);
+                memcpy(pRequest->data.sAutoCapInfo.psBuf,
+                       &pIME->pEditor->psBuffer[dwStartIndex],
+                       pRequest->data.sAutoCapInfo.dwBufLen);
 
             }
             break;
@@ -180,15 +179,14 @@ ET9STATUS ET9Handle_IMU_Request(ET9WordSymbInfo * const pWordSymbInfo,
         case ET9_REQ_BufferContext:
             {
                 const ET9U32 dwContextLen = (ET9U32)pIME->pEditor->snCursorPos;
-                const ET9U32 dwStartIndex = (dwContextLen <= pRequest->data.sBufferContextInfo.dwMaxBufLen) ?
-                                            0 :
+                const ET9U32 dwStartIndex = (dwContextLen <= pRequest->data.sBufferContextInfo.dwMaxBufLen) ? 0 :
                                             (dwContextLen - pRequest->data.sBufferContextInfo.dwMaxBufLen);
 
                 pRequest->data.sBufferContextInfo.dwBufLen = dwContextLen - dwStartIndex;
 
-                wmemcpy((wchar_t*)pRequest->data.sBufferContextInfo.psBuf,
-                        (wchar_t*)&pIME->pEditor->psBuffer[dwStartIndex],
-                        pRequest->data.sBufferContextInfo.dwBufLen);
+                memcpy(pRequest->data.sBufferContextInfo.psBuf,
+                       &pIME->pEditor->psBuffer[dwStartIndex],
+                       pRequest->data.sBufferContextInfo.dwBufLen);
             }
             break;
 
