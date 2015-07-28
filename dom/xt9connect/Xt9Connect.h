@@ -26,6 +26,8 @@ extern "C" {
 #include <string.h>
 #include <errno.h>
 
+#include <stl/_algo.h>
+
 #define LOG_DBG(args...)  __android_log_print(ANDROID_LOG_DEBUG, "Debug::Xt9Connect::" , ## args)
 
 namespace mozilla {
@@ -90,6 +92,8 @@ typedef struct {
 
 uint32_t GetTickCount();
 
+void EditorInitWord(demoIMEInfo *pIME, nsCString& initWord);
+
 void EditorInsertWord(demoIMEInfo * const pIME, ET9AWWordInfo *pWord, ET9BOOL bSupressSubstitutions);
 
 void EditorDeleteChar(demoIMEInfo * const pIME);
@@ -148,6 +152,11 @@ class Xt9Connect MOZ_FINAL : public nsISupports, public nsWrapperCache
 			mWholeWord.Assign("");
 		}
 
+		void SetWholeWord(const nsAString& aResult)
+		{
+			LossyCopyUTF16toASCII(aResult, sWholeWord);
+		}
+
 		void GetCandidateWord(nsAString& aResult)
 		{
 			CopyASCIItoUTF16(mCandidateWord, aResult);
@@ -181,6 +190,7 @@ class Xt9Connect MOZ_FINAL : public nsISupports, public nsWrapperCache
 		static void SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLetter, ErrorResult& aRv);
 
 		static nsCString mWholeWord;
+		static nsCString sWholeWord;
 		static nsCString mCandidateWord;
 		static uint16_t  mTotalWord;
 		static uint32_t  mCursorPostion;

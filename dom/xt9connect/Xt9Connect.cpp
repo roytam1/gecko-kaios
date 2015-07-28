@@ -8,6 +8,7 @@ static demoIMEInfo         sIME;
 static demoEditorInfo      sEditor;
 
 nsCString Xt9Connect::mWholeWord;
+nsCString Xt9Connect::sWholeWord;
 nsCString Xt9Connect::mCandidateWord;
 uint16_t  Xt9Connect::mTotalWord;
 uint32_t  Xt9Connect::mCursorPostion;
@@ -18,6 +19,20 @@ uint32_t GetTickCount()
 	if(gettimeofday(&tv, NULL)!= 0)
 		return 0;
 	return (tv.tv_sec * 1000 + tv.tv_usec / 1000);
+}
+
+void EditorInitWord(demoIMEInfo *pIME, nsCString& initWord)
+{
+    demoEditorInfo *pEditor = pIME->pEditor;
+    if (initWord.IsEmpty()) {
+        LOG_DBG("PrintEditorBuffer::Xt9Connect::sWholeWord: Empty");
+    } else {
+        ET9INT initWordLength = initWord.Length();
+        std::copy(initWord.get(), initWord.get() + initWordLength, pEditor->psBuffer);
+        pEditor->snCursorPos = pEditor->snBufferLen = initWordLength;
+        initWord.Assign("");
+        ET9CursorMoved(&pIME->sWordSymbInfo, 1);
+    }
 }
 
 void EditorInsertWord(demoIMEInfo * const pIME, ET9AWWordInfo *pWord, ET9BOOL bSupressSubstitutions)
@@ -773,6 +788,8 @@ Xt9Connect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLe
         return;
     }
 
+    EditorInitWord(&sIME, Xt9Connect::sWholeWord); //send init word
+
     if (nInputPrefix == 0xE0) {
         switch (nInputChar) {
             case 72: /* up arrow */
@@ -893,7 +910,13 @@ Xt9Connect::WrapObject(JSContext* aCx)
   return mozilla::dom::Xt9ConnectBinding::Wrap(aCx, this);
 }
 
-Xt9Connect::~Xt9Connect() {} 
+Xt9Connect::~Xt9Connect()
+{
+    if (sIME.pDLMInfo) {
+        free(sIME.pDLMInfo);
+        sIME.pDLMInfo = NULL;
+    }
+} 
 
 } // namespace dom
 } // namespace mozilla
