@@ -40,7 +40,7 @@ void EditorInsertWord(demoIMEInfo * const pIME, ET9AWWordInfo *pWord, ET9BOOL bS
 	    demoEditorInfo * const pEditor = pIME->pEditor;
 
 	    ET9STATUS eStatus;
-	    ET9INT snStringLen;
+	    ET9U16 snStringLen;
 	    ET9SYMB *psString;
 
 	    MOZ_ASSERT(pEditor->snBufferLen <= BUFFER_LEN_MAX);
@@ -55,13 +55,13 @@ void EditorInsertWord(demoIMEInfo * const pIME, ET9AWWordInfo *pWord, ET9BOOL bS
 	        snStringLen = pWord->wWordLen;
 	    }
 
-	    if ((ET9U16)snStringLen > (BUFFER_LEN_MAX - pEditor->snBufferLen)) {
+	    if (snStringLen > (BUFFER_LEN_MAX - pEditor->snBufferLen)) {
 
 	        const ET9INT snDiscard = snStringLen - (BUFFER_LEN_MAX - pEditor->snBufferLen);
 
 	        if ((ET9U32)pEditor->snCursorPos > (BUFFER_LEN_MAX / 2)) {
 
-	            wmemmove((wchar_t*)pEditor->psBuffer, (wchar_t*)&pEditor->psBuffer[snDiscard], pEditor->snBufferLen - snDiscard);
+                std::copy(pEditor->psBuffer+snDiscard, pEditor->psBuffer+pEditor->snBufferLen, pEditor->psBuffer);
 
 	            if (pEditor->snCursorPos >= snDiscard) {
 	                pEditor->snCursorPos -= snDiscard;
@@ -74,16 +74,16 @@ void EditorInsertWord(demoIMEInfo * const pIME, ET9AWWordInfo *pWord, ET9BOOL bS
 	        pEditor->snBufferLen -= snDiscard;
 	    }
 
-	    wmemmove((wchar_t*)&pEditor->psBuffer[pEditor->snCursorPos + snStringLen], (wchar_t*)&pEditor->psBuffer[pEditor->snCursorPos], pEditor->snBufferLen - pEditor->snCursorPos);
+        std::copy_backward(pEditor->psBuffer+pEditor->snCursorPos, pEditor->psBuffer+pEditor->snBufferLen, pEditor->psBuffer+(pEditor->snBufferLen+snStringLen));
 
-	    wmemcpy((wchar_t*)&pEditor->psBuffer[pEditor->snCursorPos], (wchar_t*)psString, snStringLen);
-	    pEditor->snBufferLen += snStringLen;
+        std::copy(psString, psString + snStringLen, pEditor->psBuffer+pEditor->snCursorPos);
+        pEditor->snBufferLen += snStringLen;
 
 	    eStatus = ET9AWNoteWordChanged(&pIME->sLingInfo,
 	                                   pEditor->psBuffer,
 	                                   pEditor->snBufferLen,
 	                                   (ET9U32)pEditor->snCursorPos,
-	                                   (ET9U16)snStringLen,
+	                                   snStringLen,
 	                                   psEmptyString,
 	                                   NULL,
 	                                   0);
