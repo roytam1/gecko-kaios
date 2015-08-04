@@ -36,64 +36,64 @@ void EditorInitWord(demoIMEInfo *pIME, nsCString& initWord)
 }
 
 void EditorInsertWord(demoIMEInfo * const pIME, ET9AWWordInfo *pWord, ET9BOOL bSupressSubstitutions)
-	{
-	    demoEditorInfo * const pEditor = pIME->pEditor;
+{
+    demoEditorInfo * const pEditor = pIME->pEditor;
 
-	    ET9STATUS eStatus;
-	    ET9U16 snStringLen;
-	    ET9SYMB *psString;
+    ET9STATUS eStatus;
+    ET9U16 snStringLen;
+    ET9SYMB *psString;
 
-	    MOZ_ASSERT(pEditor->snBufferLen <= BUFFER_LEN_MAX);
-	    MOZ_ASSERT(pEditor->snCursorPos <= pEditor->snBufferLen);
+    MOZ_ASSERT(pEditor->snBufferLen <= BUFFER_LEN_MAX);
+    MOZ_ASSERT(pEditor->snCursorPos <= pEditor->snBufferLen);
 
-	    if (pWord->wSubstitutionLen && !bSupressSubstitutions) {
-	        psString = pWord->sSubstitution;
-	        snStringLen = pWord->wSubstitutionLen;
-	    }
-	    else {
-	        psString = pWord->sWord;
-	        snStringLen = pWord->wWordLen;
-	    }
+    if (pWord->wSubstitutionLen && !bSupressSubstitutions) {
+        psString = pWord->sSubstitution;
+        snStringLen = pWord->wSubstitutionLen;
+    }
+    else {
+        psString = pWord->sWord;
+        snStringLen = pWord->wWordLen;
+    }
 
-	    if (snStringLen > (BUFFER_LEN_MAX - pEditor->snBufferLen)) {
+    if (snStringLen > (BUFFER_LEN_MAX - pEditor->snBufferLen)) {
 
-	        const ET9INT snDiscard = snStringLen - (BUFFER_LEN_MAX - pEditor->snBufferLen);
+        const ET9INT snDiscard = snStringLen - (BUFFER_LEN_MAX - pEditor->snBufferLen);
 
-	        if ((ET9U32)pEditor->snCursorPos > (BUFFER_LEN_MAX / 2)) {
+        if ((ET9U32)pEditor->snCursorPos > (BUFFER_LEN_MAX / 2)) {
 
-                std::copy(pEditor->psBuffer+snDiscard, pEditor->psBuffer+pEditor->snBufferLen, pEditor->psBuffer);
+            std::copy(pEditor->psBuffer+snDiscard, pEditor->psBuffer+pEditor->snBufferLen, pEditor->psBuffer);
 
-	            if (pEditor->snCursorPos >= snDiscard) {
-	                pEditor->snCursorPos -= snDiscard;
-	            }
-	            else {
-	                pEditor->snCursorPos = 0;
-	            }
-	        }
+            if (pEditor->snCursorPos >= snDiscard) {
+                pEditor->snCursorPos -= snDiscard;
+            }
+            else {
+                pEditor->snCursorPos = 0;
+            }
+        }
 
-	        pEditor->snBufferLen -= snDiscard;
-	    }
+        pEditor->snBufferLen -= snDiscard;
+    }
 
-        std::copy_backward(pEditor->psBuffer+pEditor->snCursorPos, pEditor->psBuffer+pEditor->snBufferLen, pEditor->psBuffer+(pEditor->snBufferLen+snStringLen));
+    std::copy_backward(pEditor->psBuffer+pEditor->snCursorPos, pEditor->psBuffer+pEditor->snBufferLen, pEditor->psBuffer+(pEditor->snBufferLen+snStringLen));
 
-        std::copy(psString, psString + snStringLen, pEditor->psBuffer+pEditor->snCursorPos);
-        pEditor->snBufferLen += snStringLen;
+    std::copy(psString, psString + snStringLen, pEditor->psBuffer+pEditor->snCursorPos);
+    pEditor->snBufferLen += snStringLen;
 
-	    eStatus = ET9AWNoteWordChanged(&pIME->sLingInfo,
-	                                   pEditor->psBuffer,
-	                                   pEditor->snBufferLen,
-	                                   (ET9U32)pEditor->snCursorPos,
-	                                   snStringLen,
-	                                   psEmptyString,
-	                                   NULL,
-	                                   0);
+    eStatus = ET9AWNoteWordChanged(&pIME->sLingInfo,
+                                   pEditor->psBuffer,
+                                   pEditor->snBufferLen,
+                                   (ET9U32)pEditor->snCursorPos,
+                                   snStringLen,
+                                   psEmptyString,
+                                   NULL,
+                                   0);
 
-	    if (!eStatus || eStatus == ET9STATUS_INVALID_TEXT) {
-	    	MOZ_ASSERT(!eStatus || eStatus == ET9STATUS_INVALID_TEXT);
-	    }
+    if (!eStatus || eStatus == ET9STATUS_INVALID_TEXT) {
+    	MOZ_ASSERT(!eStatus || eStatus == ET9STATUS_INVALID_TEXT);
+    }
 
-	    pEditor->snCursorPos += snStringLen;
-	}
+    pEditor->snCursorPos += snStringLen;
+}
 
 void EditorDeleteChar(demoIMEInfo * const pIME)
 {
@@ -104,7 +104,7 @@ void EditorDeleteChar(demoIMEInfo * const pIME)
     }
 
     if (pEditor->snCursorPos < pEditor->snBufferLen) {
-        wmemmove((wchar_t*)&pEditor->psBuffer[pEditor->snCursorPos-1], (wchar_t*)&pEditor->psBuffer[pEditor->snCursorPos], pEditor->snBufferLen - pEditor->snCursorPos);
+       std::copy(pEditor->psBuffer+pEditor->snCursorPos, pEditor->psBuffer+pEditor->snBufferLen, pEditor->psBuffer+(pEditor->snCursorPos-1));
     }
 
     --pEditor->snCursorPos;
@@ -184,10 +184,7 @@ ET9STATUS ET9Handle_IMU_Request(ET9WordSymbInfo * const pWordSymbInfo,
 
                 pRequest->data.sAutoCapInfo.dwBufLen = dwContextLen - dwStartIndex;
 
-                memcpy(pRequest->data.sAutoCapInfo.psBuf,
-                       &pIME->pEditor->psBuffer[dwStartIndex],
-                       pRequest->data.sAutoCapInfo.dwBufLen);
-
+                std::copy(pIME->pEditor->psBuffer+dwStartIndex, pIME->pEditor->psBuffer+(dwStartIndex+pRequest->data.sAutoCapInfo.dwBufLen), pRequest->data.sAutoCapInfo.psBuf);
             }
             break;
 
@@ -199,9 +196,7 @@ ET9STATUS ET9Handle_IMU_Request(ET9WordSymbInfo * const pWordSymbInfo,
 
                 pRequest->data.sBufferContextInfo.dwBufLen = dwContextLen - dwStartIndex;
 
-                memcpy(pRequest->data.sBufferContextInfo.psBuf,
-                       &pIME->pEditor->psBuffer[dwStartIndex],
-                       pRequest->data.sBufferContextInfo.dwBufLen);
+                std::copy(pIME->pEditor->psBuffer+dwStartIndex, pIME->pEditor->psBuffer+(dwStartIndex+pRequest->data.sBufferContextInfo.dwBufLen), pRequest->data.sBufferContextInfo.psBuf);
             }
             break;
 

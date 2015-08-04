@@ -197,8 +197,6 @@ class Xt9Connect MOZ_FINAL : public nsISupports, public nsWrapperCache
 
 	private:
 
-		unsigned long mHexLetter;
-
 		~Xt9Connect();
 };
 
