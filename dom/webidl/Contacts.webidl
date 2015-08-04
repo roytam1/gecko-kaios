@@ -33,6 +33,8 @@ dictionary ContactProperties {
 
   sequence<Blob>?                photo;
 
+  DOMString?                     ringtone;
+
   sequence<ContactAddress>?  adr;
 
   sequence<ContactField>?    email;
@@ -70,6 +72,8 @@ interface mozContact {
 
                  attribute DOMString? sex;
                  attribute DOMString? genderIdentity;
+
+                 attribute DOMString? ringtone;
 
   [Cached, Pure] attribute sequence<Blob>?            photo;
 
@@ -127,6 +131,9 @@ interface ContactManager : EventTarget {
   DOMRequest remove((mozContact or DOMString) contactOrId);
   DOMRequest getRevision();
   DOMRequest getCount();
+  DOMRequest getSpeedDials();
+  DOMRequest setSpeedDial(DOMString speedDial, DOMString contactId);
+  DOMRequest removeSpeedDial(DOMString speedDial);
 
   attribute  EventHandler oncontactchange;
 };

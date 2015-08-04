@@ -34,7 +34,10 @@ var ContactService = this.ContactService = {
                       "Contacts:Clear", "Contact:Save",
                       "Contact:Remove", "Contacts:RegisterForMessages",
                       "child-process-shutdown", "Contacts:GetRevision",
-                      "Contacts:GetCount"];
+                      "Contacts:GetCount",
+                      "Contacts:GetSpeedDials",
+                      "Contacts:SetSpeedDial",
+                      "Contacts:RemoveSpeedDial"];
     this._children = [];
     this._cursors = new Map();
     this._messages.forEach(function(msgName) {
@@ -115,7 +118,6 @@ var ContactService = this.ContactService = {
             for (let i in contacts) {
               result.push(contacts[i]);
             }
-
             if (DEBUG) debug("result:" + JSON.stringify(result));
             mm.sendAsyncMessage("Contacts:Find:Return:OK", {requestID: msg.requestID, contacts: result});
           }.bind(this),
@@ -232,6 +234,52 @@ var ContactService = this.ContactService = {
             mm.sendAsyncMessage("Contacts:Count:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg });
           }.bind(this)
         );
+        break;
+      case "Contacts:GetSpeedDials":
+        if (!this.assertPermission(aMessage, "contacts-read")) {
+          return null;
+        }
+        let speedDials = [];
+        this._db.getSpeedDials(
+          function(_speedDials) {
+            for (let i in _speedDials) {
+              speedDials.push(_speedDials[i]);
+            }
+            mm.sendAsyncMessage("Contacts:GetSpeedDials:Return:OK", {
+              requestID: msg.requestID,
+              speedDials: speedDials
+            });
+          }.bind(this),
+          function(aErrorMsg) {
+            mm.sendAsyncMessage("Contacts:GetSpeedDials:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg });
+          }.bind(this));
+        break;
+      case "Contacts:SetSpeedDial":
+        if (!this.assertPermission(aMessage, "contacts-write")) {
+          return null;
+        }
+        this._db.setSpeedDial(
+          msg.options.speedDial,
+          msg.options.contactId,
+          function() {
+            mm.sendAsyncMessage("Contacts:SetSpeedDial:Return:OK", { requestID: msg.requestID });
+          }.bind(this),
+          function(aErrorMsg) {
+            mm.sendAsyncMessage("Contacts:SetSpeedDial:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg });
+          }.bind(this));
+        break;
+      case "Contacts:RemoveSpeedDial":
+        if (!this.assertPermission(aMessage, "contacts-write")) {
+          return null;
+        }
+        this._db.removeSpeedDial(
+          msg.options.speedDial,
+          function() {
+            mm.sendAsyncMessage("Contacts:RemoveSpeedDial:Return:OK", { requestID: msg.requestID });
+          }.bind(this),
+          function(aErrorMsg) {
+            mm.sendAsyncMessage("Contacts:RemoveSpeedDial:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg });
+          }.bind(this));
         break;
       case "Contacts:RegisterForMessages":
         if (!aMessage.target.assertPermission("contacts-read")) {

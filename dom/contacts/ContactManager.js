@@ -32,7 +32,8 @@ const PROPERTIES = [
   "phoneticGivenName", "phoneticFamilyName",
   "honorificSuffix", "nickname", "photo", "category", "org", "jobTitle",
   "bday", "note", "anniversary", "sex", "genderIdentity", "key", "adr", "email",
-  "url", "impp", "tel"
+  "url", "impp", "tel",
+  "ringtone"
 ];
 
 var mozContactInitWarned = false;
@@ -165,9 +166,22 @@ ContactManager.prototype = {
         }
       case "Contacts:Clear:Return:OK":
       case "Contact:Remove:Return:OK":
+      case "Contacts:RemoveSpeedDial:Return:OK":
         req = this.getRequest(msg.requestID);
         if (req)
           Services.DOMRequest.fireSuccess(req.request, null);
+        break;
+      case "Contacts:GetSpeedDials:Return:OK":
+        req = this.getRequest(msg.requestID);
+        if (req) {
+          Services.DOMRequest.fireSuccess(req.request, msg.speedDials);
+        }
+        break;
+      case "Contacts:SetSpeedDial:Return:OK":
+        req = this.getRequest(msg.requestID);
+        if (req) {
+          Services.DOMRequest.fireSuccess(req.request, null);
+        }
         break;
       case "Contacts:Find:Return:KO":
       case "Contact:Save:Return:KO":
@@ -175,6 +189,9 @@ ContactManager.prototype = {
       case "Contacts:Clear:Return:KO":
       case "Contacts:GetRevision:Return:KO":
       case "Contacts:Count:Return:KO":
+      case "Contacts:GetSpeedDials:Return:KO":
+      case "Contacts:SetSpeedDial:Return:KO":
+      case "Contacts:RemoveSpeedDial:Return:KO":
         req = this.getRequest(msg.requestID);
         if (req) {
           if (req.request) {
@@ -304,10 +321,15 @@ ContactManager.prototype = {
     // mozContact object.
     let newContact = {properties: {}};
 
+    if (DEBUG) debug("save contact: " + JSON.stringify(aContact));
+
     try {
       for (let field of PROPERTIES) {
         // This hack makes sure modifications to the sequence attributes get validated.
         aContact[field] = aContact[field];
+        if (field === "ringtone" && !aContact[field]) {
+          aContact[field] = null;
+        }
         newContact.properties[field] = aContact[field];
       }
     } catch (e) {
@@ -509,6 +531,70 @@ ContactManager.prototype = {
     return request;
   },
 
+  getSpeedDials: function() {
+    if (DEBUG) debug("getSpeedDials");
+
+    let request = this.createRequest();
+
+    let allowCallback = function() {
+      cpmm.sendAsyncMessage("Contacts:GetSpeedDials", {
+        requestID: this.getRequestId({ request: request })
+      });
+    }.bind(this);
+
+    let cancelCallback = function(reason) {
+      Services.DOMRequest.fireErrorAsync(request, reason);
+    }
+
+    this.askPermission("find", request, allowCallback, cancelCallback);
+    return request;
+  },
+
+  setSpeedDial: function setSpeedDial(speedDial, contactId) {
+    if (DEBUG) debug("setSpeedDial: speedDial " + speedDial + " contactId " + contactId);
+
+    let request = this.createRequest();
+
+    let allowCallback = function() {
+      cpmm.sendAsyncMessage("Contacts:SetSpeedDial", {
+        requestID: this.getRequestId({ request: request }),
+        options: {
+          speedDial: speedDial,
+          contactId, contactId
+        }
+      });
+    }.bind(this);
+
+    let cancelCallback = function(reason) {
+      Services.DOMRequest.fireErrorAsync(request, reason);
+    }
+
+    this.askPermission("create", request, allowCallback, cancelCallback);
+    return request;
+  },
+
+  removeSpeedDial: function removeSpeedDial(speedDial) {
+    if (DEBUG) debug("removeSpeedDial: speedDial " + speedDial);
+
+    let request = this.createRequest();
+
+    let allowCallback = function() {
+      cpmm.sendAsyncMessage("Contacts:RemoveSpeedDial", {
+        requestID: this.getRequestId({ request: request }),
+        options: {
+          speedDial: speedDial
+        }
+      });
+    }.bind(this);
+
+    let cancelCallback = function(reason) {
+      Services.DOMRequest.fireErrorAsync(request, reason);
+    }
+
+    this.askPermission("remove", request, allowCallback, cancelCallback);
+    return request;
+  },
+
   init: function(aWindow) {
     // DOMRequestIpcHelper.initHelper sets this._window
     this.initDOMRequestHelper(aWindow, ["Contacts:Find:Return:OK", "Contacts:Find:Return:KO",
@@ -518,8 +604,10 @@ ContactManager.prototype = {
                               "Contact:Changed",
                               "Contacts:GetAll:Next", "Contacts:GetAll:Return:KO",
                               "Contacts:Count",
-                              "Contacts:Revision", "Contacts:GetRevision:Return:KO",]);
-
+                              "Contacts:Revision", "Contacts:GetRevision:Return:KO",
+                              "Contacts:GetSpeedDials:Return:OK", "Contacts:GetSpeedDials:Return:KO",
+                              "Contacts:SetSpeedDial:Return:OK", "Contacts:SetSpeedDial:Return:KO",
+                              "Contacts:RemoveSpeedDial:Return:OK", "Contacts:RemoveSpeedDial:Return:KO", ]);
 
     let allowCallback = function() {
       cpmm.sendAsyncMessage("Contacts:RegisterForMessages");
