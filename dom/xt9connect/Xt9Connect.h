@@ -92,6 +92,8 @@ typedef struct {
 
 uint32_t GetTickCount();
 
+void EditorInitEmptyWord(demoIMEInfo *pIME, bool& initEmptyWord);
+
 void EditorInitWord(demoIMEInfo *pIME, nsCString& initWord);
 
 void EditorInsertWord(demoIMEInfo * const pIME, ET9AWWordInfo *pWord, ET9BOOL bSupressSubstitutions);
@@ -146,6 +148,16 @@ class Xt9Connect MOZ_FINAL : public nsISupports, public nsWrapperCache
 		static already_AddRefed<Xt9Connect> Constructor(const GlobalObject& aGlobal,
 														ErrorResult& aRv);
 
+		bool InitEmptyWord() const
+		{
+			return mEmptyWord;
+		}
+
+		void SetInitEmptyWord(const bool aResult)
+		{
+			mEmptyWord = aResult;
+		}
+
 		void GetWholeWord(nsAString& aResult)
 		{
 			CopyASCIItoUTF16(mWholeWord, aResult);
@@ -189,6 +201,7 @@ class Xt9Connect MOZ_FINAL : public nsISupports, public nsWrapperCache
 
 		static void SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLetter, ErrorResult& aRv);
 
+		static bool mEmptyWord;
 		static nsCString mWholeWord;
 		static nsCString sWholeWord;
 		static nsCString mCandidateWord;

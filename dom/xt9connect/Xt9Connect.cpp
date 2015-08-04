@@ -7,6 +7,7 @@ namespace dom {
 static demoIMEInfo         sIME;
 static demoEditorInfo      sEditor;
 
+bool      Xt9Connect::mEmptyWord;
 nsCString Xt9Connect::mWholeWord;
 nsCString Xt9Connect::sWholeWord;
 nsCString Xt9Connect::mCandidateWord;
@@ -21,11 +22,25 @@ uint32_t GetTickCount()
 	return (tv.tv_sec * 1000 + tv.tv_usec / 1000);
 }
 
+void EditorInitEmptyWord(demoIMEInfo *pIME, bool& initEmptyWord)
+{
+    demoEditorInfo *pEditor = pIME->pEditor;
+    if (initEmptyWord)
+    {
+        nsCString emptyWord("");
+        std::copy(emptyWord.get(), emptyWord.get(), pEditor->psBuffer);
+        pEditor->snCursorPos = pEditor->snBufferLen = 0;
+        initEmptyWord = false;
+    } else {
+        LOG_DBG("EditorInitEmptyWord::Xt9Connect::mEmptyWord: False");
+    }
+}
+
 void EditorInitWord(demoIMEInfo *pIME, nsCString& initWord)
 {
     demoEditorInfo *pEditor = pIME->pEditor;
     if (initWord.IsEmpty()) {
-        LOG_DBG("PrintEditorBuffer::Xt9Connect::sWholeWord: Empty");
+        LOG_DBG("EditorInitWord::Xt9Connect::sWholeWord: Empty");
     } else {
         ET9INT initWordLength = initWord.Length();
         std::copy(initWord.get(), initWord.get() + initWordLength, pEditor->psBuffer);
@@ -784,6 +799,8 @@ Xt9Connect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLe
     }
 
     EditorInitWord(&sIME, Xt9Connect::sWholeWord); //send init word
+
+    EditorInitEmptyWord(&sIME, Xt9Connect::mEmptyWord); //send empty init word
 
     if (nInputPrefix == 0xE0) {
         switch (nInputChar) {
