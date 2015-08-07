@@ -98,6 +98,8 @@ void EditorInitWord(demoIMEInfo *pIME, nsCString& initWord);
 
 void EditorInsertWord(demoIMEInfo * const pIME, ET9AWWordInfo *pWord, ET9BOOL bSupressSubstitutions);
 
+void EditorGetWord(demoIMEInfo * const pIME, ET9SimpleWord * const pWord, const ET9BOOL bCut);
+
 void EditorDeleteChar(demoIMEInfo * const pIME);
 
 void EditorMoveBackward(demoIMEInfo * const pIME);

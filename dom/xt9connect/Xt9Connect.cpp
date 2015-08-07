@@ -110,6 +110,71 @@ void EditorInsertWord(demoIMEInfo * const pIME, ET9AWWordInfo *pWord, ET9BOOL bS
     pEditor->snCursorPos += snStringLen;
 }
 
+void EditorGetWord(demoIMEInfo * const pIME, ET9SimpleWord * const pWord, const ET9BOOL bCut)
+{
+    demoEditorInfo * const pEditor = pIME->pEditor;
+
+    ET9STATUS eStatus;
+    ET9INT snStartPos;
+    ET9INT snLastPos;
+
+    if (!pEditor->snBufferLen) {
+        pWord->wLen = 0;
+        return;
+    }
+
+    snLastPos = pEditor->snCursorPos;
+
+    if (snLastPos > 0 && iswspace(pEditor->psBuffer[snLastPos-1])) {
+        if (iswspace(pEditor->psBuffer[snLastPos]) || snLastPos == pEditor->snBufferLen) {
+            return;
+        }
+    }
+
+    if (snLastPos == pEditor->snBufferLen || iswspace(pEditor->psBuffer[snLastPos])) {
+        --snLastPos;
+    }
+
+    while (snLastPos+1 < pEditor->snBufferLen && !iswspace(pEditor->psBuffer[snLastPos+1])) {
+        ++snLastPos;
+    }
+
+    snStartPos = snLastPos;
+
+    while (snStartPos && !iswspace(pEditor->psBuffer[snStartPos - 1]) && snLastPos - snStartPos < ET9MAXWORDSIZE) {
+        --snStartPos;
+    }
+
+    pWord->wLen = (ET9U16)(snLastPos - snStartPos + 1);
+
+    std::copy(pEditor->psBuffer+snStartPos, pEditor->psBuffer+snLastPos+1, pWord->sString);
+    pWord->wCompLen = 0;
+
+    if (!bCut) {
+        return;
+    }
+
+    /* update model for removed word (if it wasn't cut the info could have been saved and used when replacing the word) */
+
+    eStatus = ET9AWNoteWordChanged(&pIME->sLingInfo,
+                                   pEditor->psBuffer,
+                                   pEditor->snBufferLen,
+                                   snStartPos,
+                                   pWord->wLen,
+                                   NULL,
+                                   psEmptyString,
+                                   0);
+
+    MOZ_ASSERT(!eStatus || eStatus == ET9STATUS_INVALID_TEXT);
+
+    /* cut from buffer */
+
+    std::copy(pEditor->psBuffer+snLastPos+1, pEditor->psBuffer+pEditor->snBufferLen, pEditor->psBuffer+snStartPos);
+
+    pEditor->snBufferLen -= pWord->wLen;
+    pEditor->snCursorPos = snStartPos;
+}
+
 void EditorDeleteChar(demoIMEInfo * const pIME)
 {
     demoEditorInfo * const pEditor = pIME->pEditor;
@@ -829,6 +894,26 @@ Xt9Connect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLe
             case 77: /* right arrow -  */
                 if (!sIME.bTotWords) {
                     EditorMoveForward(&sIME);
+                }
+                break;
+
+            case 0x85: /* F11 - reselect */
+                {
+                    ET9SimpleWord sString;
+
+                    EditorGetWord(&sIME, &sString, 1);
+
+                    if (sString.wLen) {
+
+                        ET9BOOL bSelectedWasAutomatic;
+                        ET9BOOL bWasFoundInHistory;
+
+                        ET9AWReselectWord(&sIME.sLingInfo, &sIME.sKdbInfo, sString.sString, sString.wLen, 0, &sIME.bTotWords, &sIME.bActiveWordIndex, &bSelectedWasAutomatic, &bWasFoundInHistory);
+
+                        if (!bWasFoundInHistory) {
+                            ET9AWSelLstBuild(&sIME.sLingInfo, &sIME.bTotWords, &sIME.bActiveWordIndex, &sIME.wGestureValue);
+                        }
+                    }
                 }
                 break;
 
