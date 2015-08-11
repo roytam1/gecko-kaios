@@ -127,6 +127,7 @@ void EditorGetWord(demoIMEInfo * const pIME, ET9SimpleWord * const pWord, const 
 
     if (snLastPos > 0 && iswspace(pEditor->psBuffer[snLastPos-1])) {
         if (iswspace(pEditor->psBuffer[snLastPos]) || snLastPos == pEditor->snBufferLen) {
+            pWord->wLen = 0;
             return;
         }
     }
