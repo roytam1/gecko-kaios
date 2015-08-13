@@ -132,7 +132,7 @@ interface ContactManager : EventTarget {
   DOMRequest getRevision();
   DOMRequest getCount();
   DOMRequest getSpeedDials();
-  DOMRequest setSpeedDial(DOMString speedDial, DOMString contactId);
+  DOMRequest setSpeedDial(DOMString speedDial, DOMString tel, optional DOMString contactId);
   DOMRequest removeSpeedDial(DOMString speedDial);
 
   attribute  EventHandler oncontactchange;

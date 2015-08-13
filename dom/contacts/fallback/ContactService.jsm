@@ -260,6 +260,7 @@ var ContactService = this.ContactService = {
         }
         this._db.setSpeedDial(
           msg.options.speedDial,
+          msg.options.tel,
           msg.options.contactId,
           function() {
             mm.sendAsyncMessage("Contacts:SetSpeedDial:Return:OK", { requestID: msg.requestID });

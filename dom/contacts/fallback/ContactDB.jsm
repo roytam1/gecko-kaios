@@ -1412,31 +1412,44 @@ ContactDB.prototype = {
     }, aSuccessCb, aFailureCb);
   },
 
-  setSpeedDial: function setSpeedDial(aSpeedDial, aContactId, aSuccessCb, aFailureCb) {
-    if (DEBUG) debug("setSpeedDial: aSpeedDial " + aSpeedDial + " aContactId " + aContactId);
+  setSpeedDial: function setSpeedDial(aSpeedDial, aTel, aContactId, aSuccessCb, aFailureCb) {
+    if (DEBUG) debug("setSpeedDial: aSpeedDial " + aSpeedDial + " aTel " + aTel + " aContactId " + aContactId);
 
     this.newTxn("readwrite", this.dbStoreNames, function (txn, stores) {
-      let req = txn.objectStore(STORE_NAME).get(aContactId);
-      req.onsuccess = function (event) {
-        if (!event.target.result) {
-          dump("ContactDB: contact with id " + aContactId + " is not exist!");
-          txn.abort();
-          return;
-        }
-        txn.objectStore(SPEED_DIALS_STORE_NAME).put({
-          speedDial: aSpeedDial,
-          contactId: aContactId
-        });
-      }.bind(this);
+      if (!aSpeedDial || !aTel) {
+        dump("ContactDB: speed dial or phone number are empty");
+        txn.abort();
+        return;
+      }
+      let speedDialObj = {
+        speedDial: aSpeedDial,
+        tel: aTel
+      };
 
-      this.incrementRevision(txn);
+      if (aContactId) {
+        let req = txn.objectStore(STORE_NAME).get(aContactId);
+        req.onsuccess = function (event) {
+          if (!event.target.result) {
+            dump("ContactDB: contact with id " + aContactId + " is not exist!");
+            txn.abort();
+          }
+          speedDialObj.contactId = aContactId;
+          txn.objectStore(SPEED_DIALS_STORE_NAME).put(speedDialObj);
+
+          this.incrementRevision(txn);
+        }.bind(this);
+      } else {
+        txn.objectStore(SPEED_DIALS_STORE_NAME).put(speedDialObj);
+
+        this.incrementRevision(txn);
+      }
     }.bind(this), aSuccessCb, aFailureCb);
   },
 
   removeSpeedDial: function removeSpeedDial(aSpeedDial, aSuccessCb, aFailureCb) {
     if (DEBUG) debug("removeSpeedDial: aSpeedDial " + aSpeedDial);
     this.newTxn("readwrite", this.dbStoreNames, function (txn, store) {
-      txn.objectStore(STORE_NAME).delete(aSpeedDial).onsuccess = function() {
+      txn.objectStore(SPEED_DIALS_STORE_NAME).delete(aSpeedDial).onsuccess = function() {
         aSuccessCb();
       }.bind(this);
 

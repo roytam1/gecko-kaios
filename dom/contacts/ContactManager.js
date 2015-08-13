@@ -108,6 +108,18 @@ ContactManager.prototype = {
     return contacts;
   },
 
+  _convertSpeedDials: function(aSpeedDials) {
+    let speedDials = new this._window.Array();
+    for (let i in aSpeedDials) {
+      let newSpeedDial = new this._window.Object();
+      for (let prop in aSpeedDials[i]) {
+        newSpeedDial[prop] = aSpeedDials[i][prop];
+      }
+      speedDials.push(newSpeedDial);
+    }
+    return speedDials;
+  },
+
   _fireSuccessOrDone: function(aCursor, aResult) {
     if (aResult == null) {
       Services.DOMRequest.fireDone(aCursor);
@@ -174,7 +186,8 @@ ContactManager.prototype = {
       case "Contacts:GetSpeedDials:Return:OK":
         req = this.getRequest(msg.requestID);
         if (req) {
-          Services.DOMRequest.fireSuccess(req.request, msg.speedDials);
+          let result = this._convertSpeedDials(msg.speedDials);
+          Services.DOMRequest.fireSuccess(req.request, result);
         }
         break;
       case "Contacts:SetSpeedDial:Return:OK":
@@ -330,6 +343,7 @@ ContactManager.prototype = {
         if (field === "ringtone" && !aContact[field]) {
           aContact[field] = null;
         }
+
         newContact.properties[field] = aContact[field];
       }
     } catch (e) {
@@ -550,8 +564,8 @@ ContactManager.prototype = {
     return request;
   },
 
-  setSpeedDial: function setSpeedDial(speedDial, contactId) {
-    if (DEBUG) debug("setSpeedDial: speedDial " + speedDial + " contactId " + contactId);
+  setSpeedDial: function setSpeedDial(speedDial, tel, contactId) {
+    if (DEBUG) debug("setSpeedDial: speedDial " + speedDial + " tel " + tel + (contactId ? (" contactId " + contactId) : ""));
 
     let request = this.createRequest();
 
@@ -560,7 +574,8 @@ ContactManager.prototype = {
         requestID: this.getRequestId({ request: request }),
         options: {
           speedDial: speedDial,
-          contactId, contactId
+          tel: tel,
+          contactId: (contactId ? contactId : null)
         }
       });
     }.bind(this);
