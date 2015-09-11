@@ -406,6 +406,27 @@ setUpdateTrackingId();
   });
 })();
 
+(function setupCaptionStyles() {
+  let captionPrefs = ['font-color', 'font-size', 'font-family', 'box-color',
+                      'font-shadow', 'theme'];
+  let prefPrefix = 'cue.';
+  captionPrefs.forEach(function(pref) {
+    SettingsListener.observe('accessibility.caption.' + pref, null, function(value) {
+      if (value) {
+        if (pref === 'theme') {
+          let properties = value.split(';');
+          properties.forEach(function(property) {
+            let rv = property.split(':');
+            Services.prefs.setCharPref(prefPrefix + rv[0], rv[1]);
+          });
+        } else {
+          Services.prefs.setCharPref(prefPrefix + pref, value);
+        }
+      }
+    });
+  });
+})();
+
 // ================ Theming ============
 (function themingSettingsListener() {
   let themingPrefs = ['ui.menu', 'ui.menutext', 'ui.infobackground', 'ui.infotext',
@@ -608,6 +629,26 @@ var settingsToObserve = {
     prefName: 'accessibility.accessfu.quicknav_index',
     resetToPref: true,
     defaultValue: 0
+  },
+  'accessibility.caption.font-size': {
+    prefName: 'cue.font-size',
+    defaultValue: '0.05'
+  },
+  'accessibility.caption.font-color': {
+    prefName: 'cue.font-color',
+    defaultValue: 'rgba(255, 255, 255, 1)'
+  },
+  'accessibility.caption.box-color': {
+    prefName: 'cue.box-color',
+    defaultValue: 'rgba(0, 0, 0, 1)'
+  },
+  'accessibility.caption.font-family': {
+    prefName: 'cue.font-family',
+    defaultValue: 'sans-serif'
+  },
+  'accessibility.caption.font-shadow': {
+    prefName: 'cue.font-shadow',
+    defaultValue: ''
   },
   'app.update.interval': 86400,
   'apz.overscroll.enabled': true,

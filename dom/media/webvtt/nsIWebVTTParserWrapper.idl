@@ -12,7 +12,7 @@ interface nsIVariant;
 /**
  * Interface for a wrapper of a JS WebVTT parser (vtt.js).
  */
-[scriptable, uuid(8dfe016e-1701-4618-9f5e-9a6154e853f0)]
+[scriptable, uuid(899d2d93-aa5a-401c-a2c2-448fac646711)]
 interface nsIWebVTTParserWrapper : nsISupports
 {
   /**
@@ -80,6 +80,16 @@ interface nsIWebVTTParserWrapper : nsISupports
    */
   void processCues(in mozIDOMWindow window, in nsIVariant cues,
                    in nsISupports overlay);
+
+  /**
+   * Update the styling of cues.
+   *
+   * @param key Should be a CSS property name except 'fontSizePercent', which is
+   *            a percentage used for computing the size of font.
+   *
+   * @param value A value associated with the given property.
+   */
+  void updateStyle(in DOMString key, in DOMString value);
 };
 
 %{C++

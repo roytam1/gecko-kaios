@@ -11,7 +11,10 @@
 #include "mozilla/dom/TextTrack.h"
 #include "mozilla/dom/TextTrackCue.h"
 #include "mozilla/dom/Event.h"
+#include "mozilla/ArrayUtils.h"
 #include "mozilla/ClearOnShutdown.h"
+#include "mozilla/unused.h"
+#include "mozilla/Preferences.h"
 #include "nsComponentManagerUtils.h"
 #include "nsVariant.h"
 #include "nsVideoFrame.h"
@@ -86,6 +89,13 @@ NS_IMPL_CYCLE_COLLECTING_ADDREF(TextTrackManager)
 NS_IMPL_CYCLE_COLLECTING_RELEASE(TextTrackManager)
 
 StaticRefPtr<nsIWebVTTParserWrapper> TextTrackManager::sParserWrapper;
+static TextTrackManager::CuePreference sPrefs[] = {
+  { "cue.font-color", "color" },
+  { "cue.font-size", "fontSizePercent" },
+  { "cue.font-family", "fontFamily" },
+  { "cue.font-shadow", "textShadow" },
+  { "cue.box-color", "backgroundColor" },
+};
 
 TextTrackManager::TextTrackManager(HTMLMediaElement *aMediaElement)
   : mMediaElement(aMediaElement)
@@ -107,10 +117,19 @@ TextTrackManager::TextTrackManager(HTMLMediaElement *aMediaElement)
     sParserWrapper = parserWrapper;
     ClearOnShutdown(&sParserWrapper);
   }
+
+  for (uint32_t i = 0; i < ArrayLength(sPrefs); ++i) {
+    Unused << Preferences::RegisterCallbackAndCall(
+      TextTrackManager::PreferenceChanged, sPrefs[i].mPrefName);
+  }
 }
 
 TextTrackManager::~TextTrackManager()
 {
+  for (uint32_t i = 0; i < ArrayLength(sPrefs); ++i) {
+    Preferences::UnregisterCallback(TextTrackManager::PreferenceChanged,
+                                    sPrefs[i].mPrefName);
+  }
 }
 
 TextTrackList*
@@ -378,6 +397,25 @@ TextTrackManager::HandleEvent(nsIDOMEvent* aEvent)
     }
   }
   return NS_OK;
+}
+
+/* static */
+void
+TextTrackManager::PreferenceChanged(const char* aPref, void* aClosure)
+{
+  int idx = -1;
+  for (uint32_t i = 0; i < ArrayLength(sPrefs); ++i) {
+    if (!strcmp(aPref, sPrefs[i].mPrefName)) {
+      idx = i;
+      break;
+    }
+  }
+
+  NS_ENSURE_TRUE_VOID(idx >= 0);
+
+  nsAutoString value(Preferences::GetString(aPref));
+  sParserWrapper->UpdateStyle(NS_ConvertASCIItoUTF16(sPrefs[idx].mPropertyName),
+                              value);
 }
 
 } // namespace dom

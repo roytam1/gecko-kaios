@@ -42,6 +42,11 @@ public:
 
   NS_DECL_NSIDOMEVENTLISTENER
 
+  struct CuePreference {
+    const char* mPrefName;
+    const char* mPropertyName;
+  };
+
   explicit TextTrackManager(HTMLMediaElement* aMediaElement);
 
   TextTrackList* GetTextTracks() const;
@@ -118,6 +123,9 @@ private:
   void GetTextTracksOfKind(TextTrackKind aTextTrackKind,
                            nsTArray<TextTrack*>& aTextTracks);
   bool TrackIsDefault(TextTrack* aTextTrack);
+
+  // Change the styling of cues via preferences.
+  static void PreferenceChanged(const char* aPref, void* aClosure);
 };
 
 } // namespace dom

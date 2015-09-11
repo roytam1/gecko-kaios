@@ -59,6 +59,11 @@ WebVTTParserWrapper.prototype =
     WebVTT.processCues(window, cues, overlay);
   },
 
+  updateStyle: function(key, value)
+  {
+    WebVTT.updateStyle(key, value);
+  },
+
   classDescription: "Wrapper for the JS WebVTT implementation (vtt.js)",
   classID: Components.ID(WEBVTTPARSERWRAPPER_CID),
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIWebVTTParserWrapper]),

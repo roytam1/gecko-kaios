@@ -728,8 +728,8 @@ this.EXPORTED_SYMBOLS = ["WebVTT"];
   function CueStyleBox(window, cue, styleOptions) {
     var isIE8 = (typeof navigator !== "undefined") &&
       (/MSIE\s8\.0/).test(navigator.userAgent);
-    var color = "rgba(255, 255, 255, 1)";
-    var backgroundColor = "rgba(0, 0, 0, 0.8)";
+    var color = styleOptions.color;
+    var backgroundColor = styleOptions.backgroundColor;
 
     if (isIE8) {
       color = "rgb(255, 255, 255)";
@@ -765,9 +765,13 @@ this.EXPORTED_SYMBOLS = ["WebVTT"];
     // div. Note, all WebVTT cue-setting alignments are equivalent to the CSS
     // mirrors of them except "middle" which is "center" in CSS.
     this.div = window.document.createElement("div");
+    // For styling customization: remove font, add textShadow, fontSize,
+    // and fontFamily to styleOptions.
     styles = {
       textAlign: cue.align === "middle" ? "center" : cue.align,
-      font: styleOptions.font,
+      textShadow: styleOptions.textShadow,
+      fontSize: styleOptions.fontSize,
+      fontFamily: styleOptions.fontFamily,
       whiteSpace: "pre-line",
       position: "absolute"
     };
@@ -1141,8 +1145,6 @@ this.EXPORTED_SYMBOLS = ["WebVTT"];
     return parseContent(window, cuetext);
   };
 
-  var FONT_SIZE_PERCENT = 0.05;
-  var FONT_STYLE = "sans-serif";
   var CUE_BACKGROUND_PADDING = "1.5%";
 
   // Runs the processing model over the cues and regions passed to it.
@@ -1187,12 +1189,14 @@ this.EXPORTED_SYMBOLS = ["WebVTT"];
       return;
     }
 
+    var fontSizePercent = this.styleOptions["fontSizePercent"];
     var boxPositions = [],
         containerBox = BoxPosition.getSimpleBoxPosition(paddedOverlay),
-        fontSize = Math.round(containerBox.height * FONT_SIZE_PERCENT * 100) / 100;
-    var styleOptions = {
-      font: fontSize + "px " + FONT_STYLE
-    };
+        fontSize = Math.round(containerBox.height * fontSizePercent * 100) / 100;
+    // Recompute font size base on the size of container box.
+    this.updateStyle("fontSize", fontSize + "px");
+
+    var styleOptions = this.styleOptions;
 
     (function() {
       var styleBox, cue;
@@ -1214,6 +1218,21 @@ this.EXPORTED_SYMBOLS = ["WebVTT"];
         boxPositions.push(BoxPosition.getSimpleBoxPosition(styleBox));
       }
     })();
+
+    this.cues = cues;
+  };
+
+  WebVTT.styleOptions = {};
+
+  WebVTT.updateStyle = function(key, value) {
+    this.styleOptions[key] = value;
+
+    if (this.cues) {
+      for (var i = 0; i < this.cues.length; i++) {
+        this.cues[i].displayState = null;
+        break;
+      }
+    }
   };
 
   WebVTT.Parser = function(window, decoder) {
