@@ -275,7 +275,7 @@ class NetEq {
   NetEq() {}
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(NetEq);
+  RTC_DISALLOW_COPY_AND_ASSIGN(NetEq);
 };
 
 }  // namespace webrtc

@@ -32,7 +32,7 @@ class ResampleInputAudioFile : public InputAudioFile {
  private:
   const int file_rate_hz_;
   Resampler resampler_;
-  DISALLOW_COPY_AND_ASSIGN(ResampleInputAudioFile);
+  RTC_DISALLOW_COPY_AND_ASSIGN(ResampleInputAudioFile);
 };
 
 }  // namespace test
