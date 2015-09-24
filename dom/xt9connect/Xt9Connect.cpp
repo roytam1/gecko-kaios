@@ -12,7 +12,9 @@ nsCString Xt9Connect::mWholeWord;
 nsCString Xt9Connect::sWholeWord;
 nsCString Xt9Connect::mCandidateWord;
 uint16_t  Xt9Connect::mTotalWord;
-uint32_t  Xt9Connect::mCursorPostion;
+uint32_t  Xt9Connect::mCursorPosition;
+uint32_t  Xt9Connect::sCursorPosition;
+bool      Xt9Connect::cursorPositionEnabled;
 
 uint32_t GetTickCount()
 {
@@ -22,7 +24,7 @@ uint32_t GetTickCount()
 	return (tv.tv_sec * 1000 + tv.tv_usec / 1000);
 }
 
-void EditorInitEmptyWord(demoIMEInfo *pIME, bool& initEmptyWord)
+void EditorInitEmptyWord(demoIMEInfo * const pIME, bool& initEmptyWord)
 {
     demoEditorInfo *pEditor = pIME->pEditor;
     if (initEmptyWord)
@@ -36,7 +38,7 @@ void EditorInitEmptyWord(demoIMEInfo *pIME, bool& initEmptyWord)
     }
 }
 
-void EditorInitWord(demoIMEInfo *pIME, nsCString& initWord)
+void EditorInitWord(demoIMEInfo * const pIME, nsCString& initWord)
 {
     demoEditorInfo *pEditor = pIME->pEditor;
     if (initWord.IsEmpty()) {
@@ -47,6 +49,21 @@ void EditorInitWord(demoIMEInfo *pIME, nsCString& initWord)
         pEditor->snCursorPos = pEditor->snBufferLen = initWordLength;
         initWord.Assign("");
         ET9CursorMoved(&pIME->sWordSymbInfo, 1);
+    }
+}
+
+void EditorSetCursor(demoIMEInfo * const pIME, const uint32_t& initCursor, bool& enabledCursor)
+{
+    if (enabledCursor) {
+        enabledCursor = false;
+        demoEditorInfo *pEditor = pIME->pEditor;
+        if (initCursor <= pEditor->snBufferLen) {
+            pEditor->snCursorPos = initCursor;
+        } else {
+            LOG_DBG("EditorSetCursor::initCursor: cursor position is more than buffer length - exiting...");
+        }
+    } else {
+        LOG_DBG("EditorSetCursor::enabledCursor False");
     }
 }
 
@@ -637,7 +654,7 @@ void PrintEditorBuffer(demoEditorInfo *pEditor)
 
     Xt9Connect::mWholeWord.Append(jsWord);
 
-    Xt9Connect::mCursorPostion = pEditor->snCursorPos;
+    Xt9Connect::mCursorPosition = pEditor->snCursorPos;
 }
 
 void PrintScreen(demoIMEInfo *pIME)
@@ -867,6 +884,8 @@ Xt9Connect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLe
     EditorInitWord(&sIME, Xt9Connect::sWholeWord); //send init word
 
     EditorInitEmptyWord(&sIME, Xt9Connect::mEmptyWord); //send empty init word
+
+    EditorSetCursor(&sIME, Xt9Connect::sCursorPosition, Xt9Connect::cursorPositionEnabled); //set cursor position
 
     if (nInputPrefix == 0xE0) {
         switch (nInputChar) {

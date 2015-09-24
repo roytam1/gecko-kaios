@@ -96,6 +96,8 @@ void EditorInitEmptyWord(demoIMEInfo *pIME, bool& initEmptyWord);
 
 void EditorInitWord(demoIMEInfo *pIME, nsCString& initWord);
 
+void EditorSetCursor(demoIMEInfo * const pIME, const uint32_t& initCursor, bool& enabledCursor);
+
 void EditorInsertWord(demoIMEInfo * const pIME, ET9AWWordInfo *pWord, ET9BOOL bSupressSubstitutions);
 
 void EditorGetWord(demoIMEInfo * const pIME, ET9SimpleWord * const pWord, const ET9BOOL bCut);
@@ -184,7 +186,13 @@ class Xt9Connect MOZ_FINAL : public nsISupports, public nsWrapperCache
 
 		uint32_t CursorPosition() const
 		{
-			return mCursorPostion;
+			return mCursorPosition;
+		}
+
+		void SetCursorPosition(const uint32_t aResult)
+		{
+			sCursorPosition = aResult;
+			cursorPositionEnabled = true;
 		}
 
 		virtual JSObject* WrapObject(JSContext* aCx) MOZ_OVERRIDE;
@@ -208,7 +216,9 @@ class Xt9Connect MOZ_FINAL : public nsISupports, public nsWrapperCache
 		static nsCString sWholeWord;
 		static nsCString mCandidateWord;
 		static uint16_t  mTotalWord;
-		static uint32_t  mCursorPostion;
+		static uint32_t  mCursorPosition;
+		static uint32_t  sCursorPosition;
+		static bool cursorPositionEnabled;
 
 	private:
 

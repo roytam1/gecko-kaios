@@ -11,5 +11,5 @@ interface Xt9Connect {
 
 	readonly attribute short totalWord;
 
-	readonly attribute long cursorPosition;
+	attribute long cursorPosition;
 };
