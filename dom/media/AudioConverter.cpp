@@ -83,6 +83,11 @@ AudioConverter::ProcessInternal(void* aOut, const void* aIn, size_t aFrames)
   } else if (aIn != aOut) {
     memmove(aOut, aIn, FramesOutToBytes(aFrames));
   }
+
+  if (mOut.AudioBalance() != DEFAULT_AUDIO_BALANCE && mOut.Channels() == 2) {
+    ApplyAudioBalance(aOut, aFrames, mOut.AudioBalance());
+  }
+
   return aFrames;
 }
 
@@ -251,6 +256,44 @@ AudioConverter::DownmixAudio(void* aOut, const void* aIn, size_t aFrames) const
     }
   }
   return aFrames;
+}
+
+void
+AudioConverter::ApplyAudioBalance(void* aOut, uint32_t aFrames, uint32_t aAudioBalance) const
+{
+  // Front-end passes aAudioBalance with value from 0 to 100. If aAudioBalance is
+  // 0~49: decrease the volume of right channel and left channel no changes.
+  // 50(DEFAULT_AUDIO_BALANCE): both channels are with no change.
+  // 51~100: decrease the volume of left channel and no change in right channel.
+  // ex, 0  : Only left channel can be heard
+  //     30 : The data of right channel will be multiplied by 30 / 50 = 0.6 and
+  //          the volume of left channel is no change.
+  //     50 : Same as default settings
+  //     100: Only right channel can be heard
+  const int channels = 2; //stereo audio
+  float factor;
+  uint32_t offset = 0;
+
+  // for KaiOS, we are supporting FORMAT_S16 only.
+  MOZ_ASSERT(mOut.Format() == AudioConfig::FORMAT_S16);
+
+  if (aAudioBalance < DEFAULT_AUDIO_BALANCE) {
+    // modify right channel
+    offset = 1;
+    factor = (float)aAudioBalance / DEFAULT_AUDIO_BALANCE;
+  } else {
+    // modify left channel
+    offset = 0;
+    // The original formula is
+    // (DEFAULT_AUDIO_BALANCE - (aAudioBalance - DEFAULT_AUDIO_BALANCE))/DEFAULT_AUDIO_BALANCE;
+    // DEFAULT_AUDIO_BALANCE is 50.
+    factor = (float)(100 - aAudioBalance) / DEFAULT_AUDIO_BALANCE;
+  }
+
+  int16_t* buffer = static_cast<int16_t*>(aOut);
+  for (uint32_t i = 0, chunk = 0; i < aFrames; i++, chunk += channels) {
+    buffer[chunk+offset] *= factor;
+  }
 }
 
 size_t

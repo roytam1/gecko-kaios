@@ -371,6 +371,7 @@ private:
   bool mIsFirst;
   // Get this value from the preference, if true, we would downmix the stereo.
   bool mIsMonoAudioEnabled;
+  uint32_t mAudioBalance;
 
   DataSource& mDataSource;
 

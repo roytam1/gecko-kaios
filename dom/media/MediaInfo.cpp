@@ -170,21 +170,25 @@ AudioConfig::FormatToBits(AudioConfig::SampleFormat aFormat)
 }
 
 AudioConfig::AudioConfig(const ChannelLayout& aChannelLayout, uint32_t aRate,
+                         uint32_t aAudioBalance,
                          AudioConfig::SampleFormat aFormat, bool aInterleaved)
   : mChannelLayout(aChannelLayout)
   , mChannels(aChannelLayout.Count())
   , mRate(aRate)
   , mFormat(aFormat)
   , mInterleaved(aInterleaved)
+  , mAudioBalance(aAudioBalance)
 {}
 
 AudioConfig::AudioConfig(uint32_t aChannels, uint32_t aRate,
+                         uint32_t aAudioBalance,
                          AudioConfig::SampleFormat aFormat, bool aInterleaved)
   : mChannelLayout(aChannels)
   , mChannels(aChannels)
   , mRate(aRate)
   , mFormat(aFormat)
   , mInterleaved(aInterleaved)
+  , mAudioBalance(aAudioBalance)
 {}
 
 } // namespace mozilla

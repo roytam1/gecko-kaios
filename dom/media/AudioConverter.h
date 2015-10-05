@@ -213,6 +213,7 @@ private:
   size_t ProcessInternal(void* aOut, const void* aIn, size_t aFrames);
   void ReOrderInterleavedChannels(void* aOut, const void* aIn, size_t aFrames) const;
   size_t DownmixAudio(void* aOut, const void* aIn, size_t aFrames) const;
+  void ApplyAudioBalance(void* aOut, uint32_t aFrames, uint32_t aAudioBalance) const;
 
   size_t FramesOutToSamples(size_t aFrames) const;
   size_t SamplesInToFrames(size_t aSamples) const;

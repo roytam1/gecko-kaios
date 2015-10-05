@@ -519,6 +519,8 @@ public:
 // Maximum channel number we can currently handle (7.1)
 #define MAX_AUDIO_CHANNELS 8
 
+#define DEFAULT_AUDIO_BALANCE 50
+
 class AudioConfig {
 public:
   enum Channel {
@@ -617,10 +619,12 @@ public:
   };
 
   AudioConfig(const ChannelLayout& aChannelLayout, uint32_t aRate,
+              uint32_t aAudioBalance = DEFAULT_AUDIO_BALANCE,
               AudioConfig::SampleFormat aFormat = FORMAT_DEFAULT,
               bool aInterleaved = true);
   // Will create a channel configuration from default SMPTE ordering.
   AudioConfig(uint32_t aChannels, uint32_t aRate,
+              uint32_t aAudioBalance = DEFAULT_AUDIO_BALANCE,
               AudioConfig::SampleFormat aFormat = FORMAT_DEFAULT,
               bool aInterleaved = true);
 
@@ -646,6 +650,10 @@ public:
   bool Interleaved() const
   {
     return mInterleaved;
+  }
+  uint32_t AudioBalance() const
+  {
+    return mAudioBalance;
   }
   bool operator==(const AudioConfig& aOther) const
   {
@@ -676,6 +684,8 @@ private:
   SampleFormat mFormat;
 
   bool mInterleaved;
+
+  uint32_t mAudioBalance;
 };
 
 } // namespace mozilla

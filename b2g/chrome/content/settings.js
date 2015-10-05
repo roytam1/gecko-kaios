@@ -617,6 +617,7 @@ var settingsToObserve = {
     prefName: 'ui.largeText.enabled',
     resetToPref: true
   },
+  'accessibility.volume_balance':50,
   'accessibility.force_mono_audio': false,
   'accessibility.screenreader_quicknav_modes': {
     prefName: 'accessibility.accessfu.quicknav_modes',

@@ -130,6 +130,7 @@ AudioStream::AudioStream(DataSource& aSource)
   , mDumpFile(nullptr)
   , mState(INITIALIZED)
   , mIsMonoAudioEnabled(gfxPrefs::MonoAudio())
+  , mAudioBalance(gfxPrefs::VolumeBalance())
   , mDataSource(aSource)
 {
 }
@@ -353,9 +354,9 @@ AudioStream::Init(uint32_t aNumChannels, uint32_t aRate,
   params.format = ToCubebFormat<AUDIO_OUTPUT_FORMAT>::value;
   mAudioClock.Init();
 
-  if (mIsMonoAudioEnabled) {
+  if (mIsMonoAudioEnabled || mAudioBalance != DEFAULT_AUDIO_BALANCE) {
     AudioConfig inConfig(mChannels, mInRate);
-    AudioConfig outConfig(mOutChannels, mOutRate);
+    AudioConfig outConfig(mOutChannels, mOutRate, mAudioBalance);
     mAudioConverter = MakeUnique<AudioConverter>(inConfig, outConfig);
   }
   return OpenCubeb(params);
