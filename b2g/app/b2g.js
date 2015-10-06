@@ -1176,3 +1176,5 @@ pref("extensions.blocklist.detailsURL", "https://www.mozilla.com/%LOCALE%/blockl
 // Google geoCoding URL.
 // format as https://maps.googleapis.com/maps/api/geocode/json?latlng=<lat>,<lon>&key=<key>
 pref("google.geocoding.URL", "https://maps.googleapis.com/maps/api/geocode/json?latlng=");
+
+pref("gfx.glcursor.enabled", false);

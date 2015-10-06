@@ -154,6 +154,8 @@ protected:
     // event (like a keypress or mouse click).
     void UserActivity();
 
+    void DrawWindowOverlay(mozilla::layers::LayerManagerComposite* aManager, LayoutDeviceIntRect aRect);
+
 private:
     // This is used by SynthesizeNativeTouchPoint to maintain state between
     // multiple synthesized points

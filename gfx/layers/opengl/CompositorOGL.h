@@ -340,6 +340,8 @@ public:
     return mRenderOffset;
   }
 
+  void DrawGLCursor(LayoutDeviceIntRect aRect, LayoutDeviceIntPoint aCursorPos);
+
 private:
   bool InitializeVR();
   void DestroyVR(GLContext *gl);

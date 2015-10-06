@@ -1691,6 +1691,28 @@ CompositorOGL::GetTemporaryTexture(GLenum aTarget, GLenum aUnit)
   return mTexturePool->GetTexture(aTarget, aUnit);
 }
 
+void CompositorOGL::DrawGLCursor(LayoutDeviceIntRect aRect, LayoutDeviceIntPoint aCursorPos)
+{
+  if (!gfxPrefs::GLCursorEnabled()) {
+    return;
+  }
+
+  if (!aRect.Contains(aCursorPos)) {
+    return;
+  }
+
+  // TODO: need to load cursor images to draw real cursor
+  EffectChain effects;
+  float alpha = 1;
+  effects.mPrimaryEffect = new EffectSolidColor(gfx::Color(1, 0, 0, 1));
+  DrawQuad(gfx::Rect(aCursorPos.x,
+                     aCursorPos.y,
+                     30, 30),
+           gfx::Rect(aRect.x, aRect.y, aRect.width, aRect.height),
+           effects, alpha, gfx::Matrix4x4(),
+           gfx::Rect(aCursorPos.x, aCursorPos.y, 30, 30));
+}
+
 GLuint
 PerUnitTexturePoolOGL::GetTexture(GLenum aTarget, GLenum aTextureUnit)
 {

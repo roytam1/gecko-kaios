@@ -43,7 +43,9 @@
 #include "mozilla/gfx/Logging.h"
 #include "mozilla/layers/APZCTreeManager.h"
 #include "mozilla/layers/APZThreadUtils.h"
+#include "mozilla/layers/CompositorOGL.h"
 #include "mozilla/layers/CompositorBridgeParent.h"
+#include "mozilla/layers/LayerManagerComposite.h"
 #include "mozilla/TouchEvents.h"
 #include "HwcComposer2D.h"
 
@@ -632,6 +634,14 @@ nsWindow::SetNativeData(uint32_t aDataType, uintptr_t aVal)
 NS_IMETHODIMP
 nsWindow::DispatchEvent(WidgetGUIEvent* aEvent, nsEventStatus& aStatus)
 {
+    if (aEvent->mMessage == eMouseMove) {
+      mCursorPos.x = aEvent->mRefPoint.x;
+      mCursorPos.y = aEvent->mRefPoint.y;
+    } else if (aEvent->mMessage == eMouseExitFromWidget) {
+      mCursorPos.x = -1;
+      mCursorPos.y = -1;
+    }
+
     if (mWidgetListener) {
       aStatus = mWidgetListener->HandleEvent(aEvent, mUseAttachedEvents);
     }
@@ -684,6 +694,17 @@ nsWindow::MakeFullScreen(bool aFullScreen, nsIScreen*)
       listener->FullscreenChanged(aFullScreen);
     }
     return NS_OK;
+}
+
+void
+nsWindow::DrawWindowOverlay(LayerManagerComposite* aManager, LayoutDeviceIntRect aRect)
+{
+    if (aManager) {
+      CompositorOGL *compositor = static_cast<CompositorOGL*>(aManager->GetCompositor());
+      if (compositor) {
+        compositor->DrawGLCursor(aRect, mCursorPos);
+      }
+    }
 }
 
 already_AddRefed<DrawTarget>

@@ -1441,6 +1441,13 @@ NS_IMETHODIMP nsChildView::DispatchEvent(WidgetGUIEvent* event,
 #ifdef DEBUG
   debug_DumpEvent(stdout, event->mWidget, event, "something", 0);
 #endif
+  if (event->message == NS_MOUSE_MOVE) {
+    mCursorPos.x = event->refPoint.x;
+    mCursorPos.y = event->refPoint.y;
+  } else if (event->message == NS_MOUSE_EXIT) {
+    mCursorPos.x = -1;
+    mCursorPos.y = -1;
+  }
 
   NS_ASSERTION(!(mTextInputHandler && mTextInputHandler->IsIMEComposing() &&
                  event->HasKeyEventMessage()),
@@ -2010,6 +2017,10 @@ nsChildView::DrawWindowOverlay(LayerManagerComposite* aManager,
 {
   nsAutoPtr<GLManager> manager(GLManager::CreateGLManager(aManager));
   if (manager) {
+    CompositorOGL *compositor = static_cast<CompositorOGL*>(aManager->GetCompositor());
+    if (compositor) {
+      compositor->DrawGLCursor(aRect, mCursorPos);
+    }
     DrawWindowOverlay(manager, aRect);
   }
 }

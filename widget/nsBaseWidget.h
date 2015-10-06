@@ -81,9 +81,9 @@ public:
 
 /**
  * Common widget implementation used as base class for native
- * or crossplatform implementations of Widgets. 
- * All cross-platform behavior that all widgets need to implement 
- * should be placed in this class. 
+ * or crossplatform implementations of Widgets.
+ * All cross-platform behavior that all widgets need to implement
+ * should be placed in this class.
  * (Note: widget implementations are not required to use this
  * class, but it gives them a head start.)
  */
@@ -314,7 +314,7 @@ public:
   // return true if this is a popup widget with a native titlebar
   bool IsPopupWithTitleBar() const
   {
-    return (mWindowType == eWindowType_popup && 
+    return (mWindowType == eWindowType_popup &&
             mBorderStyle != eBorderStyle_default &&
             mBorderStyle & eBorderStyle_title);
   }
@@ -507,7 +507,7 @@ protected:
   /**
    * Starts the OMTC compositor destruction sequence.
    *
-   * When this function returns, the compositor should not be 
+   * When this function returns, the compositor should not be
    * able to access the opengl context anymore.
    * It is safe to call it several times if platform implementations
    * require the compositor to be destroyed before ~nsBaseWidget is
@@ -551,6 +551,7 @@ protected:
 #if defined(XP_WIN) || defined(XP_MACOSX)
   bool              mAccessibilityInUseFlag;
 #endif
+  LayoutDeviceIntPoint      mCursorPos;
   static nsIRollupListener* gRollupListener;
 
   // the last rolled up popup. Only set this when an nsAutoRollup is in scope,
