@@ -44,7 +44,11 @@ Tokenizer::Tokenizer(const String8& filename, FileMap* fileMap, char* buffer,
 
 Tokenizer::~Tokenizer() {
     if (mFileMap) {
+#if ANDROID_VERSION >= 23
+        delete mFileMap;
+#else
         mFileMap->release();
+#endif
     }
     if (mOwnBuffer) {
         delete[] mBuffer;
@@ -74,7 +78,11 @@ status_t Tokenizer::open(const String8& filename, Tokenizer** outTokenizer) {
                 fileMap->advise(FileMap::SEQUENTIAL);
                 buffer = static_cast<char*>(fileMap->getDataPtr());
             } else {
+#if ANDROID_VERSION >= 23
+                delete fileMap;
+#else
                 fileMap->release();
+#endif
                 fileMap = NULL;
 
                 // Fall back to reading into a buffer since we can't mmap files in sysfs.
