@@ -184,6 +184,19 @@ GonkPermissionService::GetInstance()
   return gGonkPermissionService;
 }
 
+#if ANDROID_VERSION >= 23
+void
+GonkPermissionService::getPackagesForUid(
+  const uid_t uid, android::Vector<android::String16>& packages)
+{ }
+
+bool
+GonkPermissionService::isRuntimePermission(const android::String16& permission)
+{
+  return true;
+}
+#endif
+
 void
 GonkPermissionService::addGrantInfo(const char* permission, int32_t pid)
 {
