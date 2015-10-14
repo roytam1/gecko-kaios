@@ -6,6 +6,7 @@
 #define BASE_OS_COMPAT_ANDROID_H_
 
 #include <fcntl.h>
+#include <sys/file.h>
 #include <sys/types.h>
 #include <utime.h>
 
