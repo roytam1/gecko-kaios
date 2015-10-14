@@ -37,7 +37,7 @@
 
 #ifdef MOZ_WIDGET_GONK
 # include <sys/time.h>
-# include <sys/resource.h> 
+# include <sys/resource.h>
 
 # include <binder/ProcessState.h>
 
@@ -45,7 +45,13 @@
 #  undef LOGE_IF
 # endif
 
+
 # include <android/log.h>
+
+#ifndef CONDITION
+#define CONDITION(cond) (!!(cond))
+#endif
+
 # define LOGE_IF(cond, ...) \
      ( (CONDITION(cond)) \
      ? ((void)__android_log_print(ANDROID_LOG_ERROR, \
@@ -68,7 +74,7 @@ static void
 InitializeBinder(void *aDummy) {
     // Change thread priority to 0 only during calling ProcessState::self().
     // The priority is registered to binder driver and used for default Binder
-    // Thread's priority. 
+    // Thread's priority.
     // To change the process's priority to small value need's root permission.
     int curPrio = getpriority(PRIO_PROCESS, 0);
     int err = setpriority(PRIO_PROCESS, 0, 0);
