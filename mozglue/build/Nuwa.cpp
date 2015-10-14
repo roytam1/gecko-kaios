@@ -382,11 +382,17 @@ static pthread_cond_t sForkWaitCond = PTHREAD_COND_INITIALIZER;
  */
 static bool sForkWaitCondChanged = false;
 
+/* Older Android release (e.g., ICS) don't provide the _NP define. */
+#ifndef PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP
+#define PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP \
+  PTHREAD_ERRORCHECK_MUTEX_INITIALIZER
+#endif
+
 /**
  * This mutex protects the access to sTLSKeys, which keeps track of existing
  * TLS Keys.
  */
-static pthread_mutex_t sTLSKeyLock = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER;
+static pthread_mutex_t sTLSKeyLock = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP;
 static int sThreadSkipCount = 0;
 
 static thread_info_t *
