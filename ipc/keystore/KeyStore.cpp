@@ -6,6 +6,7 @@
 
 #include <fcntl.h>
 #include <limits.h>
+#include <memory>
 #include <pwd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -57,8 +58,6 @@ public:
   virtual int32_t saw(const String16& name, int uid, Vector<String16>* matches) {return 0;}
   virtual int32_t reset() {return 0;}
   virtual int32_t password(const String16& password) {return 0;}
-  virtual int32_t lock() {return 0;}
-  virtual int32_t unlock(const String16& password) {return 0;}
   virtual int32_t zero() {return 0;}
   virtual int32_t import(const String16& name, const uint8_t* data, size_t length, int uid, int32_t flags) {return 0;}
   virtual int32_t sign(const String16& name, const uint8_t* data, size_t length, uint8_t** out, size_t* outLength) {return 0;}
@@ -70,18 +69,63 @@ public:
   virtual int64_t getmtime(const String16& name) {return 0;}
   virtual int32_t duplicate(const String16& srcKey, int32_t srcUid, const String16& destKey, int32_t destUid) {return 0;}
   virtual int32_t clear_uid(int64_t uid) {return 0;}
-#if ANDROID_VERSION >= 21
+#if ANDROID_VERSION >= 23
+  virtual int32_t lock(int32_t) {return 0;}
+  virtual int32_t unlock(int32_t, const String16& password) {return 0;}
+  virtual int32_t generate(const String16& name, int32_t uid, int32_t keyType, int32_t keySize, int32_t flags, Vector<sp<KeystoreArg> >* args) {return 0;}
+  virtual int32_t is_hardware_backed(const String16& keyType) {return 0;}
+  virtual int32_t getState(int32_t userId) {return 0;}
+  virtual int32_t list(const String16& prefix, int uid, Vector<String16>* matches) {return 0;}
+  virtual int32_t onUserPasswordChanged(int32_t userId, const String16& newPassword) {return 0;}
+  virtual bool isEmpty(int32_t userId) {return true;}
+  virtual int32_t addRngEntropy(const uint8_t* data, size_t dataLength) {return 0;}
+  virtual int32_t generateKey(const String16& name, const KeymasterArguments& params,
+                              const uint8_t* entropy, size_t entropyLength, int uid, int flags,
+                              KeyCharacteristics* outCharacteristics) {return 0;}
+  virtual int32_t getKeyCharacteristics(const String16& name,
+                                        const keymaster_blob_t* clientId,
+                                        const keymaster_blob_t* appData,
+                                        KeyCharacteristics* outCharacteristics) {return 0;}
+  virtual int32_t importKey(const String16& name, const KeymasterArguments&  params,
+                            keymaster_key_format_t format, const uint8_t *keyData,
+                            size_t keyLength, int uid, int flags,
+                            KeyCharacteristics* outCharacteristics) {return 0;}
+  virtual void exportKey(const String16& name, keymaster_key_format_t format,
+                         const keymaster_blob_t* clientId,
+                         const keymaster_blob_t* appData, ExportResult* result) {return;}
+  virtual void begin(const sp<IBinder>& apptoken, const String16& name,
+                     keymaster_purpose_t purpose, bool pruneable,
+                     const KeymasterArguments& params, const uint8_t* entropy,
+                     size_t entropyLength, OperationResult* result) {return;}
+  virtual void update(const sp<IBinder>& token, const KeymasterArguments& params,
+                      const uint8_t* data, size_t dataLength, OperationResult* result) {return;}
+  virtual void finish(const sp<IBinder>& token, const KeymasterArguments& params,
+                      const uint8_t* signature, size_t signatureLength,
+                      const uint8_t* entropy, size_t entropyLength,
+                      OperationResult* result) {return;}
+  virtual int32_t abort(const sp<IBinder>& handle) {return 0;}
+  virtual bool isOperationAuthorized(const sp<IBinder>& handle) {return false;}
+  virtual int32_t addAuthToken(const uint8_t* token, size_t length) {return 0;}
+  virtual int32_t onUserAdded(int32_t userId, int32_t parentId) {return 0;}
+  virtual int32_t onUserRemoved(int32_t userId) {return 0;}
+#elif ANDROID_VERSION >= 21
+  virtual int32_t lock() {return 0;}
+  virtual int32_t unlock(const String16& password) {return 0;}
   virtual int32_t generate(const String16& name, int32_t uid, int32_t keyType, int32_t keySize, int32_t flags, Vector<sp<KeystoreArg> >* args) {return 0;}
   virtual int32_t is_hardware_backed(const String16& keyType) {return 0;}
   virtual int32_t reset_uid(int32_t uid) {return 0;}
   virtual int32_t sync_uid(int32_t sourceUid, int32_t targetUid) {return 0;}
   virtual int32_t password_uid(const String16& password, int32_t uid) {return 0;}
-#elif ANDROID_VERSION == 18
-  virtual int32_t generate(const String16& name, int uid, int32_t flags) {return 0;}
-  virtual int32_t is_hardware_backed() {return 0;}
-#else
+#elif ANDROID_VERSION >= 19
+  virtual int32_t lock() {return 0;}
+  virtual int32_t unlock(const String16& password) {return 0;}
   virtual int32_t generate(const String16& name, int32_t uid, int32_t keyType, int32_t keySize, int32_t flags, Vector<sp<KeystoreArg> >* args) {return 0;}
   virtual int32_t is_hardware_backed(const String16& keyType) {return 0;}
+#else
+  virtual int32_t lock() {return 0;}
+  virtual int32_t unlock(const String16& password) {return 0;}
+  virtual int32_t generate(const String16& name, int uid, int32_t flags) {return 0;}
+  virtual int32_t is_hardware_backed() {return 0;}
 #endif
 };
 
@@ -91,12 +135,14 @@ IMPLEMENT_META_INTERFACE(KeystoreService, "android.security.keystore");
 status_t BnKeystoreService::onTransact(uint32_t code, const Parcel& data, Parcel* reply, uint32_t flags)
 {
   switch(code) {
+#if ANDROID_VERSION <= 22
     case TEST: {
       CHECK_INTERFACE(IKeystoreService, data, reply);
       reply->writeNoException();
       reply->writeInt32(test());
       return NO_ERROR;
     } break;
+#endif
     case GET: {
       CHECK_INTERFACE(IKeystoreService, data, reply);
       String16 name = data.readString16();
@@ -205,8 +251,6 @@ public:
   int32_t saw(const String16& name, int uid, Vector<String16>* matches) {return ::UNDEFINED_ACTION;}
   int32_t reset() {return ::UNDEFINED_ACTION;}
   int32_t password(const String16& password) {return ::UNDEFINED_ACTION;}
-  int32_t lock() {return ::UNDEFINED_ACTION;}
-  int32_t unlock(const String16& password) {return ::UNDEFINED_ACTION;}
   int32_t zero() {return ::UNDEFINED_ACTION;}
   int32_t import(const String16& name, const uint8_t* data, size_t length, int uid, int32_t flags) {return ::UNDEFINED_ACTION;}
   int32_t sign(const String16& name, const uint8_t* data, size_t length, uint8_t** out, size_t* outLength)
@@ -259,18 +303,66 @@ public:
   int64_t getmtime(const String16& name) {return ::UNDEFINED_ACTION;}
   int32_t duplicate(const String16& srcKey, int32_t srcUid, const String16& destKey, int32_t destUid) {return ::UNDEFINED_ACTION;}
   int32_t clear_uid(int64_t uid) {return ::UNDEFINED_ACTION;}
-#if ANDROID_VERSION >= 21
+#if ANDROID_VERSION >= 23
+  virtual int32_t getState(int32_t userId) {return ::UNDEFINED_ACTION;}
+  virtual int32_t list(const String16& prefix, int uid, Vector<String16>* matches) {return ::UNDEFINED_ACTION;}
+  virtual int32_t onUserPasswordChanged(int32_t userId, const String16& newPassword) {return ::UNDEFINED_ACTION;}
+  virtual bool isEmpty(int32_t userId) {return ::UNDEFINED_ACTION;}
+  virtual int32_t addRngEntropy(const uint8_t* data, size_t dataLength) {return ::UNDEFINED_ACTION;}
+  virtual int32_t generateKey(const String16& name, const KeymasterArguments& params,
+                              const uint8_t* entropy, size_t entropyLength, int uid, int flags,
+                              KeyCharacteristics* outCharacteristics) {return ::UNDEFINED_ACTION;}
+  virtual int32_t getKeyCharacteristics(const String16& name,
+                                        const keymaster_blob_t* clientId,
+                                        const keymaster_blob_t* appData,
+                                        KeyCharacteristics* outCharacteristics) {return ::UNDEFINED_ACTION;}
+  virtual int32_t importKey(const String16& name, const KeymasterArguments&  params,
+                            keymaster_key_format_t format, const uint8_t *keyData,
+                            size_t keyLength, int uid, int flags,
+                            KeyCharacteristics* outCharacteristics) {return ::UNDEFINED_ACTION;}
+  virtual void exportKey(const String16& name, keymaster_key_format_t format,
+                         const keymaster_blob_t* clientId,
+                         const keymaster_blob_t* appData, ExportResult* result) {return;}
+  virtual void begin(const sp<IBinder>& apptoken, const String16& name,
+                     keymaster_purpose_t purpose, bool pruneable,
+                     const KeymasterArguments& params, const uint8_t* entropy,
+                     size_t entropyLength, OperationResult* result) {return;}
+  virtual void update(const sp<IBinder>& token, const KeymasterArguments& params,
+                      const uint8_t* data, size_t dataLength, OperationResult* result) {return;}
+  virtual void finish(const sp<IBinder>& token, const KeymasterArguments& params,
+                      const uint8_t* signature, size_t signatureLength,
+                      const uint8_t* entropy, size_t entropyLength,
+                      OperationResult* result) {return;}
+  virtual int32_t abort(const sp<IBinder>& handle) {return ::UNDEFINED_ACTION;}
+  virtual bool isOperationAuthorized(const sp<IBinder>& handle) {return ::UNDEFINED_ACTION;}
+  virtual int32_t addAuthToken(const uint8_t* token, size_t length) {return ::UNDEFINED_ACTION;}
+  virtual int32_t onUserAdded(int32_t userId, int32_t parentId) {return ::UNDEFINED_ACTION;}
+  virtual int32_t onUserRemoved(int32_t userId) {return ::UNDEFINED_ACTION;}
+  virtual int32_t lock(int32_t userId) {return ::UNDEFINED_ACTION;}
+  virtual int32_t unlock(int32_t userId, const String16& password) {return ::UNDEFINED_ACTION;}
+  virtual int32_t generate(const String16& name, int32_t uid, int32_t keyType, int32_t keySize, int32_t flags, Vector<sp<KeystoreArg> >* args) {return ::UNDEFINED_ACTION;}
+  virtual int32_t is_hardware_backed(const String16& keyType) {return ::UNDEFINED_ACTION;}
+  virtual int32_t reset_uid(int32_t uid) {return ::UNDEFINED_ACTION;;}
+  virtual int32_t sync_uid(int32_t sourceUid, int32_t targetUid) {return ::UNDEFINED_ACTION;}
+  virtual int32_t password_uid(const String16& password, int32_t uid) {return ::UNDEFINED_ACTION;}
+#elif ANDROID_VERSION >= 21
+  virtual int32_t lock() {return ::UNDEFINED_ACTION;}
+  virtual int32_t unlock(const String16& password) {return ::UNDEFINED_ACTION;}
   virtual int32_t generate(const String16& name, int32_t uid, int32_t keyType, int32_t keySize, int32_t flags, Vector<sp<KeystoreArg> >* args) {return ::UNDEFINED_ACTION;}
   virtual int32_t is_hardware_backed(const String16& keyType) {return ::UNDEFINED_ACTION;}
   virtual int32_t reset_uid(int32_t uid) {return ::UNDEFINED_ACTION;;}
   virtual int32_t sync_uid(int32_t sourceUid, int32_t targetUid) {return ::UNDEFINED_ACTION;}
   virtual int32_t password_uid(const String16& password, int32_t uid) {return ::UNDEFINED_ACTION;}
 #elif ANDROID_VERSION == 18
-  virtual int32_t generate(const String16& name, int uid, int32_t flags) {return ::UNDEFINED_ACTION;}
-  virtual int32_t is_hardware_backed() {return ::UNDEFINED_ACTION;}
-#else
+  virtual int32_t lock() {return ::UNDEFINED_ACTION;}
+  virtual int32_t unlock(const String16& password) {return ::UNDEFINED_ACTION;}
   virtual int32_t generate(const String16& name, int32_t uid, int32_t keyType, int32_t keySize, int32_t flags, Vector<sp<KeystoreArg> >* args) {return ::UNDEFINED_ACTION;}
   virtual int32_t is_hardware_backed(const String16& keyType) {return ::UNDEFINED_ACTION;}
+#else
+  virtual int32_t lock() {return ::UNDEFINED_ACTION;}
+  virtual int32_t unlock(const String16& password) {return ::UNDEFINED_ACTION;}
+  virtual int32_t generate(const String16& name, int uid, int32_t flags) {return ::UNDEFINED_ACTION;}
+  virtual int32_t is_hardware_backed() {return ::UNDEFINED_ACTION;}
 #endif
 
 protected:
