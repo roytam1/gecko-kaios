@@ -24,6 +24,7 @@
 #include <media/stagefright/foundation/ABuffer.h>
 #include <media/stagefright/foundation/ADebug.h>
 #include <media/stagefright/foundation/AMessage.h>
+#include <media/stagefright/foundation/AString.h>
 #include <media/stagefright/foundation/hexdump.h>
 #include <media/stagefright/MediaBuffer.h>
 #include <media/stagefright/MediaDefs.h>
@@ -156,7 +157,11 @@ status_t ARTPWriter::start(MetaData *params) {
         TRESPASS();
     }
 
+#if ANDROID_VERSION >= 23
+    (new AMessage(kWhatStart, mReflector))->post();
+#else
     (new AMessage(kWhatStart, mReflector->id()))->post();
+#endif
 
     while (!(mFlags & kFlagStarted)) {
         mCondition.wait(mLock);
@@ -171,7 +176,11 @@ status_t ARTPWriter::stop() {
         return OK;
     }
 
+#if ANDROID_VERSION >= 23
+    (new AMessage(kWhatStop, mReflector))->post();
+#else
     (new AMessage(kWhatStop, mReflector->id()))->post();
+#endif
 
     while (mFlags & kFlagStarted) {
         mCondition.wait(mLock);
@@ -223,8 +232,13 @@ void ARTPWriter::onMessageReceived(const sp<AMessage> &msg) {
                 mCondition.signal();
             }
 
+#if ANDROID_VERSION >= 23
+            (new AMessage(kWhatRead, mReflector))->post();
+            (new AMessage(kWhatSendSR, mReflector))->post();
+#else
             (new AMessage(kWhatRead, mReflector->id()))->post();
             (new AMessage(kWhatSendSR, mReflector->id()))->post();
+#endif
             break;
         }
 
@@ -472,7 +486,11 @@ void ARTPWriter::dumpSessionDesc() {
         sdp.append("m=audio ");
     }
 
+#if ANDROID_VERSION >= 23
+    sdp.append(AStringPrintf("%d", PR_ntohs(mRTPAddr.inet.port)));
+#else
     sdp.append(StringPrintf("%d", PR_ntohs(mRTPAddr.inet.port)));
+#endif
     sdp.append(
           " RTP/AVP " PT_STR "\r\n"
           "b=AS 320000\r\n"
@@ -491,7 +509,11 @@ void ARTPWriter::dumpSessionDesc() {
         CHECK_EQ(sampleRate, (mMode == AMR_NB) ? 8000 : 16000);
 
         sdp.append(mMode == AMR_NB ? "AMR" : "AMR-WB");
+#if ANDROID_VERSION >= 23
+        sdp.append(AStringPrintf("/%d/%d", sampleRate, numChannels));
+#else
         sdp.append(StringPrintf("/%d/%d", sampleRate, numChannels));
+#endif
     } else {
         TRESPASS();
     }
@@ -553,8 +575,13 @@ void ARTPWriter::makeH264SPropParamSets(MediaBuffer *buffer) {
 
     CHECK_EQ((unsigned)data[0], 0x67u);
 
+#if ANDROID_VERSION >= 23
+    mProfileLevel =
+        AStringPrintf("%02X%02X%02X", data[1], data[2], data[3]);
+#else
     mProfileLevel =
         StringPrintf("%02X%02X%02X", data[1], data[2], data[3]);
+#endif
 
     encodeBase64(data, startCodePos, &mSeqParamSet);
 

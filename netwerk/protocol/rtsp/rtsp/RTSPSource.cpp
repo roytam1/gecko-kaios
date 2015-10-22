@@ -48,7 +48,11 @@ RTSPSource::RTSPSource(
       mUID(uid),
       mState(DISCONNECTED),
       mFinalResult(OK),
+#if ANDROID_VERSION >= 23
+      mDisconnectReplyToken(nullptr),
+#else
       mDisconnectReplyID(0),
+#endif
       mLatestPausedUnit(0),
       mPlayPending(false),
       mSeekGeneration(0),
@@ -85,7 +89,11 @@ void RTSPSource::start()
 
     CHECK(mHandler == NULL);
 
+#if ANDROID_VERSION >= 23
+    sp<AMessage> notify = new AMessage(kWhatNotify, mReflector);
+#else
     sp<AMessage> notify = new AMessage(kWhatNotify, mReflector->id());
+#endif
 
     mHandler = new RtspConnectionHandler(mURL.c_str(), mUserAgent.c_str(),
                                          notify, mUIDValid, mUID);
@@ -101,7 +109,11 @@ void RTSPSource::stop()
     if (mState == DISCONNECTED) {
         return;
     }
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatDisconnect, mReflector);
+#else
     sp<AMessage> msg = new AMessage(kWhatDisconnect, mReflector->id());
+#endif
 
     sp<AMessage> dummy;
     msg->postAndAwaitResponse(&dummy);
@@ -111,7 +123,11 @@ void RTSPSource::play()
 {
     LOGI("RTSPSource::play()");
     uint64_t playTimeUs = 0;
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatPerformPlay, mReflector);
+#else
     sp<AMessage> msg = new AMessage(kWhatPerformPlay, mReflector->id());
+#endif
     msg->setInt64("timeUs", playTimeUs);
     msg->post();
 }
@@ -127,21 +143,33 @@ void RTSPSource::pause()
         return;
     }
 
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatPerformPause, mReflector);
+#else
     sp<AMessage> msg = new AMessage(kWhatPerformPause, mReflector->id());
+#endif
     msg->post();
 }
 
 void RTSPSource::resume()
 {
     LOGI("RTSPSource::resume()");
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatPerformResume, mReflector);
+#else
     sp<AMessage> msg = new AMessage(kWhatPerformResume, mReflector->id());
+#endif
     msg->post();
 }
 
 void RTSPSource::suspend()
 {
     LOGI("RTSPSource::suspend()");
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatPerformSuspend, mReflector);
+#else
     sp<AMessage> msg = new AMessage(kWhatPerformSuspend, mReflector->id());
+#endif
     msg->post();
 }
 
@@ -154,7 +182,11 @@ void RTSPSource::seek(uint64_t timeUs)
 void RTSPSource::playbackEnded()
 {
     LOGI("RTSPSource::playbackEnded()");
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatPerformPlaybackEnded, mReflector);
+#else
     sp<AMessage> msg = new AMessage(kWhatPerformPlaybackEnded, mReflector->id());
+#endif
     msg->post();
 }
 
@@ -215,7 +247,11 @@ status_t RTSPSource::getDuration(int64_t *durationUs) {
 }
 
 status_t RTSPSource::seekTo(int64_t seekTimeUs) {
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatPerformSeek, mReflector);
+#else
     sp<AMessage> msg = new AMessage(kWhatPerformSeek, mReflector->id());
+#endif
     msg->setInt32("generation", ++mSeekGeneration);
     msg->setInt64("timeUs", seekTimeUs);
     // The original code in Android posts this message for 200ms delay in order
@@ -327,10 +363,17 @@ bool RTSPSource::isSeekable() {
 
 void RTSPSource::onMessageReceived(const sp<AMessage> &msg) {
     if (msg->what() == kWhatDisconnect) {
+#if ANDROID_VERSION >= 23
+        android::sp<android::AReplyToken> replyToken;
+        CHECK(msg->senderAwaitsResponse(&replyToken));
+
+        mDisconnectReplyToken = replyToken;
+#else
         uint32_t replyID;
         CHECK(msg->senderAwaitsResponse(&replyID));
 
         mDisconnectReplyID = replyID;
+#endif
         finishDisconnectIfPossible();
         return;
     } else if (msg->what() == kWhatPerformSeek) {
@@ -702,9 +745,15 @@ void RTSPSource::onDisconnected(const sp<AMessage> &msg) {
     mState = DISCONNECTED;
     mFinalResult = err;
 
+#if ANDROID_VERSION >= 23
+    if (mDisconnectReplyToken.get()) {
+        finishDisconnectIfPossible();
+    }
+#else
     if (mDisconnectReplyID != 0) {
         finishDisconnectIfPossible();
     }
+#endif
     // If the disconnection is caused by pausing live stream,
     // do not report back to the controller.
     if (mListener && !mDisconnectedToPauseLiveStream) {
@@ -724,8 +773,13 @@ void RTSPSource::finishDisconnectIfPossible() {
         mHandler->disconnect();
     }
 
+#if ANDROID_VERSION >= 23
+    (new AMessage)->postReply(mDisconnectReplyToken);
+    mDisconnectReplyToken.clear();
+#else
     (new AMessage)->postReply(mDisconnectReplyID);
     mDisconnectReplyID = 0;
+#endif
 }
 
 void RTSPSource::onTrackDataAvailable(size_t trackIndex)

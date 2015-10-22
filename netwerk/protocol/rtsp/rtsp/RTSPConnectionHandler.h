@@ -33,6 +33,7 @@
 #include <media/stagefright/foundation/ADebug.h>
 #include <media/stagefright/foundation/ALooper.h>
 #include <media/stagefright/foundation/AMessage.h>
+#include <media/stagefright/foundation/AString.h>
 #include <media/stagefright/MediaErrors.h>
 
 #include <arpa/inet.h>
@@ -178,7 +179,11 @@ struct RtspConnectionHandler : public AHandler {
             mSessionURL.append("rtsp://");
             mSessionURL.append(host);
             mSessionURL.append(":");
+#if ANDROID_VERSION >= 23
+            mSessionURL.append(AStringPrintf("%u", port));
+#else
             mSessionURL.append(StringPrintf("%u", port));
+#endif
             mSessionURL.append(path);
 
             LOGI("rewritten session url: '%s'", mSessionURL.c_str());
@@ -192,19 +197,35 @@ struct RtspConnectionHandler : public AHandler {
         looper()->registerHandler(mConn);
         (1 ? mNetLooper : looper())->registerHandler(mRTPConn);
 
+#if ANDROID_VERSION >= 23
+        sp<AMessage> notify = new AMessage(kWhatBinary, this);
+#else
         sp<AMessage> notify = new AMessage(kWhatBinary, id());
+#endif
         mConn->observeBinaryData(notify);
 
+#if ANDROID_VERSION >= 23
+        sp<AMessage> reply = new AMessage(kWhatConnected, this);
+#else
         sp<AMessage> reply = new AMessage(kWhatConnected, id());
+#endif
         mConn->connect(mOriginalSessionURL.c_str(), reply);
     }
 
     void disconnect() {
+#if ANDROID_VERSION >= 23
+        (new AMessage(kWhatAbort, this))->post();
+#else
         (new AMessage(kWhatAbort, id()))->post();
+#endif
     }
 
     void seek(int64_t timeUs) {
+#if ANDROID_VERSION >= 23
+        sp<AMessage> msg = new AMessage(kWhatSeek, this);
+#else
         sp<AMessage> msg = new AMessage(kWhatSeek, id());
+#endif
         msg->setInt64("time", timeUs);
         msg->post();
     }
@@ -242,7 +263,11 @@ struct RtspConnectionHandler : public AHandler {
 
         setCheckPending(false);
 
+#if ANDROID_VERSION >= 23
+        sp<AMessage> reply = new AMessage(kWhatPlay, this);
+#else
         sp<AMessage> reply = new AMessage(kWhatPlay, id());
+#endif
         mConn->sendRequest(request.c_str(), reply);
     }
 
@@ -264,7 +289,11 @@ struct RtspConnectionHandler : public AHandler {
         setCheckPending(true);
         ++mCheckGeneration;
 
+#if ANDROID_VERSION >= 23
+        sp<AMessage> reply = new AMessage(kWhatPause, this);
+#else
         sp<AMessage> reply = new AMessage(kWhatPause, id());
+#endif
         mConn->sendRequest(request.c_str(), reply);
     }
 
@@ -282,7 +311,11 @@ struct RtspConnectionHandler : public AHandler {
 
         setCheckPending(false);
 
+#if ANDROID_VERSION >= 23
+        sp<AMessage> reply = new AMessage(kWhatResume, this);
+#else
         sp<AMessage> reply = new AMessage(kWhatResume, id());
+#endif
         mConn->sendRequest(request.c_str(), reply);
 
     }
@@ -482,10 +515,18 @@ struct RtspConnectionHandler : public AHandler {
                     request.append("Accept: application/sdp\r\n");
                     request.append("\r\n");
 
+#if ANDROID_VERSION >= 23
+                    sp<AMessage> reply = new AMessage(kWhatDescribe, this);
+#else
                     sp<AMessage> reply = new AMessage(kWhatDescribe, id());
+#endif
                     mConn->sendRequest(request.c_str(), reply);
                 } else {
+#if ANDROID_VERSION >= 23
+                    sp<AMessage> reply = new AMessage(kWhatDisconnected, this);
+#else
                     sp<AMessage> reply = new AMessage(kWhatDisconnected, id());
+#endif
                     reply->setInt32("result", result);
                     mConn->disconnect(reply);
                 }
@@ -498,12 +539,20 @@ struct RtspConnectionHandler : public AHandler {
 
                 int32_t reconnect;
                 if (msg->findInt32("reconnect", &reconnect) && reconnect) {
+#if ANDROID_VERSION >= 23
+                    sp<AMessage> reply = new AMessage(kWhatConnected, this);
+#else
                     sp<AMessage> reply = new AMessage(kWhatConnected, id());
+#endif
                     mConn->connect(mOriginalSessionURL.c_str(), reply);
                 } else {
                     int32_t result;
                     CHECK(msg->findInt32("result", &result));
+#if ANDROID_VERSION >= 23
+                    sp<AMessage> reply = new AMessage(kWhatQuit, this);
+#else
                     sp<AMessage> reply = new AMessage(kWhatQuit, id());
+#endif
                     reply->setInt32("result", result);
                     reply->post();
                 }
@@ -541,7 +590,11 @@ struct RtspConnectionHandler : public AHandler {
                         request.append("Accept: application/sdp\r\n");
                         request.append("\r\n");
 
+#if ANDROID_VERSION >= 23
+                        sp<AMessage> reply = new AMessage(kWhatDescribe, this);
+#else
                         sp<AMessage> reply = new AMessage(kWhatDescribe, id());
+#endif
                         mConn->sendRequest(request.c_str(), reply);
                         break;
                     }
@@ -620,7 +673,11 @@ struct RtspConnectionHandler : public AHandler {
                 }
 
                 if (result != OK) {
+#if ANDROID_VERSION >= 23
+                    sp<AMessage> reply = new AMessage(kWhatDisconnected, this);
+#else
                     sp<AMessage> reply = new AMessage(kWhatDisconnected, id());
+#endif
                     reply->setInt32("result", result);
                     mConn->disconnect(reply);
                 }
@@ -697,7 +754,11 @@ struct RtspConnectionHandler : public AHandler {
                             mSessionID.erase(i, mSessionID.size() - i);
                         }
 
+#if ANDROID_VERSION >= 23
+                        sp<AMessage> notify = new AMessage(kWhatAccessUnit, this);
+#else
                         sp<AMessage> notify = new AMessage(kWhatAccessUnit, id());
+#endif
                         notify->setSize("track-index", trackIndex);
 
                         i = response->mHeaders.indexOfKey("transport");
@@ -764,7 +825,11 @@ struct RtspConnectionHandler : public AHandler {
                       msgTryTcp->post();
                     }
                 } else {
+#if ANDROID_VERSION >= 23
+                    sp<AMessage> reply = new AMessage(kWhatDisconnected, this);
+#else
                     sp<AMessage> reply = new AMessage(kWhatDisconnected, id());
+#endif
                     reply->setInt32("result", result);
                     mConn->disconnect(reply);
                 }
@@ -803,7 +868,11 @@ struct RtspConnectionHandler : public AHandler {
                     } else if (!parsePlayResponse(response)) {
                         result = UNKNOWN_ERROR;
                     } else {
+#if ANDROID_VERSION >= 23
+                        sp<AMessage> timeout = new AMessage(kWhatTimeout, this);
+#else
                         sp<AMessage> timeout = new AMessage(kWhatTimeout, id());
+#endif
                         timeout->post(kPlayTimeoutUs);
                         mPausePending = false;
                         mNumPlayTimeoutsPending++;
@@ -811,7 +880,11 @@ struct RtspConnectionHandler : public AHandler {
                 }
 
                 if (result != OK) {
+#if ANDROID_VERSION >= 23
+                    sp<AMessage> reply = new AMessage(kWhatDisconnected, this);
+#else
                     sp<AMessage> reply = new AMessage(kWhatDisconnected, id());
+#endif
                     reply->setInt32("result", result);
                     mConn->disconnect(reply);
                 }
@@ -838,7 +911,11 @@ struct RtspConnectionHandler : public AHandler {
                 request.append("\r\n");
                 request.append("\r\n");
 
+#if ANDROID_VERSION >= 23
+                sp<AMessage> reply = new AMessage(kWhatOptions, this);
+#else
                 sp<AMessage> reply = new AMessage(kWhatOptions, id());
+#endif
                 reply->setInt32("generation", mKeepAliveGeneration);
                 mConn->sendRequest(request.c_str(), reply);
                 break;
@@ -908,7 +985,11 @@ struct RtspConnectionHandler : public AHandler {
                 mSeekable = false;
                 mAborted = true;
 
+#if ANDROID_VERSION >= 23
+                sp<AMessage> reply = new AMessage(kWhatTeardown, this);
+#else
                 sp<AMessage> reply = new AMessage(kWhatTeardown, id());
+#endif
 
                 int32_t reconnect;
                 if (msg->findInt32("reconnect", &reconnect) && reconnect) {
@@ -940,7 +1021,11 @@ struct RtspConnectionHandler : public AHandler {
                 LOGI("TEARDOWN completed with result %d (%s)",
                      result, strerror(-result));
 
+#if ANDROID_VERSION >= 23
+                sp<AMessage> reply = new AMessage(kWhatDisconnected, this);
+#else
                 sp<AMessage> reply = new AMessage(kWhatDisconnected, id());
+#endif
                 reply->setInt32("result", result);
 
                 int32_t reconnect;
@@ -1003,7 +1088,11 @@ struct RtspConnectionHandler : public AHandler {
                         disconnect();
                         break;
                     }
+#if ANDROID_VERSION >= 23
+                    sp<AMessage> endStreamMsg = new AMessage(kWhatEndOfStream, this);
+#else
                     sp<AMessage> endStreamMsg = new AMessage(kWhatEndOfStream, id());
+#endif
                     endStreamMsg->setSize("trackIndex", trackIndex);
                     endStreamMsg->post();
                     break;
@@ -1138,7 +1227,11 @@ struct RtspConnectionHandler : public AHandler {
 
                 request.append("\r\n");
 
+#if ANDROID_VERSION >= 23
+                sp<AMessage> reply = new AMessage(kWhatSeek1, this);
+#else
                 sp<AMessage> reply = new AMessage(kWhatSeek1, id());
+#endif
                 reply->setInt64("time", timeUs);
                 mConn->sendRequest(request.c_str(), reply);
                 break;
@@ -1176,7 +1269,11 @@ struct RtspConnectionHandler : public AHandler {
                 request.append(nsPrintfCString("Range: npt=%lld-\r\n", timeUs / 1000000ll).get());
                 request.append("\r\n");
 
+#if ANDROID_VERSION >= 23
+                sp<AMessage> reply = new AMessage(kWhatSeek2, this);
+#else
                 sp<AMessage> reply = new AMessage(kWhatSeek2, id());
+#endif
                 mConn->sendRequest(request.c_str(), reply);
                 break;
             }
@@ -1215,7 +1312,11 @@ struct RtspConnectionHandler : public AHandler {
                         ssize_t i = response->mHeaders.indexOfKey("rtp-info");
                         if (i < 0) {
                             LOGE("No RTP info in response");
+#if ANDROID_VERSION >= 23
+                            (new AMessage(kWhatAbort, this))->post();
+#else
                             (new AMessage(kWhatAbort, id()))->post();
+#endif
                         }
 
                         LOGV("rtp-info: %s", response->mHeaders.valueAt(i).c_str());
@@ -1226,7 +1327,11 @@ struct RtspConnectionHandler : public AHandler {
 
                 if (result != OK) {
                     LOGE("seek failed, aborting.");
+#if ANDROID_VERSION >= 23
+                    (new AMessage(kWhatAbort, this))->post();
+#else
                     (new AMessage(kWhatAbort, id()))->post();
+#endif
                 }
 
                 mSeekPending = false;
@@ -1285,12 +1390,20 @@ struct RtspConnectionHandler : public AHandler {
 
                         mTryTCPInterleaving = true;
 
+#if ANDROID_VERSION >= 23
+                        sp<AMessage> msg = new AMessage(kWhatAbort, this);
+#else
                         sp<AMessage> msg = new AMessage(kWhatAbort, id());
+#endif
                         msg->setInt32("reconnect", true);
                         msg->post();
                     } else {
                         LOGW("Never received any data, disconnecting.");
+#if ANDROID_VERSION >= 23
+                        (new AMessage(kWhatAbort, this))->post();
+#else
                         (new AMessage(kWhatAbort, id()))->post();
+#endif
                     }
                 }
                 break;
@@ -1303,7 +1416,11 @@ struct RtspConnectionHandler : public AHandler {
     }
 
     void postKeepAlive() {
+#if ANDROID_VERSION >= 23
+        sp<AMessage> msg = new AMessage(kWhatKeepAlive, this);
+#else
         sp<AMessage> msg = new AMessage(kWhatKeepAlive, id());
+#endif
         msg->setInt32("generation", mKeepAliveGeneration);
         msg->post((mKeepAliveTimeoutUs * 9) / 10);
     }
@@ -1313,7 +1430,11 @@ struct RtspConnectionHandler : public AHandler {
             return;
         }
         setEndOfStreamCheckPending(trackIndex, true);
+#if ANDROID_VERSION >= 23
+        sp<AMessage> check = new AMessage(kWhatEndOfStreamCheck, this);
+#else
         sp<AMessage> check = new AMessage(kWhatEndOfStreamCheck, id());
+#endif
         check->setInt32("generation", mCheckGeneration);
         check->setSize("trackIndex", trackIndex);
         check->post(kEndOfStreamTimeoutUs);
@@ -1324,7 +1445,11 @@ struct RtspConnectionHandler : public AHandler {
             return;
         }
         mCheckPending = true;
+#if ANDROID_VERSION >= 23
+        sp<AMessage> check = new AMessage(kWhatAccessUnitTimeoutCheck, this);
+#else
         sp<AMessage> check = new AMessage(kWhatAccessUnitTimeoutCheck, id());
+#endif
         check->setInt32("generation", mCheckGeneration);
         check->post(kAccessUnitTimeoutUs);
     }
@@ -1533,7 +1658,11 @@ private:
         if (source->initCheck() != OK) {
             LOGW("Unsupported format. Ignoring track #%d.", index);
 
+#if ANDROID_VERSION >= 23
+            sp<AMessage> reply = new AMessage(kWhatSetup, this);
+#else
             sp<AMessage> reply = new AMessage(kWhatSetup, id());
+#endif
             reply->setSize("index", index);
             reply->setInt32("result", ERROR_UNSUPPORTED);
             reply->post();
@@ -1544,7 +1673,11 @@ private:
         if (!mSessionDesc->findAttribute(index, "a=control", &url)) {
             LOGW("Unsupported format. Ignoring track #%d.", index);
 
+#if ANDROID_VERSION >= 23
+            sp<AMessage> reply = new AMessage(kWhatSetup, this);
+#else
             sp<AMessage> reply = new AMessage(kWhatSetup, id());
+#endif
             reply->setSize("index", index);
             reply->setInt32("result", ERROR_UNSUPPORTED);
             reply->post();
@@ -1555,7 +1688,11 @@ private:
         if (!MakeURL(mBaseURL.c_str(), url.c_str(), &trackURL)) {
             LOGW("Unsupported format. Ignoring track #%d.", index);
 
+#if ANDROID_VERSION >= 23
+            sp<AMessage> reply = new AMessage(kWhatSetup, this);
+#else
             sp<AMessage> reply = new AMessage(kWhatSetup, id());
+#endif
             reply->setSize("index", index);
             reply->setInt32("result", ERROR_UNSUPPORTED);
             reply->post();
@@ -1588,7 +1725,11 @@ private:
                     formatDesc.c_str(), &timescale, &numChannels)) {
             LOGW("Unsupported format. Ignoring track #%d.", index);
 
+#if ANDROID_VERSION >= 23
+            sp<AMessage> reply = new AMessage(kWhatSetup, this);
+#else
             sp<AMessage> reply = new AMessage(kWhatSetup, id());
+#endif
             reply->setSize("index", index);
             reply->setInt32("result", ERROR_UNSUPPORTED);
             reply->post();
@@ -1634,7 +1775,11 @@ private:
 
         request.append("\r\n");
 
+#if ANDROID_VERSION >= 23
+        sp<AMessage> reply = new AMessage(kWhatSetup, this);
+#else
         sp<AMessage> reply = new AMessage(kWhatSetup, id());
+#endif
         reply->setSize("index", index);
         reply->setSize("track-index", mTracks.size() - 1);
         mConn->sendRequest(request.c_str(), reply);

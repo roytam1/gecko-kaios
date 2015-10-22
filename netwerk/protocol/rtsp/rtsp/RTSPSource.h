@@ -116,7 +116,11 @@ private:
     uid_t mUID;
     State mState;
     status_t mFinalResult;
+#if ANDROID_VERSION >= 23
+    android::sp<android::AReplyToken> mDisconnectReplyToken;
+#else
     uint32_t mDisconnectReplyID;
+#endif
     uint64_t mLatestPausedUnit;
     bool mPlayPending;
 

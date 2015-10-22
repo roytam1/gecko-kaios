@@ -91,7 +91,11 @@ void ARTPConnection::addStream(
         size_t index,
         const sp<AMessage> &notify,
         bool injected) {
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatAddStream, this);
+#else
     sp<AMessage> msg = new AMessage(kWhatAddStream, id());
+#endif
     msg->setPointer("rtp-socket", rtpSocket);
     msg->setPointer("rtcp-socket", rtcpSocket);
     msg->setInt32("interleaved-rtp", interleavedRTPIdx);
@@ -104,7 +108,11 @@ void ARTPConnection::addStream(
 }
 
 void ARTPConnection::removeStream(PRFileDesc *rtpSocket, PRFileDesc *rtcpSocket) {
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatRemoveStream, this);
+#else
     sp<AMessage> msg = new AMessage(kWhatRemoveStream, id());
+#endif
     msg->setPointer("rtp-socket", rtpSocket);
     msg->setPointer("rtcp-socket", rtcpSocket);
 
@@ -183,9 +191,15 @@ void ARTPConnection::onMessageReceived(const sp<AMessage> &msg) {
         {
             onRemoveStream(msg);
             sp<AMessage> ack = new AMessage;
+#if ANDROID_VERSION >= 23
+            android::sp<android::AReplyToken> replyToken;
+            CHECK(msg->senderAwaitsResponse(&replyToken));
+            ack->postReply(replyToken);
+#else
             uint32_t replyID;
             CHECK(msg->senderAwaitsResponse(&replyID));
             ack->postReply(replyID);
+#endif
             break;
         }
 
@@ -269,7 +283,11 @@ void ARTPConnection::postPollEvent() {
         return;
     }
 
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatPollStreams, this);
+#else
     sp<AMessage> msg = new AMessage(kWhatPollStreams, id());
+#endif
     msg->post();
 
     mPollEventPending = true;
@@ -690,7 +708,11 @@ sp<ARTPSource> ARTPConnection::findSource(StreamInfo *info, uint32_t srcId) {
 }
 
 void ARTPConnection::injectPacket(int index, const sp<ABuffer> &buffer) {
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatInjectPacket, this);
+#else
     sp<AMessage> msg = new AMessage(kWhatInjectPacket, id());
+#endif
     msg->setInt32("index", index);
     msg->setObject("buffer", buffer);
     msg->post();

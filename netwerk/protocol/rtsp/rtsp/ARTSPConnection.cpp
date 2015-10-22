@@ -71,7 +71,11 @@ ARTSPConnection::~ARTSPConnection() {
 }
 
 void ARTSPConnection::connect(const char *url, const sp<AMessage> &reply) {
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatConnect, this);
+#else
     sp<AMessage> msg = new AMessage(kWhatConnect, id());
+#endif
     msg->setString("url", url);
     msg->setMessage("reply", reply);
     msg->post();
@@ -79,7 +83,11 @@ void ARTSPConnection::connect(const char *url, const sp<AMessage> &reply) {
 
 void ARTSPConnection::disconnect(const sp<AMessage> &reply) {
     int32_t result;
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatDisconnect, this);
+#else
     sp<AMessage> msg = new AMessage(kWhatDisconnect, id());
+#endif
     msg->setMessage("reply", reply);
     if (reply->findInt32("result", &result)) {
       msg->setInt32("result", result);
@@ -91,14 +99,22 @@ void ARTSPConnection::disconnect(const sp<AMessage> &reply) {
 
 void ARTSPConnection::sendRequest(
         const char *request, const sp<AMessage> &reply) {
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatSendRequest, this);
+#else
     sp<AMessage> msg = new AMessage(kWhatSendRequest, id());
+#endif
     msg->setString("request", request);
     msg->setMessage("reply", reply);
     msg->post();
 }
 
 void ARTSPConnection::observeBinaryData(const sp<AMessage> &reply) {
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatObserveBinaryData, this);
+#else
     sp<AMessage> msg = new AMessage(kWhatObserveBinaryData, id());
+#endif
     msg->setMessage("reply", reply);
     msg->post();
 }
@@ -299,7 +315,11 @@ void ARTSPConnection::onConnect(const sp<AMessage> &msg) {
         PRErrorCode code = PR_GetError();
         if (code == PR_IN_PROGRESS_ERROR) {
             mNumSocketPollTimeoutRetries = 0;
+#if ANDROID_VERSION >= 23
+            sp<AMessage> msg = new AMessage(kWhatCompleteConnection, this);
+#else
             sp<AMessage> msg = new AMessage(kWhatCompleteConnection, id());
+#endif
             msg->setMessage("reply", reply);
             msg->setInt32("connection-id", mConnectionID);
             msg->post();
@@ -530,7 +550,11 @@ void ARTSPConnection::postReceiveResponseEvent() {
         return;
     }
 
+#if ANDROID_VERSION >= 23
+    sp<AMessage> msg = new AMessage(kWhatReceiveResponse, this);
+#else
     sp<AMessage> msg = new AMessage(kWhatReceiveResponse, id());
+#endif
     msg->post();
 
     mReceiveResponseEventPending = true;
@@ -758,7 +782,11 @@ bool ARTSPConnection::receiveRTSPResponse() {
             AString request;
             CHECK(reply->findString("original-request", &request));
 
+#if ANDROID_VERSION >= 23
+            sp<AMessage> msg = new AMessage(kWhatSendRequest, this);
+#else
             sp<AMessage> msg = new AMessage(kWhatSendRequest, id());
+#endif
             msg->setMessage("reply", reply);
             msg->setString("request", request.c_str(), request.size());
 
