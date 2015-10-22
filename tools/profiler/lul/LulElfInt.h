@@ -79,10 +79,12 @@
 #define _ElfW(e,w,t)    _ElfW_1 (e, w, _##t)
 #define _ElfW_1(e,w,t)  e##w##t
 
+#if ANDROID_VERSION <= 22
 //FIXME
 extern "C" {
   extern char*  basename(const char*  path);
 };
+#endif
 #else
 
 # include <link.h>
