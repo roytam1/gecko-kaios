@@ -862,9 +862,13 @@ OmxDecoder::PostReleaseVideoBuffer(MediaBuffer *aBuffer, const FenceHandle& aRel
       mPendingVideoBuffers.push(BufferItem(aBuffer, aReleaseFenceHandle));
     }
   }
-
+#if ANDROID_VERSION >= 23
+  sp<AMessage> notify =
+            new AMessage(kNotifyPostReleaseVideoBuffer, mReflector);
+#else
   sp<AMessage> notify =
             new AMessage(kNotifyPostReleaseVideoBuffer, mReflector->id());
+#endif
   // post AMessage to OmxDecoder via ALooper.
   notify->post();
 }
@@ -926,8 +930,13 @@ OmxDecoder::RecycleCallbackImp(TextureClient* aClient)
       mPendingVideoBuffers.push(BufferItem(grallocData->GetMediaBuffer(), aClient->GetAndResetReleaseFenceHandle()));
     }
   }
+#if ANDROID_VERSION >= 23
+  sp<AMessage> notify =
+            new AMessage(kNotifyPostReleaseVideoBuffer, mReflector);
+#else
   sp<AMessage> notify =
             new AMessage(kNotifyPostReleaseVideoBuffer, mReflector->id());
+#endif
   // post AMessage to OmxDecoder via ALooper.
   notify->post();
 }
