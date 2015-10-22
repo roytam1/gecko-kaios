@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <dlfcn.h>
 #include <stdlib.h>
+#include <string.h>
 #include <pthread.h>
 #include <SLES/OpenSLES.h>
 #include <math.h>
