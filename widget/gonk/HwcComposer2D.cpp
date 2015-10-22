@@ -763,7 +763,9 @@ HwcComposer2D::Render(nsIWidget* aWidget)
 
     // HWC module does not exist or mList is not created yet.
     if (!mHal->HasHwc() || !mList) {
-        return GetGonkDisplay()->SwapBuffers(screen->GetEGLDisplay(), screen->GetEGLSurface());
+        return GetGonkDisplay()->SwapBuffers(screen->GetEGLDisplay(),
+                                             screen->GetEGLSurface(),
+                                             GonkDisplay::DISPLAY_PRIMARY);
     } else if (!mList && !ReallocLayerList()) {
         LOGE("Cannot realloc layer list");
         return false;

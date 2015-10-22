@@ -40,11 +40,13 @@ public:
 
     virtual void* GetHWCDevice();
 
-    virtual bool SwapBuffers(EGLDisplay dpy, EGLSurface sur);
+    virtual bool IsExtFBDeviceEnabled();
 
-    virtual ANativeWindowBuffer* DequeueBuffer();
+    virtual bool SwapBuffers(EGLDisplay dpy, EGLSurface sur, DisplayType aDisplayType);
 
-    virtual bool QueueBuffer(ANativeWindowBuffer* handle);
+    virtual ANativeWindowBuffer* DequeueBuffer(DisplayType aDisplayType);
+
+    virtual bool QueueBuffer(ANativeWindowBuffer* handle, DisplayType aDisplayType);
 
     virtual void UpdateDispSurface(EGLDisplay dpy, EGLSurface sur);
 

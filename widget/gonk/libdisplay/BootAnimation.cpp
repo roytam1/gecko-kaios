@@ -27,6 +27,7 @@
 #include "android/log.h"
 #include "GonkDisplay.h"
 #include "hardware/gralloc.h"
+#include "cutils/properties.h"
 
 #define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "Gonk" , ## args)
 #define LOGW(args...) __android_log_print(ANDROID_LOG_WARN, "Gonk", ## args)
@@ -144,6 +145,25 @@ public:
     ~ZipReader() {
         if (mBuf)
             munmap((void *)mBuf, mBuflen);
+    }
+
+    // Take over the ownership of mBuf when copying.
+    // This is needed because we use vector to store Animation
+    ZipReader(const ZipReader &aOther) {
+        ZipReader& other = const_cast<ZipReader&>(aOther);
+        memcpy(this, &other, sizeof(ZipReader));
+        other.mBuf = nullptr;
+    }
+
+    ZipReader& operator=(const ZipReader &aOther) {
+        if (mBuf)
+            munmap((void *)mBuf, mBuflen);
+
+        ZipReader& other = const_cast<ZipReader&>(aOther);
+        memcpy(this, &other, sizeof(ZipReader));
+        other.mBuf = nullptr;
+
+        return *this;
     }
 
     bool OpenArchive(const char *path)
@@ -433,6 +453,140 @@ AnimationFrame::ReadPngFrame(int outputFormat)
     png_destroy_read_struct(&pngread, &pnginfo, nullptr);
 }
 
+struct Animation {
+    ZipReader reader;
+
+    // Set by loaded file
+    int32_t width;
+    int32_t height;
+    int32_t fps;
+    vector<AnimationPart> parts;
+
+    // Set by user
+    int32_t format;
+    GonkDisplay::DisplayType dpy;
+
+    Animation();
+
+    // return true on success
+    bool LoadAnimations(const char* fileName);
+    bool IsFrameCovers(Animation &ext);
+};
+
+Animation::Animation()
+    : width(320)
+    , height(480)
+    , fps(12)
+    , format(HAL_PIXEL_FORMAT_RGBX_8888)
+    , dpy(GonkDisplay::DISPLAY_PRIMARY)
+{}
+
+bool Animation::LoadAnimations(const char* aFileName)
+{
+    if (!reader.OpenArchive(aFileName)) {
+        LOGW("Could not open boot animation");
+        return false;
+    }
+
+    const cdir_entry *entry = nullptr;
+    const local_file_header *file = nullptr;
+    while ((entry = reader.GetNextEntry(entry))) {
+        string name = reader.GetEntryName(entry);
+        if (!name.compare("desc.txt")) {
+            file = reader.GetLocalEntry(entry);
+            break;
+        }
+    }
+
+    if (!file) {
+        LOGW("Could not find desc.txt in boot animation");
+        return false;
+    }
+
+    string descCopy;
+    descCopy.append(file->GetData(), entry->GetDataSize());
+    const char *line = descCopy.c_str();
+    const char *end;
+    bool headerRead = true;
+
+    /*
+     * bootanimation.zip
+     *
+     * This is the boot animation file format that Android uses.
+     * It's a zip file with a directories containing png frames
+     * and a desc.txt that describes how they should be played.
+     *
+     * desc.txt contains two types of lines
+     * 1. [width] [height] [fps]
+     *    There is one of these lines per bootanimation.
+     *    If the width and height are smaller than the screen,
+     *    the frames are centered on a black background.
+     *    XXX: Currently we stretch instead of centering the frame.
+     * 2. p [count] [pause] [path]
+     *    This describes one animation part.
+     *    Each animation part is played in sequence.
+     *    An animation part contains all the files/frames in the
+     *    directory specified in [path]
+     *    [count] indicates the number of times this part repeats.
+     *    [pause] indicates the number of frames that this part
+     *    should pause for after playing the full sequence but
+     *    before repeating.
+     */
+
+    do {
+        end = strstr(line, "\n");
+
+        AnimationPart part;
+        if (headerRead &&
+            sscanf(line, "%d %d %d", &width, &height, &fps) == 3) {
+            headerRead = false;
+        } else if (sscanf(line, "p %d %d %s",
+                          &part.count, &part.pause, part.path)) {
+            parts.push_back(part);
+        }
+    } while (end && *(line = end + 1));
+
+    for (uint32_t i = 0; i < parts.size(); i++) {
+        AnimationPart &part = parts[i];
+        entry = nullptr;
+        char search[256];
+        snprintf(search, sizeof(search), "%s/", part.path);
+        while ((entry = reader.GetNextEntry(entry))) {
+            string name = reader.GetEntryName(entry);
+            if (name.find(search) ||
+                !entry->GetDataSize() ||
+                name.length() >= 256)
+                continue;
+
+            part.frames.push_back(AnimationFrame());
+            AnimationFrame &frame = part.frames.back();
+            strcpy(frame.path, name.c_str());
+            frame.file = reader.GetLocalEntry(entry);
+        }
+
+        sort(part.frames.begin(), part.frames.end());
+    }
+
+    return true;
+}
+
+bool
+Animation::IsFrameCovers(Animation &aExt)
+{
+    /* Check number of frames of each parts are greater or equal */
+    if(parts.size() < aExt.parts.size()) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < parts.size(); i++) {
+        if (parts[i].frames.size() < aExt.parts[i].frames.size()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 /**
  * Return a wchar_t that when used to |wmemset()| an image buffer will
  * fill it with the color defined by |color16|.  The packed wchar_t
@@ -481,14 +635,15 @@ AsBackgroundFill(const png_color_16& color16, int outputFormat)
     }
 }
 
-void
+static void
 ShowSolidColorFrame(GonkDisplay *aDisplay,
                     const gralloc_module_t *grallocModule,
-                    int32_t aFormat)
+                    int32_t aFormat,
+                    GonkDisplay::DisplayType aDpy)
 {
     LOGW("Show solid color frame for bootAnim");
 
-    ANativeWindowBuffer *buffer = aDisplay->DequeueBuffer();
+    ANativeWindowBuffer *buffer = aDisplay->DequeueBuffer(aDpy);
     void *mappedAddress = nullptr;
 
     if (!buffer) {
@@ -506,14 +661,57 @@ ShowSolidColorFrame(GonkDisplay *aDisplay,
         grallocModule->unlock(grallocModule, buffer->handle);
     }
 
-    aDisplay->QueueBuffer(buffer);
+    aDisplay->QueueBuffer(buffer, aDpy);
+}
+
+static bool
+DrawFrame(AnimationFrame &aFrame, ANativeWindowBuffer *aBuf, int32_t format, void *aVaddr)
+{
+    if (!aBuf || !aFrame.buf)
+        return false;
+
+    if (aFrame.has_bgcolor) {
+        wchar_t bgfill = AsBackgroundFill(aFrame.bgcolor, format);
+        wmemset((wchar_t*)aVaddr, bgfill,
+                (aBuf->height * aBuf->stride * aFrame.bytepp) / sizeof(wchar_t));
+    }
+
+    if (aBuf->height == aFrame.height && aBuf->stride == aFrame.width) {
+        memcpy(aVaddr, aFrame.buf,
+               aFrame.width * aFrame.height * aFrame.bytepp);
+    } else if (aBuf->height >= aFrame.height &&
+               aBuf->width >= aFrame.width) {
+        int startx = (aBuf->width - aFrame.width) / 2;
+        int starty = (aBuf->height - aFrame.height) / 2;
+
+        int src_stride = aFrame.width * aFrame.bytepp;
+        int dst_stride = aBuf->stride * aFrame.bytepp;
+
+        char *src = aFrame.buf;
+        char *dst = (char *) aVaddr + starty * dst_stride + startx * aFrame.bytepp;
+
+        for (int i = 0; i < aFrame.height; i++) {
+            memcpy(dst, src, src_stride);
+            src += src_stride;
+            dst += dst_stride;
+        }
+    }
+
+    return true;
 }
 
 static void *
 AnimationThread(void *)
 {
     GonkDisplay *display = GetGonkDisplay();
-    int32_t format = display->surfaceformat;
+
+    const GonkDisplay::DisplayNativeData& dispData
+        = display->GetDispNativeData(GonkDisplay::DISPLAY_PRIMARY);
+
+    const GonkDisplay::DisplayNativeData& extDispData
+        = display->GetDispNativeData(GonkDisplay::DISPLAY_EXTERNAL);
+
+    vector<Animation> animVec;
 
     const hw_module_t *module = nullptr;
     if (hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &module)) {
@@ -523,154 +721,95 @@ AnimationThread(void *)
     const gralloc_module_t *grmodule =
         reinterpret_cast<gralloc_module_t const*>(module);
 
-    ZipReader reader;
-    if (!reader.OpenArchive("/system/media/bootanimation.zip")) {
-        LOGW("Could not open boot animation");
-        ShowSolidColorFrame(display, grmodule, format);
+    // Load boot animation for primary screen
+    animVec.push_back(Animation());
+    Animation &primAnimation = animVec.back();
+    primAnimation.dpy = GonkDisplay::DISPLAY_PRIMARY;
+    primAnimation.format = dispData.mSurfaceformat;
+    if (!primAnimation.LoadAnimations("/system/media/bootanimation.zip")) {
+        LOGW("Failed to load boot animation file for primary screen");
+        ShowSolidColorFrame(display, grmodule, dispData.mSurfaceformat,
+                            GonkDisplay::DISPLAY_PRIMARY);
         return nullptr;
     }
 
-    const cdir_entry *entry = nullptr;
-    const local_file_header *file = nullptr;
-    while ((entry = reader.GetNextEntry(entry))) {
-        string name = reader.GetEntryName(entry);
-        if (!name.compare("desc.txt")) {
-            file = reader.GetLocalEntry(entry);
-            break;
+    if (display->IsExtFBDeviceEnabled()) {
+        animVec.push_back(Animation());
+        Animation &extAnimation = animVec.back();
+        extAnimation.dpy = GonkDisplay::DISPLAY_EXTERNAL;
+        extAnimation.format = extDispData.mSurfaceformat;
+        if (!extAnimation.LoadAnimations("/system/media/outside_animation_poweron.zip") ||
+            !animVec[0].IsFrameCovers(extAnimation)) {
+
+            LOGW("Failed to load boot animation file for external screen");
+            ShowSolidColorFrame(display, grmodule, extDispData.mSurfaceformat,
+                                GonkDisplay::DISPLAY_EXTERNAL);
+            animVec.pop_back();
         }
     }
 
-    if (!file) {
-        LOGW("Could not find desc.txt in boot animation");
-        ShowSolidColorFrame(display, grmodule, format);
-        return nullptr;
-    }
-
-    string descCopy;
-    descCopy.append(file->GetData(), entry->GetDataSize());
-    int32_t width, height, fps;
-    const char *line = descCopy.c_str();
-    const char *end;
-    bool headerRead = true;
-    vector<AnimationPart> parts;
     bool animPlayed = false;
 
-    /*
-     * bootanimation.zip
-     *
-     * This is the boot animation file format that Android uses.
-     * It's a zip file with a directories containing png frames
-     * and a desc.txt that describes how they should be played.
-     *
-     * desc.txt contains two types of lines
-     * 1. [width] [height] [fps]
-     *    There is one of these lines per bootanimation.
-     *    If the width and height are smaller than the screen,
-     *    the frames are centered on a black background.
-     *    XXX: Currently we stretch instead of centering the frame.
-     * 2. p [count] [pause] [path]
-     *    This describes one animation part.
-     *    Each animation part is played in sequence.
-     *    An animation part contains all the files/frames in the
-     *    directory specified in [path]
-     *    [count] indicates the number of times this part repeats.
-     *    [pause] indicates the number of frames that this part
-     *    should pause for after playing the full sequence but
-     *    before repeating.
-     */
+    /* We assume boot animation for external screen would have the same
+       parts and frames with of primary screen, so we use primAnimation's attribute
+       to control the painting loop.
+    */
 
-    do {
-        end = strstr(line, "\n");
+    // Reref primary in case implicit data manipulate of vector
+    Animation &mainAnim = animVec.front();
+    uint32_t frameDelayUs = 1000000 / mainAnim.fps;
+    uint32_t numAnim = animVec.size();
 
-        AnimationPart part;
-        if (headerRead &&
-            sscanf(line, "%d %d %d", &width, &height, &fps) == 3) {
-            headerRead = false;
-        } else if (part.ReadFromString(line)) {
-            parts.push_back(part);
-        }
-    } while (end && *(line = end + 1));
-
-    for (uint32_t i = 0; i < parts.size(); i++) {
-        AnimationPart &part = parts[i];
-        entry = nullptr;
-        char search[256];
-        snprintf(search, sizeof(search), "%s/", part.path);
-        while ((entry = reader.GetNextEntry(entry))) {
-            string name = reader.GetEntryName(entry);
-            if (name.find(search) ||
-                !entry->GetDataSize() ||
-                name.length() >= 256)
-                continue;
-
-            part.frames.push_back(AnimationFrame());
-            AnimationFrame &frame = part.frames.back();
-            strcpy(frame.path, name.c_str());
-            frame.file = reader.GetLocalEntry(entry);
-        }
-
-        sort(part.frames.begin(), part.frames.end());
-    }
-
-    long int frameDelayUs = 1000000 / fps;
-
-    for (uint32_t i = 0; i < parts.size(); i++) {
-        AnimationPart &part = parts[i];
+    for (uint32_t i = 0; i < mainAnim.parts.size(); i++) {
+        AnimationPart &part = mainAnim.parts[i];
 
         int32_t j = 0;
         while (sRunAnimation && (!part.count || j++ < part.count)) {
             for (uint32_t k = 0; k < part.frames.size(); k++) {
                 struct timeval tv1, tv2;
                 gettimeofday(&tv1, nullptr);
-                AnimationFrame &frame = part.frames[k];
-                if (!frame.buf) {
-                    frame.ReadPngFrame(format);
-                }
 
-                ANativeWindowBuffer *buf = display->DequeueBuffer();
-                if (!buf) {
-                    LOGW("Failed to get an ANativeWindowBuffer");
-                    break;
-                }
+                for (uint32_t s = 0; s < numAnim; s++) {
+                    Animation &anim = animVec[s];
+                    AnimationFrame &frame = anim.parts[i].frames[k];
+                    if (!frame.buf) {
+                        frame.ReadPngFrame(anim.format);
+                    }
 
-                void *vaddr;
-                if (grmodule->lock(grmodule, buf->handle,
-                                   GRALLOC_USAGE_SW_READ_NEVER |
-                                   GRALLOC_USAGE_SW_WRITE_OFTEN |
-                                   GRALLOC_USAGE_HW_FB,
-                                   0, 0, width, height, &vaddr)) {
-                    LOGW("Failed to lock buffer_handle_t");
-                    display->QueueBuffer(buf);
-                    break;
-                }
+                    ANativeWindowBuffer *buf =
+                        display->DequeueBuffer(anim.dpy);
 
-                if (frame.has_bgcolor) {
-                    wchar_t bgfill = AsBackgroundFill(frame.bgcolor, format);
-                    wmemset((wchar_t*)vaddr, bgfill,
-                            (buf->height * buf->stride * frame.bytepp) / sizeof(wchar_t));
-                }
+                    if (!buf) {
+                        LOGW("Failed to get an ANativeWindowBuffer");
+                    }
 
-                if ((uint32_t)buf->height == frame.height && (uint32_t)buf->stride == frame.width) {
-                    memcpy(vaddr, frame.buf,
-                           frame.width * frame.height * frame.bytepp);
-                } else if ((uint32_t)buf->height >= frame.height &&
-                           (uint32_t)buf->width >= frame.width) {
-                    int startx = (buf->width - frame.width) / 2;
-                    int starty = (buf->height - frame.height) / 2;
+                    void *vaddr = nullptr;
+                    if (grmodule->lock(grmodule, buf->handle,
+                                       GRALLOC_USAGE_SW_READ_NEVER |
+                                       GRALLOC_USAGE_SW_WRITE_OFTEN |
+                                       GRALLOC_USAGE_HW_FB,
+                                       0, 0, anim.width, anim.height, &vaddr)) {
+                        LOGW("Failed to lock buffer_handle_t");
+                        display->QueueBuffer(buf, anim.dpy);
+                        buf = nullptr;
+                    }
 
-                    int src_stride = frame.width * frame.bytepp;
-                    int dst_stride = buf->stride * frame.bytepp;
+                    if (!buf || !DrawFrame(frame, buf, anim.format, vaddr)) {
+                        LOGW("Failed to Draw Frame on Display[%d] of Part[%d] of Frame[%d]", s, i, k);
+                    }
 
-                    char *src = frame.buf;
-                    char *dst = (char *) vaddr + starty * dst_stride + startx * frame.bytepp;
+                    animPlayed = true;
 
-                    for (uint32_t i = 0; i < frame.height; i++) {
-                        memcpy(dst, src, src_stride);
-                        src += src_stride;
-                        dst += dst_stride;
+                    if (buf) {
+                        grmodule->unlock(grmodule, buf->handle);
+                        display->QueueBuffer(buf, anim.dpy);
+                    }
+
+                    if (part.count && j >= part.count) {
+                        free(frame.buf);
+                        frame.buf = nullptr;
                     }
                 }
-                grmodule->unlock(grmodule, buf->handle);
 
                 gettimeofday(&tv2, nullptr);
 
@@ -682,21 +821,18 @@ AnimationThread(void *)
                     LOGW("Frame delay is %ld us but decoding took %ld us",
                          frameDelayUs, tv2.tv_usec);
                 }
-
-                animPlayed = true;
-                display->QueueBuffer(buf);
-
-                if (part.count && j >= part.count) {
-                    free(frame.buf);
-                    frame.buf = nullptr;
-                }
             }
             usleep(frameDelayUs * part.pause);
         }
     }
 
     if (!animPlayed) {
-        ShowSolidColorFrame(display, grmodule, format);
+        ShowSolidColorFrame(display, grmodule, dispData.mSurfaceformat,
+                            GonkDisplay::DISPLAY_PRIMARY);
+        if (display->IsExtFBDeviceEnabled()) {
+            ShowSolidColorFrame(display, grmodule, extDispData.mSurfaceformat,
+                                GonkDisplay::DISPLAY_EXTERNAL);
+        }
     }
 
     return nullptr;

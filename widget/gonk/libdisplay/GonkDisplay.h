@@ -41,7 +41,7 @@ public:
     * via Wifi Display.
     */
     enum DisplayType {
-        DISPLAY_PRIMARY,
+        DISPLAY_PRIMARY = 0,
         DISPLAY_EXTERNAL,
         DISPLAY_VIRTUAL,
         NUM_DISPLAY_TYPES
@@ -55,6 +55,20 @@ public:
         float mXdpi;
     };
 
+    struct DisplayNativeData {
+        DisplayNativeData()
+            : mXdpi(0)
+            , mSurfaceformat(0)
+            , mWidth(0)
+            , mHeight(0)
+        {};
+
+        float mXdpi;
+        int32_t mSurfaceformat;
+        uint32_t mWidth;
+        uint32_t mHeight;
+    };
+
     virtual void SetEnabled(bool enabled) = 0;
 
     typedef void (*OnEnabledCallbackType)(bool enabled);
@@ -63,14 +77,16 @@ public:
 
     virtual void* GetHWCDevice() = 0;
 
+    virtual bool IsExtFBDeviceEnabled() = 0;
+
     /**
      * Only GonkDisplayICS uses arguments.
      */
-    virtual bool SwapBuffers(EGLDisplay dpy, EGLSurface sur) = 0;
+    virtual bool SwapBuffers(EGLDisplay dpy, EGLSurface sur, DisplayType aDisplayType) = 0;
 
-    virtual ANativeWindowBuffer* DequeueBuffer() = 0;
+    virtual ANativeWindowBuffer* DequeueBuffer(DisplayType dpy) = 0;
 
-    virtual bool QueueBuffer(ANativeWindowBuffer* buf) = 0;
+    virtual bool QueueBuffer(ANativeWindowBuffer* buf, DisplayType dpy) = 0;
 
     virtual void UpdateDispSurface(EGLDisplay dpy, EGLSurface sur) = 0;
 
@@ -80,8 +96,13 @@ public:
 
     virtual void NotifyBootAnimationStopped() = 0;
 
-    float xdpi;
-    int32_t surfaceformat;
+    virtual const DisplayNativeData& GetDispNativeData(
+        GonkDisplay::DisplayType aDisplayType) {
+        return mDispNativeData[aDisplayType];
+    }
+
+protected:
+    DisplayNativeData mDispNativeData[NUM_DISPLAY_TYPES];
 };
 
 MOZ_EXPORT __attribute__ ((weak))

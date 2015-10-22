@@ -26,6 +26,7 @@
 #include <hardware/power.h>
 #include <suspend/autosuspend.h>
 
+#include "cutils/properties.h"
 #if ANDROID_VERSION >= 19
 #include "VirtualDisplaySurface.h"
 #endif
@@ -49,10 +50,9 @@ GonkDisplayJB::GonkDisplayJB()
     , mFBModule(nullptr)
     , mHwc(nullptr)
     , mFBDevice(nullptr)
+    , mExtFBDevice(nullptr)
     , mPowerModule(nullptr)
     , mList(nullptr)
-    , mWidth(0)
-    , mHeight(0)
     , mEnabledCallback(nullptr)
 {
     int err = hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &mFBModule);
@@ -62,13 +62,14 @@ GonkDisplayJB::GonkDisplayJB()
         ALOGW_IF(err, "could not open framebuffer");
     }
 
+    DisplayNativeData &dispData = mDispNativeData[DISPLAY_PRIMARY];
     if (!err && mFBDevice) {
-        mWidth = mFBDevice->width;
-        mHeight = mFBDevice->height;
-        xdpi = mFBDevice->xdpi;
+        dispData.mWidth = mFBDevice->width;
+        dispData.mHeight = mFBDevice->height;
+        dispData.mXdpi = mFBDevice->xdpi;
         /* The emulator actually reports RGBA_8888, but EGL doesn't return
          * any matching configuration. We force RGBX here to fix it. */
-        surfaceformat = HAL_PIXEL_FORMAT_RGBX_8888;
+        dispData.mSurfaceformat = HAL_PIXEL_FORMAT_RGBX_8888;
     }
 
     err = hw_get_module(HWC_HARDWARE_MODULE_ID, &mModule);
@@ -103,38 +104,83 @@ GonkDisplayJB::GonkDisplayJB()
         };
         mHwc->getDisplayAttributes(mHwc, 0, 0, attrs, values);
 
-        mWidth = values[0];
-        mHeight = values[1];
-        xdpi = values[2] / 1000.0f;
+        dispData.mWidth = values[0];
+        dispData.mHeight = values[1];
+        dispData.mXdpi = values[2] / 1000.0f;
 #ifdef GET_FRAMEBUFFER_FORMAT_FROM_HWC
-        surfaceformat = values[3];
+        dispData.mSurfaceformat = values[3];
 #else
-        surfaceformat = HAL_PIXEL_FORMAT_RGBA_8888;
+        dispData.mSurfaceformat = HAL_PIXEL_FORMAT_RGBA_8888;
 #endif
     }
 
     err = hw_get_module(POWER_HARDWARE_MODULE_ID,
-                                           (hw_module_t const**)&mPowerModule);
+                        (hw_module_t const**)&mPowerModule);
     if (!err)
         mPowerModule->init(mPowerModule);
     ALOGW_IF(err, "Couldn't load %s module (%s)", POWER_HARDWARE_MODULE_ID, strerror(-err));
 
     mAlloc = new GraphicBufferAlloc();
 
-    CreateFramebufferSurface(mSTClient, mDispSurface, mWidth, mHeight);
+    CreateFramebufferSurface(mSTClient,
+                             mDispSurface,
+                             dispData.mWidth,
+                             dispData.mHeight,
+                             dispData.mSurfaceformat);
 
     mList = (hwc_display_contents_1_t *)calloc(1, sizeof(*mList) + (sizeof(hwc_layer_1_t)*2));
 
     uint32_t usage = GRALLOC_USAGE_HW_FB | GRALLOC_USAGE_HW_RENDER | GRALLOC_USAGE_HW_COMPOSER;
-    if (mFBDevice) {
-        // If device uses fb, they can not use single buffer for boot animation
+
+    if (mHwc) {
+        PowerOnDisplay(HWC_DISPLAY_PRIMARY);
+        CreateFramebufferSurface(mBootAnimSTClient,
+                                 mBootAnimDispSurface,
+                                 dispData.mWidth,
+                                 dispData.mHeight,
+                                 dispData.mSurfaceformat);
+    } else if (mFBDevice) {
+        // If display uses fb, they can not use single buffer for boot animation
         mSTClient->perform(mSTClient.get(), NATIVE_WINDOW_SET_BUFFER_COUNT, 2);
         mSTClient->perform(mSTClient.get(), NATIVE_WINDOW_SET_USAGE, usage);
-    } else if (mHwc) {
-        PowerOnDisplay(HWC_DISPLAY_PRIMARY);
-        // For devices w/ hwc v1.0 or no hwc, this buffer can not be created,
-        // only create this buffer for devices w/ hwc version > 1.0.
-        CreateFramebufferSurface(mBootAnimSTClient, mBootAnimDispSurface, mWidth, mHeight);
+    }
+
+    // Mock the property before we can build ocatans. uncomment this line to
+    // turn on native framebuffer support.
+    // property_set("ro.display.fb1.enabled", "1");
+
+    char propValue[PROPERTY_VALUE_MAX];
+    property_get("ro.display.fb1.enabled", propValue, "0");
+    bool extFBIsEnabled = (atoi(propValue) == 1) ? true : false;
+
+    DisplayNativeData &extDispData = mDispNativeData[DISPLAY_EXTERNAL];
+    if (extFBIsEnabled) {
+        mExtFBDevice = new NativeFramebufferDevice();
+        bool success = false;
+        if (mExtFBDevice) {
+            success = mExtFBDevice->Open("fb1");
+        }
+
+        if (success) {
+            extDispData.mWidth = mExtFBDevice->mWidth;
+            extDispData.mHeight = mExtFBDevice->mHeight;
+            extDispData.mSurfaceformat = mExtFBDevice->mSurfaceformat;
+            extDispData.mXdpi = mExtFBDevice->mXdpi;
+        } else {
+            delete mExtFBDevice;
+            mExtFBDevice = nullptr;
+        }
+    }
+
+    if (mExtFBDevice) {
+        mExtFBDevice->PowerOnBackLight();
+        CreateFramebufferSurface(mExtSTClient,
+                                 mExtDispSurface,
+                                 extDispData.mWidth,
+                                 extDispData.mHeight,
+                                 extDispData.mSurfaceformat);
+        mExtSTClient->perform(mExtSTClient.get(), NATIVE_WINDOW_SET_BUFFER_COUNT, 2);
+        mExtSTClient->perform(mExtSTClient.get(), NATIVE_WINDOW_SET_USAGE, usage);
     }
 }
 
@@ -144,14 +190,15 @@ GonkDisplayJB::~GonkDisplayJB()
         hwc_close_1(mHwc);
     if (mFBDevice)
         framebuffer_close(mFBDevice);
+    if (mExtFBDevice)
+        delete mExtFBDevice;
     free(mList);
 }
 
 void
 GonkDisplayJB::CreateFramebufferSurface(android::sp<ANativeWindow>& aNativeWindow,
                                         android::sp<android::DisplaySurface>& aDisplaySurface,
-                                        uint32_t aWidth,
-                                        uint32_t aHeight)
+                                        uint32_t aWidth, uint32_t aHeight, int32_t aFormat)
 {
 #if ANDROID_VERSION >= 21
     sp<IGraphicBufferProducer> producer;
@@ -167,7 +214,7 @@ GonkDisplayJB::CreateFramebufferSurface(android::sp<ANativeWindow>& aNativeWindo
     sp<BufferQueue> consumer = new BufferQueue(true, mAlloc);
 #endif
 
-    aDisplaySurface = new FramebufferSurface(0, aWidth, aHeight, surfaceformat, consumer);
+    aDisplaySurface = new FramebufferSurface(0, aWidth, aHeight, aFormat, consumer);
 
 #if ANDROID_VERSION == 17
     aNativeWindow = new SurfaceTextureClient(
@@ -253,92 +300,140 @@ GonkDisplayJB::GetHWCDevice()
 }
 
 bool
-GonkDisplayJB::SwapBuffers(EGLDisplay dpy, EGLSurface sur)
+GonkDisplayJB::IsExtFBDeviceEnabled()
 {
-    // Should be called when composition rendering is complete for a frame.
-    // Only HWC v1.0 needs this call.
-    // HWC > v1.0 case, do not call compositionComplete().
-    // mFBDevice is present only when HWC is v1.0.
-    if (mFBDevice && mFBDevice->compositionComplete) {
-        mFBDevice->compositionComplete(mFBDevice);
-    }
-    return Post(mDispSurface->lastHandle, mDispSurface->GetPrevDispAcquireFd());
+    return !!mExtFBDevice;
 }
 
 bool
-GonkDisplayJB::Post(buffer_handle_t buf, int fence)
+GonkDisplayJB::SwapBuffers(EGLDisplay dpy, EGLSurface sur, DisplayType aDisplayType)
 {
-    if (!mHwc) {
-        if (fence >= 0)
-            close(fence);
-        return !mFBDevice->post(mFBDevice, buf);
+    if (aDisplayType == DISPLAY_PRIMARY) {
+        // Should be called when composition rendering is complete for a frame.
+        // Only HWC v1.0 needs this call.
+        // HWC > v1.0 case, do not call compositionComplete().
+        // mFBDevice is present only when HWC is v1.0.
+        if (mFBDevice && mFBDevice->compositionComplete) {
+            mFBDevice->compositionComplete(mFBDevice);
+        }
+        return Post(mDispSurface->lastHandle,
+                    mDispSurface->GetPrevDispAcquireFd(),
+                    DISPLAY_PRIMARY);
+
+    } else if (aDisplayType == DISPLAY_EXTERNAL) {
+        if (mExtFBDevice) {
+            return Post(mExtDispSurface->lastHandle,
+                        mExtDispSurface->GetPrevDispAcquireFd(),
+                        DISPLAY_EXTERNAL);
+        }
+
+        return false;
     }
 
-    hwc_display_contents_1_t *displays[HWC_NUM_DISPLAY_TYPES] = {NULL};
-    const hwc_rect_t r = { 0, 0, static_cast<int>(mWidth), static_cast<int>(mHeight) };
-    displays[HWC_DISPLAY_PRIMARY] = mList;
-    mList->retireFenceFd = -1;
-    mList->numHwLayers = 2;
-    mList->flags = HWC_GEOMETRY_CHANGED;
+    return false;
+}
+
+bool
+GonkDisplayJB::Post(buffer_handle_t buf, int fence, DisplayType aDisplayType)
+{
+    if (aDisplayType == DISPLAY_PRIMARY) {
+        if (!mHwc) {
+            if (fence >= 0)
+                close(fence);
+            return !mFBDevice->post(mFBDevice, buf);
+        }
+
+        DisplayNativeData &dispData = mDispNativeData[DISPLAY_PRIMARY];
+
+        hwc_display_contents_1_t *displays[HWC_NUM_DISPLAY_TYPES] = {NULL};
+        const hwc_rect_t r = { 0, 0, static_cast<int>(dispData.mWidth), static_cast<int>(dispData.mHeight) };
+        displays[HWC_DISPLAY_PRIMARY] = mList;
+        mList->retireFenceFd = -1;
+        mList->numHwLayers = 2;
+        mList->flags = HWC_GEOMETRY_CHANGED;
 #if ANDROID_VERSION >= 18
-    mList->outbuf = nullptr;
-    mList->outbufAcquireFenceFd = -1;
+        mList->outbuf = nullptr;
+        mList->outbufAcquireFenceFd = -1;
 #endif
-    mList->hwLayers[0].compositionType = HWC_FRAMEBUFFER;
-    mList->hwLayers[0].hints = 0;
-    /* Skip this layer so the hwc module doesn't complain about null handles */
-    mList->hwLayers[0].flags = HWC_SKIP_LAYER;
-    mList->hwLayers[0].backgroundColor = {0};
-    mList->hwLayers[0].acquireFenceFd = -1;
-    mList->hwLayers[0].releaseFenceFd = -1;
-    /* hwc module checks displayFrame even though it shouldn't */
-    mList->hwLayers[0].displayFrame = r;
-    mList->hwLayers[1].compositionType = HWC_FRAMEBUFFER_TARGET;
-    mList->hwLayers[1].hints = 0;
-    mList->hwLayers[1].flags = 0;
-    mList->hwLayers[1].handle = buf;
-    mList->hwLayers[1].transform = 0;
-    mList->hwLayers[1].blending = HWC_BLENDING_NONE;
+        mList->hwLayers[0].compositionType = HWC_FRAMEBUFFER;
+        mList->hwLayers[0].hints = 0;
+        /* Skip this layer so the hwc module doesn't complain about null handles */
+        mList->hwLayers[0].flags = HWC_SKIP_LAYER;
+        mList->hwLayers[0].backgroundColor = {0};
+        mList->hwLayers[0].acquireFenceFd = -1;
+        mList->hwLayers[0].releaseFenceFd = -1;
+        /* hwc module checks displayFrame even though it shouldn't */
+        mList->hwLayers[0].displayFrame = r;
+        mList->hwLayers[1].compositionType = HWC_FRAMEBUFFER_TARGET;
+        mList->hwLayers[1].hints = 0;
+        mList->hwLayers[1].flags = 0;
+        mList->hwLayers[1].handle = buf;
+        mList->hwLayers[1].transform = 0;
+        mList->hwLayers[1].blending = HWC_BLENDING_NONE;
 #if ANDROID_VERSION >= 19
-    if (mHwc->common.version >= HWC_DEVICE_API_VERSION_1_3) {
-        mList->hwLayers[1].sourceCropf.left = 0;
-        mList->hwLayers[1].sourceCropf.top = 0;
-        mList->hwLayers[1].sourceCropf.right = mWidth;
-        mList->hwLayers[1].sourceCropf.bottom = mHeight;
-    } else {
-        mList->hwLayers[1].sourceCrop = r;
-    }
+        if (mHwc->common.version >= HWC_DEVICE_API_VERSION_1_3) {
+            mList->hwLayers[1].sourceCropf.left = 0;
+            mList->hwLayers[1].sourceCropf.top = 0;
+            mList->hwLayers[1].sourceCropf.right = dispData.mWidth;
+            mList->hwLayers[1].sourceCropf.bottom = dispData.mHeight;
+        } else {
+            mList->hwLayers[1].sourceCrop = r;
+        }
 #else
-    mList->hwLayers[1].sourceCrop = r;
+        mList->hwLayers[1].sourceCrop = r;
 #endif
-    mList->hwLayers[1].displayFrame = r;
-    mList->hwLayers[1].visibleRegionScreen.numRects = 1;
-    mList->hwLayers[1].visibleRegionScreen.rects = &mList->hwLayers[1].displayFrame;
-    mList->hwLayers[1].acquireFenceFd = fence;
-    mList->hwLayers[1].releaseFenceFd = -1;
+        mList->hwLayers[1].displayFrame = r;
+        mList->hwLayers[1].visibleRegionScreen.numRects = 1;
+        mList->hwLayers[1].visibleRegionScreen.rects = &mList->hwLayers[1].displayFrame;
+        mList->hwLayers[1].acquireFenceFd = fence;
+        mList->hwLayers[1].releaseFenceFd = -1;
 #if ANDROID_VERSION >= 18
-    mList->hwLayers[1].planeAlpha = 0xFF;
+        mList->hwLayers[1].planeAlpha = 0xFF;
 #endif
-    mHwc->prepare(mHwc, HWC_NUM_DISPLAY_TYPES, displays);
-    int err = mHwc->set(mHwc, HWC_NUM_DISPLAY_TYPES, displays);
+        mHwc->prepare(mHwc, HWC_NUM_DISPLAY_TYPES, displays);
+        int err = mHwc->set(mHwc, HWC_NUM_DISPLAY_TYPES, displays);
+        if (!mBootAnimDispSurface.get()) {
+            mDispSurface->setReleaseFenceFd(mList->hwLayers[1].releaseFenceFd);
+        } else {
+            mBootAnimDispSurface->setReleaseFenceFd(mList->hwLayers[1].releaseFenceFd);
+        }
 
-    if (!mBootAnimDispSurface.get()) {
-        mDispSurface->setReleaseFenceFd(mList->hwLayers[1].releaseFenceFd);
-    } else {
-        mBootAnimDispSurface->setReleaseFenceFd(mList->hwLayers[1].releaseFenceFd);
+      if (mList->retireFenceFd >= 0)
+          close(mList->retireFenceFd);
+      return !err;
+
+    } else if (aDisplayType == DISPLAY_EXTERNAL) {
+        // Only support fb1 for certain device, use hwc to control
+        // external screen in general case.
+        if (mExtFBDevice) {
+            if (fence >= 0)
+                close(fence);
+            return mExtFBDevice->Post(buf);
+        }
+
+        return false;
     }
 
-    if (mList->retireFenceFd >= 0)
-        close(mList->retireFenceFd);
-    return !err;
+    return false;
 }
 
 ANativeWindowBuffer*
-GonkDisplayJB::DequeueBuffer()
+GonkDisplayJB::DequeueBuffer(DisplayType aDisplayType)
 {
     // Check for bootAnim or normal display flow.
-    sp<ANativeWindow> nativeWindow =
-        !mBootAnimSTClient.get() ? mSTClient : mBootAnimSTClient;
+    sp<ANativeWindow> nativeWindow;
+    if (aDisplayType == DISPLAY_PRIMARY) {
+        nativeWindow =
+            !mBootAnimSTClient.get() ? mSTClient : mBootAnimSTClient;
+    } else if (aDisplayType == DISPLAY_EXTERNAL) {
+        if (mExtFBDevice) {
+            nativeWindow = mExtSTClient;
+        }
+    }
+
+    if (!nativeWindow.get()) {
+        return nullptr;
+    }
 
     ANativeWindowBuffer *buf;
     int fenceFd = -1;
@@ -355,29 +450,52 @@ GonkDisplayJB::DequeueBuffer()
 }
 
 bool
-GonkDisplayJB::QueueBuffer(ANativeWindowBuffer* buf)
+GonkDisplayJB::QueueBuffer(ANativeWindowBuffer* buf, DisplayType aDisplayType)
 {
     bool success = false;
-    int error = DoQueueBuffer(buf);
-    // Check for bootAnim or normal display flow.
-    if (!mBootAnimSTClient.get()) {
-        success = Post(mDispSurface->lastHandle, mDispSurface->GetPrevDispAcquireFd());
-    } else {
-        success = Post(mBootAnimDispSurface->lastHandle, mBootAnimDispSurface->GetPrevDispAcquireFd());
+    int error = DoQueueBuffer(buf, aDisplayType);
+
+    sp<DisplaySurface> displaySurface;
+    if (aDisplayType == DISPLAY_PRIMARY) {
+        displaySurface =
+            !mBootAnimSTClient.get() ? mDispSurface : mBootAnimDispSurface;
+    } else if (aDisplayType == DISPLAY_EXTERNAL) {
+        if (mExtFBDevice) {
+            displaySurface = mExtDispSurface;
+        }
     }
+
+    if (!displaySurface.get()) {
+        return false;
+    }
+
+    success = Post(displaySurface->lastHandle,
+                   displaySurface->GetPrevDispAcquireFd(),
+                   aDisplayType);
+
     return error == 0 && success;
 }
 
 int
-GonkDisplayJB::DoQueueBuffer(ANativeWindowBuffer* buf)
+GonkDisplayJB::DoQueueBuffer(ANativeWindowBuffer* buf, DisplayType aDisplayType)
 {
     int error = 0;
-    // Check for bootAnim or normal display flow.
-    if (!mBootAnimSTClient.get()) {
-        error = mSTClient->queueBuffer(mSTClient.get(), buf, -1);
-    } else {
-        error = mBootAnimSTClient->queueBuffer(mBootAnimSTClient.get(), buf, -1);
+    sp<ANativeWindow> nativeWindow;
+    if (aDisplayType == DISPLAY_PRIMARY) {
+        nativeWindow =
+            !mBootAnimSTClient.get() ? mSTClient : mBootAnimSTClient;
+    } else if (aDisplayType == DISPLAY_EXTERNAL) {
+        if (mExtFBDevice) {
+            nativeWindow = mExtSTClient;
+        }
     }
+
+    if (!nativeWindow.get()) {
+        return error;
+    }
+
+    error = mSTClient->queueBuffer(nativeWindow.get(), buf, -1);
+
     return error;
 }
 
@@ -389,8 +507,8 @@ GonkDisplayJB::UpdateDispSurface(EGLDisplay dpy, EGLSurface sur)
     } else {
       // When BasicCompositor is used as Compositor,
       // EGLSurface does not exit.
-      ANativeWindowBuffer* buf = DequeueBuffer();
-      DoQueueBuffer(buf);
+      ANativeWindowBuffer* buf = DequeueBuffer(DISPLAY_PRIMARY);
+      DoQueueBuffer(buf, DISPLAY_PRIMARY);
     }
 }
 
@@ -427,28 +545,35 @@ GonkDisplayJB::GetNativeData(GonkDisplay::DisplayType aDisplayType,
     if (aDisplayType == DISPLAY_PRIMARY) {
         data.mNativeWindow = mSTClient;
         data.mDisplaySurface = mDispSurface;
-        data.mXdpi = xdpi;
+        data.mXdpi = mDispNativeData[DISPLAY_PRIMARY].mXdpi;
     } else if (aDisplayType == DISPLAY_EXTERNAL) {
-        int32_t values[3];
-        const uint32_t attrs[] = {
-            HWC_DISPLAY_WIDTH,
-            HWC_DISPLAY_HEIGHT,
-            HWC_DISPLAY_DPI_X,
-            HWC_DISPLAY_NO_ATTRIBUTE
-        };
-        mHwc->getDisplayAttributes(mHwc, aDisplayType, 0, attrs, values);
-        int width = values[0];
-        int height = values[1];
-        // FIXME!! values[2] returns 0 for external display, which doesn't
-        // sound right, Bug 1169176 is the follow-up bug for this issue.
-        data.mXdpi = values[2] ? values[2] / 1000.f : DEFAULT_XDPI;
-        PowerOnDisplay(HWC_DISPLAY_EXTERNAL);
-        CreateFramebufferSurface(data.mNativeWindow,
-                                 data.mDisplaySurface,
-                                 width,
-                                 height);
+        if (mExtFBDevice) {
+            data.mNativeWindow = mExtSTClient;
+            data.mDisplaySurface = mExtDispSurface;
+            data.mXdpi = mDispNativeData[DISPLAY_EXTERNAL].mXdpi;
+        } else {
+            int32_t values[3];
+            const uint32_t attrs[] = {
+                HWC_DISPLAY_WIDTH,
+                HWC_DISPLAY_HEIGHT,
+                HWC_DISPLAY_DPI_X,
+                HWC_DISPLAY_NO_ATTRIBUTE
+            };
+            mHwc->getDisplayAttributes(mHwc, aDisplayType, 0, attrs, values);
+            int width = values[0];
+            int height = values[1];
+            // FIXME!! values[2] returns 0 for external display, which doesn't
+            // sound right, Bug 1169176 is the follow-up bug for this issue.
+            data.mXdpi = values[2] ? values[2] / 1000.f : DEFAULT_XDPI;
+            PowerOnDisplay(HWC_DISPLAY_EXTERNAL);
+            CreateFramebufferSurface(data.mNativeWindow,
+                                     data.mDisplaySurface,
+                                     width,
+                                     height,
+                                     mDispNativeData[DISPLAY_PRIMARY].mSurfaceformat);
+        }
     } else if (aDisplayType == DISPLAY_VIRTUAL) {
-        data.mXdpi = xdpi;
+        data.mXdpi = mDispNativeData[DISPLAY_PRIMARY].mXdpi;
         CreateVirtualDisplaySurface(aSink,
                                     data.mNativeWindow,
                                     data.mDisplaySurface);

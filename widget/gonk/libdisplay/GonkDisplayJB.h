@@ -20,6 +20,7 @@
 #include "GonkDisplay.h"
 #include "hardware/hwcomposer.h"
 #include "hardware/power.h"
+#include "NativeFramebufferDevice.h"
 #include "ui/Fence.h"
 #include "utils/RefBase.h"
 
@@ -36,15 +37,17 @@ public:
 
     virtual void* GetHWCDevice();
 
-    virtual bool SwapBuffers(EGLDisplay dpy, EGLSurface sur);
+    virtual bool IsExtFBDeviceEnabled();
 
-    virtual ANativeWindowBuffer* DequeueBuffer();
+    virtual bool SwapBuffers(EGLDisplay dpy, EGLSurface sur, DisplayType aDisplayType);
 
-    virtual bool QueueBuffer(ANativeWindowBuffer* buf);
+    virtual ANativeWindowBuffer* DequeueBuffer(DisplayType aDisplayType);
 
-    virtual void UpdateDispSurface(EGLDisplay dpy, EGLSurface sur);
+    virtual bool QueueBuffer(ANativeWindowBuffer* buf, DisplayType aDisplayType);
 
-    bool Post(buffer_handle_t buf, int fence);
+    virtual void UpdateDispSurface(EGLDisplay aDisplayType, EGLSurface sur);
+
+    bool Post(buffer_handle_t buf, int fence, DisplayType aDisplayType);
 
     virtual NativeData GetNativeData(
         GonkDisplay::DisplayType aDisplayType,
@@ -55,28 +58,30 @@ public:
 private:
     void CreateFramebufferSurface(android::sp<ANativeWindow>& aNativeWindow,
                                   android::sp<android::DisplaySurface>& aDisplaySurface,
-                                  uint32_t aWidth, uint32_t aHeight);
+                                  uint32_t aWidth, uint32_t aHeight, int32_t aFormat);
     void CreateVirtualDisplaySurface(android::IGraphicBufferProducer* aSink,
                                      android::sp<ANativeWindow>& aNativeWindow,
                                      android::sp<android::DisplaySurface>& aDisplaySurface);
 
     void PowerOnDisplay(int aDpy);
 
-    int DoQueueBuffer(ANativeWindowBuffer* buf);
+    int DoQueueBuffer(ANativeWindowBuffer* buf, DisplayType aDisplayType);
 
     hw_module_t const*        mModule;
     hw_module_t const*        mFBModule;
     hwc_composer_device_1_t*  mHwc;
     framebuffer_device_t*     mFBDevice;
+    NativeFramebufferDevice*  mExtFBDevice;
     power_module_t*           mPowerModule;
     android::sp<android::DisplaySurface> mDispSurface;
     android::sp<ANativeWindow> mSTClient;
+    android::sp<android::DisplaySurface> mExtDispSurface;
+    android::sp<ANativeWindow> mExtSTClient;
     android::sp<android::DisplaySurface> mBootAnimDispSurface;
     android::sp<ANativeWindow> mBootAnimSTClient;
+
     android::sp<android::IGraphicBufferAlloc> mAlloc;
     hwc_display_contents_1_t* mList;
-    uint32_t mWidth;
-    uint32_t mHeight;
     OnEnabledCallbackType mEnabledCallback;
 };
 

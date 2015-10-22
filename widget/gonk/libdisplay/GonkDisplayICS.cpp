@@ -124,10 +124,17 @@ GonkDisplayICS::GonkDisplayICS()
                  HWC_HARDWARE_COMPOSER, strerror(-err));
     }
 
-    xdpi = mFBSurface->xdpi;
+    mDispNativeData[DISPLAY_PRIMARY].mXdpi = mFBSurface->xdpi;
 
     const framebuffer_device_t *fbdev = mFBSurface->getDevice();
-    surfaceformat = fbdev->format;
+    mDispNativeData[DISPLAY_PRIMARY].mSurfaceformat = fbdev->format;
+
+    uint32_t width, height;
+    mFBSurface->query(mFBSurface, NATIVE_WINDOW_WIDTH, &widht);
+    mFBSurface->query(mFBSurface, NATIVE_WINDOW_HEIGHT, &height);
+
+    mDispNativeData[DISPLAY_PRIMARY].mWidth = width;
+    mDispNativeData[DISPLAY_PRIMARY].mHeight = height;
 }
 
 GonkDisplayICS::~GonkDisplayICS()
@@ -164,6 +171,12 @@ GonkDisplayICS::GetHWCDevice()
 }
 
 bool
+GonkDisplayICS::IsExtFBDeviceEnabled()
+{
+    return false;
+}
+
+bool
 GonkDisplayICS::SwapBuffers(EGLDisplay dpy, EGLSurface sur)
 {
     // Should be called when composition rendering is complete for a frame.
@@ -182,7 +195,7 @@ GonkDisplayICS::SwapBuffers(EGLDisplay dpy, EGLSurface sur)
 }
 
 ANativeWindowBuffer*
-GonkDisplayICS::DequeueBuffer()
+GonkDisplayICS::DequeueBuffer(DisplayType aDisplayType)
 {
     ANativeWindow *window = static_cast<ANativeWindow *>(mFBSurface.get());
     ANativeWindowBuffer *buf = nullptr;
@@ -191,7 +204,7 @@ GonkDisplayICS::DequeueBuffer()
 }
 
 bool
-GonkDisplayICS::QueueBuffer(ANativeWindowBuffer *buf)
+GonkDisplayICS::QueueBuffer(ANativeWindowBuffer *buf, DisplayType aDisplayType)
 {
     ANativeWindow *window = static_cast<ANativeWindow *>(mFBSurface.get());
     return !window->queueBuffer(window, buf);
@@ -215,7 +228,7 @@ GonkDisplayICS::GetNativeData(GonkDisplay::DisplayType aDisplayType,
 
     NativeData data;
     data.mNativeWindow = static_cast<ANativeWindow *>(mFBSurface.get());
-    data.mXdpi = xdpi;
+    data.mXdpi = mDispNativeData[DISPLAY_PRIMARY].mXdpi;
 
     return data;
 }

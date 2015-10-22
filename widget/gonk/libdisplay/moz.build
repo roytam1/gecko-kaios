@@ -22,18 +22,21 @@ if CONFIG['ANDROID_VERSION'] >= '19':
     SOURCES += [
         'FramebufferSurface.cpp',
         'GonkDisplayJB.cpp',
+        'NativeFramebufferDevice.cpp',
         'VirtualDisplaySurface.cpp',
     ]
 elif CONFIG['ANDROID_VERSION'] == '18':
     SOURCES += [
         'FramebufferSurface.cpp',
         'GonkDisplayJB.cpp',
+        'NativeFramebufferDevice.cpp',
     ]
 elif CONFIG['ANDROID_VERSION'] == '17':
     SOURCES += [
         'FramebufferSurface.cpp',
         'GonkDisplayJB.cpp',
         'GraphicBufferAlloc.cpp',
+        'NativeFramebufferDevice.cpp',
     ]
 elif CONFIG['ANDROID_VERSION'] == '15':
     SOURCES += [
