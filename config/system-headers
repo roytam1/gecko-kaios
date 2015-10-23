@@ -514,6 +514,7 @@ gtk/gtk.h
 gtk/gtkx.h
 gtk/gtkunixprint.h
 #ifdef ANDROID
+gui/BufferItem.h
 gui/BufferQueue.h
 gui/ConsumerBase.h
 gui/GraphicBufferAlloc.h
