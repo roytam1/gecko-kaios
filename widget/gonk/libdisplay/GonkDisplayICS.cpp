@@ -229,6 +229,7 @@ GonkDisplayICS::GetNativeData(GonkDisplay::DisplayType aDisplayType,
     NativeData data;
     data.mNativeWindow = static_cast<ANativeWindow *>(mFBSurface.get());
     data.mXdpi = mDispNativeData[DISPLAY_PRIMARY].mXdpi;
+    data.mSupportHwc = true;
 
     return data;
 }

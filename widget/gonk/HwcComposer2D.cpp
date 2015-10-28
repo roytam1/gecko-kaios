@@ -762,10 +762,10 @@ HwcComposer2D::Render(nsIWidget* aWidget)
     nsScreenGonk* screen = static_cast<nsWindow*>(aWidget)->GetScreen();
 
     // HWC module does not exist or mList is not created yet.
-    if (!mHal->HasHwc() || !mList) {
+    if (!mHal->HasHwc() || !mList || !screen->IsComposer2DSupported()) {
         return GetGonkDisplay()->SwapBuffers(screen->GetEGLDisplay(),
                                              screen->GetEGLSurface(),
-                                             GonkDisplay::DISPLAY_PRIMARY);
+                                             screen->GetDisplayType());
     } else if (!mList && !ReallocLayerList()) {
         LOGE("Cannot realloc layer list");
         return false;

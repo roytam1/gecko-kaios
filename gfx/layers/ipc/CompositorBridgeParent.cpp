@@ -730,7 +730,13 @@ CompositorBridgeParent::CompositorBridgeParent(nsIWidget* aWidget,
     mApzcTreeManager = new APZCTreeManager();
   }
 
-  mCompositorScheduler = new CompositorVsyncScheduler(this, aWidget);
+  nsScreenGonk* screen = static_cast<nsWindow*>(aWidget)->GetScreen();
+  if (screen->IsVsyncSupported()) {
+    mCompositorScheduler = new CompositorVsyncScheduler(this, aWidget);
+  } else {
+    mCompositorScheduler = new CompositorSoftwareTimerScheduler(this);
+  }
+
   LayerScope::SetPixelScale(mWidget->GetDefaultScale().scale);
 
   // mSelfRef is cleared in DeferredDestroy.

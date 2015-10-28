@@ -338,8 +338,10 @@ GonkDisplayJB::Post(buffer_handle_t buf, int fence, DisplayType aDisplayType)
 {
     if (aDisplayType == DISPLAY_PRIMARY) {
         if (!mHwc) {
-            if (fence >= 0)
-                close(fence);
+            if (fence >= 0) {
+                android::sp<Fence> fenceObj = new Fence(fence);
+                fenceObj->waitForever("GonkDisplayJB::Post");
+            }
             return !mFBDevice->post(mFBDevice, buf);
         }
 
@@ -546,11 +548,15 @@ GonkDisplayJB::GetNativeData(GonkDisplay::DisplayType aDisplayType,
         data.mNativeWindow = mSTClient;
         data.mDisplaySurface = mDispSurface;
         data.mXdpi = mDispNativeData[DISPLAY_PRIMARY].mXdpi;
+        data.mComposer2DSupported = true;
+        data.mVsyncSupported = true;
     } else if (aDisplayType == DISPLAY_EXTERNAL) {
         if (mExtFBDevice) {
             data.mNativeWindow = mExtSTClient;
             data.mDisplaySurface = mExtDispSurface;
             data.mXdpi = mDispNativeData[DISPLAY_EXTERNAL].mXdpi;
+            data.mComposer2DSupported = false;
+            data.mVsyncSupported = false;
         } else {
             int32_t values[3];
             const uint32_t attrs[] = {
@@ -565,6 +571,8 @@ GonkDisplayJB::GetNativeData(GonkDisplay::DisplayType aDisplayType,
             // FIXME!! values[2] returns 0 for external display, which doesn't
             // sound right, Bug 1169176 is the follow-up bug for this issue.
             data.mXdpi = values[2] ? values[2] / 1000.f : DEFAULT_XDPI;
+            data.mComposer2DSupported = true;
+            data.mVsyncSupported = false;
             PowerOnDisplay(HWC_DISPLAY_EXTERNAL);
             CreateFramebufferSurface(data.mNativeWindow,
                                      data.mDisplaySurface,

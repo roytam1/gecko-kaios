@@ -53,6 +53,8 @@ public:
         android::sp<android::DisplaySurface> mDisplaySurface;
 #endif
         float mXdpi;
+        bool mComposer2DSupported;
+        bool mVsyncSupported;
     };
 
     struct DisplayNativeData {

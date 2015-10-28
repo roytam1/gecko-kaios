@@ -105,6 +105,14 @@ nsWindow::DoDraw(void)
         return;
     }
 
+    /* Add external screen when the external fb is available. The AddScreen
+       should be called after shell.js is loaded to receive the display-changed event. */
+    RefPtr<nsScreenManagerGonk> screenManager = nsScreenManagerGonk::GetInstance();
+    if (GetGonkDisplay()->IsExtFBDeviceEnabled() &&
+        !screenManager->IsScreenConnected(GonkDisplay::DISPLAY_EXTERNAL)) {
+        screenManager->AddScreen(GonkDisplay::DISPLAY_EXTERNAL);
+    }
+
     nsWindow *targetWindow = (nsWindow *)windows[0];
     while (targetWindow->GetLastChild()) {
         targetWindow = (nsWindow *)targetWindow->GetLastChild();

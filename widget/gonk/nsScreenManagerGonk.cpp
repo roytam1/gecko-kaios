@@ -126,6 +126,8 @@ nsScreenGonk::nsScreenGonk(uint32_t aId,
 #if ANDROID_VERSION >= 17
     , mDisplaySurface(aNativeData.mDisplaySurface)
 #endif
+    , mComposer2DSupported(aNativeData.mComposer2DSupported)
+    , mVsyncSupported(aNativeData.mVsyncSupported)
     , mIsMirroring(false)
     , mDisplayType(aDisplayType)
     , mEGLDisplay(EGL_NO_DISPLAY)
@@ -598,6 +600,18 @@ nsScreenGonk::GetPrevDispAcquireFd()
     return mDisplaySurface->GetPrevDispAcquireFd();
 }
 #endif
+
+bool
+nsScreenGonk::IsComposer2DSupported()
+{
+    return mComposer2DSupported;
+}
+
+bool
+nsScreenGonk::IsVsyncSupported()
+{
+  return mVsyncSupported;
+}
 
 GonkDisplay::DisplayType
 nsScreenGonk::GetDisplayType()
