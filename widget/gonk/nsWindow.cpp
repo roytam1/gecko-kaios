@@ -51,6 +51,7 @@
 #include "mozilla/layers/CompositorOGL.h"
 #include "mozilla/layers/CompositorBridgeParent.h"
 #include "mozilla/layers/LayerManagerComposite.h"
+#include "mozilla/layers/LayerTransactionChild.h"
 #include "mozilla/TouchEvents.h"
 #include "HwcComposer2D.h"
 #include "nsImageLoadingContent.h"
@@ -786,15 +787,44 @@ nsWindow::SetCursor(nsCursor aCursor)
   return NS_OK;
 }
 
+void KickOffComposition(LayerManager* aLayerManager)
+{
+  if (!aLayerManager) {
+    return;
+  }
+
+  RefPtr<LayerTransactionChild> transaction;
+  ShadowLayerForwarder* forwarder = aLayerManager->AsShadowForwarder();
+  if (forwarder && forwarder->HasShadowManager()) {
+    transaction = forwarder->GetShadowManager();
+  }
+
+  if (transaction && transaction->IPCOpen()) {
+    //Trigger compostion to draw GL cursor
+    transaction->SendForceComposite();
+  }
+
+}
+
 NS_IMETHODIMP
 nsWindow::DispatchEvent(WidgetGUIEvent* aEvent, nsEventStatus& aStatus)
 {
     if (aEvent->mMessage == eMouseMove) {
       mCursorPos.x = aEvent->mRefPoint.x;
       mCursorPos.y = aEvent->mRefPoint.y;
+
+      if (gfxPrefs::GLCursorEnabled()) {
+        KickOffComposition(GetLayerManager());
+      }
+
     } else if (aEvent->mMessage == eMouseExitFromWidget) {
       mCursorPos.x = -1;
       mCursorPos.y = -1;
+
+      if (gfxPrefs::GLCursorEnabled()) {
+        KickOffComposition(GetLayerManager());
+      }
+
     }
 
     if (mWidgetListener) {
