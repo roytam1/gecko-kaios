@@ -25,6 +25,14 @@
 
 class ANativeWindowBuffer;
 
+namespace mozilla {
+namespace dom {
+class AnonymousContent;
+}
+namespace gfx {
+class SourceSurface;
+}
+}
 namespace widget {
 struct InputContext;
 struct InputContextAction;
@@ -110,7 +118,15 @@ public:
         StartRemoteDrawing() override;
     virtual void EndRemoteDrawing() override;
 
-    virtual float GetDPI() override;
+    NS_IMETHOD SetCursor(nsCursor aCursor) override;
+    NS_IMETHOD SetCursor(imgIContainer* aCursor,
+                     uint32_t aHotspotX,
+                     uint32_t aHotspotY) { return NS_ERROR_NOT_IMPLEMENTED; }
+
+    void UpdateCursorSourceMap(nsCursor aCursor);
+    already_AddRefed<mozilla::gfx::SourceSurface> RestyleCursorElement(nsCursor aCursor);
+
+    virtual float GetDPI();
     virtual bool IsVsyncSupported() override;
     virtual double GetDefaultScaleInternal();
     virtual mozilla::layers::LayerManager*
@@ -164,6 +180,11 @@ private:
     RefPtr<nsScreenGonk> mScreen;
 
     RefPtr<mozilla::HwcComposer2D> mComposer2D;
+
+    // Supprot for GL cursor
+    RefPtr<mozilla::dom::AnonymousContent> mCursorElementHolder;
+    RefPtr<mozilla::gfx::SourceSurface> mCursorSource;
+    nsCursor mLastMappedCursor;
 };
 
 #endif /* nsWindow_h */

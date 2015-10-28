@@ -80,10 +80,14 @@ include('/ipc/chromium/chromium-config.mozbuild')
 FINAL_LIBRARY = 'xul'
 
 LOCAL_INCLUDES += [
+    '/dom/base',
     '/dom/system/android',
     '/gfx/skia/skia/include/config',
     '/gfx/skia/skia/include/core',
     '/image',
+    '/layout/base',
+    '/layout/generic',
+    '/layout/style',
     '/widget',
 ]
 

@@ -342,6 +342,46 @@ parsererror|sourcetext {
   font-size: 12pt;
 }
 
+img:-moz-native-anonymous.moz-cursor.std::after {
+    content: url("resource://gre/res/cur_default_24px.svg");
+    visibility: hidden;
+}
+
+img:-moz-native-anonymous.moz-cursor.wait::after {
+    content: url("resource://gre/res/cur_wait_24px.svg");
+    visibility: hidden;
+}
+
+img:-moz-native-anonymous.moz-cursor.select::after {
+    content: url("resource://gre/res/cur_text_24px.svg");
+    visibility: hidden;
+}
+
+img:-moz-native-anonymous.moz-cursor.grab::after {
+    content: url("resource://gre/res/cur_grab_24px.svg");
+    visibility: hidden;
+}
+
+img:-moz-native-anonymous.moz-cursor.vertical_text::after {
+    content: url("resource://gre/res/cur_vertical_text_24px.svg");
+    visibility: hidden;
+}
+
+img:-moz-native-anonymous.moz-cursor.grabbing::after {
+    content: url("resource://gre/res/cur_grabbing_24px.svg");
+    visibility: hidden;
+}
+
+img:-moz-native-anonymous.moz-cursor.link::after {
+    content: url("resource://gre/res/cur_pointer_24px.svg");
+    visibility: hidden;
+}
+
+img:-moz-native-anonymous.moz-cursor.spinning::after {
+    content: url("resource://gre/res/cur_progress_24px.svg");
+    visibility: hidden;
+}
+
 div:-moz-native-anonymous.moz-accessiblecaret {
   /* Add transition effect to make caret size changing smoother. */
   transition-duration: 250ms;

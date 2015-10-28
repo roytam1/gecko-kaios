@@ -340,6 +340,7 @@ public:
     return mRenderOffset;
   }
 
+  void UpdateGLCursorTexture(RefPtr<gfx::DataSourceSurface> aSource);
   void DrawGLCursor(LayoutDeviceIntRect aRect, LayoutDeviceIntPoint aCursorPos);
 
 private:
@@ -489,7 +490,7 @@ private:
   gfx::IntSize mViewportSize;
 
   ShaderProgramOGL *mCurrentProgram;
-
+  RefPtr<DataTextureSource> mCursorTexture;
   CompositorOGLVRObjects mVR;
 
 #if defined(MOZ_WIDGET_GONK) && ANDROID_VERSION >= 21

@@ -534,6 +534,11 @@ protected:
   RefPtr<WidgetShutdownObserver> mShutdownObserver;
   RefPtr<TextEventDispatcher> mTextEventDispatcher;
   nsCursor          mCursor;
+
+  // Support for GL cursor
+  LayoutDeviceIntPoint mCursorPos; // Save the current cursor position
+  bool mCursorSourceChanged; //true if the cursor's image is changed
+
   nsBorderStyle     mBorderStyle;
   LayoutDeviceIntRect mBounds;
   LayoutDeviceIntRect* mOriginalBounds;
@@ -551,7 +556,7 @@ protected:
 #if defined(XP_WIN) || defined(XP_MACOSX)
   bool              mAccessibilityInUseFlag;
 #endif
-  LayoutDeviceIntPoint      mCursorPos;
+
   static nsIRollupListener* gRollupListener;
 
   // the last rolled up popup. Only set this when an nsAutoRollup is in scope,

@@ -18,8 +18,10 @@
 #include "mozilla/DebugOnly.h"
 
 #include <fcntl.h>
+#include <map>
 
 #include "android/log.h"
+#include "mozilla/dom/AnonymousContent.h"
 #include "mozilla/dom/TabParent.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/RefPtr.h"
@@ -31,7 +33,10 @@
 #include "GLContextProvider.h"
 #include "GLContext.h"
 #include "GLContextEGL.h"
+#include "nsLayoutUtils.h"
 #include "nsAppShell.h"
+#include "nsDOMTokenList.h"
+#include "nsIFrame.h"
 #include "nsScreenManagerGonk.h"
 #include "nsTArray.h"
 #include "nsIWidgetListener.h"
@@ -48,6 +53,7 @@
 #include "mozilla/layers/LayerManagerComposite.h"
 #include "mozilla/TouchEvents.h"
 #include "HwcComposer2D.h"
+#include "nsImageLoadingContent.h"
 
 #define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "Gonk" , ## args)
 #define LOGW(args...) __android_log_print(ANDROID_LOG_WARN, "Gonk", ## args)
@@ -86,6 +92,18 @@ nsWindow::nsWindow()
 
 nsWindow::~nsWindow()
 {
+    ErrorResult rv;
+    if (mWidgetListener) {
+      nsIPresShell* presShell = mWidgetListener->GetPresShell();
+      if (presShell && presShell->GetDocument()) {
+         presShell->GetDocument()->RemoveAnonymousContent(*mCursorElementHolder, rv);
+      }
+    }
+
+    if (mCursorElementHolder.get()) {
+      mCursorElementHolder = nullptr;
+    }
+
     if (mScreen->IsPrimaryScreen()) {
         mComposer2D->SetCompositorBridgeParent(nullptr);
     }
@@ -631,6 +649,143 @@ nsWindow::SetNativeData(uint32_t aDataType, uintptr_t aVal)
     }
 }
 
+typedef mozilla::gfx::SourceSurface SourceSurface;
+std::map<nsCursor, RefPtr<SourceSurface>> sCursorSourceMap;
+
+nsString GetCursorElementClassID(nsCursor aCursor)
+{
+  nsString strClassID;
+  switch (aCursor) {
+  case eCursor_standard:
+    strClassID = NS_LITERAL_STRING("std");
+    break;
+  case eCursor_wait:
+    strClassID = NS_LITERAL_STRING("wait");
+    break;
+  case eCursor_grab:
+    strClassID = NS_LITERAL_STRING("grab");
+    break;
+  case eCursor_grabbing:
+    strClassID = NS_LITERAL_STRING("grabbing");
+    break;
+  case eCursor_select:
+    strClassID = NS_LITERAL_STRING("select");
+    break;
+  case eCursor_hyperlink:
+    strClassID = NS_LITERAL_STRING("link");
+    break;
+  case eCursor_vertical_text:
+    strClassID = NS_LITERAL_STRING("vertical_text");
+    break;
+  case eCursor_spinning:
+    strClassID = NS_LITERAL_STRING("spinning");
+    break;
+  default:
+    strClassID = NS_LITERAL_STRING("std");
+  }
+  return strClassID;
+}
+
+nsCursor MapCursorState(nsCursor aCursor)
+{
+  nsCursor mappedCursor = aCursor;
+  switch (mappedCursor) {
+  case eCursor_standard:
+  case eCursor_wait:
+  case eCursor_grab:
+  case eCursor_grabbing:
+  case eCursor_select:
+  case eCursor_hyperlink:
+  case eCursor_vertical_text:
+  case eCursor_spinning:
+    break;
+  default:
+    mappedCursor = eCursor_standard;
+  }
+  return mappedCursor;
+}
+already_AddRefed<SourceSurface>
+nsWindow::RestyleCursorElement(nsCursor aCursor)
+{
+  RefPtr<SourceSurface> source;
+  nsIPresShell* presShell = mWidgetListener->GetPresShell();
+  if (presShell && presShell->GetDocument()) {
+    nsIDocument* doc = presShell->GetDocument();
+
+    // Only run once during the initialization phase
+    if (!mCursorElementHolder.get()) {
+      nsCOMPtr<dom::Element> image = doc->CreateHTMLElement(nsGkAtoms::img);
+      ErrorResult rv;
+      image->ClassList()->Add(NS_LITERAL_STRING("moz-cursor"), rv);
+      image->ClassList()->Add(GetCursorElementClassID(aCursor), rv);
+      mCursorElementHolder = doc->InsertAnonymousContent(*image, rv);
+      mLastMappedCursor = aCursor;
+    } else if (mLastMappedCursor != aCursor) {
+      ErrorResult rv;
+      mCursorElementHolder->GetContentNode()->ClassList()->Remove(GetCursorElementClassID(mLastMappedCursor), rv);
+      mCursorElementHolder->GetContentNode()->ClassList()->Add(GetCursorElementClassID(aCursor), rv);
+      mLastMappedCursor = aCursor;
+
+      /* This is a kind of trick to load cursor image in next setfocus call
+       * which is triggered in next refresh driver tick, since the restyle
+       * only happen in next tick
+       */
+      return source.forget();
+    }
+
+    if (mCursorElementHolder.get()) {
+      ErrorResult rv;
+      nsCOMPtr<dom::Element> element = mCursorElementHolder->GetContentNode();
+      nsIFrame* frame = element->GetPrimaryFrame();
+      frame = nsLayoutUtils::GetAfterFrame(frame);
+      nsCOMPtr<dom::Element> cursorElement = frame->GetContent()->GetFirstChild()->AsElement();
+
+      if (cursorElement.get()) {
+        nsCOMPtr<nsIImageLoadingContent> imageLoader = do_QueryInterface(cursorElement);
+
+        RefPtr<DrawTarget> dummy;
+        nsLayoutUtils::SurfaceFromElementResult res =
+          nsLayoutUtils::SurfaceFromElement(imageLoader, nsLayoutUtils::SFE_WANT_FIRST_FRAME, dummy);
+        source = res.GetSourceSurface();
+      }
+    }
+  }
+  return source.forget();
+}
+void nsWindow::UpdateCursorSourceMap(nsCursor aCursor)
+{
+  RefPtr<SourceSurface> source;
+  // Find aCursor in mCursorMap and get img
+  std::map<nsCursor, RefPtr<SourceSurface>>::iterator itr;
+
+  nsCursor mappedCursor = MapCursorState(aCursor);
+  itr = sCursorSourceMap.find(mappedCursor);
+
+  // Can't find the cursor image based on current state
+  if (itr == sCursorSourceMap.end()) {
+    source = RestyleCursorElement(mappedCursor);
+    if (source.get()) {
+      sCursorSourceMap[mappedCursor] = source;
+    }
+  } else {
+    source = itr->second;
+  }
+
+  if (source.get() && mCursorSource != source) {
+    mCursorSource = source;
+    mCursorSourceChanged = true;
+  }
+}
+
+NS_IMETHODIMP
+nsWindow::SetCursor(nsCursor aCursor)
+{
+  UpdateCursorSourceMap(aCursor);
+
+  nsBaseWidget::SetCursor(aCursor);
+  return NS_OK;
+}
+
 NS_IMETHODIMP
 nsWindow::DispatchEvent(WidgetGUIEvent* aEvent, nsEventStatus& aStatus)
 {
@@ -702,6 +857,10 @@ nsWindow::DrawWindowOverlay(LayerManagerComposite* aManager, LayoutDeviceIntRect
     if (aManager) {
       CompositorOGL *compositor = static_cast<CompositorOGL*>(aManager->GetCompositor());
       if (compositor) {
+        if (mCursorSource.get() && mCursorSourceChanged) {
+          compositor->UpdateGLCursorTexture(mCursorSource->GetDataSurface());
+          mCursorSourceChanged = false;
+        }
         compositor->DrawGLCursor(aRect, mCursorPos);
       }
     }
