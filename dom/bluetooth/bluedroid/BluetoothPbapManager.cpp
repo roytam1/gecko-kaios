@@ -99,6 +99,7 @@ BluetoothPbapManager::HandleShutdown()
 }
 
 BluetoothPbapManager::BluetoothPbapManager() : mPhonebookSizeRequired(false)
+                                             , mNewMissedCallsRequired(false)
                                              , mConnected(false)
                                              , mRemoteMaxPacketLength(0)
 {
@@ -497,6 +498,10 @@ BluetoothPbapManager::NotifyPbapRequest(const ObexHeaderSet& aHeader)
 {
   MOZ_ASSERT(NS_IsMainThread());
 
+  // Clean up the flag of last PBAP request
+  mPhonebookSizeRequired = false;
+  mNewMissedCallsRequired = false;
+
   // Get content type and name
   nsString type, name;
   aHeader.GetContentType(type);
@@ -517,6 +522,11 @@ BluetoothPbapManager::NotifyPbapRequest(const ObexHeaderSet& aHeader)
               NS_ConvertUTF16toUTF8(name).get());
       return ObexResponseCode::NotFound;
     }
+
+    // Handle missed calls history request
+    if (!strcmp(NS_ConvertUTF16toUTF8(name).get(), "mch")) {
+      mNewMissedCallsRequired = true;
+    }
   } else if (type.EqualsLiteral("x-bt/vcard-listing")) {
     reqId.AssignLiteral(PULL_VCARD_LISTING_REQ_ID);
     tagCount = MOZ_ARRAY_LENGTH(sVCardListingTags);
@@ -527,6 +537,11 @@ BluetoothPbapManager::NotifyPbapRequest(const ObexHeaderSet& aHeader)
     // may be sent to retrieve the vCard Listing object of the current folder.
     name = name.IsEmpty() ? mCurrentPath
                           : mCurrentPath + NS_LITERAL_STRING("/") + name;
+
+    // Handle missed calls history request
+    if (!strcmp(NS_ConvertUTF16toUTF8(name).get(), "mch")) {
+      mNewMissedCallsRequired = true;
+    }
   } else if (type.EqualsLiteral("x-bt/vcard")) {
     reqId.AssignLiteral(PULL_VCARD_ENTRY_REQ_ID);
     tagCount = MOZ_ARRAY_LENGTH(sVCardEntryTags);
@@ -745,6 +760,7 @@ BluetoothPbapManager::AfterPbapDisconnected()
 
   mRemoteMaxPacketLength = 0;
   mPhonebookSizeRequired = false;
+  mNewMissedCallsRequired = false;
 
   if (mVCardDataStream) {
     mVCardDataStream->Close();
@@ -1015,8 +1031,8 @@ BluetoothPbapManager::ReplyToGet(uint16_t aPhonebookSize)
    * This response consists of following parts:
    * - Part 1: [response code:1][length:2]
    *
-   * If |mPhonebookSizeRequired| is true,
-   * - Part 2: [headerId:1][length:2][PhonebookSize:4]
+   * If |mPhonebookSizeRequired| or |mNewMissedCallsRequired| is true,
+   * - Part 2: [headerId:1][length:2][AppParameters:var]
    * - Part 3: [headerId:1][length:2][EndOfBody:0]
    * Otherwise,
    * - Part 2a: [headerId:1][length:2][EndOfBody:0]
@@ -1031,31 +1047,52 @@ BluetoothPbapManager::ReplyToGet(uint16_t aPhonebookSize)
   // Reserve index for them here
   unsigned int index = kObexRespHeaderSize;
 
-  if (mPhonebookSizeRequired) {
-    // ---- Part 2: [headerId:1][length:2][PhonebookSize:4] ---- //
-    uint8_t phonebookSize[2];
-    BigEndian::writeUint16(&phonebookSize[0], aPhonebookSize);
-
+  if (mPhonebookSizeRequired || mNewMissedCallsRequired) {
+    // ---- Part 2: [headerId:1][length:2][AppParameters:var] ---- //
     // Section 6.2.1 "Application Parameters Header", PBAP 1.2
-    // appParameters: [headerId:1][length:2][PhonebookSize:4], where
-    //                [PhonebookSize:4] = [tagId:1][length:1][value:2]
-    uint8_t appParameters[4];
-    AppendAppParameter(appParameters,
-                       sizeof(appParameters),
-                       static_cast<uint8_t>(AppParameterTag::PhonebookSize),
-                       phonebookSize,
-                       sizeof(phonebookSize));
+    // appParameters: [headerId:1][length:2][PhonebookSize:4][NewMissedCalls:3],
+    //                where [PhonebookSize:4]  = [tagId:1][length:1][value:2]
+    //                      [NewMissedCalls:3] = [tagId:1][length:1][value:1]
+    uint8_t appParameters[7];
+    unsigned int appParamLength = 0;
+
+    if (mPhonebookSizeRequired) {
+      uint8_t phonebookSize[2];
+      BigEndian::writeUint16(&phonebookSize[0], aPhonebookSize);
+
+      appParamLength +=
+        AppendAppParameter(appParameters + appParamLength,
+                           sizeof(appParameters),
+                           static_cast<uint8_t>(AppParameterTag::PhonebookSize),
+                           phonebookSize,
+                           sizeof(phonebookSize));
+
+      mPhonebookSizeRequired = false;
+    }
+
+    if (mNewMissedCallsRequired) {
+      // Since the frontend of H5OS don't support NewMissedCalls feature, set
+      // it to 0 to pretend every missed calls is dismissed.
+      uint8_t dummyNewMissedCalls = 0;
+
+      appParamLength +=
+        AppendAppParameter(appParameters + appParamLength,
+                           sizeof(appParameters),
+                           static_cast<uint8_t>(AppParameterTag::NewMissedCalls),
+                           &dummyNewMissedCalls,
+                           sizeof(dummyNewMissedCalls));
+
+      mNewMissedCallsRequired = false;
+    }
 
     index += AppendHeaderAppParameters(&res[index],
                                        mRemoteMaxPacketLength,
                                        appParameters,
-                                       sizeof(appParameters));
+                                       appParamLength);
 
     // ---- Part 3: [headerId:1][length:2][EndOfBody:0] ---- //
     opcode = ObexResponseCode::Success;
     index += AppendHeaderEndOfBody(&res[index]);
-
-    mPhonebookSizeRequired = false;
   } else {
     MOZ_ASSERT(mVCardDataStream);
 

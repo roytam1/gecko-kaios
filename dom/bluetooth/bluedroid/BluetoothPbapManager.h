@@ -192,6 +192,12 @@ private:
    */
   bool mPhonebookSizeRequired;
 
+
+  /**
+   * Whether 'NewMissedCalls' is required for the OBEX response
+   */
+  bool mNewMissedCallsRequired;
+
   /**
    * OBEX session status. Set when OBEX session is established
    */
