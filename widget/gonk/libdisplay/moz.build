@@ -45,6 +45,10 @@ elif CONFIG['ANDROID_VERSION'] == '15':
 elif CONFIG['ANDROID_VERSION'] and CONFIG['COMPILE_ENVIRONMENT']:
     error('Unsupported platform version: %s' % (CONFIG['ANDROID_VERSION']))
 
+if CONFIG['ANDROID_VERSION'] >= '17' and CONFIG['CPU_ARCH'] == 'arm' and CONFIG['BUILD_ARM_NEON']:
+    SOURCES += ['rgb8888_to_rgb565_neon.cpp']
+    SOURCES['rgb8888_to_rgb565_neon.cpp'].flags += ['-mfpu=neon']
+
 Library('display')
 
 include('/ipc/chromium/chromium-config.mozbuild')
