@@ -986,7 +986,7 @@ public:
 
 private:
   nsTArray<RefPtr<BluetoothReplyRunnable>>& mRunnableArray;
-  BluetoothReplyRunnable* mRunnable;
+  RefPtr<BluetoothReplyRunnable> mRunnable;
 };
 
 void
@@ -1302,7 +1302,7 @@ public:
   }
 
 private:
-  BluetoothReplyRunnable* mRunnable;
+  RefPtr<BluetoothReplyRunnable> mRunnable;
 };
 
 class BluetoothServiceBluedroid::CancelBondResultHandler final
@@ -1324,7 +1324,7 @@ public:
   }
 
 private:
-  BluetoothReplyRunnable* mRunnable;
+  RefPtr<BluetoothReplyRunnable> mRunnable;
 };
 
 void
@@ -1381,7 +1381,7 @@ public:
   }
 
 private:
-  BluetoothReplyRunnable* mRunnable;
+  RefPtr<BluetoothReplyRunnable> mRunnable;
 };
 
 void
