@@ -110,7 +110,8 @@ public:
         StartRemoteDrawing() override;
     virtual void EndRemoteDrawing() override;
 
-    virtual float GetDPI();
+    virtual float GetDPI() override;
+    virtual bool IsVsyncSupported() override;
     virtual double GetDefaultScaleInternal();
     virtual mozilla::layers::LayerManager*
         GetLayerManager(PLayerTransactionChild* aShadowManager = nullptr,

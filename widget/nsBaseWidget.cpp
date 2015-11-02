@@ -556,6 +556,12 @@ float nsBaseWidget::GetDPI()
   return 96.0f;
 }
 
+bool
+nsBaseWidget::IsVsyncSupported()
+{
+    return true;
+}
+
 CSSToLayoutDeviceScale nsIWidget::GetDefaultScale()
 {
   double devPixelsPerCSSPixel = DefaultScaleOverride();

@@ -126,6 +126,7 @@ public:
   virtual nsIWidget*      GetTopLevelWidget() override;
   virtual nsIWidget*      GetSheetWindowParent(void) override;
   virtual float           GetDPI() override;
+  virtual bool            IsVsyncSupported() override;
   virtual void            AddChild(nsIWidget* aChild) override;
   virtual void            RemoveChild(nsIWidget* aChild) override;
 

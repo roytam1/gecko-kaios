@@ -900,6 +900,13 @@ HwcComposer2D::TryRenderWithHwc(Layer* aRoot,
 
     nsScreenGonk* screen = static_cast<nsWindow*>(aWidget)->GetScreen();
 
+    // On certain devices, ex: Octans, hwc only controls primary screen.
+    // For exteranl screen we should return false and fall back to GPU
+    // composition.
+    if (!screen->IsComposer2DSupported()) {
+        return false;
+    }
+
     if (mList) {
         mList->flags = mHal->GetGeometryChangedFlag(aGeometryChanged);
         mList->numHwLayers = 0;

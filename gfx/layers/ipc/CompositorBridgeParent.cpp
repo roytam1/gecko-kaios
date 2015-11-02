@@ -730,8 +730,7 @@ CompositorBridgeParent::CompositorBridgeParent(nsIWidget* aWidget,
     mApzcTreeManager = new APZCTreeManager();
   }
 
-  nsScreenGonk* screen = static_cast<nsWindow*>(aWidget)->GetScreen();
-  if (screen->IsVsyncSupported()) {
+  if (aWidget->IsVsyncSupported()) {
     mCompositorScheduler = new CompositorVsyncScheduler(this, aWidget);
   } else {
     mCompositorScheduler = new CompositorSoftwareTimerScheduler(this);

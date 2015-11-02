@@ -694,6 +694,12 @@ nsWindow::GetDPI()
     return mScreen->GetDpi();
 }
 
+bool
+nsWindow::IsVsyncSupported()
+{
+    return mScreen->IsVsyncSupported();
+}
+
 double
 nsWindow::GetDefaultScaleInternal()
 {
