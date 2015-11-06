@@ -50,10 +50,14 @@ public:
                         ErrorResult& aRv);
   bool ScreenEnabled();
   void SetScreenEnabled(bool aEnabled);
+  bool ExtScreenEnabled();
+  void SetExtScreenEnabled(bool aEnabled);
   bool KeyLightEnabled();
   void SetKeyLightEnabled(bool aEnabled);
   double ScreenBrightness();
   void SetScreenBrightness(double aBrightness, ErrorResult& aRv);
+  double ExtScreenBrightness();
+  void SetExtScreenBrightness(double aBrightness, ErrorResult& aRv);
   bool CpuSleepAllowed();
   void SetCpuSleepAllowed(bool aAllowed);
 

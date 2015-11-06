@@ -156,6 +156,18 @@ PowerManager::SetScreenEnabled(bool aEnabled)
 }
 
 bool
+PowerManager::ExtScreenEnabled()
+{
+  return hal::GetExtScreenEnabled();
+}
+
+void
+PowerManager::SetExtScreenEnabled(bool aEnabled)
+{
+  hal::SetExtScreenEnabled(aEnabled);
+}
+
+bool
 PowerManager::KeyLightEnabled()
 {
   return hal::GetKeyLightEnabled();
@@ -178,6 +190,22 @@ PowerManager::SetScreenBrightness(double aBrightness, ErrorResult& aRv)
 {
   if (0 <= aBrightness && aBrightness <= 1) {
     hal::SetScreenBrightness(aBrightness);
+  } else {
+    aRv.Throw(NS_ERROR_INVALID_ARG);
+  }
+}
+
+double
+PowerManager::ExtScreenBrightness()
+{
+  return hal::GetExtScreenBrightness();
+}
+
+void
+PowerManager::SetExtScreenBrightness(double aBrightness, ErrorResult& aRv)
+{
+  if (0 <= aBrightness && aBrightness <= 1) {
+    hal::SetExtScreenBrightness(aBrightness);
   } else {
     aRv.Throw(NS_ERROR_INVALID_ARG);
   }

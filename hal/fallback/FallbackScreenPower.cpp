@@ -18,6 +18,16 @@ SetScreenEnabled(bool aEnabled)
 {}
 
 bool
+GetExtScreenEnabled()
+{
+  return true;
+}
+
+void
+SetExtScreenEnabled(bool aEnabled)
+{}
+
+bool
 GetKeyLightEnabled()
 {
   return true;
@@ -35,6 +45,16 @@ GetScreenBrightness()
 
 void
 SetScreenBrightness(double aBrightness)
+{}
+
+double
+GetExtScreenBrightness()
+{
+  return 1;
+}
+
+void
+SetExtScreenBrightness(double aBrightness)
 {}
 
 } // namespace hal_impl

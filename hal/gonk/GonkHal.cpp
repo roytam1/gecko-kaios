@@ -714,6 +714,7 @@ namespace {
 // we read, we always get "mem"!  So we have to keep track ourselves whether
 // the screen is on or not.
 bool sScreenEnabled = true;
+bool sExtScreenEnabled = true;
 
 // We can read wakeLockFilename to find out whether the cpu wake lock
 // is already acquired, but reading and parsing it is a lot more work
@@ -739,6 +740,41 @@ SetScreenEnabled(bool aEnabled)
 {
   GetGonkDisplay()->SetEnabled(aEnabled);
   sScreenEnabled = aEnabled;
+}
+
+bool
+GetExtScreenEnabled()
+{
+  return sExtScreenEnabled;
+}
+
+void
+SetExtScreenEnabled(bool aEnabled)
+{
+  GetGonkDisplay()->SetExtEnabled(aEnabled);
+  sExtScreenEnabled = aEnabled;
+}
+
+double
+GetExtScreenBrightness()
+{
+  uint32_t brightness = GetGonkDisplay()->GetExtBrightness();
+  return brightness / 255.0;
+}
+
+void
+SetExtScreenBrightness(double brightness)
+{
+  // Don't use De Morgan's law to push the ! into this expression; we want to
+  // catch NaN too.
+  if (!(0 <= brightness && brightness <= 1)) {
+    HAL_LOG("SetExtScreenBrightness: Dropping illegal brightness %f.", brightness);
+    return;
+  }
+
+  // Convert the value in [0, 1] to an int between 0 and 255,
+  uint32_t val = static_cast<int>(round(brightness * 255.0));
+  GetGonkDisplay()->SetExtBrightness(val);
 }
 
 bool

@@ -466,6 +466,18 @@ void SetScreenEnabled(bool aEnabled)
   PROXY_IF_SANDBOXED(SetScreenEnabled(aEnabled));
 }
 
+bool GetExtScreenEnabled()
+{
+  AssertMainThread();
+  RETURN_PROXY_IF_SANDBOXED(GetExtScreenEnabled(), false);
+}
+
+void SetExtScreenEnabled(bool aEnabled)
+{
+  AssertMainThread();
+  PROXY_IF_SANDBOXED(SetExtScreenEnabled(aEnabled));
+}
+
 bool GetKeyLightEnabled()
 {
   AssertMainThread();
@@ -504,6 +516,18 @@ void SetScreenBrightness(double aBrightness)
 {
   AssertMainThread();
   PROXY_IF_SANDBOXED(SetScreenBrightness(clamped(aBrightness, 0.0, 1.0)));
+}
+
+double GetExtScreenBrightness()
+{
+  AssertMainThread();
+  RETURN_PROXY_IF_SANDBOXED(GetExtScreenBrightness(), 0);
+}
+
+void SetExtScreenBrightness(double aBrightness)
+{
+  AssertMainThread();
+  PROXY_IF_SANDBOXED(SetExtScreenBrightness(clamped(aBrightness, 0.0, 1.0)));
 }
 
 class SystemClockChangeObserversManager : public ObserversManager<int64_t>

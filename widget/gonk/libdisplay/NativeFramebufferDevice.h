@@ -24,9 +24,11 @@ namespace mozilla {
 
 class NativeFramebufferDevice {
 public:
-    NativeFramebufferDevice();
+    NativeFramebufferDevice(int backlightFd);
 
     ~NativeFramebufferDevice();
+
+    static NativeFramebufferDevice* Create();
 
     bool Open(const char* deviceName);
 
@@ -34,9 +36,11 @@ public:
 
     bool Close();
 
-    bool PowerOnBackLight();
+    bool EnableScreen(int enabled);
 
-    bool PowerOffBackLight();
+    bool SetBrightness(int brightness);
+
+    int32_t GetBrightness();
 
     bool IsValid();
 
@@ -53,6 +57,8 @@ private:
     struct fb_fix_screeninfo mFInfo;
     gralloc_module_t *mGrmodule;
     int32_t mFBSurfaceformat;
+    int32_t mBacklightFd;
+    int32_t mBrightness;
 };
 
 }

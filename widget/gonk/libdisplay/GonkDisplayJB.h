@@ -33,6 +33,12 @@ public:
 
     virtual void SetEnabled(bool enabled);
 
+    virtual void SetExtEnabled(bool enabled);
+
+    virtual int32_t GetExtBrightness();
+
+    virtual void SetExtBrightness(int32_t brightness);
+
     virtual void OnEnabled(OnEnabledCallbackType callback);
 
     virtual void* GetHWCDevice();
@@ -83,6 +89,8 @@ private:
     android::sp<android::IGraphicBufferAlloc> mAlloc;
     hwc_display_contents_1_t* mList;
     OnEnabledCallbackType mEnabledCallback;
+    bool mFBEnabled;
+    bool mExtFBEnabled;
 };
 
 }

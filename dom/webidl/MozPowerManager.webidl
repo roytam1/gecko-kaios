@@ -64,6 +64,12 @@ interface MozPowerManager
     attribute boolean screenEnabled;
 
     /**
+     * Is the device's external screen currently enabled?
+     * Setting this attribute to false will turn off the external screen.
+     */
+    attribute boolean extScreenEnabled;
+
+    /**
      * Is the device's keypad/button backlight enabled? Setting it to false will
      * turn off the device's keypad/button backlight. And the brightness level
      * is the same as |screenBrightness|.
@@ -87,6 +93,16 @@ interface MozPowerManager
      */
     [SetterThrows]
     attribute double screenBrightness;
+
+    /**
+     * How bright is the external screen's backlight, on a scale
+     * from 0 (very dim) to 1 (full brightness)?
+     * Setting this attribute modifies the external screen's brightness.
+     *
+     * @throw NS_ERROR_INVALID_ARG if brightness is not in the range [0, 1].
+     */
+    [SetterThrows]
+    attribute double extScreenBrightness;
 
     /**
      * Is it possible that the device's CPU will sleep after the screen is

@@ -54,6 +54,8 @@ GonkDisplayJB::GonkDisplayJB()
     , mPowerModule(nullptr)
     , mList(nullptr)
     , mEnabledCallback(nullptr)
+    , mFBEnabled(false)
+    , mExtFBEnabled(false)
 {
     int err = hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &mFBModule);
     ALOGW_IF(err, "%s module not found", GRALLOC_HARDWARE_MODULE_ID);
@@ -145,42 +147,33 @@ GonkDisplayJB::GonkDisplayJB()
         mSTClient->perform(mSTClient.get(), NATIVE_WINDOW_SET_USAGE, usage);
     }
 
-    // Mock the property before we can build ocatans. uncomment this line to
-    // turn on native framebuffer support.
-    // property_set("ro.display.fb1.enabled", "1");
-
-    char propValue[PROPERTY_VALUE_MAX];
-    property_get("ro.display.fb1.enabled", propValue, "0");
-    bool extFBIsEnabled = (atoi(propValue) == 1) ? true : false;
-
+    // Set this prop to turn on native framebuffer support for fb1,
+    // such as external screen of flip phone.
+    // ro.h5.display.fb1_backlightdev=__full_backlight_device_path__
+    //
+    // ex: Octans will set this prop in device/t2m/octans/octans.mk
     DisplayNativeData &extDispData = mDispNativeData[DISPLAY_EXTERNAL];
-    if (extFBIsEnabled) {
-        mExtFBDevice = new NativeFramebufferDevice();
-        bool success = false;
-        if (mExtFBDevice) {
-            success = mExtFBDevice->Open("fb1");
-        }
+    mExtFBDevice = NativeFramebufferDevice::Create();
 
-        if (success) {
+    if (mExtFBDevice) {
+        if (mExtFBDevice->Open("fb1")) {
             extDispData.mWidth = mExtFBDevice->mWidth;
             extDispData.mHeight = mExtFBDevice->mHeight;
             extDispData.mSurfaceformat = mExtFBDevice->mSurfaceformat;
             extDispData.mXdpi = mExtFBDevice->mXdpi;
+
+            mExtFBDevice->EnableScreen(true);
+            CreateFramebufferSurface(mExtSTClient,
+                                     mExtDispSurface,
+                                     extDispData.mWidth,
+                                     extDispData.mHeight,
+                                     extDispData.mSurfaceformat);
+            mExtSTClient->perform(mExtSTClient.get(), NATIVE_WINDOW_SET_BUFFER_COUNT, 2);
+            mExtSTClient->perform(mExtSTClient.get(), NATIVE_WINDOW_SET_USAGE, usage);
         } else {
             delete mExtFBDevice;
             mExtFBDevice = nullptr;
         }
-    }
-
-    if (mExtFBDevice) {
-        mExtFBDevice->PowerOnBackLight();
-        CreateFramebufferSurface(mExtSTClient,
-                                 mExtDispSurface,
-                                 extDispData.mWidth,
-                                 extDispData.mHeight,
-                                 extDispData.mSurfaceformat);
-        mExtSTClient->perform(mExtSTClient.get(), NATIVE_WINDOW_SET_BUFFER_COUNT, 2);
-        mExtSTClient->perform(mExtSTClient.get(), NATIVE_WINDOW_SET_USAGE, usage);
     }
 }
 
@@ -276,15 +269,56 @@ GonkDisplayJB::SetEnabled(bool enabled)
         mFBDevice->enableScreen(mFBDevice, enabled);
     }
 #endif
+    mFBEnabled = enabled;
 
     if (enabled && mEnabledCallback) {
         mEnabledCallback(enabled);
     }
 
-    if (!enabled) {
+    if (!enabled && !mExtFBEnabled) {
         autosuspend_enable();
         mPowerModule->setInteractive(mPowerModule, false);
     }
+}
+
+void
+GonkDisplayJB::SetExtEnabled(bool enabled)
+{
+    if (!mExtFBDevice) {
+        return;
+    }
+    if (enabled) {
+        autosuspend_disable();
+        mPowerModule->setInteractive(mPowerModule, true);
+    }
+
+    mExtFBDevice->EnableScreen(enabled);
+    mExtFBEnabled = enabled;
+
+    if (!enabled && !mFBEnabled) {
+        autosuspend_enable();
+        mPowerModule->setInteractive(mPowerModule, false);
+    }
+}
+
+int32_t
+GonkDisplayJB::GetExtBrightness()
+{
+  if (!mExtFBDevice) {
+    return 0;
+  }
+
+  return mExtFBDevice->GetBrightness();
+}
+
+void
+GonkDisplayJB::SetExtBrightness(int aBrightness)
+{
+  if (!mExtFBDevice) {
+    return;
+  }
+
+  mExtFBDevice->SetBrightness(aBrightness);
 }
 
 void

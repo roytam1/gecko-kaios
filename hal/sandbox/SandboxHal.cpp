@@ -150,6 +150,19 @@ SetScreenEnabled(bool aEnabled)
 }
 
 bool
+GetExtScreenEnabled()
+{
+  NS_RUNTIMEABORT("GetExtScreenEnabled() can't be called from sandboxed contexts.");
+  return false;
+}
+
+void
+SetExtScreenEnabled(bool aEnabled)
+{
+  NS_RUNTIMEABORT("SetExtScreenEnabled() can't be called from sandboxed contexts.");
+}
+
+bool
 GetKeyLightEnabled()
 {
   bool enabled = false;
@@ -189,6 +202,19 @@ void
 SetScreenBrightness(double aBrightness)
 {
   Hal()->SendSetScreenBrightness(aBrightness);
+}
+
+double
+GetExtScreenBrightness()
+{
+  NS_RUNTIMEABORT("GetExtScreenBrightness() can't be called from sandboxed contexts.");
+  return 0;
+}
+
+void
+SetExtScreenBrightness(double aBrightness)
+{
+  NS_RUNTIMEABORT("SetExtScreenBrightness() can't be called from sandboxed contexts.");
 }
 
 void

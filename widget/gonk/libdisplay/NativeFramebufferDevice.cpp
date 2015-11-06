@@ -20,34 +20,27 @@
 #include "NativeFramebufferDevice.h"
 #include "mozilla/FileUtils.h"
 #include "utils/Log.h"
+#include "cutils/properties.h"
 
 #define DEFAULT_XDPI 75.0
 
 namespace mozilla {
 
-// Device file could be different among platforms
-// Need to find a way to set this by build or by android properties
-static const char* kBacklightDevice = "/sys/class/ktd20xx/ktd2026/back_light_led";
-
-
 inline unsigned int roundUpToPageSize(unsigned int x) {
     return (x + (PAGE_SIZE-1)) & ~(PAGE_SIZE-1);
 }
 
-inline bool WriteValueToFile(const char* name, const char* value)
+inline bool WriteValueToFile(int backlightFd, int value)
 {
-    if (!name || !value)
-        return false;
-
-    mozilla::ScopedClose fdLight(open(name, O_RDWR));
-
-    if (fdLight.get() == -1) {
-        ALOGE("Failed to open backlight device.");
+    if (backlightFd <= 0) {
+        ALOGE("Invalid fd to control backlight device.");
         return false;
     }
 
-    if (lseek(fdLight.get(), 0, SEEK_SET) >= 0) {
-        write(fdLight.get(), value, 4);
+    if (lseek(backlightFd, 0, SEEK_SET) >= 0) {
+        char buf[16] = {0};
+        snprintf(buf, sizeof(buf), "%d", value);
+        write(backlightFd, buf, 4);
     }
 
     return true;
@@ -108,19 +101,40 @@ inline void Transform8888To565(uint8_t* outbuf, const uint8_t* inbuf, int PixelN
 #endif
 }
 
-NativeFramebufferDevice::NativeFramebufferDevice()
+NativeFramebufferDevice::NativeFramebufferDevice(int backlightFd)
     : mWidth(320)
     , mHeight(480)
     , mSurfaceformat(HAL_PIXEL_FORMAT_RGBA_8888)
     , mXdpi(DEFAULT_XDPI)
     , mFd(-1)
     , mGrmodule(nullptr)
+    , mBacklightFd(backlightFd)
+    , mBrightness(255)
 {
 }
 
 NativeFramebufferDevice::~NativeFramebufferDevice()
 {
     Close();
+}
+
+NativeFramebufferDevice*
+NativeFramebufferDevice::Create()
+{
+    char propValue[PROPERTY_VALUE_MAX];
+
+    if (property_get("ro.h5.display.fb1_backlightdev", propValue, NULL) <= 0) {
+        return nullptr;
+    }
+
+    int fd = open(propValue, O_RDWR, 0);
+
+    if (fd < 0) {
+        ALOGE("Failed to open backligth device %s", propValue);
+        return nullptr;
+    }
+
+    return new NativeFramebufferDevice(fd);
 }
 
 bool
@@ -145,7 +159,7 @@ NativeFramebufferDevice::Open(const char* deviceName)
     }
 
     if (mFd < 0) {
-        ALOGE("Fail to open framebuffer device %s", deviceName);
+        ALOGE("Failed to open framebuffer device %s", deviceName);
         return false;
     }
 
@@ -312,19 +326,54 @@ NativeFramebufferDevice::Close()
         mFd = -1;
     }
 
+    if (mBacklightFd != -1) {
+        close(mBacklightFd);
+        mBacklightFd = -1;
+    }
+
     return true;
 }
 
 bool
-NativeFramebufferDevice::PowerOnBackLight()
+NativeFramebufferDevice::EnableScreen(int enabled)
 {
-    return WriteValueToFile(kBacklightDevice, "255");
+    int mode = FB_BLANK_UNBLANK;
+    bool ret = true;
+
+    if (mFd < 0) {
+        ALOGE("No framebuffer device.");
+        return false;
+    }
+
+    if (!enabled) {
+        mode = FB_BLANK_POWERDOWN;
+        WriteValueToFile(mBacklightFd, 0);
+    }
+
+    if (ioctl(mFd, FBIOBLANK, mode) == -1) {
+        ALOGE("FBIOBLANK failed.");
+        ret = false;
+    }
+
+    if (enabled) {
+        /* Use previous brightness to turn on backlight */
+        WriteValueToFile(mBacklightFd, mBrightness);
+    }
+
+    return ret;
 }
 
 bool
-NativeFramebufferDevice::PowerOffBackLight()
+NativeFramebufferDevice::SetBrightness(int brightness)
 {
-    return WriteValueToFile(kBacklightDevice, "0");
+    mBrightness = brightness;
+    return WriteValueToFile(mBacklightFd, mBrightness);
+}
+
+int
+NativeFramebufferDevice::GetBrightness()
+{
+    return mBrightness;
 }
 
 } // namespace mozilla

@@ -155,6 +155,16 @@ bool GetScreenEnabled();
 void SetScreenEnabled(bool aEnabled);
 
 /**
+ * Determine whether the device's external screen is currently enabled.
+ */
+bool GetExtScreenEnabled();
+
+/**
+ * Enable or disable the device's external screen.
+ */
+void SetExtScreenEnabled(bool aEnabled);
+
+/**
  * Determine whether the device's keypad/button backlight is currently enabled.
  */
 bool GetKeyLightEnabled();
@@ -168,10 +178,19 @@ void SetKeyLightEnabled(bool aEnabled);
  * Get the brightness of the device's screen's backlight, on a scale from 0
  * (very dim) to 1 (full blast).
  *
- * If the display is currently disabled, this returns the brightness the
- * backlight will have when the display is re-enabled.
+ * When the screen is off, the brightness could be set to 0.
+ * But this always returns the brightness of screen when it is on.
  */
 double GetScreenBrightness();
+
+/**
+ * Get the brightness of the device's external screen's backlight,
+ * on a scale from 0 (very dim) to 1 (full blast).
+ *
+ * When the screen is off, the brightness could be set to 0.
+ * But this always returns the brightness of screen when it is on.
+ */
+double GetExtScreenBrightness();
 
 /**
  * Set the brightness of the device's screen's backlight, on a scale from 0
@@ -184,6 +203,12 @@ double GetScreenBrightness();
  * GetScreenBrightness() may not be exactly x.
  */
 void SetScreenBrightness(double aBrightness);
+
+/**
+ * Set the brightness of the device's external screen's backlight,
+ * on a scale from 0 (very dimm) to 1 (full blast).
+ */
+void SetExtScreenBrightness(double aBrightness);
 
 /**
  * Determine whether the device is allowed to sleep.
