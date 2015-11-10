@@ -189,6 +189,8 @@ extern bool gBluetoothDebugFlag;
 #define KEY_MANAGER           "/B2G/bluetooth/manager"
 #define KEY_ADAPTER           "/B2G/bluetooth/adapter"
 #define KEY_PAIRING_LISTENER  "/B2G/bluetooth/pairing_listener"
+#define KEY_PBAP              "/B2G/bluetooth/pbap"
+#define KEY_MAP               "/B2G/bluetooth/map"
 
 /**
  * When the connection status of a Bluetooth profile is changed, we'll notify
@@ -223,6 +225,18 @@ extern bool gBluetoothDebugFlag;
  * receive pairing requests.
  */
 #define SYS_MSG_BT_PAIRING_REQ                "bluetooth-pairing-request"
+
+/**
+ * System message to launch bluetooth PBAP app,
+ * if no PBAP app is ready to receive PBAP related requests.
+ */
+#define SYS_MSG_BT_PBAP_REQ "bluetooth-pbap-request"
+
+/**
+ * System message to launch bluetooth MAP app,
+ * if no MAP app is ready to receive MAP related requests.
+ */
+#define SYS_MSG_BT_MAP_REQ "bluetooth-map-request"
 
 /**
  * The preference name of bluetooth app origin of bluetooth app. The default

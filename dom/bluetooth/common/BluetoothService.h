@@ -787,6 +787,10 @@ protected:
 
   nsTArray<BluetoothSignal> mPendingPairReqSignals;
 
+  nsTArray<BluetoothSignal> mPendingPbapReqSignals;
+
+  nsTArray<BluetoothSignal> mPendingMapReqSignals;
+
   bool mEnabled;
 };
 

@@ -556,7 +556,7 @@ BluetoothPbapManager::NotifyPbapRequest(const ObexHeaderSet& aHeader)
     AppendNamedValueByTagId(aHeader, data, tags[i]);
   }
 
-  bs->DistributeSignal(reqId, NS_LITERAL_STRING(KEY_ADAPTER), data);
+  bs->DistributeSignal(reqId, NS_LITERAL_STRING(KEY_PBAP), data);
 
   return ObexResponseCode::Success;
 }

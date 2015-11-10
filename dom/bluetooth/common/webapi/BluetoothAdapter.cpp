@@ -63,6 +63,8 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(BluetoothAdapter,
    * after unlinked. Please see Bug 1138267 for detail informations.
    */
   UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_ADAPTER), tmp);
+  UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_PBAP), tmp);
+  UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_MAP), tmp);
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(BluetoothAdapter,
@@ -325,6 +327,8 @@ BluetoothAdapter::BluetoothAdapter(nsPIDOMWindowInner* aWindow,
   , mState(BluetoothAdapterState::Disabled)
   , mDiscoverable(false)
   , mDiscovering(false)
+  , mHasListenedToPbapSignal(false)
+  , mHasListenedToMapSignal(false)
   , mPairingReqs(nullptr)
   , mDiscoveryHandleInUse(nullptr)
 {
@@ -342,6 +346,9 @@ BluetoothAdapter::BluetoothAdapter(nsPIDOMWindowInner* aWindow,
   }
 
   RegisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_ADAPTER), this);
+
+  TryListeningToBluetoothPbapSignal();
+  TryListeningToBluetoothMapSignal();
 }
 
 BluetoothAdapter::~BluetoothAdapter()
@@ -360,6 +367,8 @@ void
 BluetoothAdapter::Cleanup()
 {
   UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_ADAPTER), this);
+  UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_PBAP), this);
+  UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_MAP), this);
 
   // Stop ongoing LE scans and clear the LeScan handle array
   if (!mLeScanHandleArray.IsEmpty()) {
@@ -2103,4 +2112,50 @@ JSObject*
 BluetoothAdapter::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 {
   return BluetoothAdapterBinding::Wrap(aCx, this, aGivenProto);
+}
+
+void
+BluetoothAdapter::EventListenerAdded(nsIAtom* aType)
+{
+  DOMEventTargetHelper::EventListenerAdded(aType);
+
+  TryListeningToBluetoothPbapSignal();
+  TryListeningToBluetoothMapSignal();
+}
+
+void
+BluetoothAdapter::TryListeningToBluetoothPbapSignal()
+{
+  if (!mHasListenedToPbapSignal) {
+    // Listen to bluetooth PBAP signal only if all PBAP event handlers have
+    // been attached. All pending PBAP requests queued in BluetoothService
+    // would be fired when adapter starts listening to bluetooth PBAP signal.
+    if (HasListenersFor(nsGkAtoms::onpullphonebookreq) &&
+        HasListenersFor(nsGkAtoms::onpullvcardentryreq) &&
+        HasListenersFor(nsGkAtoms::onpullvcardlistingreq)) {
+
+      RegisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_PBAP), this);
+      mHasListenedToPbapSignal = true;
+    }
+  }
+}
+
+void
+BluetoothAdapter::TryListeningToBluetoothMapSignal()
+{
+  if (!mHasListenedToMapSignal) {
+    // Listen to bluetooth MAP signal only if all MAP event handlers have
+    // been attached. All pending MAP requests queued in BluetoothService
+    // would be fired when adapter starts listening to bluetooth MAP signal.
+    if (HasListenersFor(nsGkAtoms::onmapfolderlistingreq) &&
+        HasListenersFor(nsGkAtoms::onmapmessageupdatereq) &&
+        HasListenersFor(nsGkAtoms::onmapmessageslistingreq) &&
+        HasListenersFor(nsGkAtoms::onmapgetmessagereq) &&
+        HasListenersFor(nsGkAtoms::onmapsetmessagestatusreq) &&
+        HasListenersFor(nsGkAtoms::onmapsendmessagereq)) {
+
+      RegisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_MAP), this);
+      mHasListenedToMapSignal = true;
+    }
+  }
 }

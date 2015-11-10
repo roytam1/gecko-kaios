@@ -197,6 +197,26 @@ public:
   void GetPairedDeviceProperties(
     const nsTArray<BluetoothAddress>& aDeviceAddresses);
 
+  virtual void EventListenerAdded(nsIAtom* aType) override;
+
+  /**
+   * Listen to bluetooth PBAP signal if all PBAP event handlers are ready.
+   *
+   * Listen to bluetooth PBAP signal only if all PBAP event handlers have
+   * been attached. All pending PBAP requests queued in BluetoothService
+   * would be fired when adapter starts listening to bluetooth PBAP signal.
+   */
+  void TryListeningToBluetoothPbapSignal();
+
+  /**
+   * Listen to bluetooth MAP signal if all MAP event handlers are ready.
+   *
+   * Listen to bluetooth MAP signal only if all MAP event handlers have
+   * been attached. All pending MAP requests queued in BluetoothService
+   * would be fired when adapter starts listening to bluetooth MAP signal.
+   */
+  void TryListeningToBluetoothMapSignal();
+
   /**
    * Set this adapter's discovery handle in use (mDiscoveryHandleInUse).
    *
@@ -524,6 +544,18 @@ private:
    * Whether this adapter is discovering nearby devices.
    */
   bool mDiscovering;
+
+  /**
+   * Indicate whether or not this adapter has started listening to
+   * Bluetooth PBAP signal.
+   */
+  bool mHasListenedToPbapSignal;
+
+  /**
+   * Indicate whether or not this adapter has started listening to
+   * Bluetooth MAP signal.
+   */
+  bool mHasListenedToMapSignal;
 
   /**
    * GATT server object of this adapter.

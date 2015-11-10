@@ -1284,7 +1284,7 @@ BluetoothMapSmsManager::HandleSmsMmsMsgListing(const ObexHeaderSet& aHeader)
   }
 
   bs->DistributeSignal(NS_LITERAL_STRING(MAP_MESSAGES_LISTING_REQ_ID),
-                       NS_LITERAL_STRING(KEY_ADAPTER),
+                       NS_LITERAL_STRING(KEY_MAP),
                        data);
 }
 
@@ -1309,7 +1309,7 @@ BluetoothMapSmsManager::HandleSmsMmsGetMessage(const ObexHeaderSet& aHeader)
                             Map::AppParametersTagId::FractionRequest);
 
   bs->DistributeSignal(NS_LITERAL_STRING(MAP_GET_MESSAGE_REQ_ID),
-                       NS_LITERAL_STRING(KEY_ADAPTER),
+                       NS_LITERAL_STRING(KEY_MAP),
                        data);
 }
 
@@ -1404,7 +1404,7 @@ BluetoothMapSmsManager::HandleSetMessageStatus(const ObexHeaderSet& aHeader)
                             Map::AppParametersTagId::StatusValue);
 
   bs->DistributeSignal(NS_LITERAL_STRING(MAP_SET_MESSAGE_STATUS_REQ_ID),
-                       NS_LITERAL_STRING(KEY_ADAPTER), data);
+                       NS_LITERAL_STRING(KEY_MAP), data);
 }
 
 void

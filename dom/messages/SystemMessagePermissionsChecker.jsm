@@ -38,6 +38,12 @@ this.SystemMessagePermissionsTable = {
   "bluetooth-dialer-command": {
     "telephony": []
   },
+  "bluetooth-pbap-request": {
+    "bluetooth": []
+  },
+  "bluetooth-map-request": {
+    "bluetooth": []
+  },
   "bluetooth-cancel": {
     "bluetooth": []
   },
