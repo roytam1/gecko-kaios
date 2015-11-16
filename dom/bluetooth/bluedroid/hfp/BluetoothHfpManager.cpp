@@ -1263,6 +1263,12 @@ BluetoothHfpManager::IsNrecEnabled()
 }
 
 void
+BluetoothHfpManager::ReplyToConnectionRequest(bool aAccept)
+{
+  MOZ_ASSERT(false, "BluetoothHfpManager hasn't implemented this function yet.");
+}
+
+void
 BluetoothHfpManager::OnConnectError()
 {
   MOZ_ASSERT(NS_IsMainThread());

@@ -725,6 +725,12 @@ BluetoothA2dpManager::IsConnected()
   return mA2dpConnected;
 }
 
+void
+BluetoothA2dpManager::ReplyToConnectionRequest(bool aAccept)
+{
+  MOZ_ASSERT(false, "BluetoothA2dpManager hasn't implemented this function yet.");
+}
+
 /*
  * Notifications
  */

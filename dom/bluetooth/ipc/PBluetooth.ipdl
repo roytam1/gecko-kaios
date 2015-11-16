@@ -158,6 +158,16 @@ struct DisconnectRequest
   uint16_t serviceUuid;
 };
 
+struct AcceptConnectionRequest
+{
+  uint16_t serviceUuid;
+};
+
+struct RejectConnectionRequest
+{
+  uint16_t serviceUuid;
+};
+
 struct SendFileRequest
 {
   BluetoothAddress address;
@@ -477,6 +487,8 @@ union Request
   FetchUuidsRequest;
   ConnectRequest;
   DisconnectRequest;
+  AcceptConnectionRequest;
+  RejectConnectionRequest;
   SendFileRequest;
   StopSendingFileRequest;
   ConfirmReceivingFileRequest;

@@ -302,6 +302,22 @@ BluetoothServiceChildProcess::Disconnect(
 }
 
 void
+BluetoothServiceChildProcess::AcceptConnection(
+  const uint16_t aServiceUuid,
+  BluetoothReplyRunnable* aRunnable)
+{
+  SendRequest(aRunnable, AcceptConnectionRequest(aServiceUuid));
+}
+
+void
+BluetoothServiceChildProcess::RejectConnection(
+  const uint16_t aServiceUuid,
+  BluetoothReplyRunnable* aRunnable)
+{
+  SendRequest(aRunnable, RejectConnectionRequest(aServiceUuid));
+}
+
+void
 BluetoothServiceChildProcess::SendFile(
   const BluetoothAddress& aDeviceAddress,
   BlobParent* aBlobParent,

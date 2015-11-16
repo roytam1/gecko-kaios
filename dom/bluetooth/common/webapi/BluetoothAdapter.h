@@ -86,6 +86,7 @@ public:
    * Event Handlers
    ***************************************************************************/
   IMPL_EVENT_HANDLER(attributechanged);
+  IMPL_EVENT_HANDLER(connectionreq);
   // PAIRING
   IMPL_EVENT_HANDLER(devicepaired);
   IMPL_EVENT_HANDLER(deviceunpaired);
@@ -284,6 +285,16 @@ private:
    * @param aDeviceAddresses [in] Addresses array of paired devices
    */
   void GetPairedDeviceProperties(const nsTArray<nsString>& aDeviceAddresses);
+
+   /**
+   * Handle CONNECTION_REQ_ID bluetooth signal.
+   *
+   * @param aValue [in] Properties array of the profile connection request.
+   *                    The array should contain few properties:
+   *                    - nsString   'address'
+   *                    - uint16_t   'serviceUuid'
+   */
+  void HandleConnectionReq(const BluetoothValue& aValue);
 
   /**
    * Handle "PropertyChanged" bluetooth signal.

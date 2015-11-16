@@ -16,6 +16,7 @@
 
 #include "mozilla/dom/BluetoothAdapterBinding.h"
 #include "mozilla/dom/BluetoothAttributeEvent.h"
+#include "mozilla/dom/BluetoothConnectionReqEvent.h"
 #include "mozilla/dom/BluetoothMapFolderListingEvent.h"
 #include "mozilla/dom/BluetoothMapGetMessageEvent.h"
 #include "mozilla/dom/BluetoothMapMessagesListingEvent.h"
@@ -33,6 +34,7 @@
 
 #include "mozilla/dom/bluetooth/BluetoothAdapter.h"
 #include "mozilla/dom/bluetooth/BluetoothClassOfDevice.h"
+#include "mozilla/dom/bluetooth/BluetoothConnectionHandle.h"
 #include "mozilla/dom/bluetooth/BluetoothDevice.h"
 #include "mozilla/dom/bluetooth/BluetoothDiscoveryHandle.h"
 #include "mozilla/dom/bluetooth/BluetoothGattServer.h"
@@ -525,7 +527,10 @@ BluetoothAdapter::Notify(const BluetoothSignal& aData)
   NS_ENSURE_TRUE_VOID(mSignalRegistered);
 
   BluetoothValue v = aData.value();
-  if (aData.name().EqualsLiteral("PropertyChanged")) {
+
+  if (aData.name().EqualsLiteral(CONNECTION_REQ_ID)) {
+    HandleConnectionReq(aData.value());
+  } else if (aData.name().EqualsLiteral("PropertyChanged")) {
     HandlePropertyChanged(v);
   } else if (aData.name().EqualsLiteral("DeviceFound")) {
     /*
@@ -1123,6 +1128,36 @@ BluetoothAdapter::SetAdapterState(BluetoothAdapterState aState)
                                  BluetoothAdapterAttribute,
                                  BluetoothAdapterAttribute::State);
   DispatchAttributeEvent(types);
+}
+
+void
+BluetoothAdapter::HandleConnectionReq(const BluetoothValue& aValue)
+{
+  MOZ_ASSERT(aValue.type() == BluetoothValue::TArrayOfBluetoothNamedValue);
+
+  const InfallibleTArray<BluetoothNamedValue>& arr =
+    aValue.get_ArrayOfBluetoothNamedValue();
+
+  BluetoothConnectionReqEventInit init;
+
+  for (uint32_t i = 0, propCount = arr.Length(); i < propCount; ++i) {
+    const nsString& name = arr[i].name();
+    const BluetoothValue& value = arr[i].value();
+    if (name.EqualsLiteral("address")) {
+      init.mAddress = value.get_nsString();
+    } else if (name.EqualsLiteral("serviceUuid")) {
+      init.mServiceUuid = value.get_uint16_t();
+    }
+  }
+
+  init.mHandle =
+    BluetoothConnectionHandle::Create(GetOwner(), init.mServiceUuid);
+
+  RefPtr<BluetoothConnectionReqEvent> event =
+    BluetoothConnectionReqEvent::Constructor(this,
+      NS_LITERAL_STRING(CONNECTION_REQ_ID), init);
+
+  DispatchTrustedEvent(event);
 }
 
 void

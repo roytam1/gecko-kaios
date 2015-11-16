@@ -947,5 +947,11 @@ BluetoothAvrcpManager::PassthroughCmdNotification(uint8_t aId,
   BroadcastSystemMessage(type, BluetoothValue(name));
 }
 
+void
+BluetoothAvrcpManager::ReplyToConnectionRequest(bool aAccept)
+{
+  MOZ_ASSERT(false, "BluetoothAvrcpManager hasn't implemented this function yet.");
+}
+
 NS_IMPL_ISUPPORTS(BluetoothAvrcpManager, nsIObserver)
 

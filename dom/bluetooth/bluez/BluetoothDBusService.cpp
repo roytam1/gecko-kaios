@@ -3479,6 +3479,16 @@ BluetoothDBusService::Disconnect(const BluetoothAddress& aDeviceAddress,
   ConnectDisconnect(false, aDeviceAddress, aRunnable, aServiceUuid);
 }
 
+void BluetoothDBusServie::AcceptConnection(const uint16_t aServiceUuid,
+                                           BluetoothReplyRunnable* aRunnable)
+{
+}
+
+void BluetoothDBusServie::RejectConnection(const uint16_t aServiceUuid,
+                                           BluetoothReplyRunnable* aRunnable)
+{
+}
+
 #ifdef MOZ_B2G_RIL
 void
 BluetoothDBusService::AnswerWaitingCall(BluetoothReplyRunnable* aRunnable)

@@ -101,6 +101,7 @@ BluetoothPbapManager::HandleShutdown()
 BluetoothPbapManager::BluetoothPbapManager() : mPhonebookSizeRequired(false)
                                              , mNewMissedCallsRequired(false)
                                              , mConnected(false)
+                                             , mPasswordReqNeeded(false)
                                              , mRemoteMaxPacketLength(0)
 {
   mCurrentPath.AssignLiteral("");
@@ -277,7 +278,9 @@ BluetoothPbapManager::ReceiveSocketData(BluetoothSocket* aSocket,
   uint8_t opCode = data[0];
   ObexHeaderSet pktHeaders;
   switch (opCode) {
-    case ObexRequestCode::Connect:
+    case ObexRequestCode::Connect: {
+      mPasswordReqNeeded = false;
+
       // Section 3.3.1 "Connect", IrOBEX 1.2
       // [opcode:1][length:2][version:1][flags:1][MaxPktSizeWeCanReceive:2]
       // [Headers:var]
@@ -294,32 +297,36 @@ BluetoothPbapManager::ReceiveSocketData(BluetoothSocket* aSocket,
         return;
       }
 
-      // Section 3.5 "Authentication Procedure", IrOBEX 1.2
-      // An user input password is required to reply to authentication
-      // challenge. The OBEX success response will be sent after gaia
-      // replies correct password.
-      if (pktHeaders.Has(ObexHeaderId::AuthChallenge)) {
-        ObexResponseCode response = NotifyPasswordRequest(pktHeaders);
-        if (response != ObexResponseCode::Success) {
-          ReplyError(response);
-        }
-        return;
-      }
-
       // Save the max packet length from remote information
-      mRemoteMaxPacketLength = BigEndian::readUint16(&data[5]);
+      mRemoteMaxPacketLength = ((static_cast<int>(data[5]) << 8) | data[6]);
 
       if (mRemoteMaxPacketLength < kObexLeastMaxSize) {
         BT_LOGR("Remote maximum packet length %d is smaller than %d bytes",
-          mRemoteMaxPacketLength, kObexLeastMaxSize);
+                mRemoteMaxPacketLength, kObexLeastMaxSize);
         mRemoteMaxPacketLength = 0;
         ReplyError(ObexResponseCode::BadRequest);
         return;
       }
 
-      ReplyToConnect();
-      AfterPbapConnected();
+      // Section 3.5 "Authentication Procedure", IrOBEX 1.2
+      // Get anthentication challenge data and nonce here and
+      // will request an user input password after user accept
+      // this OBEX connection.
+      if (pktHeaders.Has(ObexHeaderId::AuthChallenge)) {
+        GetRemoteNonce(pktHeaders);
+        mPasswordReqNeeded = true;
+      }
+
+      // The user consent is required. If user accept the connection request,
+      // the OBEX connection session will be processed;
+      // Otherwise, the session will be rejected.
+      ObexResponseCode response = NotifyConnectionRequest();
+      if (response != ObexResponseCode::Success) {
+        ReplyError(response);
+        return;
+      }
       break;
+    }
     case ObexRequestCode::Disconnect:
     case ObexRequestCode::Abort:
       // Section 3.3.2 "Disconnect" and Section 3.3.5 "Abort", IrOBEX 1.2
@@ -430,6 +437,33 @@ BluetoothPbapManager::CompareHeaderTarget(const ObexHeaderSet& aHeader)
   }
 
   return true;
+}
+
+ObexResponseCode
+BluetoothPbapManager::NotifyConnectionRequest()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  // Ensure bluetooth service is available
+  BluetoothService* bs = BluetoothService::Get();
+  if (!bs) {
+    BT_LOGR("Failed to get Bluetooth service");
+    return ObexResponseCode::PreconditionFailed;
+  }
+
+  InfallibleTArray<BluetoothNamedValue> data;
+
+  nsAutoString deviceAddressStr;
+  AddressToString(mDeviceAddress, deviceAddressStr);
+  AppendNamedValue(data, "address", deviceAddressStr);
+  AppendNamedValue(data, "serviceUuid",
+                   static_cast<uint16_t>(BluetoothServiceClass::PBAP_PSE));
+
+  bs->DistributeSignal(BluetoothSignal(NS_LITERAL_STRING(CONNECTION_REQ_ID),
+                                       NS_LITERAL_STRING(KEY_ADAPTER),
+                                       data));
+
+  return ObexResponseCode::Success;
 }
 
 ObexResponseCode
@@ -577,31 +611,8 @@ BluetoothPbapManager::NotifyPbapRequest(const ObexHeaderSet& aHeader)
 }
 
 ObexResponseCode
-BluetoothPbapManager::NotifyPasswordRequest(const ObexHeaderSet& aHeader)
+BluetoothPbapManager::NotifyPasswordRequest()
 {
-  MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aHeader.Has(ObexHeaderId::AuthChallenge));
-
-  // Get authentication challenge data
-  const ObexHeader* authHeader = aHeader.GetHeader(ObexHeaderId::AuthChallenge);
-
-  // Get nonce from authentication challenge
-  // Section 3.5.1 "Digest Challenge", IrOBEX spec 1.2
-  // The tag-length-value triplet of nonce is
-  //   [tagId:1][length:1][nonce:16]
-  uint8_t offset = 0;
-  do {
-    uint8_t tagId = authHeader->mData[offset++];
-    uint8_t length = authHeader->mData[offset++];
-
-    BT_LOGR("AuthChallenge header includes tagId %d", tagId);
-    if (tagId == ObexDigestChallenge::Nonce) {
-      memcpy(mRemoteNonce, &authHeader->mData[offset], DIGEST_LENGTH);
-    }
-
-    offset += length;
-  } while (offset < authHeader->mDataLength);
-
   // Ensure bluetooth service is available
   BluetoothService* bs = BluetoothService::Get();
   if (!bs) {
@@ -926,6 +937,8 @@ BluetoothPbapManager::PackPropertiesMask(uint8_t* aData, int aSize)
 void
 BluetoothPbapManager::ReplyToAuthChallenge(const nsAString& aPassword)
 {
+  mPasswordReqNeeded = false;
+
   // Cancel authentication
   if (aPassword.IsEmpty()) {
     ReplyError(ObexResponseCode::Unauthorized);
@@ -933,6 +946,29 @@ BluetoothPbapManager::ReplyToAuthChallenge(const nsAString& aPassword)
   }
 
   ReplyToConnect(aPassword);
+  AfterPbapConnected();
+}
+
+void
+BluetoothPbapManager::ReplyToConnectionRequest(bool aAccept)
+{
+  if (!aAccept) {
+    ReplyError(ObexResponseCode::Forbidden);
+    return;
+  }
+
+  if (mPasswordReqNeeded) {
+    // An user input password is required to reply to authentication
+    // challenge. The OBEX success response will be sent after gaia
+    // replies correct password.
+    ObexResponseCode response = NotifyPasswordRequest();
+    if (response != ObexResponseCode::Success) {
+      ReplyError(response);
+    }
+    return;
+  }
+
+  ReplyToConnect();
   AfterPbapConnected();
 }
 
@@ -1171,6 +1207,33 @@ BluetoothPbapManager::GetInputStreamFromBlob(Blob* aBlob)
   }
 
   return true;
+}
+
+void
+BluetoothPbapManager::GetRemoteNonce(const ObexHeaderSet& aHeader)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT(aHeader.Has(ObexHeaderId::AuthChallenge));
+
+  // Get authentication challenge data
+  const ObexHeader* authHeader = aHeader.GetHeader(ObexHeaderId::AuthChallenge);
+
+  // Get nonce from authentication challenge
+  // Section 3.5.1 "Digest Challenge", IrOBEX spec 1.2
+  // The tag-length-value triplet of nonce is
+  //   [tagId:1][length:1][nonce:16]
+  uint8_t offset = 0;
+  do {
+    uint8_t tagId = authHeader->mData[offset++];
+    uint8_t length = authHeader->mData[offset++];
+
+    BT_LOGR("AuthChallenge header includes tagId %d", tagId);
+    if (tagId == ObexDigestChallenge::Nonce) {
+      memcpy(mRemoteNonce, &authHeader->mData[offset], DIGEST_LENGTH);
+    }
+
+    offset += length;
+  } while (offset < authHeader->mDataLength);
 }
 
 void

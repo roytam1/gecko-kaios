@@ -124,6 +124,14 @@ public:
              BluetoothReplyRunnable* aRunnable);
 
   virtual void
+  AcceptConnection(const uint16_t aServiceUuid,
+                   BluetoothReplyRunnable* aRunnable) override;
+
+  virtual void
+  RejectConnection(const uint16_t aServiceUuid,
+                   BluetoothReplyRunnable* aRunnable) override;
+
+  virtual void
   SendFile(const BluetoothAddress& aDeviceAddress,
            BlobParent* aBlobParent,
            BlobChild* aBlobChild,

@@ -572,6 +572,12 @@ BluetoothMapSmsManager::IsConnected()
 }
 
 void
+BluetoothMapSmsManager::ReplyToConnectionRequest(bool aAccept)
+{
+  MOZ_ASSERT(false, "BluetoothMapSmsManager hasn't implemented this function yet.");
+}
+
+void
 BluetoothMapSmsManager::GetAddress(BluetoothAddress& aDeviceAddress)
 {
   return mMasSocket->GetAddress(aDeviceAddress);

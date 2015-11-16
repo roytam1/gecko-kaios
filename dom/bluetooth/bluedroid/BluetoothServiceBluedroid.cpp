@@ -1464,6 +1464,42 @@ BluetoothServiceBluedroid::Disconnect(
 }
 
 void
+BluetoothServiceBluedroid::AcceptConnection(const uint16_t aServiceUuid,
+                                            BluetoothReplyRunnable* aRunnable)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT(aRunnable);
+
+  BluetoothProfileManagerBase* profile =
+    BluetoothUuidHelper::GetBluetoothProfileManager(aServiceUuid);
+  if (profile) {
+    profile->ReplyToConnectionRequest(true);
+    DispatchReplySuccess(aRunnable);
+  } else {
+    BT_WARNING("Can't find profile manager with uuid: %x", aServiceUuid);
+    DispatchReplyError(aRunnable, EmptyString());
+  }
+}
+
+void
+BluetoothServiceBluedroid::RejectConnection(const uint16_t aServiceUuid,
+                                            BluetoothReplyRunnable* aRunnable)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT(aRunnable);
+
+  BluetoothProfileManagerBase* profile =
+    BluetoothUuidHelper::GetBluetoothProfileManager(aServiceUuid);
+  if (profile) {
+    profile->ReplyToConnectionRequest(false);
+    DispatchReplySuccess(aRunnable);
+  } else {
+    BT_WARNING("Can't find profile manager with uuid: %x", aServiceUuid);
+    DispatchReplyError(aRunnable, EmptyString());
+  }
+}
+
+void
 BluetoothServiceBluedroid::SendFile(const BluetoothAddress& aDeviceAddress,
                                     BlobParent* aBlobParent,
                                     BlobChild* aBlobChild,

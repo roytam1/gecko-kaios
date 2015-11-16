@@ -236,6 +236,10 @@ BluetoothParent::RecvPBluetoothRequestConstructor(
       return actor->DoRequest(aRequest.get_ConnectRequest());
     case Request::TDisconnectRequest:
       return actor->DoRequest(aRequest.get_DisconnectRequest());
+    case Request::TAcceptConnectionRequest:
+      return actor->DoRequest(aRequest.get_AcceptConnectionRequest());
+    case Request::TRejectConnectionRequest:
+      return actor->DoRequest(aRequest.get_RejectConnectionRequest());
     case Request::TSendFileRequest:
       return actor->DoRequest(aRequest.get_SendFileRequest());
     case Request::TStopSendingFileRequest:
@@ -701,6 +705,30 @@ BluetoothRequestParent::DoRequest(const DisconnectRequest& aRequest)
   mService->Disconnect(aRequest.address(),
                        aRequest.serviceUuid(),
                        mReplyRunnable.get());
+
+  return true;
+}
+
+bool
+BluetoothRequestParent::DoRequest(const AcceptConnectionRequest& aRequest)
+{
+  MOZ_ASSERT(mService);
+  MOZ_ASSERT(mRequestType == Request::TAcceptConnectiondRequest);
+
+  mService->AcceptConnection(aRequest.serviceUuid(),
+                             mReplyRunnable.get());
+
+  return true;
+}
+
+bool
+BluetoothRequestParent::DoRequest(const RejectConnectionRequest& aRequest)
+{
+  MOZ_ASSERT(mService);
+  MOZ_ASSERT(mRequestType == Request::TRejectConnectionRequest);
+
+  mService->RejectConnection(aRequest.serviceUuid(),
+                             mReplyRunnable.get());
 
   return true;
 }

@@ -195,6 +195,12 @@ protected:
   DoRequest(const DisconnectRequest& aRequest);
 
   bool
+  DoRequest(const AcceptConnectionRequest& aRequest);
+
+  bool
+  DoRequest(const RejectConnectionRequest& aRequest);
+
+  bool
   DoRequest(const SendFileRequest& aRequest);
 
   bool
