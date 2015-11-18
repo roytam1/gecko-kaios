@@ -7,10 +7,11 @@
 #ifndef mozilla_dom_bluetooth_BluetoothMapRequestHandle_h
 #define mozilla_dom_bluetooth_BluetoothMapRequestHandle_h
 
+#include "BluetoothCommon.h"
+#include "mozilla/dom/File.h"
 #include "nsCOMPtr.h"
 #include "nsPIDOMWindow.h"
 #include "nsWrapperCache.h"
-#include "mozilla/dom/File.h"
 
 namespace mozilla {
   class ErrorResult;
