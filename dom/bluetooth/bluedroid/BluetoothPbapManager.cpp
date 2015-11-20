@@ -558,7 +558,7 @@ BluetoothPbapManager::NotifyPbapRequest(const ObexHeaderSet& aHeader)
     }
 
     // Handle missed calls history request
-    if (!strcmp(NS_ConvertUTF16toUTF8(name).get(), "mch")) {
+    if (strstr(NS_ConvertUTF16toUTF8(name).get(), "mch")) {
       mNewMissedCallsRequired = true;
     }
   } else if (type.EqualsLiteral("x-bt/vcard-listing")) {
@@ -573,7 +573,7 @@ BluetoothPbapManager::NotifyPbapRequest(const ObexHeaderSet& aHeader)
                           : mCurrentPath + NS_LITERAL_STRING("/") + name;
 
     // Handle missed calls history request
-    if (!strcmp(NS_ConvertUTF16toUTF8(name).get(), "mch")) {
+    if (strstr(NS_ConvertUTF16toUTF8(name).get(), "mch")) {
       mNewMissedCallsRequired = true;
     }
   } else if (type.EqualsLiteral("x-bt/vcard")) {
@@ -1108,8 +1108,8 @@ BluetoothPbapManager::ReplyToGet(uint16_t aPhonebookSize)
 
     if (mNewMissedCallsRequired) {
       // Since the frontend of H5OS don't support NewMissedCalls feature, set
-      // it to 0 to pretend every missed calls is dismissed.
-      uint8_t dummyNewMissedCalls = 0;
+      // it to |aPhonebookSize| to pretend no missed call has been dismissed.
+      uint8_t dummyNewMissedCalls = aPhonebookSize;
 
       appParamLength +=
         AppendAppParameter(appParameters + appParamLength,
