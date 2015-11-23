@@ -14,6 +14,7 @@
 #include "BluetoothSocketObserver.h"
 #include "mozilla/ipc/SocketBase.h"
 #include "mozilla/UniquePtr.h"
+#include "ObexBase.h"
 
 class nsIInputStream;
 
@@ -230,6 +231,8 @@ private:
   void SendMasObexData(UniquePtr<uint8_t[]> aData, uint8_t aOpcode, int aSize);
   void SendMnsObexData(uint8_t* aData, uint8_t aOpcode, int aSize);
   bool StatusResponse(bool aStatus);
+
+  ObexResponseCode NotifyConnectionRequest();
 
   uint8_t SetPath(uint8_t flags, const ObexHeaderSet& aHeader);
   bool CompareHeaderTarget(const ObexHeaderSet& aHeader);

@@ -4,14 +4,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "base/basictypes.h"
 #include "BluetoothMapSmsManager.h"
+#include "base/basictypes.h"
 
 #include "BluetoothService.h"
 #include "BluetoothSocket.h"
 #include "BluetoothUtils.h"
 #include "BluetoothUuidHelper.h"
-#include "ObexBase.h"
 
 #include "mozilla/dom/BluetoothMapParametersBinding.h"
 #include "mozilla/dom/ipc/BlobParent.h"
@@ -304,7 +303,7 @@ BluetoothMapSmsManager::MasDataHandler(UnixSocketBuffer* aMessage)
   ObexHeaderSet pktHeaders;
   nsString type;
   switch (opCode) {
-    case ObexRequestCode::Connect:
+    case ObexRequestCode::Connect: {
       // Section 3.3.1 "Connect", IrOBEX 1.2
       // [opcode:1][length:2][version:1][flags:1][MaxPktSizeWeCanReceive:2]
       // [Headers:var]
@@ -330,9 +329,16 @@ BluetoothMapSmsManager::MasDataHandler(UnixSocketBuffer* aMessage)
         return;
       }
 
-      ReplyToConnect();
-      AfterMapSmsConnected();
+      // The user consent is required by the UX spec.
+      // If user accept the connection request, the OBEX connection session
+      // will be processed; Otherwise, the session will be rejected.
+      ObexResponseCode response = NotifyConnectionRequest();
+      if (response != ObexResponseCode::Success) {
+        SendReply(response);
+        return;
+      }
       break;
+    }
     case ObexRequestCode::Disconnect:
     case ObexRequestCode::Abort:
       // Section 3.3.2 "Disconnect" and Section 3.3.5 "Abort", IrOBEX 1.2
@@ -494,6 +500,45 @@ BluetoothMapSmsManager::CompareHeaderTarget(const ObexHeaderSet& aHeader)
   return true;
 }
 
+ObexResponseCode
+BluetoothMapSmsManager::NotifyConnectionRequest()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  // Ensure bluetooth service is available
+  BluetoothService* bs = BluetoothService::Get();
+  if (!bs) {
+    BT_LOGR("Failed to get Bluetooth service");
+    return ObexResponseCode::PreconditionFailed;
+  }
+
+  InfallibleTArray<BluetoothNamedValue> data;
+
+  nsAutoString deviceAddressStr;
+  AddressToString(mDeviceAddress, deviceAddressStr);
+  AppendNamedValue(data, "address", deviceAddressStr);
+  AppendNamedValue(data, "serviceUuid",
+                   static_cast<uint16_t>(BluetoothServiceClass::MAP_MAS));
+
+  bs->DistributeSignal(BluetoothSignal(NS_LITERAL_STRING(CONNECTION_REQ_ID),
+                                       NS_LITERAL_STRING(KEY_ADAPTER),
+                                       data));
+
+  return ObexResponseCode::Success;
+}
+
+void
+BluetoothMapSmsManager::ReplyToConnectionRequest(bool aAccept)
+{
+  if (!aAccept) {
+    SendReply(ObexResponseCode::Forbidden);
+    return;
+  }
+
+  ReplyToConnect();
+  AfterMapSmsConnected();
+}
+
 uint8_t
 BluetoothMapSmsManager::SetPath(uint8_t flags,
                                 const ObexHeaderSet& aHeader)
@@ -569,12 +614,6 @@ bool
 BluetoothMapSmsManager::IsConnected()
 {
   return mMasConnected;
-}
-
-void
-BluetoothMapSmsManager::ReplyToConnectionRequest(bool aAccept)
-{
-  MOZ_ASSERT(false, "BluetoothMapSmsManager hasn't implemented this function yet.");
 }
 
 void
