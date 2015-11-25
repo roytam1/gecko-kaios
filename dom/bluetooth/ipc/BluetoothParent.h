@@ -272,6 +272,9 @@ protected:
   DoRequest(const SendPlayStatusRequest& aRequest);
 
   bool
+  DoRequest(const SendMessageEventRequest& aRequest);
+
+  bool
   DoRequest(const ConnectGattClientRequest& aRequest);
 
   bool

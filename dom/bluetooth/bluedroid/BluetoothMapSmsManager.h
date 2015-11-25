@@ -193,6 +193,36 @@ public:
    */
   bool ReplyToMessageUpdate(long aMasId, bool aStatus);
 
+ /**
+  * SendEvent to MCE device. MSE shall use the SendEvent function to notify the
+  * MCE on events affecting the messages listings within the MSE's folders
+  * structure. The MSE shall notify the MCE of the sending status of these
+  * messages using the SendEvent function.
+  *
+  * @param aMasId [in]          MAS id
+  * @param aBlob [in]           a blob containing the MAP-event-report objects
+  *
+  * @return true if the blob has started to be sent to the remote device; false
+  * otherwise.
+  */
+ bool SendMessageEvent(uint8_t aMasId, Blob* aBlob);
+
+ /**
+  * SendEvent to MCE device. MSE shall use the SendEvent function to notify the
+  * MCE on events affecting the messages listings within the MSE's folders
+  * structure. The MSE shall notify the MCE of the sending status of these
+  * messages using the SendEvent function.
+  *
+  * @param aMasId [in]          MAS id
+  * @param aActor [in]          a blob actor containing the MAP-event-report
+  *                             objects
+  *
+  * @return true if the blob has started to be sent to the remote device; false
+  * otherwise.
+  */
+ bool SendMessageEvent(long aMasId, BlobParent* aActor);
+
+
 protected:
   virtual ~BluetoothMapSmsManager();
 
@@ -213,6 +243,13 @@ private:
    * after the Final bit is set in the request.
    */
   bool ReplyToGetWithHeaderBody(UniquePtr<uint8_t[]> aResponse, unsigned int aIndex);
+  /*
+   * This function sends multiple response packets, in case of a PUT operation
+   * returning an object larger than one response packet.
+   * If the operation requires multiple request packets to complete after the
+   * Final bit is set in the request.
+   */
+  bool MnsPutMultiRequest();
   void ReplyToSetPath();
   void ReplyToPut();
   void SendReply(uint8_t aResponse);
@@ -240,11 +277,12 @@ private:
   void AfterMapSmsDisconnected();
   void CreateMnsObexConnection();
   void DestroyMnsObexConnection();
+  void SendPutFinalRequest();
   void SendMnsConnectRequest();
   void SendMnsDisconnectRequest();
   void MnsDataHandler(mozilla::ipc::UnixSocketBuffer* aMessage);
   void MasDataHandler(mozilla::ipc::UnixSocketBuffer* aMessage);
-  bool GetInputStreamFromBlob(Blob* aBlob);
+  bool GetInputStreamFromBlob(Blob* aBlob, bool aIsMas);
   InfallibleTArray<uint32_t> PackParameterMask(uint8_t* aData, int aSize);
 
   /*
@@ -257,10 +295,6 @@ private:
   BluetoothMapFolder* mCurrentFolder;
   RefPtr<BluetoothMapFolder> mRootFolder;
 
-  /*
-   * Record the last command
-   */
-  int mLastCommand;
   // Whether header body is required for the current MessagesListing response.
   bool mBodyRequired;
   // Whether FractionDeliver is required for the current GetMessage response
@@ -270,6 +304,12 @@ private:
   // MNS OBEX session status. Set when MNS OBEX session is established.
   bool mMnsConnected;
   bool mNtfRequired;
+  // The connection ID is received during the connection establishment,
+  // in order to signal the recipient of the request which OBEX connection
+  // this request belongs to.
+  uint32_t mConnectionId;
+  // Record the last command
+  int mLastCommand;
 
   BluetoothAddress mDeviceAddress;
   unsigned int mRemoteMaxPacketLength;
@@ -290,10 +330,10 @@ private:
   int mBodySegmentLength;
   UniquePtr<uint8_t[]> mBodySegment;
 
-  /**
-   * The bMessage/message-listing data stream for current processing response
-   */
-  nsCOMPtr<nsIInputStream> mDataStream;
+  // The getMessage/messagesListing data stream for current processing response
+  nsCOMPtr<nsIInputStream> mMasDataStream;
+  // The notification data stream
+  nsCOMPtr<nsIInputStream> mMnsDataStream;
 };
 
 END_BLUETOOTH_NAMESPACE

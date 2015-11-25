@@ -288,6 +288,8 @@ BluetoothParent::RecvPBluetoothRequestConstructor(
       return actor->DoRequest(aRequest.get_SendMetaDataRequest());
     case Request::TSendPlayStatusRequest:
       return actor->DoRequest(aRequest.get_SendPlayStatusRequest());
+    case Request::TSendMessageEventRequest:
+      return actor->DoRequest(aRequest.get_SendMessageEventRequest());
     case Request::TConnectGattClientRequest:
       return actor->DoRequest(aRequest.get_ConnectGattClientRequest());
     case Request::TDisconnectGattClientRequest:
@@ -1012,6 +1014,19 @@ BluetoothRequestParent::DoRequest(const SendPlayStatusRequest& aRequest)
                            aRequest.position(),
                            aRequest.playStatus(),
                            mReplyRunnable.get());
+  return true;
+}
+
+bool
+BluetoothRequestParent::DoRequest(const SendMessageEventRequest& aRequest)
+{
+  MOZ_ASSERT(mService);
+  MOZ_ASSERT(mRequestType == Request::TSendMessageEventRequest);
+
+  mService->SendMessageEvent(aRequest.masId(),
+                             (BlobParent*)aRequest.blobParent(),
+                             (BlobChild*)aRequest.blobChild(),
+                             mReplyRunnable.get());
   return true;
 }
 

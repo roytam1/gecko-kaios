@@ -582,6 +582,25 @@ BluetoothServiceChildProcess::SendPlayStatus(int64_t aDuration,
 }
 
 void
+BluetoothServiceChildProcess::SendMessageEvent(uint8_t aMasId,
+                                               BlobParent* aBlobParent,
+                                               BlobChild* aBlobChild,
+                                               BluetoothReplyRunnable* aRunnable)
+{
+  SendRequest(aRunnable,
+              SendMessageEventRequest(aMasId, nullptr, aBlobChild));
+}
+
+void
+BluetoothServiceChildProcess::SendMessageEvent(uint8_t aMasId,
+                                               Blob* aBlobChild,
+                                               BluetoothReplyRunnable* aRunnable)
+{
+  // Parent-process-only method
+  MOZ_CRASH("This should never be called!");
+}
+
+void
 BluetoothServiceChildProcess::ConnectGattClientInternal(
   const BluetoothUuid& aAppUuid, const BluetoothAddress& aDeviceAddress,
   BluetoothReplyRunnable* aRunnable)

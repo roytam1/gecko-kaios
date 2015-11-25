@@ -211,6 +211,10 @@ interface BluetoothAdapter : EventTarget {
   DOMRequest sendMediaMetaData(optional MediaMetaData mediaMetaData);
   [NewObject, Throws, AvailableIn=CertifiedApps]
   DOMRequest sendMediaPlayStatus(optional MediaPlayStatus mediaPlayStatus);
+
+  // MAP event report
+  [NewObject, Throws, AvailableIn=CertifiedApps]
+  Promise<void> sendMessageEvent(octet masId, Blob eventObject);
 };
 
 enum BluetoothAdapterState

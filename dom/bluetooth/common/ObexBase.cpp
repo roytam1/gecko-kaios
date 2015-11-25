@@ -86,6 +86,14 @@ AppendAuthResponse(uint8_t* aRetBuf, int aBufferSize, const uint8_t* aDigest,
 }
 
 int
+AppendHeaderType(uint8_t* aRetBuf, int aBufferSize, const uint8_t* aType,
+                 int aLength)
+{
+  return AppendHeader(ObexHeaderId::Type, aRetBuf, aBufferSize,
+                      aType, aLength);
+}
+
+int
 AppendHeaderAppParameters(uint8_t* aRetBuf, int aBufferSize,
                           const uint8_t* aAppParameters, int aLength)
 {

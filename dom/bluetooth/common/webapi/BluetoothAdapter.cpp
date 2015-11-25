@@ -2143,6 +2143,48 @@ BluetoothAdapter::SendMediaPlayStatus(
   return request.forget();
 }
 
+already_AddRefed<Promise>
+
+BluetoothAdapter::SendMessageEvent(uint8_t aMasId, Blob& aBlob, ErrorResult& aRv)
+{
+  nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetOwner());
+  if (!global) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return nullptr;
+  }
+
+  RefPtr<Promise> promise = Promise::Create(global, aRv);
+  NS_ENSURE_TRUE(!aRv.Failed(), nullptr);
+
+  BluetoothService* bs = BluetoothService::Get();
+  BT_ENSURE_TRUE_REJECT(bs, promise, NS_ERROR_NOT_AVAILABLE);
+
+  // Wrap runnable to handle result
+  RefPtr<BluetoothReplyRunnable> result =
+    new BluetoothVoidReplyRunnable(nullptr, promise);
+
+  if (XRE_IsParentProcess()) {
+    // In-process transfer
+    bs->SendMessageEvent(aMasId, &aBlob, result);
+  } else {
+    ContentChild *cc = ContentChild::GetSingleton();
+    if (!cc) {
+      aRv.Throw(NS_ERROR_FAILURE);
+      return nullptr;
+    }
+
+    BlobChild* actor = cc->GetOrCreateActorForBlob(&aBlob);
+    if (!actor) {
+      aRv.Throw(NS_ERROR_FAILURE);
+      return nullptr;
+    }
+
+    bs->SendMessageEvent(aMasId, nullptr, actor, result);
+  }
+
+  return promise.forget();
+}
+
 JSObject*
 BluetoothAdapter::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 {

@@ -296,6 +296,12 @@ struct SendPlayStatusRequest
   ControlPlayStatus playStatus;
 };
 
+struct SendMessageEventRequest
+{
+  uint8_t masId;
+  PBlob blob;
+};
+
 struct ConnectGattClientRequest
 {
   BluetoothUuid appUuid;
@@ -512,6 +518,7 @@ union Request
   ToggleCallsRequest;
   SendMetaDataRequest;
   SendPlayStatusRequest;
+  SendMessageEventRequest;
   ConnectGattClientRequest;
   DisconnectGattClientRequest;
   DiscoverGattServicesRequest;

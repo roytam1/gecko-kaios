@@ -1961,6 +1961,37 @@ BluetoothServiceBluedroid::SendInputMessage(const nsAString& aDeviceAddresses,
 }
 
 void
+BluetoothServiceBluedroid::SendMessageEvent(
+  uint8_t aMasId, BlobParent* aBlobParent, BlobChild* aBlobChild,
+  BluetoothReplyRunnable* aRunnable)
+{
+  BluetoothMapSmsManager* map = BluetoothMapSmsManager::Get();
+  if (!map) {
+    DispatchReplyError(aRunnable,
+                       NS_LITERAL_STRING("SendMessageEvent failed"));
+    return;
+  }
+
+  map->SendMessageEvent(aMasId, aBlobParent);
+  DispatchReplySuccess(aRunnable);
+}
+
+void
+BluetoothServiceBluedroid::SendMessageEvent(
+  uint8_t aMasId, Blob* aBlob, BluetoothReplyRunnable* aRunnable)
+{
+  BluetoothMapSmsManager* map = BluetoothMapSmsManager::Get();
+  if (!map) {
+    DispatchReplyError(aRunnable,
+                       NS_LITERAL_STRING("SendMessageEvent failed"));
+    return;
+  }
+
+  map->SendMessageEvent(aMasId, aBlob);
+  DispatchReplySuccess(aRunnable);
+}
+
+void
 BluetoothServiceBluedroid::AnswerWaitingCall(BluetoothReplyRunnable* aRunnable)
 {
 }

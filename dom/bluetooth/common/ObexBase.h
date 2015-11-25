@@ -344,6 +344,8 @@ int AppendHeaderTarget(uint8_t* aRetBuf, int aBufferSize, const uint8_t* aTarget
                        int aLength);
 int AppendHeaderWho(uint8_t* aRetBuf, int aBufferSize, const uint8_t* aWho,
                     int aLength);
+int AppendHeaderType(uint8_t* aRetBuf, int aBufferSize, const uint8_t* aType,
+                     int aLength);
 int AppendAuthResponse(uint8_t* aRetBuf, int aBufferSize,
                        const uint8_t* aDigest, int aLength);
 int AppendHeaderAppParameters(uint8_t* aRetBuf, int aBufferSize,

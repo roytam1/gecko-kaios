@@ -2587,6 +2587,21 @@ BluetoothDBusService::SendInputMessage(const nsAString& aDeviceAddress,
   return SendAsyncDBusMessage(objectPath, DBUS_INPUT_IFACE, aMessage, callback);
 }
 
+void
+SendMessageEvent(long aMasId,
+                 BlobParent* aBlobParent,
+                 BlobChild* aBlobChild,
+                 BluetoothReplyRunnable* aRunnable)
+{
+}
+
+void
+SendMessageEvent(long aMasId,
+                 nsIDOMBlob* aBlob,
+                 BluetoothReplyRunnable* aRunnable)
+{
+}
+
 class SendAsyncDBusMessageTask : public Task
 {
 public:

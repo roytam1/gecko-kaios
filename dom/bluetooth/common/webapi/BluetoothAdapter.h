@@ -178,6 +178,9 @@ public:
   already_AddRefed<DOMRequest>
     SendMediaPlayStatus(const MediaPlayStatus& aMediaPlayStatus,
                         ErrorResult& aRv);
+  // MAP SendEvent method
+  already_AddRefed<Promise> SendMessageEvent(uint8_t aMasId, Blob& aBlob,
+                                             ErrorResult& aRv);
 
   /****************************************************************************
    * Others

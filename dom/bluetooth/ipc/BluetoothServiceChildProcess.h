@@ -301,6 +301,17 @@ public:
                    const nsAString& aMessage) override;
 
   virtual void
+  SendMessageEvent(uint8_t aMasId,
+                   BlobParent* aBlobParent,
+                   BlobChild* aBlobChild,
+                   BluetoothReplyRunnable* aRunnable) override;
+
+  virtual void
+  SendMessageEvent(uint8_t aMasId,
+                   Blob* aBlob,
+                   BluetoothReplyRunnable* aRunnable) override;
+
+  virtual void
   ConnectGattClientInternal(const BluetoothUuid& aAppUuid,
                             const BluetoothAddress& aDeviceAddress,
                             BluetoothReplyRunnable* aRunnable) override;
