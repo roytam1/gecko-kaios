@@ -9,6 +9,7 @@
              optional BluetoothMapMessagesListingEventInit eventInitDict)]
 interface BluetoothMapMessagesListingEvent : Event
 {
+  readonly attribute DOMString                  name;
   readonly attribute unsigned long              maxListCount;
   readonly attribute unsigned long              listStartOffset;
   readonly attribute unsigned long              subjectLength;
@@ -27,6 +28,7 @@ interface BluetoothMapMessagesListingEvent : Event
 
 dictionary BluetoothMapMessagesListingEventInit : EventInit
 {
+  DOMString                 name = "";
   unsigned long             maxListCount = 0;
   unsigned long             listStartOffset = 0;
   unsigned long             subjectLength = 0;

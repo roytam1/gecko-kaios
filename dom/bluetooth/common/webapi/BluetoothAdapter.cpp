@@ -1536,7 +1536,9 @@ BluetoothAdapter::HandleMapMessagesListing(const BluetoothValue& aValue)
   for (uint32_t i = 0, propCount = arr.Length(); i < propCount; ++i) {
     const nsString& name = arr[i].name();
     const BluetoothValue& value = arr[i].value();
-    if (name.EqualsLiteral("maxListCount")) {
+    if (name.EqualsLiteral("name")) {
+      init.mName = value.get_nsString();
+    } else if (name.EqualsLiteral("maxListCount")) {
       init.mMaxListCount = value.get_uint32_t();
     } else if (name.EqualsLiteral("startOffset")) {
       init.mListStartOffset = value.get_uint32_t();
@@ -1585,7 +1587,9 @@ BluetoothAdapter::HandleMapGetMessage(const BluetoothValue& aValue)
   for (uint32_t i = 0, propCount = arr.Length(); i < propCount; ++i) {
     const nsString& name = arr[i].name();
     const BluetoothValue& value = arr[i].value();
-    if (name.EqualsLiteral("hasAttachment")) {
+    if (name.EqualsLiteral("name")) {
+      init.mName = value.get_nsString();
+    } else if (name.EqualsLiteral("hasAttachment")) {
       init.mHasAttachment = value.get_bool();
     } else if (name.EqualsLiteral("charset")) {
       if (value.get_uint32_t() == 0) {

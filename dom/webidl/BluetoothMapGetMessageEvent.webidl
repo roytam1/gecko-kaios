@@ -9,6 +9,7 @@
              optional BluetoothMapGetMessageEventInit eventInitDict)]
 interface BluetoothMapGetMessageEvent : Event
 {
+  readonly attribute DOMString        name;
   readonly attribute boolean          hasAttachment;
   readonly attribute FilterCharset    charset;
 
@@ -17,6 +18,7 @@ interface BluetoothMapGetMessageEvent : Event
 
 dictionary BluetoothMapGetMessageEventInit : EventInit
 {
+  DOMString                 name = "";
   boolean                   hasAttachment = false;
   FilterCharset             charset = "utf-8";
 

@@ -1500,6 +1500,9 @@ BluetoothMapSmsManager::HandleSmsMmsMsgListing(const ObexHeaderSet& aHeader)
   BluetoothService* bs = BluetoothService::Get();
 
   InfallibleTArray<BluetoothNamedValue> data;
+  nsString name;
+  aHeader.GetName(name);
+  AppendNamedValue(data, "name", name);
 
   static Map::AppParametersTagId sMsgListingParameters[] = {
     [0] = Map::AppParametersTagId::MaxListCount,
@@ -1535,7 +1538,7 @@ BluetoothMapSmsManager::HandleSmsMmsGetMessage(const ObexHeaderSet& aHeader)
   InfallibleTArray<BluetoothNamedValue> data;
   nsString name;
   aHeader.GetName(name);
-  AppendNamedValue(data, "handle", name);
+  AppendNamedValue(data, "name", name);
 
   AppendBtNamedValueByTagId(aHeader, data,
                             Map::AppParametersTagId::Attachment);
