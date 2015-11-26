@@ -1498,6 +1498,7 @@ BluetoothMapSmsManager::HandleSmsMmsMsgListing(const ObexHeaderSet& aHeader)
   MOZ_ASSERT(NS_IsMainThread());
 
   BluetoothService* bs = BluetoothService::Get();
+  NS_ENSURE_TRUE_VOID(bs);
 
   InfallibleTArray<BluetoothNamedValue> data;
   nsString name;
