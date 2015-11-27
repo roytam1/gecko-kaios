@@ -1636,7 +1636,7 @@ BluetoothMapSmsManager::HandleSetMessageStatus(const ObexHeaderSet& aHeader)
    * shall be modified. The handle shall be represented by a null-terminated
    * Unicode text string with 16 hexadecimal digits.
    */
-  AppendNamedValue(data, "handle", name);
+  AppendNamedValue(data, "handleId", name);
 
   AppendBtNamedValueByTagId(aHeader, data,
                             Map::AppParametersTagId::StatusIndicator);
