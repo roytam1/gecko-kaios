@@ -808,6 +808,8 @@ BluetoothMapSmsManager::SendPutFinalRequest()
   int index = 3;
   auto req = MakeUnique<uint8_t[]>(mRemoteMaxPacketLength);
 
+  index += AppendHeaderConnectionId(&req[index], mConnectionId);
+
   index += AppendHeaderEndOfBody(&req[index]);
 
   SendMnsObexData(req.get(), ObexRequestCode::PutFinal, index);
@@ -846,7 +848,7 @@ BluetoothMapSmsManager::SendMessageEvent(uint8_t aMasId, Blob* aBlob)
   const char* type = "x-bt/MAP-event-report";
   index += AppendHeaderType(&req[index], mRemoteMaxPacketLength,
                             reinterpret_cast<uint8_t*>(const_cast<char*>(type)),
-                            strlen(type));
+                            strlen(type) + 1);
   uint8_t masId[1];
   masId[0] = static_cast<uint8_t>(aMasId);
 
