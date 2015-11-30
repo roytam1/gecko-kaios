@@ -559,7 +559,7 @@ BluetoothMapSmsManager::NotifyConnectionRequest()
   AddressToString(mDeviceAddress, deviceAddressStr);
 
   bs->DistributeSignal(BluetoothSignal(NS_LITERAL_STRING(MAP_CONNECTION_REQ_ID),
-                                       NS_LITERAL_STRING(KEY_ADAPTER),
+                                       NS_LITERAL_STRING(KEY_MAP),
                                        deviceAddressStr));
 
   return ObexResponseCode::Success;

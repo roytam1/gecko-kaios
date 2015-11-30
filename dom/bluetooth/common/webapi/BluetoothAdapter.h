@@ -206,20 +206,24 @@ public:
   virtual void EventListenerAdded(nsIAtom* aType) override;
 
   /**
-   * Listen to bluetooth PBAP signal if all PBAP event handlers are ready.
+   * Listen to bluetooth PBAP signal if PBAP connection request event handler
+   * is ready.
    *
-   * Listen to bluetooth PBAP signal only if all PBAP event handlers have
-   * been attached. All pending PBAP requests queued in BluetoothService
-   * would be fired when adapter starts listening to bluetooth PBAP signal.
+   * Listen to bluetooth PBAP signal if PBAP connection request event handler
+   * has been attached.
+   * All pending PBAP requests queued in BluetoothService would be fired when
+   * adapter starts listening to bluetooth PBAP signal.
    */
   void TryListeningToBluetoothPbapSignal();
 
   /**
-   * Listen to bluetooth MAP signal if all MAP event handlers are ready.
+   * Listen to bluetooth MAP signal if MAP connection request event handler
+   * is ready.
    *
-   * Listen to bluetooth MAP signal only if all MAP event handlers have
-   * been attached. All pending MAP requests queued in BluetoothService
-   * would be fired when adapter starts listening to bluetooth MAP signal.
+   * Listen to bluetooth MAP signal if MAP connection request event handler
+   * has been attached.
+   * All pending MAP requests queued in BluetoothService would be fired when
+   * adapter starts listening to bluetooth MAP signal.
    */
   void TryListeningToBluetoothMapSignal();
 

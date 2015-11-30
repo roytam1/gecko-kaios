@@ -277,6 +277,7 @@ BluetoothPbapManager::ReceiveSocketData(BluetoothSocket* aSocket,
   const uint8_t* data = aMessage->GetData();
   uint8_t opCode = data[0];
   ObexHeaderSet pktHeaders;
+
   switch (opCode) {
     case ObexRequestCode::Connect: {
       mPasswordReqNeeded = false;
@@ -456,7 +457,7 @@ BluetoothPbapManager::NotifyConnectionRequest()
 
   bs->DistributeSignal(
     BluetoothSignal(NS_LITERAL_STRING(PBAP_CONNECTION_REQ_ID),
-                    NS_LITERAL_STRING(KEY_ADAPTER),
+                    NS_LITERAL_STRING(KEY_PBAP),
                     deviceAddressStr));
 
   return ObexResponseCode::Success;

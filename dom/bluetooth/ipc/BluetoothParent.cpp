@@ -715,7 +715,7 @@ bool
 BluetoothRequestParent::DoRequest(const AcceptConnectionRequest& aRequest)
 {
   MOZ_ASSERT(mService);
-  MOZ_ASSERT(mRequestType == Request::TAcceptConnectiondRequest);
+  MOZ_ASSERT(mRequestType == Request::TAcceptConnectionRequest);
 
   mService->AcceptConnection(aRequest.serviceUuid(),
                              mReplyRunnable.get());

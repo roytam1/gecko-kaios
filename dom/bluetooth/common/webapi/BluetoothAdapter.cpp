@@ -2217,14 +2217,10 @@ void
 BluetoothAdapter::TryListeningToBluetoothPbapSignal()
 {
   if (!mHasListenedToPbapSignal) {
-    // Listen to bluetooth PBAP signal only if all PBAP event handlers have
-    // been attached. All pending PBAP requests queued in BluetoothService
+    // Listen to bluetooth PBAP signal if PBAP connection request event handler
+    // has been attached. All pending PBAP requests queued in BluetoothService
     // would be fired when adapter starts listening to bluetooth PBAP signal.
-    if (HasListenersFor(nsGkAtoms::onobexpasswordreq) &&
-        HasListenersFor(nsGkAtoms::onpullphonebookreq) &&
-        HasListenersFor(nsGkAtoms::onpullvcardentryreq) &&
-        HasListenersFor(nsGkAtoms::onpullvcardlistingreq)) {
-
+    if (HasListenersFor(nsGkAtoms::onpbapconnectionreq)) {
       RegisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_PBAP), this);
       mHasListenedToPbapSignal = true;
     }
@@ -2235,15 +2231,10 @@ void
 BluetoothAdapter::TryListeningToBluetoothMapSignal()
 {
   if (!mHasListenedToMapSignal) {
-    // Listen to bluetooth MAP signal only if all MAP event handlers have
-    // been attached. All pending MAP requests queued in BluetoothService
+    // Listen to bluetooth MAP signal if MAP connection request event handler
+    // has been attached. All pending MAP requests queued in BluetoothService
     // would be fired when adapter starts listening to bluetooth MAP signal.
-    if (HasListenersFor(nsGkAtoms::onmapfolderlistingreq) &&
-        HasListenersFor(nsGkAtoms::onmapmessageupdatereq) &&
-        HasListenersFor(nsGkAtoms::onmapmessageslistingreq) &&
-        HasListenersFor(nsGkAtoms::onmapgetmessagereq) &&
-        HasListenersFor(nsGkAtoms::onmapsetmessagestatusreq) &&
-        HasListenersFor(nsGkAtoms::onmapsendmessagereq)) {
+    if (HasListenersFor(nsGkAtoms::onmapconnectionreq)) {
 
       RegisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_MAP), this);
       mHasListenedToMapSignal = true;
