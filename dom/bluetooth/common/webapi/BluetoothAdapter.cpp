@@ -16,7 +16,7 @@
 
 #include "mozilla/dom/BluetoothAdapterBinding.h"
 #include "mozilla/dom/BluetoothAttributeEvent.h"
-#include "mozilla/dom/BluetoothConnectionReqEvent.h"
+#include "mozilla/dom/BluetoothMapConnectionReqEvent.h"
 #include "mozilla/dom/BluetoothMapFolderListingEvent.h"
 #include "mozilla/dom/BluetoothMapGetMessageEvent.h"
 #include "mozilla/dom/BluetoothMapMessagesListingEvent.h"
@@ -24,6 +24,7 @@
 #include "mozilla/dom/BluetoothMapSetMessageStatusEvent.h"
 #include "mozilla/dom/BluetoothMapSendMessageEvent.h"
 #include "mozilla/dom/BluetoothObexAuthEvent.h"
+#include "mozilla/dom/BluetoothPbapConnectionReqEvent.h"
 #include "mozilla/dom/BluetoothPhonebookPullingEvent.h"
 #include "mozilla/dom/BluetoothStatusChangedEvent.h"
 #include "mozilla/dom/BluetoothVCardListingEvent.h"
@@ -528,9 +529,7 @@ BluetoothAdapter::Notify(const BluetoothSignal& aData)
 
   BluetoothValue v = aData.value();
 
-  if (aData.name().EqualsLiteral(CONNECTION_REQ_ID)) {
-    HandleConnectionReq(aData.value());
-  } else if (aData.name().EqualsLiteral("PropertyChanged")) {
+  if (aData.name().EqualsLiteral("PropertyChanged")) {
     HandlePropertyChanged(v);
   } else if (aData.name().EqualsLiteral("DeviceFound")) {
     /*
@@ -578,12 +577,16 @@ BluetoothAdapter::Notify(const BluetoothSignal& aData)
     DispatchEmptyEvent(aData.name());
   } else if (aData.name().EqualsLiteral(OBEX_PASSWORD_REQ_ID)) {
     HandleObexPasswordReq(aData.value());
+  } else if (aData.name().EqualsLiteral(PBAP_CONNECTION_REQ_ID)) {
+    HandlePbapConnectionReq(aData.value());
   } else if (aData.name().EqualsLiteral(PULL_PHONEBOOK_REQ_ID)) {
     HandlePullPhonebookReq(aData.value());
   } else if (aData.name().EqualsLiteral(PULL_VCARD_ENTRY_REQ_ID)) {
     HandlePullVCardEntryReq(aData.value());
   } else if (aData.name().EqualsLiteral(PULL_VCARD_LISTING_REQ_ID)) {
     HandlePullVCardListingReq(aData.value());
+  } else if (aData.name().EqualsLiteral(MAP_CONNECTION_REQ_ID)) {
+    HandleMapConnectionReq(aData.value());
   } else if (aData.name().EqualsLiteral(MAP_MESSAGES_LISTING_REQ_ID)) {
     HandleMapMessagesListing(aData.value());
   } else if (aData.name().EqualsLiteral(MAP_FOLDER_LISTING_REQ_ID)) {
@@ -1131,31 +1134,19 @@ BluetoothAdapter::SetAdapterState(BluetoothAdapterState aState)
 }
 
 void
-BluetoothAdapter::HandleConnectionReq(const BluetoothValue& aValue)
+BluetoothAdapter::HandlePbapConnectionReq(const BluetoothValue& aValue)
 {
-  MOZ_ASSERT(aValue.type() == BluetoothValue::TArrayOfBluetoothNamedValue);
+  MOZ_ASSERT(aValue.type() == BluetoothValue::TnsString);
 
-  const InfallibleTArray<BluetoothNamedValue>& arr =
-    aValue.get_ArrayOfBluetoothNamedValue();
-
-  BluetoothConnectionReqEventInit init;
-
-  for (uint32_t i = 0, propCount = arr.Length(); i < propCount; ++i) {
-    const nsString& name = arr[i].name();
-    const BluetoothValue& value = arr[i].value();
-    if (name.EqualsLiteral("address")) {
-      init.mAddress = value.get_nsString();
-    } else if (name.EqualsLiteral("serviceUuid")) {
-      init.mServiceUuid = value.get_uint16_t();
-    }
-  }
-
+  BluetoothPbapConnectionReqEventInit init;
+  init.mAddress = aValue.get_nsString();
   init.mHandle =
-    BluetoothConnectionHandle::Create(GetOwner(), init.mServiceUuid);
+    BluetoothConnectionHandle::Create(GetOwner(),
+                                      BluetoothServiceClass::PBAP_PSE);
 
-  RefPtr<BluetoothConnectionReqEvent> event =
-    BluetoothConnectionReqEvent::Constructor(this,
-      NS_LITERAL_STRING(CONNECTION_REQ_ID), init);
+  RefPtr<BluetoothPbapConnectionReqEvent> event =
+    BluetoothPbapConnectionReqEvent::Constructor(this,
+      NS_LITERAL_STRING(PBAP_CONNECTION_REQ_ID), init);
 
   DispatchTrustedEvent(event);
 }
@@ -1517,6 +1508,24 @@ BluetoothAdapter::HandleMapFolderListing(const BluetoothValue& aValue)
   RefPtr<BluetoothMapFolderListingEvent> event =
     BluetoothMapFolderListingEvent::Constructor(this,
       NS_LITERAL_STRING(MAP_FOLDER_LISTING_REQ_ID), init);
+  DispatchTrustedEvent(event);
+}
+
+void
+BluetoothAdapter::HandleMapConnectionReq(const BluetoothValue& aValue)
+{
+  MOZ_ASSERT(aValue.type() == BluetoothValue::TnsString);
+
+  BluetoothMapConnectionReqEventInit init;
+  init.mAddress = aValue.get_nsString();
+  init.mHandle =
+    BluetoothConnectionHandle::Create(GetOwner(),
+                                      BluetoothServiceClass::MAP_MAS);
+
+  RefPtr<BluetoothMapConnectionReqEvent> event =
+    BluetoothMapConnectionReqEvent::Constructor(this,
+      NS_LITERAL_STRING(MAP_CONNECTION_REQ_ID), init);
+
   DispatchTrustedEvent(event);
 }
 
@@ -2211,7 +2220,8 @@ BluetoothAdapter::TryListeningToBluetoothPbapSignal()
     // Listen to bluetooth PBAP signal only if all PBAP event handlers have
     // been attached. All pending PBAP requests queued in BluetoothService
     // would be fired when adapter starts listening to bluetooth PBAP signal.
-    if (HasListenersFor(nsGkAtoms::onpullphonebookreq) &&
+    if (HasListenersFor(nsGkAtoms::onobexpasswordreq) &&
+        HasListenersFor(nsGkAtoms::onpullphonebookreq) &&
         HasListenersFor(nsGkAtoms::onpullvcardentryreq) &&
         HasListenersFor(nsGkAtoms::onpullvcardlistingreq)) {
 

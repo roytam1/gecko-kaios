@@ -5,17 +5,15 @@
 
 [CheckAnyPermissions="bluetooth",
  Constructor(DOMString type,
-             optional BluetoothConnectionReqEventInit eventInitDict)]
-interface BluetoothConnectionReqEvent : Event
+             optional BluetoothMapConnectionReqEventInit eventInitDict)]
+interface BluetoothMapConnectionReqEvent : Event
 {
   readonly attribute DOMString                  address;
-  readonly attribute unsigned short             serviceUuid;
   readonly attribute BluetoothConnectionHandle? handle;
 };
 
-dictionary BluetoothConnectionReqEventInit : EventInit
+dictionary BluetoothMapConnectionReqEventInit : EventInit
 {
   DOMString                  address = "";
-  unsigned short             serviceUuid = 0;
   BluetoothConnectionHandle? handle = null;
 };

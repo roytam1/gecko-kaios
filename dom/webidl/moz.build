@@ -865,9 +865,9 @@ if CONFIG['MOZ_B2G_BT']:
     GENERATED_EVENTS_WEBIDL_FILES += [
         'BluetoothAdapterEvent.webidl',
         'BluetoothAttributeEvent.webidl',
-        'BluetoothConnectionReqEvent.webidl',
         'BluetoothDeviceEvent.webidl',
         'BluetoothGattCharacteristicEvent.webidl',
+        'BluetoothMapConnectionReqEvent.webidl',
         'BluetoothMapFolderListingEvent.webidl',
         'BluetoothMapGetMessageEvent.webidl',
         'BluetoothMapMessagesListingEvent.webidl',
@@ -876,6 +876,7 @@ if CONFIG['MOZ_B2G_BT']:
         'BluetoothMapSetMessageStatusEvent.webidl',
         'BluetoothObexAuthEvent.webidl',
         'BluetoothPairingEvent.webidl',
+        'BluetoothPbapConnectionReqEvent.webidl',
         'BluetoothPhonebookPullingEvent.webidl',
         'BluetoothStatusChangedEvent.webidl',
         'BluetoothVCardListingEvent.webidl',

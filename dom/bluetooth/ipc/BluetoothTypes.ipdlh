@@ -45,7 +45,6 @@ namespace bluetooth {
 union BluetoothValue
 {
   int32_t;
-  uint16_t;
   uint32_t;
   nsCString;
   nsString;

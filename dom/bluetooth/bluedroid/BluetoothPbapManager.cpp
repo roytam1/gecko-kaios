@@ -451,17 +451,13 @@ BluetoothPbapManager::NotifyConnectionRequest()
     return ObexResponseCode::PreconditionFailed;
   }
 
-  InfallibleTArray<BluetoothNamedValue> data;
-
   nsAutoString deviceAddressStr;
   AddressToString(mDeviceAddress, deviceAddressStr);
-  AppendNamedValue(data, "address", deviceAddressStr);
-  AppendNamedValue(data, "serviceUuid",
-                   static_cast<uint16_t>(BluetoothServiceClass::PBAP_PSE));
 
-  bs->DistributeSignal(BluetoothSignal(NS_LITERAL_STRING(CONNECTION_REQ_ID),
-                                       NS_LITERAL_STRING(KEY_ADAPTER),
-                                       data));
+  bs->DistributeSignal(
+    BluetoothSignal(NS_LITERAL_STRING(PBAP_CONNECTION_REQ_ID),
+                    NS_LITERAL_STRING(KEY_ADAPTER),
+                    deviceAddressStr));
 
   return ObexResponseCode::Success;
 }
@@ -613,6 +609,8 @@ BluetoothPbapManager::NotifyPbapRequest(const ObexHeaderSet& aHeader)
 ObexResponseCode
 BluetoothPbapManager::NotifyPasswordRequest()
 {
+  MOZ_ASSERT(NS_IsMainThread());
+
   // Ensure bluetooth service is available
   BluetoothService* bs = BluetoothService::Get();
   if (!bs) {

@@ -203,9 +203,14 @@ extern bool gBluetoothDebugFlag;
 #define BLUETOOTH_SCO_STATUS_CHANGED_ID  "bluetooth-sco-status-changed"
 
 /**
- * When receiving the profile connection request, will dispatch this event.
+ * When receiving the pbap connection request, will dispatch this event.
  */
-#define CONNECTION_REQ_ID                    "connectionreq"
+#define PBAP_CONNECTION_REQ_ID               "pbapconnectionreq"
+
+/**
+ * When receiving the map connection request, will dispatch this event.
+ */
+#define MAP_CONNECTION_REQ_ID                "mapconnectionreq"
 
 /**
  * When the connection status of a Bluetooth profile is changed, we'll

@@ -555,17 +555,12 @@ BluetoothMapSmsManager::NotifyConnectionRequest()
     return ObexResponseCode::PreconditionFailed;
   }
 
-  InfallibleTArray<BluetoothNamedValue> data;
-
   nsAutoString deviceAddressStr;
   AddressToString(mDeviceAddress, deviceAddressStr);
-  AppendNamedValue(data, "address", deviceAddressStr);
-  AppendNamedValue(data, "serviceUuid",
-                   static_cast<uint16_t>(BluetoothServiceClass::MAP_MAS));
 
-  bs->DistributeSignal(BluetoothSignal(NS_LITERAL_STRING(CONNECTION_REQ_ID),
+  bs->DistributeSignal(BluetoothSignal(NS_LITERAL_STRING(MAP_CONNECTION_REQ_ID),
                                        NS_LITERAL_STRING(KEY_ADAPTER),
-                                       data));
+                                       deviceAddressStr));
 
   return ObexResponseCode::Success;
 }

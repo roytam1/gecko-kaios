@@ -86,7 +86,9 @@ public:
    * Event Handlers
    ***************************************************************************/
   IMPL_EVENT_HANDLER(attributechanged);
-  IMPL_EVENT_HANDLER(connectionreq);
+  // Connection request
+  IMPL_EVENT_HANDLER(mapconnectionreq);
+  IMPL_EVENT_HANDLER(pbapconnectionreq);
   // PAIRING
   IMPL_EVENT_HANDLER(devicepaired);
   IMPL_EVENT_HANDLER(deviceunpaired);
@@ -290,14 +292,14 @@ private:
   void GetPairedDeviceProperties(const nsTArray<nsString>& aDeviceAddresses);
 
    /**
-   * Handle CONNECTION_REQ_ID bluetooth signal.
+   * Handle PBAP_CONNECTION_REQ_ID bluetooth signal.
    *
    * @param aValue [in] Properties array of the profile connection request.
    *                    The array should contain few properties:
    *                    - nsString   'address'
    *                    - uint16_t   'serviceUuid'
    */
-  void HandleConnectionReq(const BluetoothValue& aValue);
+  void HandlePbapConnectionReq(const BluetoothValue& aValue);
 
   /**
    * Handle "PropertyChanged" bluetooth signal.
@@ -400,6 +402,14 @@ private:
    *                    'vCardSelector_OR' or 'vCardSelector_AND'.
    */
   Sequence<vCardProperties> getVCardProperties(const BluetoothValue &aValue);
+
+  /**
+   * Handle MAP_CONNECTION_REQ_ID bluetooth signal.
+   *
+   * @param aValue [in] a BluetoothValue with 'TnsString' type
+   *                    as the 'address' property.
+   */
+  void HandleMapConnectionReq(const BluetoothValue& aValue);
 
    /**
    * Handle "MapFolderListing" bluetooth signal.

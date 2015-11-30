@@ -51,8 +51,10 @@ interface BluetoothAdapter : EventTarget {
   // Fired when a remote device gets paired with the adapter
            attribute EventHandler   ondevicepaired;
 
-  // Fired when profile connection has been requested
-           attribute EventHandler   onconnectionreq;
+  // Fired when map connection has been requested
+           attribute EventHandler   onmapconnectionreq;
+  // Fired when pbap connection has been requested
+           attribute EventHandler   onpbapconnectionreq;
 
   // Fired when a remote device gets unpaired from the adapter
            attribute EventHandler   ondeviceunpaired;
