@@ -24,6 +24,7 @@
 #include "gfxPrefs.h"
 #include "cairo.h"
 #include "VsyncSource.h"
+#include "SoftwareVsyncSource.h"
 
 #ifdef MOZ_WIDGET_ANDROID
 #include "AndroidBridge.h"
@@ -317,7 +318,7 @@ gfxAndroidPlatform::FontHintingEnabled()
     // On android-java, we currently only use gecko to render web
     // content that can always be be non-reflow-zoomed.  So turn off
     // hinting.
-    // 
+    //
     // XXX when gecko-android-java is used as an "app runtime", we may
     // want to re-enable hinting for non-browser processes there.
     return false;
@@ -364,18 +365,64 @@ gfxAndroidPlatform::RequiresLinearZoom()
 #ifdef MOZ_WIDGET_GONK
 class GonkVsyncSource final : public VsyncSource
 {
+  typedef VsyncSource::Display Display;
+
 public:
   GonkVsyncSource()
   {
+    mGonkDisplay = new GonkDisplay();
   }
 
   virtual Display& GetGlobalDisplay() override
   {
-    return mGlobalDisplay;
+    // TODO: Ideally VsyncSource should provide a GlobalDisplay
+    // which synchronizes GonkDisplay and SoftwareDisplay if both exists.
+    MOZ_ASSERT(mGonkDisplay);
+    return *mGonkDisplay;
   }
 
-  class GonkDisplay final : public VsyncSource::Display
+  virtual Display& GetDisplayById(uint32_t aScreenId) override
   {
+    if (mDisplayMap.count(aScreenId) > 0) {
+      return *mDisplayMap[aScreenId];
+    }
+
+    // GlobalDisplay should always exist.
+    return GetGlobalDisplay();
+  }
+
+  nsresult
+  AddDisplay(uint32_t aScreenId, VsyncSource::VsyncType aVsyncType) override
+  {
+    if (mDisplayMap.count(aScreenId) > 0) {
+      return NS_ERROR_FAILURE;
+    }
+
+    if (aVsyncType == HARDWARE_VYSNC) {
+      mDisplayMap[aScreenId] = mGonkDisplay;
+      return NS_OK;
+    } else if (aVsyncType == SORTWARE_VSYNC) {
+      mDisplayMap[aScreenId] = new SoftwareDisplay();
+      return NS_OK;
+    }
+
+    return NS_ERROR_FAILURE;
+  }
+
+  nsresult
+  RemoveDisplay(uint32_t aScreenId) override
+  {
+    if (mDisplayMap.count(aScreenId) == 0) {
+      return NS_ERROR_FAILURE;
+    }
+    mDisplayMap.erase(aScreenId);
+
+    return NS_OK;
+  }
+
+  class GonkDisplay final : public Display
+  {
+
   public:
     GonkDisplay() : mVsyncEnabled(false)
     {
@@ -416,9 +463,13 @@ public:
 private:
   virtual ~GonkVsyncSource()
   {
+      MOZ_ASSERT(NS_IsMainThread());
+      mDisplayMap.clear();
   }
 
-  GonkDisplay mGlobalDisplay;
+  RefPtr<Display> mGonkDisplay;
+  // Map of screen Id to Display
+  std::map<uint32_t, RefPtr<Display>> mDisplayMap;
 }; // GonkVsyncSource
 #endif
 

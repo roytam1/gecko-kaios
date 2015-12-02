@@ -23,9 +23,11 @@ namespace layout {
 VsyncParent::Create()
 {
   AssertIsOnBackgroundThread();
-  RefPtr<gfx::VsyncSource> vsyncSource = gfxPlatform::GetPlatform()->GetHardwareVsync();
+  RefPtr<gfx::VsyncSource> vsyncSource =
+    gfxPlatform::GetPlatform()->GetHardwareVsync();
   RefPtr<VsyncParent> vsyncParent = new VsyncParent();
-  vsyncParent->mVsyncDispatcher = vsyncSource->GetRefreshTimerVsyncDispatcher();
+  vsyncParent->mVsyncDispatcher =
+    vsyncSource->GetGlobalDisplay().GetRefreshTimerVsyncDispatcher();
   return vsyncParent.forget();
 }
 

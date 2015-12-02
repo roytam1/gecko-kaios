@@ -111,8 +111,9 @@ CompositorVsyncDispatcher::Shutdown()
   }
 }
 
-RefreshTimerVsyncDispatcher::RefreshTimerVsyncDispatcher()
+RefreshTimerVsyncDispatcher::RefreshTimerVsyncDispatcher(Display* aDisplay)
   : mRefreshTimersLock("RefreshTimers lock")
+  , mDisplay(aDisplay)
 {
   MOZ_ASSERT(XRE_IsParentProcess());
   MOZ_ASSERT(NS_IsMainThread());
@@ -186,8 +187,9 @@ RefreshTimerVsyncDispatcher::UpdateVsyncStatus()
     return;
   }
 
-  gfx::VsyncSource::Display& display = gfxPlatform::GetPlatform()->GetHardwareVsync()->GetGlobalDisplay();
-  display.NotifyRefreshTimerVsyncStatus(NeedsVsync());
+  if (mDisplay) {
+    mDisplay->NotifyRefreshTimerVsyncStatus(NeedsVsync());
+  }
 }
 
 bool

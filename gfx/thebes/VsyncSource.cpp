@@ -8,6 +8,7 @@
 #include "nsXULAppAPI.h"
 #include "mozilla/VsyncDispatcher.h"
 #include "MainThreadUtils.h"
+#include "RefreshDriverTimerImpl.h"
 
 namespace mozilla {
 namespace gfx {
@@ -31,20 +32,12 @@ VsyncSource::RemoveCompositorVsyncDispatcher(CompositorVsyncDispatcher* aComposi
   GetGlobalDisplay().RemoveCompositorVsyncDispatcher(aCompositorVsyncDispatcher);
 }
 
-RefPtr<RefreshTimerVsyncDispatcher>
-VsyncSource::GetRefreshTimerVsyncDispatcher()
-{
-  MOZ_ASSERT(XRE_IsParentProcess());
-  // See also AddCompositorVsyncDispatcher().
-  return GetGlobalDisplay().GetRefreshTimerVsyncDispatcher();
-}
-
 VsyncSource::Display::Display()
   : mDispatcherLock("display dispatcher lock")
   , mRefreshTimerNeedsVsync(false)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  mRefreshTimerVsyncDispatcher = new RefreshTimerVsyncDispatcher();
+  mRefreshTimerVsyncDispatcher = new RefreshTimerVsyncDispatcher(this);
 }
 
 VsyncSource::Display::~Display()
@@ -52,6 +45,7 @@ VsyncSource::Display::~Display()
   MOZ_ASSERT(NS_IsMainThread());
   MutexAutoLock lock(mDispatcherLock);
   mRefreshTimerVsyncDispatcher = nullptr;
+  mRefreshDriverTimer = nullptr;
   mCompositorVsyncDispatchers.Clear();
 }
 
@@ -111,6 +105,17 @@ VsyncSource::Display::NotifyRefreshTimerVsyncStatus(bool aEnable)
   UpdateVsyncStatus();
 }
 
+RefreshDriverTimer*
+VsyncSource::Display::GetRefreshDriverTimer()
+{
+  if (!mRefreshDriverTimer) {
+    mRefreshDriverTimer =
+      new VsyncRefreshDriverTimer(mRefreshTimerVsyncDispatcher);
+  }
+
+  return mRefreshDriverTimer;
+}
+
 void
 VsyncSource::Display::UpdateVsyncStatus()
 {
@@ -142,6 +147,19 @@ VsyncSource::Display::GetRefreshTimerVsyncDispatcher()
 {
   return mRefreshTimerVsyncDispatcher;
 }
+
+VsyncSource::Display&
+VsyncSource::GetDisplayById(uint32_t aScreenId)
+{
+  // Vsync events occur on a specific Display Object.
+  // Ideally each screen with independent vsync rate has a
+  // corresponding Display Object which provides vsync events for ticking.
+  // And a Global Display synchronizes across all Displays, providing
+  // vsync events for compositing. Each platform should implement at least
+  // Global Display, and then we can fallback to it when specific Display
+  // doesn't exist.
+  return GetGlobalDisplay();
+};
 
 } //namespace gfx
 } //namespace mozilla

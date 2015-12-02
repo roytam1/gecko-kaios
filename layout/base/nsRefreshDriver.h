@@ -33,6 +33,7 @@ class nsIDocument;
 class imgIRequest;
 class nsIDOMEvent;
 class nsINode;
+class nsIScreenManager;
 
 namespace mozilla {
 class RefreshDriverTimer;
@@ -377,12 +378,15 @@ private:
 
   void FinishedWaitingForTransaction();
 
+  uint32_t GetScreenId() const;
+  mozilla::RefreshDriverTimer* GetRefreshDriverTimerFromCurrentDisplay() const;
   mozilla::RefreshDriverTimer* ChooseTimer() const;
   mozilla::RefreshDriverTimer* mActiveTimer;
 
   ProfilerBacktrace* mReflowCause;
   ProfilerBacktrace* mStyleCause;
 
+  nsCOMPtr<nsIScreenManager> mScreenManager;
   nsPresContext *mPresContext; // weak; pres context passed in constructor
                                // and unset in Disconnect
 

@@ -39,6 +39,9 @@ public:
                               const gfx::IntRect* aRect = nullptr);
   virtual void Destroy();
 
+  static already_AddRefed<CompositorScheduler>
+    Create(CompositorBridgeParent* aCompositorBridgeParent, nsIWidget* aWidget);
+
   const TimeStamp& GetLastComposeTime()
   {
     return mLastCompose;

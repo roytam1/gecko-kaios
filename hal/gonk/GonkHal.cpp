@@ -47,6 +47,7 @@
 #include "Hal.h"
 #include "HalImpl.h"
 #include "HalLog.h"
+#include "gfxPlatform.h"
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/dom/battery/Constants.h"
@@ -73,6 +74,8 @@
 #include "OrientationObserver.h"
 #include "UeventPoller.h"
 #include "nsIWritablePropertyBag2.h"
+#include "SoftwareVsyncSource.h"
+#include "VsyncSource.h"
 #include <algorithm>
 
 #define NsecPerMsec  1000000LL
@@ -751,6 +754,16 @@ GetExtScreenEnabled()
 void
 SetExtScreenEnabled(bool aEnabled)
 {
+  // Simulate power on/off for software display
+  char propValue[PROPERTY_VALUE_MAX];
+  if (property_get("ro.h5.display.fb1_backlightdev", propValue, NULL) > 0) {
+    uint32_t screenId = (uint32_t) GonkDisplay::DISPLAY_EXTERNAL;
+    mozilla::gfx::VsyncSource::Display &display =
+      gfxPlatform::GetPlatform()->GetHardwareVsync()->GetDisplayById(screenId);
+
+    static_cast<SoftwareDisplay*>(&display)->SetPowerMode(aEnabled);
+  }
+
   GetGonkDisplay()->SetExtEnabled(aEnabled);
   sExtScreenEnabled = aEnabled;
 }

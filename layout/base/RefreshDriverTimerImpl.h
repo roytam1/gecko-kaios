@@ -22,6 +22,7 @@
 #include "nsITimer.h"
 #include "nsRefreshDriver.h"
 #include "nsTArray.h"
+#include "nsPresContext.h"
 #include "VsyncSource.h"
 
 using namespace mozilla::layout;
@@ -62,16 +63,12 @@ namespace mozilla {
  * for the next tick.
  */
 class RefreshDriverTimer {
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(RefreshDriverTimer)
+
 public:
   RefreshDriverTimer()
     : mLastFireEpoch(0)
   {
-  }
-
-  virtual ~RefreshDriverTimer()
-  {
-    MOZ_ASSERT(mContentRefreshDrivers.Length() == 0, "Should have removed all content refresh drivers from here by now!");
-    MOZ_ASSERT(mRootRefreshDrivers.Length() == 0, "Should have removed all root refresh drivers from here by now!");
   }
 
   virtual void AddRefreshDriver(nsRefreshDriver* aDriver)
@@ -148,6 +145,13 @@ public:
   }
 
 protected:
+  friend nsRefreshDriver;
+  virtual ~RefreshDriverTimer()
+  {
+    MOZ_ASSERT(mContentRefreshDrivers.Length() == 0, "Should have removed all content refresh drivers from here by now!");
+    MOZ_ASSERT(mRootRefreshDrivers.Length() == 0, "Should have removed all root refresh drivers from here by now!");
+  }
+
   virtual void StartTimer() = 0;
   virtual void StopTimer() = 0;
   virtual void ScheduleNextTick(TimeStamp aNowTime) = 0;
@@ -302,14 +306,13 @@ protected:
 class VsyncRefreshDriverTimer : public RefreshDriverTimer
 {
 public:
-  VsyncRefreshDriverTimer()
-    : mVsyncChild(nullptr)
+  VsyncRefreshDriverTimer(RefreshTimerVsyncDispatcher* aVsyncDispatcher)
+    : mVsyncDispatcher(aVsyncDispatcher)
+    , mVsyncChild(nullptr)
   {
     MOZ_ASSERT(XRE_IsParentProcess());
     MOZ_ASSERT(NS_IsMainThread());
     mVsyncObserver = new RefreshDriverVsyncObserver(this);
-    RefPtr<mozilla::gfx::VsyncSource> vsyncSource = gfxPlatform::GetPlatform()->GetHardwareVsync();
-    MOZ_ALWAYS_TRUE(mVsyncDispatcher = vsyncSource->GetRefreshTimerVsyncDispatcher());
     mVsyncDispatcher->SetParentRefreshTimer(mVsyncObserver);
   }
 

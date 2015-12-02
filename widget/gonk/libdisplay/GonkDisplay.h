@@ -54,6 +54,9 @@ public:
 #endif
         float mXdpi;
         bool mComposer2DSupported;
+        // True if platform is capable of notifying the system when a vsync
+        // event occurs on this screen. We use it as a hint to create relative
+        // VsyncSource::Display and VsyncScheduler.
         bool mVsyncSupported;
     };
 

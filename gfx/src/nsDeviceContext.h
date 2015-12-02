@@ -251,6 +251,12 @@ public:
 
     mozilla::DesktopToLayoutDeviceScale GetDesktopToDeviceScale();
 
+    /**
+     * Determines which screen intersects the largest area of the
+     * given surface.
+     */
+    void FindScreen(nsIScreen **outScreen);
+
 private:
     // Private destructor, to discourage deletion outside of Release():
     ~nsDeviceContext();
@@ -258,7 +264,6 @@ private:
     void SetDPI(double* aScale = nullptr);
     void ComputeClientRectUsingScreen(nsRect *outRect);
     void ComputeFullAreaUsingScreen(nsRect *outRect);
-    void FindScreen(nsIScreen **outScreen);
 
     // Return false if the surface is not right
     bool CalcPrintingSize();

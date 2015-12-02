@@ -11,6 +11,7 @@
 #include "nsISupportsImpl.h"
 #include "nsTArray.h"
 #include "mozilla/RefPtr.h"
+#include "VsyncSource.h"
 
 namespace mozilla {
 
@@ -65,9 +66,10 @@ private:
 class RefreshTimerVsyncDispatcher final
 {
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(RefreshTimerVsyncDispatcher)
+  typedef gfx::VsyncSource::Display Display;
 
 public:
-  RefreshTimerVsyncDispatcher();
+  explicit RefreshTimerVsyncDispatcher(Display* aDisplay);
 
   // Please check CompositorVsyncDispatcher::NotifyVsync().
   void NotifyVsync(TimeStamp aVsyncTimestamp);
@@ -84,6 +86,7 @@ public:
   void RemoveChildRefreshTimer(VsyncObserver* aVsyncObserver);
 
 private:
+  RefreshTimerVsyncDispatcher();
   virtual ~RefreshTimerVsyncDispatcher();
   void UpdateVsyncStatus();
   bool NeedsVsync();
@@ -91,6 +94,8 @@ private:
   Mutex mRefreshTimersLock;
   RefPtr<VsyncObserver> mParentRefreshTimer;
   nsTArray<RefPtr<VsyncObserver>> mChildRefreshTimers;
+  // Weak Display pointer is used to notify VsyncObservers changed;
+  Display* mDisplay;
 };
 
 } // namespace mozilla

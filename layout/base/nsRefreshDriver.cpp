@@ -57,6 +57,8 @@
 #include "mozilla/TimelineConsumers.h"
 #include "nsAnimationManager.h"
 #include "nsIDOMEvent.h"
+#include "nsIScreenManager.h"
+#include "nsServiceManagerUtils.h"
 #include "RefreshDriverTimerImpl.h"
 
 #ifdef MOZ_NUWA_PROCESS
@@ -157,7 +159,7 @@ CreateContentVsyncRefreshTimer(void*)
 }
 
 static void
-CreateVsyncRefreshTimer()
+CreateVsyncChildVsyncRefreshTimer()
 {
   MOZ_ASSERT(NS_IsMainThread());
 
@@ -166,16 +168,7 @@ CreateVsyncRefreshTimer()
   // ready.
   gfxPrefs::GetSingleton();
 
-  if (gfxPlatform::IsInLayoutAsapMode()) {
-    return;
-  }
-
-  if (XRE_IsParentProcess()) {
-    // Make sure all vsync systems are ready.
-    gfxPlatform::GetPlatform();
-    // In parent process, we don't need to use ipc. We can create the
-    // VsyncRefreshDriverTimer directly.
-    sRegularRateTimer = new VsyncRefreshDriverTimer();
+  if (gfxPlatform::IsInLayoutAsapMode() || XRE_IsParentProcess()) {
     return;
   }
 
@@ -297,6 +290,46 @@ nsRefreshDriver::GetRefreshTimerInterval() const
   return mThrottled ? GetThrottledTimerInterval() : GetRegularTimerInterval();
 }
 
+uint32_t
+nsRefreshDriver::GetScreenId() const
+{
+  uint32_t screenId = 0;
+  nsCOMPtr<nsIScreen> screen;
+
+  PresContext()->DeviceContext()->FindScreen(getter_AddRefs(screen));
+  if (!screen) {
+    mScreenManager->GetPrimaryScreen(getter_AddRefs(screen));
+  }
+  screen->GetId(&screenId);
+
+  return screenId;
+}
+
+RefreshDriverTimer*
+nsRefreshDriver::GetRefreshDriverTimerFromCurrentDisplay() const
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  PodArrayZero(sJankLevels);
+  // Sometimes, gfxPrefs is not initialized here. Make sure the gfxPrefs is
+  // ready.
+  gfxPrefs::GetSingleton();
+
+  if (gfxPlatform::IsInLayoutAsapMode()) {
+    return nullptr;
+  }
+
+  if (XRE_IsParentProcess()) {
+    // Make sure all vsync systems are ready.
+    gfxPlatform::GetPlatform();
+
+    RefPtr<mozilla::gfx::VsyncSource> vsyncSource =
+      gfxPlatform::GetPlatform()->GetHardwareVsync();
+    return vsyncSource->GetDisplayById(GetScreenId()).GetRefreshDriverTimer();
+  }
+  return nullptr;
+}
+
 RefreshDriverTimer*
 nsRefreshDriver::ChooseTimer() const
 {
@@ -307,12 +340,17 @@ nsRefreshDriver::ChooseTimer() const
     return sThrottledRateTimer;
   }
 
+  RefreshDriverTimer* vsyncTimer =
+    GetRefreshDriverTimerFromCurrentDisplay();
+  if (vsyncTimer) {
+    return vsyncTimer;
+  }
+
   if (!sRegularRateTimer) {
     bool isDefault = true;
     double rate = GetRegularTimerInterval(&isDefault);
 
-    // Try to use vsync-base refresh timer first for sRegularRateTimer.
-    CreateVsyncRefreshTimer();
+    CreateVsyncChildVsyncRefreshTimer();
 
     if (!sRegularRateTimer) {
       sRegularRateTimer = new StartupRefreshDriverTimer(rate);
@@ -347,6 +385,7 @@ nsRefreshDriver::nsRefreshDriver(nsPresContext* aPresContext)
   mMostRecentTick = mMostRecentRefresh;
   mNextThrottledFrameRequestTick = mMostRecentTick;
   mNextRecomputeVisibilityTick = mMostRecentTick;
+  mScreenManager = do_GetService("@mozilla.org/gfx/screenmanager;1");
 }
 
 nsRefreshDriver::~nsRefreshDriver()

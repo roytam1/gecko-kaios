@@ -18,7 +18,6 @@ SoftwareVsyncSource::SoftwareVsyncSource()
 SoftwareVsyncSource::~SoftwareVsyncSource()
 {
   MOZ_ASSERT(NS_IsMainThread());
-  mGlobalDisplay->Shutdown();
   mGlobalDisplay = nullptr;
 }
 
@@ -34,7 +33,10 @@ SoftwareDisplay::SoftwareDisplay()
   MOZ_RELEASE_ASSERT(mVsyncThread->Start(), "Could not start software vsync thread");
 }
 
-SoftwareDisplay::~SoftwareDisplay() {}
+SoftwareDisplay::~SoftwareDisplay()
+{
+  Shutdown();
+}
 
 bool
 SoftwareDisplay::NeedNotifyVsync()

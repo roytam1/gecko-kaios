@@ -1047,6 +1047,12 @@ nsScreenManagerGonk::AddScreen(GonkDisplay::DisplayType aDisplayType,
         screen->EnableMirroring();
     }
 
+    VsyncSource::VsyncType vsyncType = (screen->IsVsyncSupported()) ?
+      VsyncSource::VsyncType::HARDWARE_VYSNC :
+      VsyncSource::VsyncType::SORTWARE_VSYNC;
+
+    gfxPlatform::GetPlatform()->GetHardwareVsync()->AddDisplay(id, vsyncType);
+
     return NS_OK;
 }
 
@@ -1076,6 +1082,9 @@ nsScreenManagerGonk::RemoveScreen(GonkDisplay::DisplayType aDisplayType)
     if (eventVisibility == NotifyDisplayChangedEvent::Observable) {
       NotifyDisplayChange(screenId, false);
     }
+
+    gfxPlatform::GetPlatform()->GetHardwareVsync()->RemoveDisplay(screenId);
+
     return NS_OK;
 }
 

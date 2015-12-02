@@ -15,6 +15,7 @@
 namespace mozilla {
 class RefreshTimerVsyncDispatcher;
 class CompositorVsyncDispatcher;
+class RefreshDriverTimer;
 
 namespace gfx {
 
@@ -27,12 +28,18 @@ class VsyncSource
   typedef mozilla::RefreshTimerVsyncDispatcher RefreshTimerVsyncDispatcher;
   typedef mozilla::CompositorVsyncDispatcher CompositorVsyncDispatcher;
 
+  enum VsyncType {
+    HARDWARE_VYSNC,
+    SORTWARE_VSYNC
+  };
+
 public:
   // Controls vsync unique to each display and unique on each platform
   class Display {
+    NS_INLINE_DECL_THREADSAFE_REFCOUNTING(Display)
+
     public:
       Display();
-      virtual ~Display();
 
       // Notified when this display's vsync occurs, on the vsync thread
       // The aVsyncTimestamp should normalize to the Vsync time that just occured
@@ -51,11 +58,15 @@ public:
       void RemoveCompositorVsyncDispatcher(CompositorVsyncDispatcher* aCompositorVsyncDispatcher);
       void NotifyRefreshTimerVsyncStatus(bool aEnable);
       virtual TimeDuration GetVsyncRate();
+      RefreshDriverTimer* GetRefreshDriverTimer();
 
       // These should all only be called on the main thread
       virtual void EnableVsync() = 0;
       virtual void DisableVsync() = 0;
       virtual bool IsVsyncEnabled() = 0;
+
+    protected:
+      virtual ~Display();
 
     private:
       void UpdateVsyncStatus();
@@ -64,13 +75,18 @@ public:
       bool mRefreshTimerNeedsVsync;
       nsTArray<RefPtr<CompositorVsyncDispatcher>> mCompositorVsyncDispatchers;
       RefPtr<RefreshTimerVsyncDispatcher> mRefreshTimerVsyncDispatcher;
+      RefPtr<RefreshDriverTimer> mRefreshDriverTimer;
   };
 
   void AddCompositorVsyncDispatcher(CompositorVsyncDispatcher* aCompositorVsyncDispatcher);
   void RemoveCompositorVsyncDispatcher(CompositorVsyncDispatcher* aCompositorVsyncDispatcher);
 
-  RefPtr<RefreshTimerVsyncDispatcher> GetRefreshTimerVsyncDispatcher();
   virtual Display& GetGlobalDisplay() = 0; // Works across all displays
+  virtual Display& GetDisplayById(uint32_t aScreenId);
+  virtual nsresult AddDisplay(uint32_t aScreenId, VsyncType aVsyncType) {
+    return NS_OK;
+  }
+  virtual nsresult RemoveDisplay(uint32_t aScreenId) { return NS_OK; }
 
 protected:
   virtual ~VsyncSource() {}

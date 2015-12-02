@@ -10,6 +10,19 @@
 namespace mozilla {
 namespace layers {
 
+/* static */ already_AddRefed<CompositorScheduler>
+CompositorScheduler::Create(CompositorBridgeParent* aCompositorBridgeParent,
+                            nsIWidget* aWidget)
+{
+  RefPtr<CompositorScheduler> scheduler;
+  if (aWidget->IsVsyncSupported()) {
+    scheduler = new CompositorVsyncScheduler(aCompositorBridgeParent, aWidget);
+  } else {
+    scheduler = new CompositorSoftwareTimerScheduler(aCompositorBridgeParent);
+  }
+  return scheduler.forget();
+}
+
 CompositorScheduler::CompositorScheduler(
     CompositorBridgeParent* aCompositorBridgeParent)
   : mCompositorBridgeParent(aCompositorBridgeParent)

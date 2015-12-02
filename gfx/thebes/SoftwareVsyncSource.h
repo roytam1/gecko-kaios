@@ -18,8 +18,6 @@ class CancelableTask;
 
 class SoftwareDisplay final : public mozilla::gfx::VsyncSource::Display
 {
-  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(SoftwareDisplay)
-
 public:
   SoftwareDisplay();
   // To simulate power on/off of a display
@@ -63,7 +61,7 @@ public:
   }
 
 private:
-  RefPtr<SoftwareDisplay> mGlobalDisplay;
+  RefPtr<mozilla::gfx::VsyncSource::Display> mGlobalDisplay;
 };
 
 #endif /* GFX_SOFTWARE_VSYNC_SOURCE_H */

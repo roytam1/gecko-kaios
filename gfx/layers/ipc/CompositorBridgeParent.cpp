@@ -730,11 +730,7 @@ CompositorBridgeParent::CompositorBridgeParent(nsIWidget* aWidget,
     mApzcTreeManager = new APZCTreeManager();
   }
 
-  if (aWidget->IsVsyncSupported()) {
-    mCompositorScheduler = new CompositorVsyncScheduler(this, aWidget);
-  } else {
-    mCompositorScheduler = new CompositorSoftwareTimerScheduler(this);
-  }
+  mCompositorScheduler = CompositorScheduler::Create(this, aWidget);
 
   LayerScope::SetPixelScale(mWidget->GetDefaultScale().scale);
 
