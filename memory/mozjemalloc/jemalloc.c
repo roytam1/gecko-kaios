@@ -414,8 +414,22 @@ void *_mmap(void *addr, size_t length, int prot, int flags,
 	return (void *) syscall(SYS_mmap, &args);
 #else
 #ifdef SYS_mmap2
-	return (void *) syscall(SYS_mmap2, addr, length, prot, flags,
+    static bool KSM_enabled = true;
+
+    bool is_private_anonymous = \
+        (flags & (MAP_PRIVATE | MAP_ANON | MAP_ANONYMOUS)) == \
+                 (MAP_PRIVATE | MAP_ANON | MAP_ANONYMOUS);
+
+    void* result = (void *) syscall(SYS_mmap2, addr, length, prot, flags,
 	                       fd, offset >> 12);
+    if (KSM_enabled && is_private_anonymous && result != MAP_FAILED) {
+        int ret = madvise(result, length, MADV_MERGEABLE);
+        if (ret == -1 && errno == EINVAL) {
+            // stop calling madvise if KSM is not enabled at kernel side.
+            KSM_enabled = false;
+        }
+    }
+    return result;
 #else
 	return (void *) syscall(SYS_mmap, addr, length, prot, flags,
                                fd, offset);
