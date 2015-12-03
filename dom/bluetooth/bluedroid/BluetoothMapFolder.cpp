@@ -17,6 +17,15 @@ BluetoothMapFolder::BluetoothMapFolder(const nsAString& aFolderName,
   : mName(aFolderName)
   , mParent(aParent)
 {
+  if (aParent) {
+    aParent->GetPath(mPath);
+    if (!mPath.IsEmpty()) {
+      mPath.AppendLiteral("/");
+    }
+    mPath.Append(mName);
+  } else {
+    mPath = mName;
+  }
 }
 
 BluetoothMapFolder*
@@ -86,10 +95,18 @@ BluetoothMapFolder::GetFolderListingObjectString(nsAString& aString,
 }
 
 void
+BluetoothMapFolder::GetPath(nsAString& aPath) const
+{
+  aPath = mPath;
+}
+
+void
 BluetoothMapFolder::DumpFolderInfo()
 {
-  BT_LOGR("Folder name: %s, subfolder counts: %d",
-          NS_ConvertUTF16toUTF8(mName).get(), mSubFolders.Count());
+  BT_LOGR("Folder name: %s, subfolder counts: %d, path: %s",
+          NS_ConvertUTF16toUTF8(mName).get(),
+          mSubFolders.Count(),
+          NS_ConvertUTF16toUTF8(mPath).get());
 }
 
 END_BLUETOOTH_NAMESPACE

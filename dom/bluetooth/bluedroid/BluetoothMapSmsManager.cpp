@@ -1562,9 +1562,21 @@ BluetoothMapSmsManager::HandleSmsMmsGetMessage(const ObexHeaderSet& aHeader)
   BluetoothService* bs = BluetoothService::Get();
   NS_ENSURE_TRUE_VOID(bs);
 
-  InfallibleTArray<BluetoothNamedValue> data;
+  // Section 5.5.2 "Name", MAP 1.2:
+  // This property shall be used to indicate the folder from which the
+  // Messages-Listing object is to be retrieved. The property shall be
+  // empty in case the desired listing is that of the current folder or
+  // shall be the name of a child folder.
   nsString name;
   aHeader.GetName(name);
+  nsString currentFolderPath;
+  mCurrentFolder->GetPath(currentFolderPath);
+
+  // Get the absolute path of the folder to be retrieved.
+  name = name.IsEmpty() ? currentFolderPath
+                        : currentFolderPath + NS_LITERAL_STRING("/") + name;
+
+  InfallibleTArray<BluetoothNamedValue> data;
   AppendNamedValue(data, "name", name);
 
   AppendBtNamedValueByTagId(aHeader, data,
@@ -1583,16 +1595,16 @@ void
 BluetoothMapSmsManager::BuildDefaultFolderStructure()
 {
   /* MAP specification defines virtual folders structure
-   * /
-   * /telecom
-   * /telecom/msg
-   * /telecom/msg/inbox
-   * /telecom/msg/draft
-   * /telecom/msg/outbox
-   * /telecom/msg/sent
-   * /telecom/msg/deleted
+   * "" (root folder)
+   * "telecom"
+   * "telecom/msg"
+   * "telecom/msg/inbox"
+   * "telecom/msg/draft"
+   * "telecom/msg/outbox"
+   * "telecom/msg/sent"
+   * "telecom/msg/deleted"
    */
-  mRootFolder = new BluetoothMapFolder(NS_LITERAL_STRING("root"), nullptr);
+  mRootFolder = new BluetoothMapFolder(NS_LITERAL_STRING(""), nullptr);
   BluetoothMapFolder* folder =
     mRootFolder->AddSubFolder(NS_LITERAL_STRING("telecom"));
   folder = folder->AddSubFolder(NS_LITERAL_STRING("msg"));
