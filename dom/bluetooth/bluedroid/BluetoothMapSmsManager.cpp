@@ -1228,9 +1228,13 @@ BluetoothMapSmsManager::HandleSmsMmsFolderListing(const ObexHeaderSet& aHeader)
 {
   MOZ_ASSERT(NS_IsMainThread());
 
-  uint8_t buf[64];
-  uint16_t maxListCount = 0;
+   /* MAP specification 5.4.3.1
+    * The maximum number of entries shall be 1,024 if this header is not
+    * specified.
+    */
+  uint16_t maxListCount = 1024;
 
+  uint8_t buf[64];
   if (aHeader.GetAppParameter(Map::AppParametersTagId::MaxListCount,
                               buf, 64)) {
     maxListCount = BigEndian::readUint16(buf);
@@ -1502,18 +1506,43 @@ BluetoothMapSmsManager::HandleSmsMmsMsgListing(const ObexHeaderSet& aHeader)
   aHeader.GetName(name);
   AppendNamedValue(data, "name", name);
 
+  {
+    /* MAP specification 5.5.4.1
+     * If 'MaxListCount'=0 in the request, the MSE shall respond with the
+     * headers "NewMessage, MSETime”, and "MessagesListingSize" only.
+     *
+     * The maximum number of entries shall be 1,024 if 'MaxListCount' header is
+     * not specified.
+     */
+    uint16_t maxListCount = 1024;
+
+    uint8_t buf[64];
+    if (aHeader.GetAppParameter(Map::AppParametersTagId::MaxListCount,
+                                buf, 64)) {
+        maxListCount = BigEndian::readUint16(buf);
+
+        BT_LOGR("max list count: %d", maxListCount);
+    }
+
+    // If MaxListCount = 0, the response shall not contain the Body header.
+    mBodyRequired = (maxListCount != 0);
+
+    AppendNamedValue(data, "maxListCount",
+                     static_cast<uint32_t>(maxListCount));
+
+  }
+
   static Map::AppParametersTagId sMsgListingParameters[] = {
-    [0] = Map::AppParametersTagId::MaxListCount,
-    [1] = Map::AppParametersTagId::StartOffset,
-    [2] = Map::AppParametersTagId::SubjectLength,
-    [3] = Map::AppParametersTagId::ParameterMask,
-    [4] = Map::AppParametersTagId::FilterMessageType,
-    [5] = Map::AppParametersTagId::FilterPeriodBegin,
-    [6] = Map::AppParametersTagId::FilterPeriodEnd,
-    [7] = Map::AppParametersTagId::FilterReadStatus,
-    [8] = Map::AppParametersTagId::FilterRecipient,
-    [9] = Map::AppParametersTagId::FilterOriginator,
-    [10] = Map::AppParametersTagId::FilterPriority
+    [0] = Map::AppParametersTagId::StartOffset,
+    [1] = Map::AppParametersTagId::SubjectLength,
+    [2] = Map::AppParametersTagId::ParameterMask,
+    [3] = Map::AppParametersTagId::FilterMessageType,
+    [4] = Map::AppParametersTagId::FilterPeriodBegin,
+    [5] = Map::AppParametersTagId::FilterPeriodEnd,
+    [6] = Map::AppParametersTagId::FilterReadStatus,
+    [7] = Map::AppParametersTagId::FilterRecipient,
+    [8] = Map::AppParametersTagId::FilterOriginator,
+    [9] = Map::AppParametersTagId::FilterPriority
   };
 
   for (uint8_t i = 0; i < MOZ_ARRAY_LENGTH(sMsgListingParameters); i++) {
