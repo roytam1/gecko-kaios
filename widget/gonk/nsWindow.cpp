@@ -806,29 +806,43 @@ void KickOffComposition(LayerManager* aLayerManager)
 
 }
 
+static void
+StopRenderWithHwc(bool aStop)
+{
+    MOZ_ASSERT(CompositorBridgeParent::IsInCompositorThread());
+    HwcComposer2D::GetInstance()->StopRenderWithHwc(aStop);
+}
+
 NS_IMETHODIMP
 nsWindow::DispatchEvent(WidgetGUIEvent* aEvent, nsEventStatus& aStatus)
 {
     if (aEvent->mMessage == eMouseMove) {
-      mCursorPos.x = aEvent->mRefPoint.x;
-      mCursorPos.y = aEvent->mRefPoint.y;
+        mCursorPos.x = aEvent->mRefPoint.x;
+        mCursorPos.y = aEvent->mRefPoint.y;
 
-      if (gfxPrefs::GLCursorEnabled()) {
-        KickOffComposition(GetLayerManager());
-      }
+        if (gfxPrefs::GLCursorEnabled()) {
+            // Stop rendering with Hwc because virtual cursor is drawn on the
+            // overlay layer.
+            CompositorBridgeParent::CompositorLoop()->PostTask(
+                FROM_HERE, NewRunnableFunction(&StopRenderWithHwc, true));
 
+            KickOffComposition(GetLayerManager());
+        }
     } else if (aEvent->mMessage == eMouseExitFromWidget) {
-      mCursorPos.x = -1;
-      mCursorPos.y = -1;
+        mCursorPos.x = -1;
+        mCursorPos.y = -1;
 
-      if (gfxPrefs::GLCursorEnabled()) {
-        KickOffComposition(GetLayerManager());
-      }
+        if (gfxPrefs::GLCursorEnabled()) {
+            // Turn render-with-hwc back on.
+            CompositorBridgeParent::CompositorLoop()->PostTask(
+                FROM_HERE, NewRunnableFunction(&StopRenderWithHwc, false));
 
+            KickOffComposition(GetLayerManager());
+        }
     }
 
     if (mWidgetListener) {
-      aStatus = mWidgetListener->HandleEvent(aEvent, mUseAttachedEvents);
+        aStatus = mWidgetListener->HandleEvent(aEvent, mUseAttachedEvents);
     }
     return NS_OK;
 }

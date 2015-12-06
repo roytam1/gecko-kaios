@@ -101,6 +101,7 @@ HwcComposer2D::HwcComposer2D()
     , mRBSwapSupport(false)
     , mPrepared(false)
     , mHasHWVsync(false)
+    , mStopRenderWithHwc(false)
     , mLock("mozilla.HwcComposer2D.mLock")
 {
     mHal = HwcHALBase::CreateHwcHAL();
@@ -914,6 +915,10 @@ HwcComposer2D::TryRenderWithHwc(Layer* aRoot,
         return false;
     }
 
+    if (mStopRenderWithHwc) {
+        return false;
+    }
+
     if (mList) {
         mList->flags = mHal->GetGeometryChangedFlag(aGeometryChanged);
         mList->numHwLayers = 0;
@@ -982,6 +987,12 @@ HwcComposer2D::SendtoLayerScope()
         const hwc_rect_t r = mList->hwLayers[i].displayFrame;
         LayerScope::SendLayer(layer, r.right - r.left, r.bottom - r.top);
     }
+}
+
+void
+HwcComposer2D::StopRenderWithHwc(bool aIsStop)
+{
+    mStopRenderWithHwc = aIsStop;
 }
 
 } // namespace mozilla

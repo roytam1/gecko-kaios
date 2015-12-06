@@ -88,6 +88,11 @@ public:
     void Hotplug(int aDisplay, int aConnected);
     void SetCompositorBridgeParent(layers::CompositorBridgeParent* aCompositorBridgeParent);
 
+    // We might want to stop rendering with Hwc because things drawn on
+    // underlay and overlay layers will not be composed by Hwc.
+    // aIsStop equals true stops render with Hwc, vice versa.
+    void StopRenderWithHwc(bool aIsStop);
+
 private:
     void Reset();
     void Prepare(buffer_handle_t dispHandle, int fence, nsScreenGonk* screen);
@@ -114,6 +119,7 @@ private:
     nsTArray<layers::LayerComposite*> mHwcLayerMap;
     bool                    mPrepared;
     bool                    mHasHWVsync;
+    bool                    mStopRenderWithHwc;
     layers::CompositorBridgeParent* mCompositorBridgeParent;
     Mutex mLock;
 };
