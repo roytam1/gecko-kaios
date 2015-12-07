@@ -1667,15 +1667,24 @@ BluetoothMapSmsManager::HandleSetMessageStatus(const ObexHeaderSet& aHeader)
   BluetoothService* bs = BluetoothService::Get();
   NS_ENSURE_TRUE_VOID(bs);
 
-  InfallibleTArray<BluetoothNamedValue> data;
-  nsString name;
-  aHeader.GetName(name);
-  /* The Name header shall contain the handle of the message the status of which
+  /* In section 5.7.2 "Name", MAP 1.2:
+   * The Name header shall contain the handle of the message the status of which
    * shall be modified. The handle shall be represented by a null-terminated
    * Unicode text string with 16 hexadecimal digits.
    */
-  AppendNamedValue(data, "handleId", name);
+  nsString name;
+  aHeader.GetName(name);
 
+  nsresult rv;
+  uint32_t handleId  = static_cast<uint32_t>(name.ToInteger(&rv));
+
+  if (NS_FAILED(rv)) {
+    BT_LOGR("Failed to convert handleId, error: 0x%x",
+            static_cast<uint32_t>(rv));
+  }
+
+  InfallibleTArray<BluetoothNamedValue> data;
+  AppendNamedValue(data, "handleId", handleId);
   AppendBtNamedValueByTagId(aHeader, data,
                             Map::AppParametersTagId::StatusIndicator);
   AppendBtNamedValueByTagId(aHeader, data,
