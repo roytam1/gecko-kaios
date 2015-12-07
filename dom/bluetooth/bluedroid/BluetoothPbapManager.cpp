@@ -1174,7 +1174,7 @@ BluetoothPbapManager::ReplyToGet(uint16_t aPhonebookSize)
 
       // ----  Part 2b: [headerId:1][length:2][Body:var] ---- //
       index += AppendHeaderBody(&res[index],
-                                remainingPacketSize,
+                                remainingPacketSize + kObexBodyHeaderSize,
                                 reinterpret_cast<uint8_t*>(buf.get()),
                                 numRead);
 
