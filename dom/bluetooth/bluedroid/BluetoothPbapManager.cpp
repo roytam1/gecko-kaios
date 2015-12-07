@@ -1066,13 +1066,14 @@ BluetoothPbapManager::ReplyToGet(uint16_t aPhonebookSize)
    * This response consists of following parts:
    * - Part 1: [response code:1][length:2]
    *
-   * If |mPhonebookSizeRequired| or |mNewMissedCallsRequired| is true,
+   * If |mPhonebookSizeRequired| is true,
    * - Part 2: [headerId:1][length:2][AppParameters:var]
    * - Part 3: [headerId:1][length:2][EndOfBody:0]
    * Otherwise,
-   * - Part 2a: [headerId:1][length:2][EndOfBody:0]
+   * - Part 2(optional): [headerId:1][length:2][AppParameters:var]
+   * - Part 3a: [headerId:1][length:2][EndOfBody:0]
    *   or
-   * - Part 2b: [headerId:1][length:2][Body:var]
+   * - Part 3b: [headerId:1][length:2][Body:var]
    */
   auto res = MakeUnique<uint8_t[]>(mRemoteMaxPacketLength);
   uint8_t opcode;
@@ -1082,48 +1083,28 @@ BluetoothPbapManager::ReplyToGet(uint16_t aPhonebookSize)
   // Reserve index for them here
   unsigned int index = kObexRespHeaderSize;
 
-  if (mPhonebookSizeRequired || mNewMissedCallsRequired) {
+  if (mPhonebookSizeRequired) {
     // ---- Part 2: [headerId:1][length:2][AppParameters:var] ---- //
     // Section 6.2.1 "Application Parameters Header", PBAP 1.2
-    // appParameters: [headerId:1][length:2][PhonebookSize:4][NewMissedCalls:3],
+    // appParameters: [headerId:1][length:2][PhonebookSize:4],
     //                where [PhonebookSize:4]  = [tagId:1][length:1][value:2]
-    //                      [NewMissedCalls:3] = [tagId:1][length:1][value:1]
-    uint8_t appParameters[7];
-    unsigned int appParamLength = 0;
+    uint8_t appParameters[4];
 
-    if (mPhonebookSizeRequired) {
-      uint8_t phonebookSize[2];
-      BigEndian::writeUint16(&phonebookSize[0], aPhonebookSize);
+    uint8_t phonebookSize[2];
+    BigEndian::writeUint16(&phonebookSize[0], aPhonebookSize);
 
-      appParamLength +=
-        AppendAppParameter(appParameters + appParamLength,
-                           sizeof(appParameters),
-                           static_cast<uint8_t>(AppParameterTag::PhonebookSize),
-                           phonebookSize,
-                           sizeof(phonebookSize));
+    AppendAppParameter(appParameters,
+                       sizeof(appParameters),
+                       static_cast<uint8_t>(AppParameterTag::PhonebookSize),
+                       phonebookSize,
+                       sizeof(phonebookSize));
 
-      mPhonebookSizeRequired = false;
-    }
-
-    if (mNewMissedCallsRequired) {
-      // Since the frontend of H5OS don't support NewMissedCalls feature, set
-      // it to |aPhonebookSize| to pretend no missed call has been dismissed.
-      uint8_t dummyNewMissedCalls = aPhonebookSize;
-
-      appParamLength +=
-        AppendAppParameter(appParameters + appParamLength,
-                           sizeof(appParameters),
-                           static_cast<uint8_t>(AppParameterTag::NewMissedCalls),
-                           &dummyNewMissedCalls,
-                           sizeof(dummyNewMissedCalls));
-
-      mNewMissedCallsRequired = false;
-    }
+    mPhonebookSizeRequired = false;
 
     index += AppendHeaderAppParameters(&res[index],
                                        mRemoteMaxPacketLength,
                                        appParameters,
-                                       appParamLength);
+                                       sizeof(appParameters));
 
     // ---- Part 3: [headerId:1][length:2][EndOfBody:0] ---- //
     opcode = ObexResponseCode::Success;
@@ -1139,6 +1120,30 @@ BluetoothPbapManager::ReplyToGet(uint16_t aPhonebookSize)
       return false;
     }
 
+    // ----  Part 2: [headerId:1][length:2][AppParameters:var] ---- //
+    // Section 6.2.1 "Application Parameters Header", PBAP 1.2
+    // appParameters: [headerId:1][length:2][NewMissedCalls:3],
+    //                where [NewMissedCalls:3] = [tagId:1][length:1][value:1]
+    if (mNewMissedCallsRequired) {
+      uint8_t appParameters[3];
+
+      // Since the frontend of H5OS don't support NewMissedCalls feature, set
+      // it to |aPhonebookSize| to pretend no missed call has been dismissed.
+      uint8_t dummyNewMissedCalls = aPhonebookSize;
+
+      AppendAppParameter(appParameters,
+                         sizeof(appParameters),
+                         static_cast<uint8_t>(AppParameterTag::NewMissedCalls),
+                         &dummyNewMissedCalls,
+                         sizeof(dummyNewMissedCalls));
+      mNewMissedCallsRequired = false;
+
+      index += AppendHeaderAppParameters(&res[index],
+                                         mRemoteMaxPacketLength,
+                                         appParameters,
+                                         sizeof(appParameters));
+    }
+
     /*
      * In practice, some platforms can only handle zero length End-of-Body
      * header separately with Body header.
@@ -1146,7 +1151,7 @@ BluetoothPbapManager::ReplyToGet(uint16_t aPhonebookSize)
      * otherwise, send 'Continue' to request for next GET request.
      */
     if (!bytesAvailable) {
-      // ----  Part 2a: [headerId:1][length:2][EndOfBody:0] ---- //
+      // ----  Part 3a: [headerId:1][length:2][EndOfBody:0] ---- //
       index += AppendHeaderEndOfBody(&res[index]);
 
       // Close input stream
@@ -1172,7 +1177,7 @@ BluetoothPbapManager::ReplyToGet(uint16_t aPhonebookSize)
       // |numRead| must be non-zero as |bytesAvailable| is non-zero
       MOZ_ASSERT(numRead);
 
-      // ----  Part 2b: [headerId:1][length:2][Body:var] ---- //
+      // ----  Part 3b: [headerId:1][length:2][Body:var] ---- //
       index += AppendHeaderBody(&res[index],
                                 remainingPacketSize + kObexBodyHeaderSize,
                                 reinterpret_cast<uint8_t*>(buf.get()),
