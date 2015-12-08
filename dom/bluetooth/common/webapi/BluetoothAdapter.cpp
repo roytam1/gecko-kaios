@@ -1537,8 +1537,13 @@ BluetoothAdapter::HandleMapMessagesListing(const BluetoothValue& aValue)
   const InfallibleTArray<BluetoothNamedValue>& arr =
     aValue.get_ArrayOfBluetoothNamedValue();
 
-  MOZ_ASSERT(arr.Length() >= 1 &&
-    arr[0].value().type() == BluetoothValue::Tuint32_t);
+  // arr[0].name() is 'name' and arr[1].name() is 'maxListCount'
+  // 'name' and 'maxListCount' are mandatory under current implementation.
+  // 'name': the absolute path of the folder to be retrieved.
+  // 'maxListCount': the max. number of messages listed in the object.
+  MOZ_ASSERT(arr.Length() >= 2 &&
+             arr[0].value().type() == BluetoothValue::TnsString &&
+             arr[1].value().type() == BluetoothValue::Tuint32_t);
 
   BluetoothMapMessagesListingEventInit init;
 
