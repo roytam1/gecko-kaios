@@ -124,6 +124,54 @@ static bool MatchesMP3(const uint8_t* aData, const uint32_t aLength)
   return mp3_sniff(aData, (long)aLength);
 }
 
+static bool MatchesAAC(const uint8_t* aData, const uint32_t aLength)
+{
+  uint32_t pos = 0;
+
+  //Some aac files will use ID3v2 tag to storage metadata,
+  //such as album, artist. If this file has ID3v2 tag, need to skip it.
+  //Additionally, the length of ID3v2 header is 10 bytes. If this file
+  //has ID3v2 tag, aLength need to be great than or equal to 10, or we
+  //we can not get the length of the ID3v2 tag correctly.
+  if (aLength >= 10 && !memcmp("ID3", &aData[pos], 3)) {
+    size_t len = ((aData[pos + 6] & 0x7f) << 21) |
+                 ((aData[pos + 7] & 0x7f) << 14) |
+                 ((aData[pos + 8] & 0x7f) << 7)  |
+                 (aData[pos + 9] & 0x7f);
+
+    len += 10;
+    pos += len;
+
+    //If pos is great than or equal to aLength, return false directly.
+    if (pos >= aLength) {
+      return false;
+    }
+  }
+
+  //Using 2 bytes of ADTS header as identifier.
+  //-----------------------------------------------------------------------------
+  //|       Fields    | Bits | Description
+  //|-----------------|------|---------------------------------------------------
+  //|      Syncword   |  12  | all bits must be 1
+  //|   MPEG version  |   1  | 0 for MPEG-4, 1 for MPEG-2
+  //|      Layer      |   2  | always 0
+  //|Protection Absent|   1  | 1 if there is no CRC and 0 if there is CRC
+  //|-----------------|------|---------------------------------------------------
+
+  //The value of pos + 2 should be less than or equal to aLength.
+  MOZ_ASSERT(pos + 2 <= aLength);
+
+  if (pos + 2 > aLength) {
+    return false;
+  }
+
+  if ((aData[pos] == 0xff) && ((aData[pos + 1] & 0xf6) == 0xf0)) {
+    return true;
+  }
+
+  return false;
+}
+
 NS_IMETHODIMP
 nsMediaSniffer::GetMIMETypeFromContent(nsIRequest* aRequest,
                                        const uint8_t* aData,
@@ -180,6 +228,11 @@ nsMediaSniffer::GetMIMETypeFromContent(nsIRequest* aRequest,
   // Bug 950023: 512 bytes are often not enough to sniff for mp3.
   if (MatchesMP3(aData, std::min(aLength, MAX_BYTES_SNIFFED_MP3))) {
     aSniffedType.AssignLiteral(AUDIO_MP3);
+    return NS_OK;
+  }
+
+  if (MatchesAAC(aData, aLength)) {
+    aSniffedType.AssignLiteral(AUDIO_AAC);
     return NS_OK;
   }
 
