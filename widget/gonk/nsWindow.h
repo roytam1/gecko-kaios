@@ -56,6 +56,7 @@ public:
     static void DispatchTouchInput(mozilla::MultiTouchInput& aInput);
     static void SetMouseDevice(bool aMouse);
     static void NotifyHoverMove(const ScreenIntPoint& point);
+    static void KickOffComposition();
 
     using nsBaseWidget::Create; // for Create signature not overridden here
     NS_IMETHOD Create(nsIWidget* aParent,
@@ -181,10 +182,9 @@ private:
 
     RefPtr<mozilla::HwcComposer2D> mComposer2D;
 
-    // Supprot for GL cursor
-    RefPtr<mozilla::dom::AnonymousContent> mCursorElementHolder;
-    RefPtr<mozilla::gfx::SourceSurface> mCursorSource;
-    nsCursor mLastMappedCursor;
+    // GL Cursor
+    bool mHasGLCursor;
+    LayoutDeviceIntPoint mGLCursorPos; // Save the current cursor position
 };
 
 #endif /* nsWindow_h */

@@ -534,11 +534,6 @@ protected:
   RefPtr<WidgetShutdownObserver> mShutdownObserver;
   RefPtr<TextEventDispatcher> mTextEventDispatcher;
   nsCursor          mCursor;
-
-  // Support for GL cursor
-  LayoutDeviceIntPoint mCursorPos; // Save the current cursor position
-  bool mCursorSourceChanged; //true if the cursor's image is changed
-
   nsBorderStyle     mBorderStyle;
   LayoutDeviceIntRect mBounds;
   LayoutDeviceIntRect* mOriginalBounds;
