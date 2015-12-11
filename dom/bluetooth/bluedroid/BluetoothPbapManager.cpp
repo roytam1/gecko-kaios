@@ -578,9 +578,17 @@ BluetoothPbapManager::NotifyPbapRequest(const ObexHeaderSet& aHeader)
     tagCount = MOZ_ARRAY_LENGTH(sVCardEntryTags);
     tags = sVCardEntryTags;
 
-    // Convert relative path to absolute path if it's not using X-BT-UID.
-    if (name.Find(NS_LITERAL_STRING("X-BT-UID")) == kNotFound) {
+    // Section 5.4 "PullvCardEntry Function", PBAP 1.2
+    // The value of header "Name" is object name (*.vcf) or
+    // X-BT-UID (X-BT-UID:*)
+    if (name.Find(NS_LITERAL_STRING(".vcf")) != kNotFound) {
+      // Convert relative path to absolute path if the object name is *.vcf
       name = mCurrentPath + NS_LITERAL_STRING("/") + name;
+    } else {
+      // H5OS curretly supports phonebook object with "vcf" format only
+      BT_LOGR("Uhacceptable phonebook object name: %s",
+              NS_ConvertUTF16toUTF8(name).get());
+       return ObexResponseCode::NotAcceptable;
     }
   } else {
     BT_LOGR("Unknown PBAP request type: %s",
