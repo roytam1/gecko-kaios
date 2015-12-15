@@ -779,7 +779,7 @@ BluetoothMapSmsManager::ReplyToGetWithHeaderBody(UniquePtr<uint8_t[]> aResponse,
     MOZ_ASSERT(numRead);
 
     aIndex += AppendHeaderBody(&aResponse[aIndex],
-                               remainingPacketSize,
+                               remainingPacketSize + kObexBodyHeaderSize,
                                reinterpret_cast<uint8_t*>(buf.get()),
                                numRead);
 
