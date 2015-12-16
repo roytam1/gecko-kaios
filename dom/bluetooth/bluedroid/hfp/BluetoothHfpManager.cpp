@@ -1751,8 +1751,18 @@ BluetoothHfpManager::CindNotification(const BluetoothAddress& aBdAddress)
 
   NS_ENSURE_TRUE_VOID(sBluetoothHfpInterface);
 
+  /*
+   * When counting the numbers of CONNECTED and HELD calls, we should take
+   * mCdmaSecondCall into account
+   */
   int numActive = GetNumberOfCalls(nsITelephonyService::CALL_STATE_CONNECTED);
   int numHeld = GetNumberOfCalls(nsITelephonyService::CALL_STATE_HELD);
+  if (mCdmaSecondCall.mState == nsITelephonyService::CALL_STATE_CONNECTED) {
+    ++numActive;
+  } else if (mCdmaSecondCall.mState == nsITelephonyService::CALL_STATE_HELD) {
+    ++numHeld;
+  }
+
   BluetoothHandsfreeCallState callState =
     ConvertToBluetoothHandsfreeCallState(GetCallSetupState());
 
