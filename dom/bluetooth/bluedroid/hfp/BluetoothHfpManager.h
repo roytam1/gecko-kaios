@@ -196,6 +196,8 @@ private:
   uint32_t FindFirstCall(uint16_t aState);
   uint32_t GetNumberOfCalls(uint16_t aState);
   uint16_t GetCallSetupState();
+  // CDMA-specific function
+  uint16_t GetCdmaSecondCallSetupState();
   bool IsTransitionState(uint16_t aCallState, bool aIsConference);
   BluetoothHandsfreeCallState
     ConvertToBluetoothHandsfreeCallState(int aCallState) const;

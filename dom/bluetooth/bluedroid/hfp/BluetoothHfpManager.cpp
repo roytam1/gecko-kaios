@@ -973,6 +973,37 @@ BluetoothHfpManager::GetNumberOfCalls(uint16_t aState)
 }
 
 uint16_t
+BluetoothHfpManager::GetCdmaSecondCallSetupState()
+{
+  /*
+   * In CDMA case, the phone calls use the same channel, and when
+   * there's a second incoming call, the TelephonyListener::HandleCallInfo()
+   * will not be called, so the HandleCallStateChanged() will not be called.
+   * However, the TelephonyListener::NotifyCdmaCallWaiting() will be called
+   * to notify there's a second phone call waiting, so that
+   * UpdateSecondNumber() will be called.
+   *
+   * When the CDMA second incoming phone call disconnect from remote party,
+   * the CDMA phone will not be notified, since the phone calls use the
+   * same channel, and there's still a connected phone call (the first one).
+   *
+   * In order to send HF the +CCWA result code, we will call
+   * sBluetoothHfpInterface->PhoneStateChange() and pass the "call setup"
+   * status of the second incoming call.
+   */
+  switch (mCdmaSecondCall.mState) {
+    case nsITelephonyService::CALL_STATE_INCOMING:
+    case nsITelephonyService::CALL_STATE_DIALING:
+    case nsITelephonyService::CALL_STATE_ALERTING:
+      return mCdmaSecondCall.mState;
+    default:
+      break;
+  }
+
+  return nsITelephonyService::CALL_STATE_DISCONNECTED;
+}
+
+uint16_t
 BluetoothHfpManager::GetCallSetupState()
 {
   uint32_t callLength = mCurrentCallArray.Length();
@@ -1133,8 +1164,22 @@ BluetoothHfpManager::UpdateSecondNumber(const nsAString& aNumber)
   // doesn't support outgoing second call in CDMA.
   mCdmaSecondCall.Set(aNumber, false);
 
-  // FIXME: check CDMA + bluedroid
-  //UpdateCIND(CINDType::CALLSETUP, CallSetupState::INCOMING, true);
+  NS_ENSURE_TRUE_VOID(sBluetoothHfpInterface);
+
+  mCdmaSecondCall.mState = nsITelephonyService::CALL_STATE_INCOMING;
+  int numActive = GetNumberOfCalls(nsITelephonyService::CALL_STATE_CONNECTED);
+  int numHeld = GetNumberOfCalls(nsITelephonyService::CALL_STATE_HELD);
+  BluetoothHandsfreeCallState callSetupState =
+    ConvertToBluetoothHandsfreeCallState(GetCdmaSecondCallSetupState());
+  BluetoothHandsfreeCallAddressType type = mCdmaSecondCall.mType;
+
+  BT_LOGR("CDMA 2nd number state %d => \
+          BTHF: active[%d] held[%d] setupstate[%d]",
+          mCdmaSecondCall.mState, numActive, numHeld, callSetupState);
+
+  sBluetoothHfpInterface->PhoneStateChange(
+    numActive, numHeld, callSetupState,
+    aNumber, type, new PhoneStateChangeResultHandler());
 }
 
 void
@@ -1143,13 +1188,53 @@ BluetoothHfpManager::AnswerWaitingCall()
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(mPhoneType == PhoneType::CDMA);
 
+  NS_ENSURE_TRUE_VOID(sBluetoothHfpInterface);
+
   // Pick up second call. First call is held now.
   mCdmaSecondCall.mState = nsITelephonyService::CALL_STATE_CONNECTED;
-  // FIXME: check CDMA + bluedroid
-  //UpdateCIND(CINDType::CALLSETUP, CallSetupState::NO_CALLSETUP, true);
+  uint32_t callLength = mCurrentCallArray.Length();
+  for (uint32_t i = 1; i < callLength; ++i) {
+    /*
+     * Since we answer the second incoming call, the state of the
+     * previous calls in mCurrentCallArray need to be changed to HELD
+     * if they are CONNECTED before, so that the numbers of CONNECTED
+     * and HELD phone calls will be corrected before passing to
+     * sBluetoothHfpInterface->PhoneStateChange()
+     */
+    if (mCurrentCallArray[i].mState ==
+      nsITelephonyService::CALL_STATE_CONNECTED) {
+      mCurrentCallArray[i].mState = nsITelephonyService::CALL_STATE_HELD;
+    }
+  }
 
-  //sCINDItems[CINDType::CALLHELD].value = CallHeldState::ONHOLD_ACTIVE;
-  //SendCommand("+CIEV: ", CINDType::CALLHELD);
+  /*
+   * The GetNumberOfCalls(nsITelephonyService::CALL_STATE_CONNECTED)
+   * only get the CONNECTED calls in mCurrentCallArray. When calculating
+   * the numActive, we need to take mCdmaSecondCall into account which
+   * is CONNECTED at this time.
+   *
+   * We don't modify GetNumberOfCalls() to make this function take
+   * mCdmaSecondCall into account because GetNumberOfCalls() is used
+   * in other cases. And we won't be notified when the second incoming
+   * call is disconnected in CDMA case, so the mCdmaSecondCall state
+   * may be wrong if it is disconnected before. In this case, the
+   * GetNumberOfCalls() may be wrong if we take mCdmaSecondCall into
+   * account.
+   */
+  int numActive =
+    GetNumberOfCalls(nsITelephonyService::CALL_STATE_CONNECTED) + 1;
+  int numHeld = GetNumberOfCalls(nsITelephonyService::CALL_STATE_HELD);
+  BluetoothHandsfreeCallState callSetupState =
+    ConvertToBluetoothHandsfreeCallState(GetCdmaSecondCallSetupState());
+  BluetoothHandsfreeCallAddressType type = mCdmaSecondCall.mType;
+
+  BT_LOGR("CDMA 2nd number state %d => \
+          BTHF: active[%d] held[%d] setupstate[%d]",
+          mCdmaSecondCall.mState, numActive, numHeld, callSetupState);
+
+  sBluetoothHfpInterface->PhoneStateChange(
+    numActive, numHeld, callSetupState,
+    mCdmaSecondCall.mNumber, type, new PhoneStateChangeResultHandler());
 }
 
 void

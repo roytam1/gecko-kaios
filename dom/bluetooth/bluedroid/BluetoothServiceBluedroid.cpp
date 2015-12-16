@@ -1994,6 +1994,17 @@ BluetoothServiceBluedroid::SendMessageEvent(
 void
 BluetoothServiceBluedroid::AnswerWaitingCall(BluetoothReplyRunnable* aRunnable)
 {
+  MOZ_ASSERT(NS_IsMainThread());
+
+  BluetoothHfpManager* hfp = BluetoothHfpManager::Get();
+  if (!hfp) {
+    DispatchReplyError(aRunnable,
+                       NS_LITERAL_STRING("Fail to get BluetoothHfpManager"));
+    return;
+  }
+
+  hfp->AnswerWaitingCall();
+  DispatchReplySuccess(aRunnable);
 }
 
 void
