@@ -1095,13 +1095,20 @@ BluetoothHfpManager::HandleCallStateChanged(uint32_t aCallIndex,
   }
   mCurrentCallArray[aCallIndex].mState = aCallState;
 
+  // Update call information besides call state
+  mCurrentCallArray[aCallIndex].Set(aNumber, aIsOutgoing);
+
+  // -1 is necessary because call 0 is an invalid (padding) call object.
+  if (aCallState == nsITelephonyService::CALL_STATE_DISCONNECTED &&
+      mCurrentCallArray.Length() - 1 ==
+      GetNumberOfCalls(nsITelephonyService::CALL_STATE_DISCONNECTED)) {
+    ResetCallArray();
+  }
+
   // Return if SLC is disconnected
   if (!IsConnected()) {
     return;
   }
-
-  // Update call information besides call state
-  mCurrentCallArray[aCallIndex].Set(aNumber, aIsOutgoing);
 
   // Notify bluedroid of phone state change if this
   // call state change is not during transition state
@@ -1128,8 +1135,6 @@ BluetoothHfpManager::HandleCallStateChanged(uint32_t aCallIndex,
           // Dialer is still playing busy tone via HF.
           NS_DispatchToMainThread(new CloseScoRunnable());
         }
-
-        ResetCallArray();
       }
       break;
     default:
