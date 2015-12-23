@@ -60,9 +60,9 @@ BluetoothMapFolder::GetSubFolderCount()
 }
 
 void
-BluetoothMapFolder::GetFolderListingObjectString(nsAString& aString,
-                                                 uint16_t aMaxListCount,
-                                                 uint16_t aStartOffset)
+BluetoothMapFolder::GetFolderListingObjectCString(nsACString& aString,
+                                                  uint16_t aMaxListCount,
+                                                  uint16_t aStartOffset)
 {
   const char* folderListingPrefix =
     "<?xml version=\"1.0\"?>\n"
@@ -71,7 +71,7 @@ BluetoothMapFolder::GetFolderListingObjectString(nsAString& aString,
   const char* folderListingSuffix = "</folder-listing>";
 
   // Based on Element Specification, 9.1.1, IrObex 1.2
-  nsAutoCString folderListingObejct(folderListingPrefix);
+  nsCString folderListingObject(folderListingPrefix);
 
   int count = 0;
   for (auto iter = mSubFolders.Iter(); !iter.Done(); iter.Next()) {
@@ -84,14 +84,14 @@ BluetoothMapFolder::GetFolderListingObjectString(nsAString& aString,
     }
 
     const nsAString& key = iter.Key();
-    folderListingObejct.Append("<folder name=\"");
-    folderListingObejct.Append(NS_ConvertUTF16toUTF8(key).get());
-    folderListingObejct.Append("\"/>");
+    folderListingObject.Append("<folder name=\"");
+    folderListingObject.Append(NS_ConvertUTF16toUTF8(key).get());
+    folderListingObject.Append("\"/>");
     count++;
   }
 
-  folderListingObejct.Append(folderListingSuffix);
-  aString = NS_ConvertUTF8toUTF16(folderListingObejct);
+  folderListingObject.Append(folderListingSuffix);
+  aString = folderListingObject;
 }
 
 void

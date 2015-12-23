@@ -23,6 +23,7 @@
 #include "nsIInputStream.h"
 #include "nsIObserver.h"
 #include "nsIObserverService.h"
+#include "nsStringStream.h"
 
 #define FILTER_NO_SMS_GSM   0x01
 #define FILTER_NO_SMS_CDMA  0x02
@@ -1260,7 +1261,7 @@ BluetoothMapSmsManager::HandleSmsMmsFolderListing(const ObexHeaderSet& aHeader)
                      (uint8_t)Map::AppParametersTagId::FolderListingSize,
                      folderListingSizeValue, sizeof(folderListingSizeValue));
 
-  uint8_t resp[255];
+  nsAutoArrayPtr<uint8_t> resp(new uint8_t[mRemoteMaxPacketLength]);
   int index = 3;
   index += AppendHeaderAppParameters(&resp[index], 255, appParameter,
                                      sizeof(appParameter));
@@ -1273,19 +1274,30 @@ BluetoothMapSmsManager::HandleSmsMmsFolderListing(const ObexHeaderSet& aHeader)
    * contain any Body header.
    */
   if (maxListCount) {
-    nsString output;
-    mCurrentFolder->GetFolderListingObjectString(output, maxListCount,
-                                                 startOffset);
-    index += AppendHeaderBody(&resp[index],
-                              mRemoteMaxPacketLength - index,
-                              reinterpret_cast<const uint8_t*>(
-                                NS_ConvertUTF16toUTF8(output).get()),
-                              NS_ConvertUTF16toUTF8(output).Length());
+    nsCString folderListingObject;
+    mCurrentFolder->GetFolderListingObjectCString(folderListingObject,
+                                                  maxListCount, startOffset);
 
-    index += AppendHeaderEndOfBody(&resp[index]);
+    if (mMasDataStream) {
+      mMasDataStream->Close();
+      mMasDataStream = nullptr;
+    }
+
+    nsresult rv = NS_NewCStringInputStream(getter_AddRefs(mMasDataStream),
+                                           folderListingObject);
+    if (NS_FAILED(rv)) {
+      BT_LOGR("Failed to get internal stream from folder-listing object. rv=0x%x",
+              static_cast<uint32_t>(rv));
+      SendReply(ObexResponseCode::InternalServerError);
+      return;
+    }
+
+    if (!ReplyToGetWithHeaderBody(resp, index)) {
+      SendReply(ObexResponseCode::InternalServerError);
+    }
+  } else {
+    SendMasObexData(resp, ObexResponseCode::Success, index);
   }
-
-  SendMasObexData(resp, ObexResponseCode::Success, index);
 }
 
 void
