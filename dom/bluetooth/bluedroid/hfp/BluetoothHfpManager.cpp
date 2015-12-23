@@ -1098,28 +1098,17 @@ BluetoothHfpManager::HandleCallStateChanged(uint32_t aCallIndex,
   // Update call information besides call state
   mCurrentCallArray[aCallIndex].Set(aNumber, aIsOutgoing);
 
-  // -1 is necessary because call 0 is an invalid (padding) call object.
-  if (aCallState == nsITelephonyService::CALL_STATE_DISCONNECTED &&
-      mCurrentCallArray.Length() - 1 ==
-      GetNumberOfCalls(nsITelephonyService::CALL_STATE_DISCONNECTED)) {
-    ResetCallArray();
-  }
-
-  // Return if SLC is disconnected
-  if (!IsConnected()) {
-    return;
-  }
-
-  // Notify bluedroid of phone state change if this
+  // When SLC is connected, notify bluedroid of phone state change if this
   // call state change is not during transition state
-  if (!IsTransitionState(aCallState, aIsConference)) {
+  if (IsConnected() && !IsTransitionState(aCallState, aIsConference)) {
     UpdatePhoneCIND(aCallIndex);
   }
 
   switch (aCallState) {
     case nsITelephonyService::CALL_STATE_DIALING:
-      // We've send Dialer a dialing request and this is the response.
-      if (!mDialingRequestProcessed) {
+      // We've send Dialer a dialing request and this is the response sent to
+      // HF when SLC is connected.
+      if (IsConnected() && !mDialingRequestProcessed) {
         SendResponse(HFP_AT_RESPONSE_OK);
         mDialingRequestProcessed = true;
       }
@@ -1128,13 +1117,19 @@ BluetoothHfpManager::HandleCallStateChanged(uint32_t aCallIndex,
       // -1 is necessary because call 0 is an invalid (padding) call object.
       if (mCurrentCallArray.Length() - 1 ==
           GetNumberOfCalls(nsITelephonyService::CALL_STATE_DISCONNECTED)) {
-        // In order to let user hear busy tone via connected Bluetooth headset,
-        // we postpone the timing of dropping SCO.
-        if (aError.EqualsLiteral("BusyError")) {
+        // When SLC is connected, in order to let user hear busy tone via
+        // connected Bluetooth headset, we postpone the timing of dropping SCO.
+        if (IsConnected() && aError.EqualsLiteral("BusyError")) {
           // FIXME: UpdatePhoneCIND later since it causes SCO close but
           // Dialer is still playing busy tone via HF.
           NS_DispatchToMainThread(new CloseScoRunnable());
         }
+
+        // We need to make sure the ResetCallArray() is executed after
+        // UpdatePhoneCIND(), because after resetting mCurrentCallArray,
+        // the mCurrentCallArray[aCallIndex] may be meaningless in
+        // UpdatePhoneCIND().
+        ResetCallArray();
       }
       break;
     default:
