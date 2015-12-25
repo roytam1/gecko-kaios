@@ -96,6 +96,9 @@ BluetoothMapSmsManager::BluetoothMapSmsManager()
   , mNtfRequired(false)
   , mConnectionId(0xFFFFFFFF)
   , mLastCommand(0)
+  , mPutFinalFlag(false)
+  , mPutPacketLength(0)
+  , mPutReceivedPacketLength(0)
 {
   BuildDefaultFolderStructure();
 }
@@ -348,6 +351,11 @@ BluetoothMapSmsManager::MasDataHandler(UnixSocketBuffer* aMessage)
 
   const uint8_t* data = aMessage->GetData();
   uint8_t opCode = data[0];
+
+  if (mPutReceivedPacketLength > 0) {
+    opCode = (mPutFinalFlag) ? ObexRequestCode::PutFinal : ObexRequestCode::Put;
+  }
+
   ObexHeaderSet pktHeaders;
   nsString type;
   switch (opCode) {
@@ -421,18 +429,20 @@ BluetoothMapSmsManager::MasDataHandler(UnixSocketBuffer* aMessage)
       break;
     case ObexRequestCode::Put:
     case ObexRequestCode::PutFinal:
-      // Section 3.3.3 "Put", IrOBEX 1.2
-      // [opcode:1][length:2][Headers:var]
-      if (receivedLength < 3 ||
-          !ParseHeaders(&data[3], receivedLength - 3, &pktHeaders)) {
-        SendReply(ObexResponseCode::BadRequest);
+      if (!ComposePacket(opCode, aMessage)) {
+        return;
+      }
+
+      if (!ParseHeaders(mPutReceivedDataBuffer.get(), mPutReceivedPacketLength,
+                        &pktHeaders)) {
+        ReplyToPut(ObexResponseCode::BadRequest);
         return;
       }
 
       // Multi-packet PUT request (0x02) may not contain Type header
       if (!pktHeaders.Has(ObexHeaderId::Type)) {
         BT_LOGR("Missing OBEX PUT request Type header");
-        SendReply(ObexResponseCode::BadRequest);
+        ReplyToPut(ObexResponseCode::BadRequest);
         return;
       }
 
@@ -444,7 +454,7 @@ BluetoothMapSmsManager::MasDataHandler(UnixSocketBuffer* aMessage)
          * first, then handle registration/de-registration to send Mns
          * connect/disconnect obex command.
          */
-        ReplyToPut();
+        ReplyToPut(ObexResponseCode::Success);
         HandleNotificationRegistration(pktHeaders);
       } else if (type.EqualsLiteral("x-bt/messageStatus")) {
         HandleSetMessageStatus(pktHeaders);
@@ -455,11 +465,11 @@ BluetoothMapSmsManager::MasDataHandler(UnixSocketBuffer* aMessage)
          * MSE does NOT allowed the polling of its mailbox it shall answer
          * with a 'Not implemented' error response.
          */
-        SendReply(ObexResponseCode::NotImplemented);
+        ReplyToPut(ObexResponseCode::NotImplemented);
       } else {
         BT_LOGR("Unknown MAP PUT request type: %s",
           NS_ConvertUTF16toUTF8(type).get());
-        SendReply(ObexResponseCode::NotImplemented);
+        ReplyToPut(ObexResponseCode::NotImplemented);
       }
       break;
     case ObexRequestCode::Get:
@@ -510,6 +520,55 @@ BluetoothMapSmsManager::MasDataHandler(UnixSocketBuffer* aMessage)
       BT_LOGR("Unrecognized ObexRequestCode %x", opCode);
       break;
   }
+}
+
+bool
+BluetoothMapSmsManager::ComposePacket(uint8_t aOpCode,
+                                      UnixSocketBuffer* aMessage)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT(aMessage);
+
+  const uint8_t* data = aMessage->GetData();
+  int frameHeaderLength = 0;
+
+  // A PUT request from remote devices may be divided into multiple parts.
+  // In other words, one request may need to be received multiple times.
+  // Here, will start to compose these parts to a full PUT request packet.
+  //
+  // |mPutReceivedPacketLength| is to indicate that the current received packet
+  // length of the PUT packet.
+  // |mPutReceivedPacketLength == 0| means it's the is the first part of the
+  // Put packet.
+  if (mPutReceivedPacketLength == 0) {
+    // Section 3.3.3 "Put", IrOBEX 1.2
+    // [opcode:1][length:2][Headers:var]
+    frameHeaderLength = 3;
+
+    // |mPutPacketLength| = packet length - field length
+    mPutPacketLength = ((static_cast<int>(data[1]) << 8) | data[2]) -
+                       frameHeaderLength;
+
+    mPutReceivedDataBuffer = new uint8_t[mPutPacketLength];
+    mPutFinalFlag = (aOpCode == ObexRequestCode::PutFinal);
+  }
+
+  int dataLength = aMessage->GetSize() - frameHeaderLength;
+
+  // Check length before memcpy to prevent from memory pollution
+  if (dataLength < 0 ||
+      mPutReceivedPacketLength + dataLength > mPutPacketLength) {
+    BT_LOGR("Received packet size is unreasonable");
+    ReplyToPut(ObexResponseCode::BadRequest);
+    return false;
+  }
+
+  memcpy(mPutReceivedDataBuffer.get() + mPutReceivedPacketLength,
+         &data[frameHeaderLength], dataLength);
+
+  mPutReceivedPacketLength += dataLength;
+
+  return (mPutReceivedPacketLength == mPutPacketLength);
 }
 
 // Virtual function of class SocketConsumer
@@ -652,6 +711,11 @@ BluetoothMapSmsManager::AfterMapSmsDisconnected()
   mMasConnected = false;
   mBodyRequired = false;
   mFractionDeliverRequired = false;
+
+  mPutFinalFlag = false;
+  mPutPacketLength = 0;
+  mPutReceivedPacketLength = 0;
+  mPutReceivedDataBuffer = nullptr;
 
   // To ensure we close MNS connection
   DestroyMnsObexConnection();
@@ -949,17 +1013,24 @@ BluetoothMapSmsManager::MnsPutMultiRequest()
 }
 
 void
-BluetoothMapSmsManager::ReplyToPut()
+BluetoothMapSmsManager::ReplyToPut(uint8_t aResponse)
 {
   if (!mMasConnected) {
     return;
   }
 
+  // These variables can be reset here because this is where we reply to a
+  // complete put packet.
+  mPutFinalFlag = false;
+  mPutPacketLength = 0;
+  mPutReceivedPacketLength = 0;
+  mPutReceivedDataBuffer = nullptr;
+
   // Section 3.3.3.2 "PutResponse", IrOBEX 1.2
   // [opcode:1][length:2][Headers:var]
   uint8_t req[kObexRespHeaderSize];
 
-  SendMasObexData(req, ObexResponseCode::Success, kObexRespHeaderSize);
+  SendMasObexData(req, aResponse, kObexRespHeaderSize);
 }
 
 bool
@@ -1726,23 +1797,45 @@ BluetoothMapSmsManager::HandleSmsMmsPushMessage(const ObexHeaderSet& aHeader)
     return;
   }
 
-  InfallibleTArray<BluetoothNamedValue> data;
+  // Section 5.8.2 "Name", MAP 1.2:
+  // In a request: This property shall be used to indicate the folder to which
+  // the Message object is to be pushed. The property shall be empty in case the
+  // desired listing is that of the current folder or shall be the name of a
+  // child folder.
   nsString name;
   aHeader.GetName(name);
+
+  // Get the absolute path of the folder to be pushed.
+  nsString currentFolderPath;
+  mCurrentFolder->GetPath(currentFolderPath);
+  name = name.IsEmpty() ? currentFolderPath
+                        : currentFolderPath + NS_LITERAL_STRING("/") + name;
+
+  // If the message will to be pushed to 'outbox' or 'draft' folder
+  //   1. Parse body to get SMS
+  //   2. Get receipent subject
+  //   3. Send it to Gaia
+  // Otherwise reply NotAcceptable error code.
+  if ((name.Find("outbox") == -1) && (name.Find("draft") == -1)) {
+    ReplyToPut(ObexResponseCode::NotAcceptable);
+    return;
+  }
+
+  InfallibleTArray<BluetoothNamedValue> data;
   AppendNamedValue(data, "folderName", name);
 
   AppendBtNamedValueByTagId(aHeader, data,
                             Map::AppParametersTagId::Transparent);
   AppendBtNamedValueByTagId(aHeader, data, Map::AppParametersTagId::Retry);
 
-  /* TODO: Support native format charset (mandatory format).
-   *
-   * Charset indicates Gaia application how to deal with encoding.
-   * - Native: If the message object shall be delivered without trans-coding.
-   * - UTF-8:  If the message text shall be trans-coded to UTF-8.
-   *
-   * We only support UTF-8 charset due to current SMS API limitation.
-   */
+  // TODO: Support native format charset (mandatory format).
+  //
+  // Charset indicates Gaia application how to deal with encoding.
+  // - Native: If the message object shall be delivered without trans-coding.
+  // - UTF-8:  If the message text shall be trans-coded to UTF-8.
+  //
+  // We only support UTF-8 charset due to current SMS API limitation.
+  //
   AppendBtNamedValueByTagId(aHeader, data, Map::AppParametersTagId::Charset);
 
   // Get Body
@@ -1752,13 +1845,6 @@ BluetoothMapSmsManager::HandleSmsMmsPushMessage(const ObexHeaderSet& aHeader)
 
   RefPtr<BluetoothMapBMessage> bmsg =
     new BluetoothMapBMessage(bodyPtr, mBodySegmentLength);
-
-  /* If FolderName is outbox:
-   *   1. Parse body to get SMS
-   *   2. Get receipent subject
-   *   3. Send it to Gaia
-   * Otherwise reply HTTP_NOT_ACCEPTABLE
-   */
 
   nsCString subject;
   bmsg->GetBody(subject);

@@ -251,7 +251,7 @@ private:
    */
   bool MnsPutMultiRequest();
   void ReplyToSetPath();
-  void ReplyToPut();
+  void ReplyToPut(uint8_t aResponse);
   void SendReply(uint8_t aResponse);
 
   void HandleNotificationRegistration(const ObexHeaderSet& aHeader);
@@ -284,6 +284,21 @@ private:
   void MasDataHandler(mozilla::ipc::UnixSocketBuffer* aMessage);
   bool GetInputStreamFromBlob(Blob* aBlob, bool aIsMas);
   InfallibleTArray<uint32_t> PackParameterMask(uint8_t* aData, int aSize);
+
+  /**
+   * Usually we won't get a full PUT packet in one operation, which means that
+   * a packet may be devided into several parts and BluetoothMapSmsManager
+   * should be in charge of assembling.
+   *
+   * @param aOpCode  [in] the opCode of the PUT packet (usually is Put/PutFinal).
+   * @param aMessage [in] the content of the PUT packet.
+   *
+   * @return true if a packet has been fully received.
+   *         false if the received length exceeds/not reaches the expected
+   *         length.
+   */
+  bool ComposePacket(uint8_t aOpCode,
+                     mozilla::ipc::UnixSocketBuffer* aMessage);
 
   /*
    * Build mandatory folders
@@ -334,6 +349,12 @@ private:
   nsCOMPtr<nsIInputStream> mMasDataStream;
   // The notification data stream
   nsCOMPtr<nsIInputStream> mMnsDataStream;
+
+  // Set when receiving a PutFinal packet
+  bool mPutFinalFlag;
+  int mPutPacketLength;
+  int mPutReceivedPacketLength;
+  nsAutoArrayPtr<uint8_t> mPutReceivedDataBuffer;
 };
 
 END_BLUETOOTH_NAMESPACE
