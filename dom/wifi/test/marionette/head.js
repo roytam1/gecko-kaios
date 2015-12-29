@@ -557,14 +557,16 @@ var gTestSuite = (function() {
     return requestWifiScan()
       .then(function (networks) {
         if (isScanResultExpected(networks, aExpectedNetworks)) {
+          log("GetExpected scan results");
           return networks;
         }
         if (aRetryCnt > 0) {
+          log("Scan failed: " + aRetryCnt);
           return testWifiScanWithRetry(aRetryCnt - 1, aExpectedNetworks);
         }
         throw 'Unexpected scan result!';
       }, function () {
-        log("Scan failed, retry again");
+        log("Scan failed: " + aRetryCnt);
         if (aRetryCnt > 0) {
           return testWifiScanWithRetry(aRetryCnt - 1, aExpectedNetworks);
         }
@@ -1040,6 +1042,15 @@ var gTestSuite = (function() {
     return -1;
   }
 
+  function isStockSSID(aSsid) {
+    for (let i = 0; i < HOSTAPD_CONFIG_LIST.length; i++) {
+      if (HOSTAPD_CONFIG_LIST[i].ssid === aSsid) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
    * Count the number of running process and verify if the count is expected.
    *
@@ -1338,6 +1349,7 @@ var gTestSuite = (function() {
   suite.writeFile = writeFile;
   suite.exeAndParseNetcfg = exeAndParseNetcfg;
   suite.exeAndParseIpRoute = exeAndParseIpRoute;
+  suite.isStockSSID = isStockSSID;
 
   /**
    * Common test routine.
