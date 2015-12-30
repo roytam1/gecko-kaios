@@ -6044,6 +6044,18 @@ fi
 AC_SUBST(DISABLE_MOZ_RIL_GEOLOC)
 
 dnl ========================================================
+dnl = Disable camera HDR feature
+dnl ========================================================
+MOZ_ARG_DISABLE_BOOL(camera-hdr,
+[  --disable-camera-hdr     Set compile flags necessary for disabling HDR ],
+    DISABLE_CAMERA_HDR=1,
+    DISABLE_CAMERA_HDR= )
+if test -n "$DISABLE_CAMERA_HDR"; then
+    AC_DEFINE(DISABLE_CAMERA_HDR)
+fi
+AC_SUBST(DISABLE_CAMERA_HDR)
+
+dnl ========================================================
 dnl = Use the Servo Style System for Gecko.
 dnl =
 dnl = This linkage setup is temporary, and for experimental

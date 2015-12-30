@@ -380,13 +380,20 @@ GonkCameraParameters::Initialize()
   }
 
   GetListAsArray(CAMERA_PARAM_SUPPORTED_SCENEMODES, mSceneModes);
-  if (IsLowMemoryPlatform()) {
+#ifndef DISABLE_CAMERA_HDR
+  if (IsLowMemoryPlatform())
+#endif // Remove HDR option from scene mode selection directly
+  {
     bool hdrRemoved = false;
     while (mSceneModes.RemoveElement(NS_LITERAL_STRING("hdr"))) {
       hdrRemoved = true;
     }
     if (hdrRemoved) {
-      DOM_CAMERA_LOGI("Disabling HDR support due to low memory\n");
+#ifndef DISABLE_CAMERA_HDR
+      DOM_CAMERA_LOGI("Disable HDR support due to low memory\n");
+#else
+      DOM_CAMERA_LOGI("Disable HDR support directly\n");
+#endif
     }
   }
 
