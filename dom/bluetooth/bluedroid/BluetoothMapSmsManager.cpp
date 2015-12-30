@@ -296,6 +296,10 @@ BluetoothMapSmsManager::MnsDataHandler(UnixSocketBuffer* aMessage)
 
     if (mLastCommand == ObexRequestCode::Disconnect){
       BT_LOGR("MNS disconnected");
+      mMnsSocket->Close();
+      mMnsSocket = nullptr;
+      mNtfRequired = false;
+      mConnectionId = 0xFFFFFFFF;
     } else {
       BT_LOGR("MNS connected");
 
@@ -436,8 +440,12 @@ BluetoothMapSmsManager::MasDataHandler(UnixSocketBuffer* aMessage)
       BT_LOGR("Type: %s", NS_ConvertUTF16toUTF8(type).get());
 
       if (type.EqualsLiteral("x-bt/MAP-NotificationRegistration")) {
-        HandleNotificationRegistration(pktHeaders);
+        /* We need to reply notification registration/de-registration "OK"
+         * first, then handle registration/de-registration to send Mns
+         * connect/disconnect obex command.
+         */
         ReplyToPut();
+        HandleNotificationRegistration(pktHeaders);
       } else if (type.EqualsLiteral("x-bt/messageStatus")) {
         HandleSetMessageStatus(pktHeaders);
       } else if (type.EqualsLiteral("x-bt/message")) {
@@ -1179,10 +1187,7 @@ BluetoothMapSmsManager::DestroyMnsObexConnection()
     return;
   }
 
-  mMnsSocket->Close();
-  mMnsSocket = nullptr;
-  mNtfRequired = false;
-  mConnectionId = 0xFFFFFFFF;
+  SendMnsDisconnectRequest();
 }
 
 void
@@ -1221,6 +1226,7 @@ BluetoothMapSmsManager::SendMnsDisconnectRequest()
   uint8_t req[255];
   int index = 3;
 
+  index += AppendHeaderConnectionId(&req[index], mConnectionId);
   SendMnsObexData(req, ObexRequestCode::Disconnect, index);
 }
 
