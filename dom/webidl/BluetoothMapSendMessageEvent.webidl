@@ -20,7 +20,7 @@ dictionary BluetoothMapSendMessageEventInit : EventInit
 {
   DOMString                 recipient = "";
   DOMString                 messageBody = "";
-  unsigned long             retry = 0;
+  unsigned long             retry = 1;
 
   BluetoothMapRequestHandle? handle = null;
 };
