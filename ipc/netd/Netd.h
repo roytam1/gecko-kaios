@@ -53,6 +53,7 @@ public:
   NetdClient();
   static void Start();
   static void SendNetdCommandIOThread(NetdCommand* aMessage);
+  bool IsStarted();
 
 private:
   void WriteNetdCommand();

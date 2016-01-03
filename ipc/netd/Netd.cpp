@@ -22,7 +22,9 @@
 #define NETD_LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "Gonk", args)
 #define ICS_SYS_USB_RNDIS_MAC "/sys/class/android_usb/android0/f_rndis/ethaddr"
 #define INVALID_SOCKET -1
-#define MAX_RECONNECT_TIMES 10
+// The number of times to retry connecing to netd process
+// when a connection failure occurs.
+#define MAX_RECONNECT_TIMES 40
 
 using mozilla::system::Property;
 
@@ -290,6 +292,50 @@ NetdClient::WriteNetdCommand()
   mCurrentNetdCommand = nullptr;
 }
 
+bool
+NetdClient::IsStarted() {
+  if (gNetdClient->mSocket.get() == INVALID_SOCKET) {
+    return false;
+  }
+  return true;
+}
+
+static bool
+IsDaemonRunning()
+{
+  char value[Property::VALUE_MAX_LENGTH];
+
+  if (NS_WARN_IF(Property::Get("init.svc.netd", value, "") < 0)) {
+    NETD_LOG("Can't get the status of netd daemon");
+  }
+  if (strncmp(value, "running", 7)) {
+    NETD_LOG("Netd daemon state <%s>", value);
+    return false;
+  }
+
+  return true;
+}
+
+static void
+CheckDaemonStatus()
+{
+  if (IsDaemonRunning()) {
+    if (!gNetdClient->IsStarted()) {
+      gNetdClient->Start();
+    }
+    return;
+  }
+
+  if (NS_WARN_IF(Property::Set("ctl.start", "netd") < 0)){
+    NETD_LOG("Can't start netd");
+  }
+
+  MessageLoopForIO::current()->
+    PostDelayedTask(FROM_HERE,
+                    NewRunnableFunction(CheckDaemonStatus),
+                    100);
+}
+
 static void
 InitNetdIOThread()
 {
@@ -311,7 +357,33 @@ InitNetdIOThread()
     }
   }
   gNetdClient = new NetdClient();
-  gNetdClient->Start();
+
+  if (!gNetdClient) {
+    NETD_LOG("Failed to create netd client");
+    return;
+  }
+
+  if (!IsDaemonRunning()) {
+    if (NS_WARN_IF(Property::Set("ctl.start", "netd") < 0)){
+      NETD_LOG("Can't start netd");
+    }
+
+    MessageLoopForIO::current()->
+      PostDelayedTask(FROM_HERE,
+                      NewRunnableFunction(CheckDaemonStatus),
+                      100);
+    return;
+  }
+
+  // Restart netd to flush previous network configuration.
+  if (NS_WARN_IF(Property::Set("ctl.stop", "netd") < 0)){
+    NETD_LOG("Can't stop netd");
+  }
+
+  MessageLoopForIO::current()->
+      PostDelayedTask(FROM_HERE,
+                      NewRunnableFunction(CheckDaemonStatus),
+                      100);
 }
 
 static void
@@ -321,6 +393,10 @@ ShutdownNetdIOThread()
   nsCOMPtr<nsIRunnable> shutdownEvent = new StopNetdConsumer();
 
   gNetdClient = nullptr;
+
+  if (NS_WARN_IF(Property::Set("ctl.stop", "netd") < 0)){
+    NETD_LOG("Can't stop netd");
+  }
 
   NS_DispatchToMainThread(shutdownEvent);
 }
