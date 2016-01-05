@@ -300,6 +300,20 @@ private:
   bool ComposePacket(uint8_t aOpCode,
                      mozilla::ipc::UnixSocketBuffer* aMessage);
 
+  /**
+   * Parse the headers from the full PUT packet.
+   *
+   * @param aOpCode  [in] the opCode of the PUT packet (usually is Put/PutFinal).
+   * @param aMessage [in] the content of the PUT packet.
+   * @param aPktHeaders [out] the headers of the PUT packet.
+   *
+   * @return true if a headers is successfully parsed.
+   *         false if a put packet has not been fully received, or a headers is
+   *                  parsed with any error.
+   */
+  bool ParsePutPacketHeaders(uint8_t aOpCode,
+                             mozilla::ipc::UnixSocketBuffer* aMessage,
+                             ObexHeaderSet* aPktHeaders);
   /*
    * Build mandatory folders
    */

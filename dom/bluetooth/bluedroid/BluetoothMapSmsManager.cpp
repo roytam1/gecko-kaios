@@ -429,13 +429,7 @@ BluetoothMapSmsManager::MasDataHandler(UnixSocketBuffer* aMessage)
       break;
     case ObexRequestCode::Put:
     case ObexRequestCode::PutFinal:
-      if (!ComposePacket(opCode, aMessage)) {
-        return;
-      }
-
-      if (!ParseHeaders(mPutReceivedDataBuffer.get(), mPutReceivedPacketLength,
-                        &pktHeaders)) {
-        ReplyToPut(ObexResponseCode::BadRequest);
+      if (!ParsePutPacketHeaders(opCode, aMessage, &pktHeaders)) {
         return;
       }
 
@@ -571,6 +565,32 @@ BluetoothMapSmsManager::ComposePacket(uint8_t aOpCode,
   return (mPutReceivedPacketLength == mPutPacketLength);
 }
 
+bool
+BluetoothMapSmsManager::ParsePutPacketHeaders(
+  uint8_t aOpCode,
+  mozilla::ipc::UnixSocketBuffer* aMessage,
+  ObexHeaderSet* aPktHeaders)
+{
+  if (!ComposePacket(aOpCode, aMessage)) {
+    return false;
+  }
+
+  bool ret = ParseHeaders(mPutReceivedDataBuffer.get(),
+                          mPutReceivedPacketLength, aPktHeaders);
+
+  if (!ret) {
+    ReplyToPut(ObexResponseCode::BadRequest);
+  }
+
+  // These variables can be reset here because this is where the complete
+  // put packet is already handled.
+  mPutFinalFlag = false;
+  mPutPacketLength = 0;
+  mPutReceivedPacketLength = 0;
+  mPutReceivedDataBuffer = nullptr;
+
+  return ret;
+}
 // Virtual function of class SocketConsumer
 void
 BluetoothMapSmsManager::ReceiveSocketData(BluetoothSocket* aSocket,
@@ -1018,13 +1038,6 @@ BluetoothMapSmsManager::ReplyToPut(uint8_t aResponse)
   if (!mMasConnected) {
     return;
   }
-
-  // These variables can be reset here because this is where we reply to a
-  // complete put packet.
-  mPutFinalFlag = false;
-  mPutPacketLength = 0;
-  mPutReceivedPacketLength = 0;
-  mPutReceivedDataBuffer = nullptr;
 
   // Section 3.3.3.2 "PutResponse", IrOBEX 1.2
   // [opcode:1][length:2][Headers:var]
