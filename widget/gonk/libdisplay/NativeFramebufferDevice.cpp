@@ -78,7 +78,10 @@ NativeFramebufferDevice::NativeFramebufferDevice(int aBacklightFd, int aExtFbFd)
     , mHeight(480)
     , mSurfaceformat(HAL_PIXEL_FORMAT_RGBA_8888)
     , mXdpi(DEFAULT_XDPI)
+    , mIsEnabled(false)
     , mFd(aExtFbFd)
+    , mMappedAddr(nullptr)
+    , mMemLength(0)
     , mGrmodule(nullptr)
     , mBacklightFd(aBacklightFd)
     , mBrightness(255)
@@ -237,6 +240,14 @@ NativeFramebufferDevice::Open()
         return false;
     }
 
+    mMemLength = roundUpToPageSize(mFInfo.line_length * mVInfo.yres_virtual);
+    mMappedAddr = mmap(0, mMemLength, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0);
+    if (mMappedAddr == (void*)-1) {
+        ALOGE("Error: failed to map framebuffer device to memory %d : %s", errno, strerror(errno));
+        Close();
+        return false;
+    }
+
     mGrmodule = const_cast<gralloc_module_t *>(reinterpret_cast<const gralloc_module_t *>(module));
 
     mWidth = mVInfo.xres;
@@ -247,18 +258,17 @@ NativeFramebufferDevice::Open()
     //       gecko should be different then fb format.
     mSurfaceformat = mFBSurfaceformat;
 
+    mIsEnabled = true;
     return true;
 }
 
 bool
 NativeFramebufferDevice::Post(buffer_handle_t buf)
 {
-    uint32_t screensize = roundUpToPageSize(mFInfo.line_length * mVInfo.yres_virtual);
+    android::Mutex::Autolock lock(mMutex);
 
-    void *fbp = mmap(0, screensize, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0);
-    if (fbp == (void*)-1) {
-        ALOGE("Error: failed to map framebuffer device to memory %d : %s", errno, strerror(errno));
-        return false;
+    if (!mIsEnabled) {
+      return false;
     }
 
     void *vaddr;
@@ -266,15 +276,14 @@ NativeFramebufferDevice::Post(buffer_handle_t buf)
                         GRALLOC_USAGE_SW_READ_RARELY,
                         0, 0, mVInfo.xres, mVInfo.yres, &vaddr)) {
         ALOGE("Failed to lock buffer_handle_t");
-        munmap(fbp, screensize);
         return false;
     }
 
     if (mFBSurfaceformat == HAL_PIXEL_FORMAT_RGB_565 &&
         mSurfaceformat == HAL_PIXEL_FORMAT_RGBA_8888) {
-        Transform8888To565((uint8_t*)fbp, (uint8_t*)vaddr, mVInfo.xres*mVInfo.yres);
+        Transform8888To565((uint8_t*)mMappedAddr, (uint8_t*)vaddr, mVInfo.xres * mVInfo.yres);
     } else {
-        memcpy(fbp, vaddr, mFInfo.line_length * mVInfo.yres);
+        memcpy(mMappedAddr, vaddr, mFInfo.line_length * mVInfo.yres);
     }
 
     mGrmodule->unlock(mGrmodule, buf);
@@ -285,20 +294,20 @@ NativeFramebufferDevice::Post(buffer_handle_t buf)
       ALOGE("FBIOPUT_VSCREENINFO failed : error on refresh");
     }
 
-    munmap(fbp, screensize);
-
     return true;
-}
-
-bool
-NativeFramebufferDevice::IsValid()
-{
-    return mFd != -1;
 }
 
 bool
 NativeFramebufferDevice::Close()
 {
+    android::Mutex::Autolock lock(mMutex);
+
+    if (mMappedAddr) {
+      munmap(mMappedAddr, mMemLength);
+      mMemLength = 0;
+      mMappedAddr = nullptr;
+    }
+
     if (mFd != -1) {
         close(mFd);
         mFd = -1;
@@ -310,6 +319,22 @@ NativeFramebufferDevice::Close()
     }
 
     return true;
+}
+
+void
+NativeFramebufferDevice::DrawSolidColorFrame()
+{
+    if (!mMappedAddr || mFd < 0) {
+        return;
+    }
+
+    memset(mMappedAddr, 0, mMemLength);
+
+    mVInfo.activate = FB_ACTIVATE_VBL;
+
+    if(0 > ioctl(mFd, FBIOPUT_VSCREENINFO, &mVInfo)) {
+      ALOGE("FBIOPUT_VSCREENINFO failed : error on refresh");
+    }
 }
 
 bool
@@ -326,6 +351,14 @@ NativeFramebufferDevice::EnableScreen(int enabled)
     if (!enabled) {
         mode = FB_BLANK_POWERDOWN;
         WriteValueToFile(mBacklightFd, 0);
+    }
+
+    {
+      android::Mutex::Autolock lock(mMutex);
+      mIsEnabled = enabled;
+      if (!mIsEnabled) {
+        DrawSolidColorFrame();
+      }
     }
 
     if (ioctl(mFd, FBIOBLANK, mode) == -1) {

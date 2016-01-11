@@ -12,6 +12,8 @@
 #include "mozilla/TimeStamp.h"
 #include "nsISupportsImpl.h"
 
+class SoftwareDisplay;
+
 namespace mozilla {
 class RefreshTimerVsyncDispatcher;
 class CompositorVsyncDispatcher;
@@ -64,6 +66,8 @@ public:
       virtual void EnableVsync() = 0;
       virtual void DisableVsync() = 0;
       virtual bool IsVsyncEnabled() = 0;
+
+      virtual SoftwareDisplay* AsSoftwareDisplay() { return nullptr; }
 
     protected:
       virtual ~Display();

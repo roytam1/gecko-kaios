@@ -754,18 +754,30 @@ GetExtScreenEnabled()
 void
 SetExtScreenEnabled(bool aEnabled)
 {
-  // Simulate power on/off for software display
   char propValue[PROPERTY_VALUE_MAX];
-  if (property_get("ro.h5.display.fb1_backlightdev", propValue, NULL) > 0) {
-    uint32_t screenId = (uint32_t) GonkDisplay::DISPLAY_EXTERNAL;
-    mozilla::gfx::VsyncSource::Display &display =
-      gfxPlatform::GetPlatform()->GetHardwareVsync()->GetDisplayById(screenId);
+  if (!property_get("ro.kaios.display.ext_bl_dev", propValue, NULL) > 0) {
+    return;
+  }
 
-    static_cast<SoftwareDisplay*>(&display)->SetPowerMode(aEnabled);
+  uint32_t screenId =
+    nsScreenManagerGonk::GetIdFromType(GonkDisplay::DISPLAY_EXTERNAL);
+
+
+  mozilla::gfx::VsyncSource::Display &display =
+    gfxPlatform::GetPlatform()->GetHardwareVsync()->GetDisplayById(screenId);
+  SoftwareDisplay* softwareDisplay = display.AsSoftwareDisplay();
+
+  if (!aEnabled && softwareDisplay) {
+    softwareDisplay->SetPowerMode(aEnabled);
   }
 
   GetGonkDisplay()->SetExtEnabled(aEnabled);
   sExtScreenEnabled = aEnabled;
+
+  if (aEnabled && softwareDisplay) {
+    softwareDisplay->SetPowerMode(aEnabled);
+  }
+
 }
 
 double

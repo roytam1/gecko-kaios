@@ -30,6 +30,7 @@ public:
   virtual mozilla::TimeDuration GetVsyncRate() override;
   void ScheduleNextVsync(mozilla::TimeStamp aVsyncTimestamp);
   void Shutdown();
+  virtual SoftwareDisplay* AsSoftwareDisplay() override { return this; }
 
 protected:
   ~SoftwareDisplay();

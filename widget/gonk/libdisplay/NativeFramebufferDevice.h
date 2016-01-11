@@ -19,6 +19,7 @@
 #include <hardware/gralloc.h>
 #include <linux/fb.h>
 #include <system/window.h>
+#include <utils/Mutex.h>
 
 namespace mozilla {
 
@@ -31,8 +32,6 @@ public:
     bool Open();
 
     bool Post(buffer_handle_t buf);
-
-    bool Close();
 
     bool EnableScreen(int enabled);
 
@@ -50,14 +49,22 @@ public:
 
 private:
     NativeFramebufferDevice(int aBacklightFd, int aExtFbFd);
+    bool Close();
+    void DrawSolidColorFrame();
 
+    bool mIsEnabled;
     int mFd;
+    void* mMappedAddr;
+    uint32_t mMemLength;
     struct fb_var_screeninfo mVInfo;
     struct fb_fix_screeninfo mFInfo;
     gralloc_module_t *mGrmodule;
     int32_t mFBSurfaceformat;
     int32_t mBacklightFd;
     int32_t mBrightness;
+
+    // Locks against both mFd and mIsEnable.
+    mutable android::Mutex mMutex;
 };
 
 }

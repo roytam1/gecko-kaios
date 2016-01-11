@@ -813,6 +813,16 @@ nsScreenManagerGonk::GetPrimaryScreen()
         static_cast<nsScreenGonk*>(screen.forget().take()));
 }
 
+/* static */ uint32_t
+nsScreenManagerGonk::GetIdFromType(GonkDisplay::DisplayType aDisplayType)
+{
+    // This is the only place where we make the assumption that
+    // display type is equivalent to screen id.
+
+    // Bug 1138287 will address the conversion from type to id.
+    return aDisplayType;
+}
+
 void
 nsScreenManagerGonk::Initialize()
 {
@@ -930,16 +940,6 @@ nsScreenManagerGonk::VsyncControl(bool aEnabled)
     } else {
         display.DisableVsync();
     }
-}
-
-uint32_t
-nsScreenManagerGonk::GetIdFromType(GonkDisplay::DisplayType aDisplayType)
-{
-    // This is the only place where we make the assumption that
-    // display type is equivalent to screen id.
-
-    // Bug 1138287 will address the conversion from type to id.
-    return aDisplayType;
 }
 
 bool

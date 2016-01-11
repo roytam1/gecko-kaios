@@ -196,6 +196,7 @@ public:
     NS_DECL_ISUPPORTS
     NS_DECL_NSISCREENMANAGER
 
+    static uint32_t GetIdFromType(GonkDisplay::DisplayType aDisplayType);
     static already_AddRefed<nsScreenManagerGonk> GetInstance();
     static already_AddRefed<nsScreenGonk> GetPrimaryScreen();
 
@@ -216,7 +217,6 @@ public:
 protected:
     ~nsScreenManagerGonk();
     void VsyncControl(bool aEnabled);
-    uint32_t GetIdFromType(GonkDisplay::DisplayType aDisplayType);
 
     bool mInitialized;
     nsTArray<RefPtr<nsScreenGonk>> mScreens;
