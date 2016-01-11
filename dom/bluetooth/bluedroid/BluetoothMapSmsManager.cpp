@@ -1724,10 +1724,8 @@ BluetoothMapSmsManager::BuildDefaultFolderStructure()
    * "telecom"
    * "telecom/msg"
    * "telecom/msg/inbox"
-   * "telecom/msg/draft"
    * "telecom/msg/outbox"
    * "telecom/msg/sent"
-   * "telecom/msg/deleted"
    */
   mRootFolder = new BluetoothMapFolder(NS_LITERAL_STRING(""), nullptr);
   BluetoothMapFolder* folder =
@@ -1737,9 +1735,10 @@ BluetoothMapSmsManager::BuildDefaultFolderStructure()
   // Add mandatory folders
   folder->AddSubFolder(NS_LITERAL_STRING("inbox"));
   folder->AddSubFolder(NS_LITERAL_STRING("sent"));
-  folder->AddSubFolder(NS_LITERAL_STRING("deleted"));
   folder->AddSubFolder(NS_LITERAL_STRING("outbox"));
-  folder->AddSubFolder(NS_LITERAL_STRING("draft"));
+  // TODO: Add 'draft' and 'deleted' folder once they are supported by frond end
+  //       The task is tracked by CORE-3628.
+
   mCurrentFolder = mRootFolder;
 }
 
@@ -1847,12 +1846,12 @@ BluetoothMapSmsManager::HandleSmsMmsPushMessage(const ObexHeaderSet& aHeader)
   name = name.IsEmpty() ? currentFolderPath
                         : currentFolderPath + NS_LITERAL_STRING("/") + name;
 
-  // If the message will to be pushed to 'outbox' or 'draft' folder
+  // If the message will to be pushed to 'outbox' folder
   //   1. Parse body to get SMS
   //   2. Get receipent subject
   //   3. Send it to Gaia
   // Otherwise reply NotAcceptable error code.
-  if ((name.Find("outbox") == -1) && (name.Find("draft") == -1)) {
+  if (name.Find("outbox") == -1) {
     ReplyToPut(ObexResponseCode::NotAcceptable);
     return;
   }
