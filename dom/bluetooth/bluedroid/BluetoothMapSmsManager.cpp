@@ -1074,6 +1074,10 @@ BluetoothMapSmsManager::ReplyToMessagesListing(Blob* aBlob, long aMasId,
                                                const nsAString& aTimestamp,
                                                int aSize)
 {
+  if (!mMasConnected) {
+    return false;
+  }
+
   /* If the response code is 0x90 or 0xA0, response consists of following parts:
    * - Part 1: [response code:1][length:2]
    * - Part 2: [headerId:1][length:2][appParam:var]
@@ -1207,6 +1211,10 @@ bool
 BluetoothMapSmsManager::ReplyToSendMessage(
   long aMasId, const nsAString& aHandleId, bool aStatus)
 {
+  if (!mMasConnected) {
+    return false;
+  }
+
   if (!aStatus) {
     SendReply(ObexResponseCode::InternalServerError);
     return true;
@@ -1318,6 +1326,10 @@ void
 BluetoothMapSmsManager::HandleSmsMmsFolderListing(const ObexHeaderSet& aHeader)
 {
   MOZ_ASSERT(NS_IsMainThread());
+
+  if (!mMasConnected) {
+    return;
+  }
 
    /* MAP specification 5.4.3.1
     * The maximum number of entries shall be 1,024 if this header is not
@@ -1919,6 +1931,10 @@ BluetoothMapSmsManager::GetInputStreamFromBlob(Blob* aBlob, bool aIsMas)
 void
 BluetoothMapSmsManager::SendReply(uint8_t aResponseCode)
 {
+  if (!mMasConnected) {
+    return;
+  }
+
   BT_LOGR("[0x%x]", aResponseCode);
 
   // Section 3.2 "Response Format", IrOBEX 1.2
@@ -1933,7 +1949,9 @@ BluetoothMapSmsManager::SendMasObexData(uint8_t* aData, uint8_t aOpcode,
                                         int aSize)
 {
   SetObexPacketInfo(aData, aOpcode, aSize);
-  mMasSocket->SendSocketData(new UnixSocketRawData(aData, aSize));
+  if (mMasSocket) {
+    mMasSocket->SendSocketData(new UnixSocketRawData(aData, aSize));
+  }
 }
 
 void
@@ -1950,7 +1968,9 @@ BluetoothMapSmsManager::SendMnsObexData(uint8_t* aData,
 {
   mLastCommand = aOpcode;
   SetObexPacketInfo(aData, aOpcode, aSize);
-  mMnsSocket->SendSocketData(new UnixSocketRawData(aData, aSize));
+  if (mMnsSocket) {
+    mMnsSocket->SendSocketData(new UnixSocketRawData(aData, aSize));
+  }
 }
 
 void
