@@ -1674,6 +1674,17 @@ BluetoothMapSmsManager::HandleSmsMmsGetMessage(const ObexHeaderSet& aHeader)
   nsString currentFolderPath;
   mCurrentFolder->GetPath(currentFolderPath);
 
+  // Sanity checks on folder path for enhancing fault tolerance.
+  if (!name.IsEmpty() && currentFolderPath.Find("telecom/msg/") != -1) {
+    BT_WARNING("The target folder of MAP-msg-listing is unsupproted.");
+    // Go up 1 level
+    BluetoothMapFolder* parent = mCurrentFolder->GetParentFolder();
+    if (parent) {
+      mCurrentFolder = parent;
+      mCurrentFolder->GetPath(currentFolderPath);
+    }
+  }
+
   // Get the absolute path of the folder to be retrieved.
   name = name.IsEmpty() ? currentFolderPath
                         : currentFolderPath + NS_LITERAL_STRING("/") + name;
