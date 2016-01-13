@@ -6,6 +6,7 @@
 
 #include "BluetoothMapBMessage.h"
 #include "base/basictypes.h"
+#include "nsXPCOMStrings.h"
 #include "plstr.h"
 
 BEGIN_BLUETOOTH_NAMESPACE
@@ -130,8 +131,10 @@ BluetoothMapBMessage::ProcessDecode(const char* aBuf)
       // Cannot find eol symbol
       return;
     }
-    if (curLine.IsEmpty()) {
-      // Blank line or eof, exit
+    if (curLine.EqualsLiteral("END:BBODY") ||
+      curLine.EqualsLiteral("END:BENV") ||
+      curLine.EqualsLiteral("END:BMSG")) {
+      // End of the bMessage, exit
       return;
     }
 
@@ -317,6 +320,12 @@ BluetoothMapBMessage::ParseBMsg(const nsAutoCString& aCurrLine)
    */
   if (aCurrLine.EqualsLiteral("END:MSG") ||
       aCurrLine.EqualsLiteral("BEGIN:MSG")) {
+    if (aCurrLine.EqualsLiteral("END:MSG")) {
+      // The last line of mBMsgBody doesn't need kMapCrlf, cut it off
+      NS_CStringCutData(mBMsgBody, mBMsgBody.Length() - strlen(kMapCrlf),
+                        strlen(kMapCrlf));
+    }
+
     /* Set state to STATE_BEGIN_MSG due to <bmessage-body-content> may appear
      * many times.
      */
