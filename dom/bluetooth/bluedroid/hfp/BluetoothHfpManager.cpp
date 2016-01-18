@@ -1667,6 +1667,32 @@ BluetoothHfpManager::CallHoldNotification(BluetoothHandsfreeCallHoldType aChld,
   nsAutoCString message("CHLD=");
   message.AppendInt((int)aChld);
   NotifyDialer(NS_ConvertUTF8toUTF16(message));
+
+  if (mPhoneType == PhoneType::CDMA &&
+    aChld == BluetoothHandsfreeCallHoldType::HFP_CALL_HOLD_RELEASEHELD) {
+    /*
+     * After notifying dialer CHLD=0 above, AG should release all held calls
+     * according to Bluetooth HFP 1.6. But in CDMA case, the first incoming call
+     * and second incoming call use the same channel, dialer app cannot hangup
+     * the second waiting call. However, the second incoming waiting call should
+     * be in disconnected state at this time.
+     */
+    mCdmaSecondCall.mState = nsITelephonyService::CALL_STATE_DISCONNECTED;
+    int numActive =
+      GetNumberOfCalls(nsITelephonyService::CALL_STATE_CONNECTED);
+    int numHeld = GetNumberOfCalls(nsITelephonyService::CALL_STATE_HELD);
+    BluetoothHandsfreeCallState callSetupState =
+      ConvertToBluetoothHandsfreeCallState(GetCdmaSecondCallSetupState());
+    BluetoothHandsfreeCallAddressType type = mCdmaSecondCall.mType;
+
+    BT_LOGR("CDMA 2nd number state %d => \
+            BTHF: active[%d] held[%d] setupstate[%d]",
+            mCdmaSecondCall.mState, numActive, numHeld, callSetupState);
+
+    sBluetoothHfpInterface->PhoneStateChange(
+      numActive, numHeld, callSetupState,
+      mCdmaSecondCall.mNumber, type, new PhoneStateChangeResultHandler());
+  }
 }
 
 void BluetoothHfpManager::DialCallNotification(const nsAString& aNumber,
