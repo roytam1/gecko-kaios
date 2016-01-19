@@ -28,7 +28,7 @@ dictionary BluetoothVCardListingEventInit : EventInit
   vCardOrderType             order = "indexed";
   DOMString                  searchValue = "";
   vCardSearchKeyType         searchKey = "name";
-  unsigned long              maxListCount = 0;
+  unsigned long              maxListCount = 65535;
   unsigned long              listStartOffset = 0;
   sequence<vCardProperties>  vcardSelector = [];
   vCardSelectorOp            vcardSelectorOperator = "OR";

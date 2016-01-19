@@ -27,7 +27,7 @@ dictionary BluetoothPhonebookPullingEventInit : EventInit
   DOMString                 name = "";
   vCardVersion              format = "vCard21";
   sequence<vCardProperties> propSelector = [];
-  unsigned long             maxListCount = 0;
+  unsigned long             maxListCount = 65535;
   unsigned long             listStartOffset = 0;
   sequence<vCardProperties> vcardSelector = [];
   vCardSelectorOp           vcardSelectorOperator = "OR";
