@@ -46,22 +46,25 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
         'display',
         'mozpng',
     ]
-    OS_LIBS += [
-        'ui',
-        'EGL',
-        'hardware_legacy',
-        'hardware',
-        'cutils',
-    ]
     OS_LIBS += CONFIG['MOZ_ZLIB_LIBS']
     if CONFIG['ANDROID_VERSION'] in ('17', '18', '19', '21', '22'):
         OS_LIBS += [
             'gui',
+        ]
+    OS_LIBS += [
+        'ui',
+        'EGL',
+        'binder',
+        'hardware_legacy',
+        'hardware',
+    ]
+    if CONFIG['ANDROID_VERSION'] in ('17', '18', '19', '21', '22'):
+        OS_LIBS += [
             'suspend',
         ]
     OS_LIBS += [
-        'binder',
         'utils',
+        'cutils',
     ]
 
 DISABLE_STL_WRAPPING = True
