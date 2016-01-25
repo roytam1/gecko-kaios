@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef NATIVEWINDOW_GONKBUFFERQUEUECORE_LL_H
-#define NATIVEWINDOW_GONKBUFFERQUEUECORE_LL_H
+#ifndef NATIVEWINDOW_GONKBUFFERQUEUECORE_M_H
+#define NATIVEWINDOW_GONKBUFFERQUEUECORE_M_H
 
 #include "GonkBufferQueueDefs.h"
 #include "GonkBufferSlot.h"
@@ -197,7 +197,7 @@ private:
 
     // mDefaultBufferFormat can be set so it will override the buffer format
     // when it isn't specified in dequeueBuffer.
-    uint32_t mDefaultBufferFormat;
+    PixelFormat mDefaultBufferFormat;
 
     // mDefaultWidth holds the default width of allocated buffers. It is used
     // in dequeueBuffer if a width and height of 0 are specified.

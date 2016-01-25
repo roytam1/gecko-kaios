@@ -32,14 +32,6 @@ GonkBufferQueue::ProxyConsumerListener::ProxyConsumerListener(
 
 GonkBufferQueue::ProxyConsumerListener::~ProxyConsumerListener() {}
 
-#if ANDROID_VERSION == 21
-void GonkBufferQueue::ProxyConsumerListener::onFrameAvailable() {
-    sp<ConsumerListener> listener(mConsumerListener.promote());
-    if (listener != NULL) {
-        listener->onFrameAvailable();
-    }
-}
-#else
 void GonkBufferQueue::ProxyConsumerListener::onFrameAvailable(const ::android::BufferItem& item) {
     sp<ConsumerListener> listener(mConsumerListener.promote());
     if (listener != NULL) {
@@ -53,7 +45,6 @@ void GonkBufferQueue::ProxyConsumerListener::onFrameReplaced(const ::android::Bu
         listener->onFrameReplaced(item);
     }
 }
-#endif
 
 void GonkBufferQueue::ProxyConsumerListener::onBuffersReleased() {
     sp<ConsumerListener> listener(mConsumerListener.promote());

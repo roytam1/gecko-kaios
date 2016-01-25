@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef NATIVEWINDOW_GONKBUFFERQUEUEPRODUCER_LL_H
-#define NATIVEWINDOW_GONKBUFFERQUEUEPRODUCER_LL_H
+#ifndef NATIVEWINDOW_GONKBUFFERQUEUEPRODUCER_M_H
+#define NATIVEWINDOW_GONKBUFFERQUEUEPRODUCER_M_H
 
 #include "GonkBufferQueueDefs.h"
 #include <gui/IGraphicBufferProducer.h>
@@ -95,7 +95,7 @@ public:
     // In both cases, the producer will need to call requestBuffer to get a
     // GraphicBuffer handle for the returned slot.
     virtual status_t dequeueBuffer(int *outSlot, sp<Fence>* outFence, bool async,
-            uint32_t width, uint32_t height, uint32_t format, uint32_t usage);
+            uint32_t width, uint32_t height, PixelFormat format, uint32_t usage);
 
     // See IGraphicBufferProducer::detachBuffer
     virtual status_t detachBuffer(int slot);
@@ -172,7 +172,7 @@ public:
 
     // See IGraphicBufferProducer::allocateBuffers
     virtual void allocateBuffers(bool async, uint32_t width, uint32_t height,
-            uint32_t format, uint32_t usage);
+            PixelFormat format, uint32_t usage);
 
     // setSynchronousMode sets whether dequeueBuffer is synchronous or
     // asynchronous. In synchronous mode, dequeueBuffer blocks until
@@ -183,6 +183,30 @@ public:
     // The default mode is synchronous.
     // This should be called only during initialization.
     virtual status_t setSynchronousMode(bool enabled);
+
+    // Sets whether dequeueBuffer is allowed to allocate new buffers.
+    //
+    // Normally dequeueBuffer does not discriminate between free slots which
+    // already have an allocated buffer and those which do not, and will
+    // allocate a new buffer if the slot doesn't have a buffer or if the slot's
+    // buffer doesn't match the requested size, format, or usage. This method
+    // allows the producer to restrict the eligible slots to those which already
+    // have an allocated buffer of the correct size, format, and usage. If no
+    // eligible slot is available, dequeueBuffer will block or return an error
+    // as usual.
+    virtual status_t allowAllocation(bool allow);
+
+    // Sets the current generation number of the BufferQueue.
+    //
+    // This generation number will be inserted into any buffers allocated by the
+    // BufferQueue, and any attempts to attach a buffer with a different
+    // generation number will fail. Buffers already in the queue are not
+    // affected and will retain their current generation number. The generation
+    // number defaults to 0.
+    virtual status_t setGenerationNumber(uint32_t generationNumber);
+
+    // Returns the name of the connected consumer.
+    virtual String8 getConsumerName() const;
 
 private:
     // This is required by the IBinder::DeathRecipient interface

@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef NATIVEWINDOW_GONKNATIVEWINDOW_LL_H
-#define NATIVEWINDOW_GONKNATIVEWINDOW_LL_H
+#ifndef NATIVEWINDOW_GONKNATIVEWINDOW_M_H
+#define NATIVEWINDOW_GONKNATIVEWINDOW_M_H
 
 #include <ui/GraphicBuffer.h>
 
@@ -24,8 +24,8 @@
 #include <utils/Vector.h>
 #include <utils/threads.h>
 
-#include "GonkConsumerBaseLL.h"
-#include "IGonkGraphicBufferConsumerLL.h"
+#include "GonkConsumerBaseM.h"
+#include "IGonkGraphicBufferConsumerM.h"
 
 namespace android {
 
@@ -118,11 +118,7 @@ class GonkNativeWindow: public GonkConsumerBase
     static void RecycleCallback(TextureClient* client, void* closure);
 
 protected:
-#if ANDROID_VERSION == 21
-    virtual void onFrameAvailable();
-#else
     virtual void onFrameAvailable(const ::android::BufferItem &item);
-#endif
 
 private:
     GonkNativeWindowNewFrameCallback* mNewFrameCallback;

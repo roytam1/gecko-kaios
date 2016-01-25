@@ -21,10 +21,12 @@
 #include <utils/NativeHandle.h>
 
 #include <binder/Parcel.h>
+
+#undef B_PACK_CHARS // Avoid compiler error from redefinition
 #include <binder/IInterface.h>
 
 #include <gui/IConsumerListener.h>
-#include "IGonkGraphicBufferConsumerLL.h"
+#include "IGonkGraphicBufferConsumerM.h"
 
 #include <ui/GraphicBuffer.h>
 #include <ui/Fence.h>
@@ -273,7 +275,7 @@ public:
     virtual status_t consumerConnect(const sp<IConsumerListener>& consumer, bool controlledByApp) {
         Parcel data, reply;
         data.writeInterfaceToken(IGonkGraphicBufferConsumer::getInterfaceDescriptor());
-        data.writeStrongBinder(consumer->asBinder());
+        data.writeStrongBinder(consumer->asBinder(consumer));
         data.writeInt32(controlledByApp);
         status_t result = remote()->transact(CONSUMER_CONNECT, data, &reply);
         if (result != NO_ERROR) {

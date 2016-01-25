@@ -250,7 +250,7 @@ status_t GonkBufferQueueProducer::waitForFreeSlotThenRelock(const char* caller,
 
 status_t GonkBufferQueueProducer::dequeueBuffer(int *outSlot,
         sp<android::Fence> *outFence, bool async,
-        uint32_t width, uint32_t height, uint32_t format, uint32_t usage) {
+        uint32_t width, uint32_t height, PixelFormat format, uint32_t usage) {
     ATRACE_CALL();
     { // Autolock scope
         Mutex::Autolock lock(mCore->mMutex);
@@ -258,7 +258,8 @@ status_t GonkBufferQueueProducer::dequeueBuffer(int *outSlot,
     } // Autolock scope
 
     ALOGV("dequeueBuffer: async=%s w=%u h=%u format=%#x, usage=%#x",
-            async ? "true" : "false", width, height, format, usage);
+            async ? "true" : "false", width, height,
+            static_cast<uint32_t>(format), usage);
 
     if ((width && !height) || (!width && height)) {
         ALOGE("dequeueBuffer: invalid size: w=%u h=%u", width, height);
@@ -311,7 +312,7 @@ status_t GonkBufferQueueProducer::dequeueBuffer(int *outSlot,
         if ((buffer == NULL) ||
                 (static_cast<uint32_t>(buffer->width) != width) ||
                 (static_cast<uint32_t>(buffer->height) != height) ||
-                (static_cast<uint32_t>(buffer->format) != format) ||
+                (buffer->format != format) ||
                 ((static_cast<uint32_t>(buffer->usage) & usage) != usage))
         {
             mSlots[found].mAcquireCalled = false;
@@ -524,14 +525,15 @@ status_t GonkBufferQueueProducer::queueBuffer(int slot,
 
     int64_t timestamp;
     bool isAutoTimestamp;
+    android_dataspace dataspace;
     Rect crop;
     int scalingMode;
     uint32_t transform;
     uint32_t stickyTransform;
     bool async;
     sp<Fence> fence;
-    input.deflate(&timestamp, &isAutoTimestamp, &crop, &scalingMode, &transform,
-            &async, &fence, &stickyTransform);
+    input.deflate(&timestamp, &isAutoTimestamp, &dataspace, &crop, &scalingMode,
+            &transform, &async, &fence, &stickyTransform);
 
     if (fence == NULL) {
         ALOGE("queueBuffer: fence is NULL");
@@ -666,11 +668,7 @@ status_t GonkBufferQueueProducer::queueBuffer(int slot,
 
     // Call back without lock held
     if (listener != NULL) {
-#if ANDROID_VERSION == 21
-        listener->onFrameAvailable();
-#else
         listener->onFrameAvailable(reinterpret_cast<::android::BufferItem&>(item));
-#endif
     }
 
     return NO_ERROR;
@@ -793,8 +791,8 @@ status_t GonkBufferQueueProducer::connect(const sp<IProducerListener>& listener,
             // Set up a death notification so that we can disconnect
             // automatically if the remote producer dies
             if (listener != NULL &&
-                    listener->asBinder()->remoteBinder() != NULL) {
-                status = listener->asBinder()->linkToDeath(
+                    listener->asBinder(listener)->remoteBinder() != NULL) {
+                status = listener->asBinder(listener)->linkToDeath(
                         static_cast<IBinder::DeathRecipient*>(this));
                 if (status != NO_ERROR) {
                     ALOGE("connect(P): linkToDeath failed: %s (%d)",
@@ -868,8 +866,20 @@ status_t GonkBufferQueueProducer::setSidebandStream(const sp<NativeHandle>& stre
     return INVALID_OPERATION;
 }
 
+status_t GonkBufferQueueProducer::allowAllocation(bool allow) {
+    return INVALID_OPERATION;
+}
+
+status_t GonkBufferQueueProducer::setGenerationNumber(uint32_t generationNumber) {
+    return INVALID_OPERATION;
+}
+
+String8 GonkBufferQueueProducer::getConsumerName() const {
+    return String8("");
+}
+
 void GonkBufferQueueProducer::allocateBuffers(bool async, uint32_t width,
-        uint32_t height, uint32_t format, uint32_t usage) {
+        uint32_t height, PixelFormat format, uint32_t usage) {
     ALOGE("allocateBuffers: no op");
 }
 

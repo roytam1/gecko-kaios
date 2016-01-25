@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef NATIVEWINDOW_GONKCONSUMERBASE_LL_H
-#define NATIVEWINDOW_GONKCONSUMERBASE_LL_H
+#ifndef NATIVEWINDOW_GONKCONSUMERBASE_M_H
+#define NATIVEWINDOW_GONKCONSUMERBASE_M_H
 
 #include <ui/GraphicBuffer.h>
 
@@ -25,7 +25,7 @@
 #include <utils/threads.h>
 #include <gui/IConsumerListener.h>
 
-#include "GonkBufferQueueLL.h"
+#include "GonkBufferQueueM.h"
 
 namespace android {
 // ----------------------------------------------------------------------------
@@ -107,12 +107,8 @@ protected:
     // the GonkConsumerBase implementation must be called from the derived class.
     // The GonkConsumerBase version of onSidebandStreamChanged does nothing and can
     // be overriden by derived classes if they want the notification.
-#if ANDROID_VERSION == 21
-    virtual void onFrameAvailable();
-#else
     virtual void onFrameAvailable(const ::android::BufferItem& item);
     virtual void onFrameReplaced(const ::android::BufferItem& item) {};
-#endif
     virtual void onBuffersReleased();
     virtual void onSidebandStreamChanged();
 

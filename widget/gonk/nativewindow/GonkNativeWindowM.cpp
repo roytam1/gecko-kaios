@@ -20,7 +20,7 @@
 #define ATRACE_TAG ATRACE_TAG_GRAPHICS
 #include <utils/Log.h>
 
-#include "GonkNativeWindowLL.h"
+#include "GonkNativeWindowM.h"
 
 using namespace mozilla;
 using namespace mozilla::layers;
@@ -188,13 +188,8 @@ void GonkNativeWindow::setNewFrameCallback(
     mNewFrameCallback = callback;
 }
 
-#if ANDROID_VERSION == 21
-void GonkNativeWindow::onFrameAvailable() {
-    GonkConsumerBase::onFrameAvailable();
-#else
 void GonkNativeWindow::onFrameAvailable(const ::android::BufferItem &item) {
     GonkConsumerBase::onFrameAvailable(item);
-#endif
 
     if (mNewFrameCallback) {
         mNewFrameCallback->OnNewFrame();

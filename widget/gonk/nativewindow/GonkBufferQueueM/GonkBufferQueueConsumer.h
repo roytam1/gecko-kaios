@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-#ifndef NATIVEWINDOW_GONKBUFFERQUEUECONSUMER_LL_H
-#define NATIVEWINDOW_GONKBUFFERQUEUECONSUMER_LL_H
+#ifndef NATIVEWINDOW_GONKBUFFERQUEUECONSUMER_M_H
+#define NATIVEWINDOW_GONKBUFFERQUEUECONSUMER_M_H
 
 #include "GonkBufferQueueDefs.h"
-#include "IGonkGraphicBufferConsumerLL.h"
+#include "IGonkGraphicBufferConsumerM.h"
 
 namespace android {
 

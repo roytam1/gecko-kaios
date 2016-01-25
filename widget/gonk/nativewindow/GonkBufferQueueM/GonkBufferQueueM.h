@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef NATIVEWINDOW_GONKBUFFERQUEUE_LL_H
-#define NATIVEWINDOW_GONKBUFFERQUEUE_LL_H
+#ifndef NATIVEWINDOW_GONKBUFFERQUEUE_M_H
+#define NATIVEWINDOW_GONKBUFFERQUEUE_M_H
 
 #include "GonkBufferQueueDefs.h"
 #include "IGonkGraphicBufferConsumerM.h"
@@ -63,12 +63,8 @@ public:
     public:
         ProxyConsumerListener(const wp<ConsumerListener>& consumerListener);
         virtual ~ProxyConsumerListener();
-#if ANDROID_VERSION == 21
-        virtual void onFrameAvailable();
-#else
         virtual void onFrameAvailable(const ::android::BufferItem& item);
         virtual void onFrameReplaced(const ::android::BufferItem& item);
-#endif
         virtual void onBuffersReleased();
         virtual void onSidebandStreamChanged();
     private:

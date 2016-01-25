@@ -30,7 +30,7 @@
 #include <utils/Log.h>
 #include <utils/String8.h>
 
-#include "GonkConsumerBaseLL.h"
+#include "GonkConsumerBaseM.h"
 
 namespace android {
 
@@ -85,11 +85,7 @@ void GonkConsumerBase::freeBufferLocked(int slotIndex) {
     mSlots[slotIndex].mFrameNumber = 0;
 }
 
-#if ANDROID_VERSION == 21
-void GonkConsumerBase::onFrameAvailable() {
-#else
 void GonkConsumerBase::onFrameAvailable(const ::android::BufferItem& item) {
-#endif
     ALOGV("onFrameAvailable");
 
     sp<FrameAvailableListener> listener;

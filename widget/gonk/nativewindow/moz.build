@@ -24,7 +24,17 @@ if CONFIG['ANDROID_VERSION'] >= '19':
         'IGonkGraphicBufferConsumer.h',
     ]
 
-if CONFIG['ANDROID_VERSION'] >= '21':
+if CONFIG['ANDROID_VERSION'] >= '23':
+    EXPORTS += [
+        'GonkBufferQueueM/GonkBufferQueueDefs.h',
+        'GonkBufferQueueM/GonkBufferQueueM.h',
+        'GonkBufferQueueM/GonkBufferQueueProducer.h',
+        'GonkBufferQueueM/GonkBufferSlot.h',
+        'GonkConsumerBaseM.h',
+        'GonkNativeWindowM.h',
+        'IGonkGraphicBufferConsumerM.h',
+    ]
+elif CONFIG['ANDROID_VERSION'] >= '21':
     EXPORTS += [
         'GonkBufferQueueLL/GonkBufferQueueDefs.h',
         'GonkBufferQueueLL/GonkBufferQueueLL.h',
@@ -53,7 +63,19 @@ elif CONFIG['ANDROID_VERSION'] == '15':
     ]
 
 if CONFIG['MOZ_B2G_CAMERA'] or CONFIG['MOZ_OMX_DECODER'] or CONFIG['MOZ_WEBRTC']:
-    if CONFIG['ANDROID_VERSION'] >= '21':
+    if CONFIG['ANDROID_VERSION'] >= '23':
+        SOURCES += [
+            'GonkBufferQueueM/GonkBufferItem.cpp',
+            'GonkBufferQueueM/GonkBufferQueueConsumer.cpp',
+            'GonkBufferQueueM/GonkBufferQueueCore.cpp',
+            'GonkBufferQueueM/GonkBufferQueueM.cpp',
+            'GonkBufferQueueM/GonkBufferQueueProducer.cpp',
+            'GonkBufferQueueM/GonkBufferSlot.cpp',
+            'GonkConsumerBaseM.cpp',
+            'GonkNativeWindowM.cpp',
+            'IGonkGraphicBufferConsumerM.cpp',
+        ]
+    elif CONFIG['ANDROID_VERSION'] >= '21':
         SOURCES += [
             'GonkBufferQueueLL/GonkBufferItem.cpp',
             'GonkBufferQueueLL/GonkBufferQueueConsumer.cpp',

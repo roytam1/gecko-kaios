@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef NATIVEWINDOW_GONKBUFFERSLOT_LL_H
-#define NATIVEWINDOW_GONKBUFFERSLOT_LL_H
+#ifndef NATIVEWINDOW_GONKBUFFERSLOT_M_H
+#define NATIVEWINDOW_GONKBUFFERSLOT_M_H
 
 #include <ui/Fence.h>
 #include <ui/GraphicBuffer.h>

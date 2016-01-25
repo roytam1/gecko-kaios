@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-#ifndef NATIVEWINDOW_GONKBUFFERITEM_LL_H
-#define NATIVEWINDOW_GONKBUFFERITEM_LL_H
+#ifndef NATIVEWINDOW_GONKBUFFERITEM_M_H
+#define NATIVEWINDOW_GONKBUFFERITEM_M_H
 
-#include "IGonkGraphicBufferConsumerLL.h"
+#include "IGonkGraphicBufferConsumerM.h"
 
 #include <ui/Rect.h>
 
