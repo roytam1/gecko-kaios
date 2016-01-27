@@ -294,33 +294,28 @@ BluetoothMapSmsManager::MnsDataHandler(UnixSocketBuffer* aMessage)
     return;
   }
 
-  if (mLastCommand == ObexRequestCode::Connect ||
-      mLastCommand == ObexRequestCode::Disconnect) {
+  if (mLastCommand == ObexRequestCode::Connect) {
+    BT_LOGR("MNS connected");
 
-    if (mLastCommand == ObexRequestCode::Disconnect){
-      BT_LOGR("MNS disconnected");
-      mMnsSocket->Close();
-      mMnsSocket = nullptr;
-      mNtfRequired = false;
-      mConnectionId = 0xFFFFFFFF;
-    } else {
-      BT_LOGR("MNS connected");
-
-      ObexHeaderSet pktHeaders;
-      // Section 3.3.1 "Connect", IrOBEX 1.2
-      // [opcode:1][length:2][version:1][flags:1][MaxPktSizeWeCanReceive:2]
-      // [Headers:var]
-      if (receivedLength < 7 ||
-           !ParseHeaders(&data[7], receivedLength - 7, &pktHeaders)) {
-        SendReply(ObexResponseCode::BadRequest);
-        return;
-      }
-      mConnectionId = mozilla::NativeEndian::swapToBigEndian(pktHeaders.GetConnectionId());
+    ObexHeaderSet pktHeaders;
+    // Section 3.3.1 "Connect", IrOBEX 1.2
+    // [opcode:1][length:2][version:1][flags:1][MaxPktSizeWeCanReceive:2]
+    // [Headers:var]
+    if (receivedLength < 7 ||
+        !ParseHeaders(&data[7], receivedLength - 7, &pktHeaders)) {
+      SendReply(ObexResponseCode::BadRequest);
+      return;
     }
-    return;
-  }
+    mConnectionId =
+      mozilla::NativeEndian::swapToBigEndian(pktHeaders.GetConnectionId());
+  } else if (mLastCommand == ObexRequestCode::Disconnect) {
+    BT_LOGR("MNS disconnected");
 
-  if (mLastCommand == ObexRequestCode::Abort) {
+    mMnsSocket->Close();
+    mMnsSocket = nullptr;
+    mNtfRequired = false;
+    mConnectionId = 0xFFFFFFFF;
+  } else if (mLastCommand == ObexRequestCode::Abort) {
     SendMnsDisconnectRequest();
   } else if (mLastCommand == ObexRequestCode::Put) {
     MnsPutMultiRequest();
@@ -2031,6 +2026,8 @@ BluetoothMapSmsManager::OnSocketDisconnect(BluetoothSocket* aSocket)
   if (aSocket == mMnsSocket) {
     mMnsConnected = false;
     mMnsSocket = nullptr;
+    mNtfRequired = false;
+    mConnectionId = 0xFFFFFFFF;
     BT_LOGR("MNS socket disconnected");
     return;
   }
