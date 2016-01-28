@@ -259,7 +259,7 @@ nsFocusManager::Observe(nsISupports *aSubject,
   return NS_OK;
 }
 
-// given a frame content node, retrieve the nsIDOMWindow displayed in it 
+// given a frame content node, retrieve the nsIDOMWindow displayed in it
 static nsPIDOMWindowOuter*
 GetContentWindow(nsIContent* aContent)
 {
@@ -273,7 +273,7 @@ GetContentWindow(nsIContent* aContent)
   return nullptr;
 }
 
-// get the current window for the given content node 
+// get the current window for the given content node
 static nsPIDOMWindowOuter*
 GetCurrentWindow(nsIContent* aContent)
 {
@@ -372,7 +372,7 @@ NS_IMETHODIMP
 nsFocusManager::SetActiveWindow(mozIDOMWindowProxy* aWindow)
 {
   NS_ENSURE_STATE(aWindow);
-  
+
   // only top-level windows can be made active
   nsCOMPtr<nsPIDOMWindowOuter> piWindow = nsPIDOMWindowOuter::From(aWindow);
   NS_ENSURE_TRUE(piWindow == piWindow->GetPrivateRoot(), NS_ERROR_INVALID_ARG);
@@ -1196,7 +1196,7 @@ nsFocusManager::SetFocusInner(nsIContent* aNewContent, int32_t aFlags,
     docShell = do_QueryInterface(parentDsti);
   }
 
-  // if the new element is in the same window as the currently focused element 
+  // if the new element is in the same window as the currently focused element
   bool isElementInFocusedWindow = (mFocusedWindow == newWindow);
 
   if (!isElementInFocusedWindow && mFocusedWindow && newWindow &&
@@ -1274,6 +1274,29 @@ nsFocusManager::SetFocusInner(nsIContent* aNewContent, int32_t aFlags,
     // is in chrome, any web contents should not be able to steal the focus.
     nsCOMPtr<nsIDOMNode> domNode(do_QueryInterface(mFocusedContent));
     sendFocusEvent = nsContentUtils::CanCallerAccess(domNode);
+
+    // Current implementation satisfies moving focus between oop apps because
+    // they are actually moving between embed iframes of System app, however, it
+    // fails when trying to move focus from an in-process app to another oop app
+    // , return false by CanCallerAccess() due to cross-origin (System app and
+    // in-process app), but we should grant access if
+    //   1. The caller has embed-apps permission. ex: System app.
+    //   2. Caller is ancestor of current focused window.
+    if (!sendFocusEvent &&
+        nsContentUtils::IsSitePermAllow(nsContentUtils::SubjectPrincipal(),
+                                        "embed-apps")) {
+      LOGFOCUS(("caller window has permission of embed-apps"));
+      // To check whether caller window is the ancestor of current focused
+      // window.
+      nsCOMPtr<nsPIDOMWindowOuter> callerWin = GetCurrentWindow(aNewContent);
+      nsCOMPtr<nsPIDOMWindowOuter> focusedWindow =
+        mFocusedContent->OwnerDoc()->GetWindow();
+      if (IsSameOrAncestor(callerWin, focusedWindow)) {
+        LOGFOCUS(("caller window is the ancestor of current focused window."));
+        sendFocusEvent = true;
+      }
+    }
+
     if (!sendFocusEvent && mMouseButtonEventHandlingDocument) {
       // However, while mouse button event is handling, the handling document's
       // script should be able to steal focus.
@@ -1428,7 +1451,7 @@ nsFocusManager::AdjustWindowFocus(nsPIDOMWindowOuter* aWindow,
     nsCOMPtr<Element> frameElement = window->GetFrameElementInternal();
 
     nsCOMPtr<nsIDocShellTreeItem> dsti = window->GetDocShell();
-    if (!dsti) 
+    if (!dsti)
       return;
     nsCOMPtr<nsIDocShellTreeItem> parentDsti;
     dsti->GetParent(getter_AddRefs(parentDsti));
@@ -1561,7 +1584,7 @@ nsFocusManager::CheckIfFocusable(nsIContent* aContent, uint32_t aFlags)
                         ui->mUserFocus == NS_STYLE_USER_FOCUS_NONE) ? -1 : 0;
     return aContent->IsFocusable(&tabIndex, aFlags & FLAG_BYMOUSE) ? aContent : nullptr;
   }
-  
+
   return frame->IsFocusable(nullptr, aFlags & FLAG_BYMOUSE) ? aContent : nullptr;
 }
 
@@ -2353,7 +2376,7 @@ nsFocusManager::GetSelectionLocation(nsIDocument* aDocument,
 
       startContent = do_QueryInterface(startNode);
       if (startContent && startContent->IsElement()) {
-        NS_ASSERTION(startOffset >= 0, "Start offset cannot be negative");  
+        NS_ASSERTION(startOffset >= 0, "Start offset cannot be negative");
         childContent = startContent->GetChildAt(startOffset);
         if (childContent) {
           startContent = childContent;
@@ -2731,7 +2754,7 @@ nsFocusManager::DetermineElementToMoveFocus(nsPIDOMWindowOuter* aWindow,
         // as long as the found node was not the same as the starting node,
         // set it as the return value. For document navigation, we can return
         // the same element in case there is only one content node that could
-        // be returned, for example, in a child process document. 
+        // be returned, for example, in a child process document.
         if (nextFocus != originalStartContent || forDocumentNavigation) {
           nextFocus.forget(aNextContent);
         }
