@@ -233,7 +233,7 @@ private:
   void Uninit();
   void HandleShutdown();
 
-  void ReplyToConnect();
+  bool ReplyToConnect();
   void ReplyToDisconnectOrAbort();
 
   /*
@@ -252,7 +252,7 @@ private:
   bool MnsPutMultiRequest();
   void ReplyToSetPath();
   void ReplyToPut(uint8_t aResponse);
-  void SendReply(uint8_t aResponse);
+  bool SendReply(uint8_t aResponse);
 
   void HandleNotificationRegistration(const ObexHeaderSet& aHeader);
   void HandleSetMessageStatus(const ObexHeaderSet& aHeader);
@@ -264,7 +264,7 @@ private:
   void AppendBtNamedValueByTagId(const ObexHeaderSet& aHeader,
     InfallibleTArray<BluetoothNamedValue>& aValues,
     const Map::AppParametersTagId aTagId);
-  void SendMasObexData(uint8_t* aData, uint8_t aOpcode, int aSize);
+  bool SendMasObexData(uint8_t* aData, uint8_t aOpcode, int aSize);
   void SendMasObexData(UniquePtr<uint8_t[]> aData, uint8_t aOpcode, int aSize);
   void SendMnsObexData(uint8_t* aData, uint8_t aOpcode, int aSize);
   bool StatusResponse(bool aStatus);

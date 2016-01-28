@@ -1347,10 +1347,11 @@ BluetoothHfpManager::IsNrecEnabled()
   return mNrecEnabled;
 }
 
-void
+bool
 BluetoothHfpManager::ReplyToConnectionRequest(bool aAccept)
 {
   MOZ_ASSERT(false, "BluetoothHfpManager hasn't implemented this function yet.");
+  return false;
 }
 
 void

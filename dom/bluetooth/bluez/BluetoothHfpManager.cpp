@@ -1968,6 +1968,12 @@ void
 BluetoothHfpManager::GetAddress(BluetoothAddress& aDeviceAddress)
 {
   return mSocket->GetAddress(aDeviceAddress);
+
+bool
+BluetoothHfpManager::ReplyToConnectionRequest(bool aAccept)
+{
+  MOZ_ASSERT(false, "BluetoothHfpManager hasn't implemented this function yet.");
+  return false;
 }
 
 void

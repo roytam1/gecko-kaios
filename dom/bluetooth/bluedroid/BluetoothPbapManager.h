@@ -154,12 +154,12 @@ private:
   void Uninit();
   void HandleShutdown();
 
-  void ReplyToConnect(const nsAString& aPassword = EmptyString());
+  bool ReplyToConnect(const nsAString& aPassword = EmptyString());
   void ReplyToDisconnectOrAbort();
   void ReplyToSetPath();
   bool ReplyToGet(uint16_t aPhonebookSize = 0);
-  void ReplyError(uint8_t aError);
-  void SendObexData(uint8_t* aData, uint8_t aOpcode, int aSize);
+  bool ReplyError(uint8_t aError);
+  bool SendObexData(uint8_t* aData, uint8_t aOpcode, int aSize);
   void SendObexData(UniquePtr<uint8_t[]> aData, uint8_t aOpcode, int aSize);
 
   ObexResponseCode SetPhoneBookPath(const ObexHeaderSet& aHeader,

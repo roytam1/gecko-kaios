@@ -1472,13 +1472,21 @@ BluetoothServiceBluedroid::AcceptConnection(const uint16_t aServiceUuid,
 
   BluetoothProfileManagerBase* profile =
     BluetoothUuidHelper::GetBluetoothProfileManager(aServiceUuid);
-  if (profile) {
-    profile->ReplyToConnectionRequest(true);
+  if (!profile) {
+    BT_WARNING("Can't find profile manager with uuid: %x", aServiceUuid);
+    DispatchReplyError(aRunnable,
+                       NS_LITERAL_STRING("Failed to get profile manager"));
+    return;
+  }
+
+  if (profile->ReplyToConnectionRequest(true)) {
     DispatchReplySuccess(aRunnable);
   } else {
-    BT_WARNING("Can't find profile manager with uuid: %x", aServiceUuid);
-    DispatchReplyError(aRunnable, EmptyString());
+    DispatchReplyError(aRunnable,
+                       NS_LITERAL_STRING("Calling AcceptConnection() failed"));
   }
+
+  return;
 }
 
 void
@@ -1490,13 +1498,21 @@ BluetoothServiceBluedroid::RejectConnection(const uint16_t aServiceUuid,
 
   BluetoothProfileManagerBase* profile =
     BluetoothUuidHelper::GetBluetoothProfileManager(aServiceUuid);
-  if (profile) {
-    profile->ReplyToConnectionRequest(false);
+  if (!profile) {
+    BT_WARNING("Can't find profile manager with uuid: %x", aServiceUuid);
+    DispatchReplyError(aRunnable,
+                       NS_LITERAL_STRING("Failed to get profile manager"));
+    return;
+  }
+
+  if (profile->ReplyToConnectionRequest(false)) {
     DispatchReplySuccess(aRunnable);
   } else {
-    BT_WARNING("Can't find profile manager with uuid: %x", aServiceUuid);
-    DispatchReplyError(aRunnable, EmptyString());
+    DispatchReplyError(aRunnable,
+                       NS_LITERAL_STRING("Calling RejectConnection() failed"));
   }
+
+  return;
 }
 
 void

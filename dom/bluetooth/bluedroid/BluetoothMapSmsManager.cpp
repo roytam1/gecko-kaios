@@ -648,16 +648,19 @@ BluetoothMapSmsManager::NotifyConnectionRequest()
   return ObexResponseCode::Success;
 }
 
-void
+bool
 BluetoothMapSmsManager::ReplyToConnectionRequest(bool aAccept)
 {
   if (!aAccept) {
-    SendReply(ObexResponseCode::Forbidden);
-    return;
+    return SendReply(ObexResponseCode::Forbidden);
   }
 
-  ReplyToConnect();
-  AfterMapSmsConnected();
+  bool ret = ReplyToConnect();
+  if (ret) {
+    AfterMapSmsConnected();
+  }
+
+  return ret;
 }
 
 uint8_t
@@ -748,11 +751,11 @@ BluetoothMapSmsManager::GetAddress(BluetoothAddress& aDeviceAddress)
   return mMasSocket->GetAddress(aDeviceAddress);
 }
 
-void
+bool
 BluetoothMapSmsManager::ReplyToConnect()
 {
   if (mMasConnected) {
-    return;
+    return true;
   }
 
   // Section 3.3.1 "Connect", IrOBEX 1.2
@@ -770,7 +773,8 @@ BluetoothMapSmsManager::ReplyToConnect()
   index += AppendHeaderWho(&req[index], 255, kMapMasObexTarget.mUuid,
                            sizeof(BluetoothUuid));
   index += AppendHeaderConnectionId(&req[index], 0x01);
-  SendMasObexData(req, ObexResponseCode::Success, index);
+
+  return SendMasObexData(req, ObexResponseCode::Success, index);
 }
 
 void
@@ -874,9 +878,7 @@ BluetoothMapSmsManager::ReplyToGetWithHeaderBody(UniquePtr<uint8_t[]> aResponse,
     opcode = ObexResponseCode::Continue;
   }
 
-  SendMasObexData(Move(aResponse), opcode, aIndex);
-
-  return true;
+  return SendMasObexData(Move(aResponse), opcode, aIndex);
 }
 
 void
@@ -1125,6 +1127,8 @@ BluetoothMapSmsManager::ReplyToMessagesListing(Blob* aBlob, long aMasId,
                                      appParameters.get(),
                                      len + 9);
 
+  bool ret = false;
+
   if (mBodyRequired) {
     // Open input stream only if |mBodyRequired| is true
     if (!GetInputStreamFromBlob(aBlob, true)) {
@@ -1133,14 +1137,14 @@ BluetoothMapSmsManager::ReplyToMessagesListing(Blob* aBlob, long aMasId,
     }
 
     // ---- Part 3: [headerId:1][length:2][Body:var] ---- //
-    ReplyToGetWithHeaderBody(Move(res), index);
+    ret = ReplyToGetWithHeaderBody(Move(res), index);
     // Reset flag
     mBodyRequired = false;
   } else {
-    SendMasObexData(Move(res), ObexResponseCode::Success, index);
+    ret = SendMasObexData(Move(res), ObexResponseCode::Success, index);
   }
 
-  return true;
+  return ret;
 }
 
 bool
@@ -1211,8 +1215,7 @@ BluetoothMapSmsManager::ReplyToSendMessage(
   }
 
   if (!aStatus) {
-    SendReply(ObexResponseCode::InternalServerError);
-    return true;
+    return SendReply(ObexResponseCode::InternalServerError);
   }
 
   /* Handle is mandatory if the response code is success (0x90 or 0xA0).
@@ -1241,17 +1244,15 @@ BluetoothMapSmsManager::ReplyToSendMessage(
 bool
 BluetoothMapSmsManager::ReplyToSetMessageStatus(long aMasId, bool aStatus)
 {
-  SendReply(aStatus ? ObexResponseCode::Success :
-                      ObexResponseCode::InternalServerError);
-  return true;
+  return SendReply(aStatus ? ObexResponseCode::Success
+                           : ObexResponseCode::InternalServerError);
 }
 
 bool
 BluetoothMapSmsManager::ReplyToMessageUpdate(long aMasId, bool aStatus)
 {
-  SendReply(aStatus ? ObexResponseCode::Success :
-                      ObexResponseCode::InternalServerError);
-  return true;
+  return SendReply(aStatus ? ObexResponseCode::Success
+                           : ObexResponseCode::InternalServerError);
 }
 
 void
@@ -1922,30 +1923,30 @@ BluetoothMapSmsManager::GetInputStreamFromBlob(Blob* aBlob, bool aIsMas)
   return true;
 }
 
-void
+bool
 BluetoothMapSmsManager::SendReply(uint8_t aResponseCode)
 {
-  if (!mMasConnected) {
-    return;
-  }
-
   BT_LOGR("[0x%x]", aResponseCode);
 
   // Section 3.2 "Response Format", IrOBEX 1.2
   // [opcode:1][length:2][Headers:var]
   uint8_t req[kObexRespHeaderSize];
 
-  SendMasObexData(req, aResponseCode, kObexRespHeaderSize);
+  return SendMasObexData(req, aResponseCode, kObexRespHeaderSize);
 }
 
-void
+bool
 BluetoothMapSmsManager::SendMasObexData(uint8_t* aData, uint8_t aOpcode,
                                         int aSize)
 {
-  SetObexPacketInfo(aData, aOpcode, aSize);
-  if (mMasSocket) {
-    mMasSocket->SendSocketData(new UnixSocketRawData(aData, aSize));
+  if (!mMasSocket) {
+    return false;
   }
+
+  SetObexPacketInfo(aData, aOpcode, aSize);
+  mMasSocket->SendSocketData(new UnixSocketRawData(aData, aSize));
+
+  return true;
 }
 
 void

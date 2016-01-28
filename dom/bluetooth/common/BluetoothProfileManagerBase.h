@@ -63,7 +63,7 @@ public:
    * Base on the parameter 'aAccept', determine to accept or reject the
    * profile connection request.
    */
-  virtual void ReplyToConnectionRequest(bool aAccept) = 0;
+  virtual bool ReplyToConnectionRequest(bool aAccept) = 0;
 
   /**
    * Connect to a specific remote device. When it has been done, the
@@ -106,7 +106,7 @@ public:                                                                      \
     const BluetoothAddress& aDeviceAddress) override;                        \
   virtual void GetAddress(BluetoothAddress& aDeviceAddress) override;        \
   virtual bool IsConnected() override;                                       \
-  virtual void ReplyToConnectionRequest(bool aAccept) override;              \
+  virtual bool ReplyToConnectionRequest(bool aAccept) override;              \
   virtual void Connect(const BluetoothAddress& aDeviceAddress,               \
                        BluetoothProfileController* aController) override;    \
   virtual void Disconnect(BluetoothProfileController* aController) override; \

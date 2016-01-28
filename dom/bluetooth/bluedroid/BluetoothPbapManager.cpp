@@ -795,14 +795,19 @@ BluetoothPbapManager::IsConnected()
 void
 BluetoothPbapManager::GetAddress(BluetoothAddress& aDeviceAddress)
 {
+  if (!mSocket) {
+    aDeviceAddress.Clear();
+    return;
+  }
+
   return mSocket->GetAddress(aDeviceAddress);
 }
 
-void
+bool
 BluetoothPbapManager::ReplyToConnect(const nsAString& aPassword)
 {
   if (mConnected) {
-    return;
+    return true;
   }
 
   // Section 3.3.1 "Connect", IrOBEX 1.2
@@ -851,7 +856,7 @@ BluetoothPbapManager::ReplyToConnect(const nsAString& aPassword)
                                 digestResponse, offset);
   }
 
-  SendObexData(res, ObexResponseCode::Success, index);
+  return SendObexData(res, ObexResponseCode::Success, index);
 }
 
 nsresult
@@ -956,12 +961,11 @@ BluetoothPbapManager::ReplyToAuthChallenge(const nsAString& aPassword)
   AfterPbapConnected();
 }
 
-void
+bool
 BluetoothPbapManager::ReplyToConnectionRequest(bool aAccept)
 {
   if (!aAccept) {
-    ReplyError(ObexResponseCode::Forbidden);
-    return;
+    return ReplyError(ObexResponseCode::Forbidden);
   }
 
   if (mPasswordReqNeeded) {
@@ -971,12 +975,18 @@ BluetoothPbapManager::ReplyToConnectionRequest(bool aAccept)
     ObexResponseCode response = NotifyPasswordRequest();
     if (response != ObexResponseCode::Success) {
       ReplyError(response);
+      return false;
     }
-    return;
+
+    return true;
   }
 
-  ReplyToConnect();
-  AfterPbapConnected();
+  bool ret = ReplyToConnect();
+  if (ret) {
+    AfterPbapConnected();
+  }
+
+  return ret;
 }
 
 bool
@@ -1069,6 +1079,10 @@ bool
 BluetoothPbapManager::ReplyToGet(uint16_t aPhonebookSize)
 {
   MOZ_ASSERT(mRemoteMaxPacketLength >= kObexLeastMaxSize);
+
+  if (!mConnected) {
+    return false;
+  }
 
   /**
    * This response consists of following parts:
@@ -1195,9 +1209,7 @@ BluetoothPbapManager::ReplyToGet(uint16_t aPhonebookSize)
     }
   }
 
-  SendObexData(Move(res), opcode, index);
-
-  return true;
+  return SendObexData(Move(res), opcode, index);
 }
 
 bool
@@ -1248,7 +1260,7 @@ BluetoothPbapManager::GetRemoteNonce(const ObexHeaderSet& aHeader)
   } while (offset < authHeader->mDataLength);
 }
 
-void
+bool
 BluetoothPbapManager::ReplyError(uint8_t aError)
 {
   BT_LOGR("[0x%x]", aError);
@@ -1256,14 +1268,20 @@ BluetoothPbapManager::ReplyError(uint8_t aError)
   // Section 3.2 "Response Format", IrOBEX 1.2
   // [response code:1][length:2][data:var]
   uint8_t res[kObexLeastMaxSize];
-  SendObexData(res, aError, kObexBodyHeaderSize);
+  return SendObexData(res, aError, kObexBodyHeaderSize);
 }
 
-void
+bool
 BluetoothPbapManager::SendObexData(uint8_t* aData, uint8_t aOpcode, int aSize)
 {
+  if (!mSocket) {
+    return false;
+  }
+
   SetObexPacketInfo(aData, aOpcode, aSize);
   mSocket->SendSocketData(new UnixSocketRawData(aData, aSize));
+
+  return true;
 }
 
 void
