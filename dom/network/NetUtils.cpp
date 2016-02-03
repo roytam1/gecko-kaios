@@ -182,7 +182,7 @@ int32_t NetUtils::do_dhcp_do_request(const char *ifname,
     char domains[Property::VALUE_MAX_LENGTH];
     ret = dhcp_do_request(ifname, ipaddr, gateway, prefixLength, dns,
                           server, lease, vendorinfo, domains);
-  } else if (sdkVersion >= 19) {
+  } else if (sdkVersion >= 19 && sdkVersion < 23) {
     // KitKat 4.4.X
     // http://androidxref.com/4.4_r1/xref/system/core/libnetutils/dhcp_utils.c#18
     // Lollipop 5.0
@@ -193,6 +193,23 @@ int32_t NetUtils::do_dhcp_do_request(const char *ifname,
     char domains[Property::VALUE_MAX_LENGTH];
     char mtu[Property::VALUE_MAX_LENGTH];
     ret = dhcp_do_request(ifname, ipaddr, gateway, prefixLength, dns, server, lease, vendorinfo, domains, mtu);
+  } else if (sdkVersion >= 23){
+    // Android Marshmallow
+    // http://androidxref.com/6.0.0_r1/xref/system/core/libnetutils/dhcp_utils.c#221
+    DEFINE_DLFUNC(dhcp_start, int32_t, const char*)
+    USE_DLFUNC(dhcp_start)
+    ret = dhcp_start(ifname);
+    if (ret != 0)
+      return ret;
+
+    // Android Marshmallow
+    // http://androidxref.com/6.0.0_r1/xref/system/core/libnetutils/dhcp_utils.c#174
+    DEFINE_DLFUNC(dhcp_get_results, int32_t, const char*, char*, char*,  uint32_t*, char**, char*, uint32_t*, char*, char*, char*)
+    USE_DLFUNC(dhcp_get_results)
+    char *dns[3] = {dns1, dns2, nullptr};
+    char domains[Property::VALUE_MAX_LENGTH];
+    char mtu[Property::VALUE_MAX_LENGTH];
+    ret = dhcp_get_results(ifname, ipaddr, gateway, prefixLength, dns, server, lease, vendorinfo, domains, mtu);
   } else {
     NS_WARNING("Unable to perform do_dhcp_request: unsupported sdk version!");
   }
