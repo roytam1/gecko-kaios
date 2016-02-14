@@ -11,10 +11,10 @@
 #ifndef WEBRTC_MODULES_AUDIO_CODING_NETEQ_TOOLS_AUDIO_LOOP_H_
 #define WEBRTC_MODULES_AUDIO_CODING_NETEQ_TOOLS_AUDIO_LOOP_H_
 
+#include <memory>
 #include <string>
 
 #include "webrtc/base/constructormagic.h"
-#include "webrtc/base/scoped_ptr.h"
 #include "webrtc/typedefs.h"
 
 namespace webrtc {
@@ -49,7 +49,7 @@ class AudioLoop {
   size_t next_index_;
   size_t loop_length_samples_;
   size_t block_length_samples_;
-  rtc::scoped_ptr<int16_t[]> audio_array_;
+  std::unique_ptr<int16_t[]> audio_array_;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(AudioLoop);
 };

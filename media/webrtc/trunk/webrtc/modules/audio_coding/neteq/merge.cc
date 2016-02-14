@@ -14,8 +14,8 @@
 #include <string.h>  // memmove, memcpy, memset, size_t
 
 #include <algorithm>  // min, max
+#include <memory>
 
-#include "webrtc/base/scoped_ptr.h"
 #include "webrtc/common_audio/signal_processing/include/signal_processing_library.h"
 #include "webrtc/modules/audio_coding/neteq/audio_multi_vector.h"
 #include "webrtc/modules/audio_coding/neteq/dsp_helper.h"
@@ -324,7 +324,7 @@ int16_t Merge::CorrelateAndPeakSearch(int16_t expanded_max, int16_t input_max,
   // Normalize correlation to 14 bits and copy to a 16-bit array.
   const int pad_length = static_cast<int>(expand_->overlap_length() - 1);
   const int correlation_buffer_size = 2 * pad_length + kMaxCorrelationLength;
-  rtc::scoped_ptr<int16_t[]> correlation16(
+  std::unique_ptr<int16_t[]> correlation16(
       new int16_t[correlation_buffer_size]);
   memset(correlation16.get(), 0, correlation_buffer_size * sizeof(int16_t));
   int16_t* correlation_ptr = &correlation16[pad_length];
