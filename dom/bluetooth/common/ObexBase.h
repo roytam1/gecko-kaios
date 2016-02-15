@@ -278,6 +278,7 @@ public:
   bool GetAppParameter(uint8_t aTagId, uint8_t* aRetBuf, int aBufferSize) const
   {
     int length = mHeaders.Length();
+    memset(aRetBuf, 0, aBufferSize);
 
     for (int i = 0; i < length; ++i) {
       // Parse the 'Application Parameters' header.
