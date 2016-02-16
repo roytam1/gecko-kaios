@@ -868,11 +868,20 @@ status_t GonkRecorder::start() {
 
 #if defined(MOZ_WIDGET_GONK) && ANDROID_VERSION >= 21
 sp<MediaSource> GonkRecorder::createAudioSource() {
+#if ANDROID_VERSION >= 23
+    sp<AudioSource> audioSource =
+        new AudioSource(
+                mAudioSource,
+                mClientName,
+                mSampleRate,
+                mAudioChannels);
+#else
     sp<AudioSource> audioSource =
         new AudioSource(
                 mAudioSource,
                 mSampleRate,
                 mAudioChannels);
+#endif
 
     status_t err = audioSource->initCheck();
 
@@ -1487,7 +1496,11 @@ status_t GonkRecorder::setupVideoEncoder(
     }
 
     sp<MediaCodecSource> encoder =
+#if ANDROID_VERSION >= 23
+            MediaCodecSource::Create(mLooper, format, cameraSource, NULL,  flags);
+#else
             MediaCodecSource::Create(mLooper, format, cameraSource, flags);
+#endif
     if (encoder == NULL) {
         RE_LOGE("Failed to create video encoder");
         // When the encoder fails to be created, we need
