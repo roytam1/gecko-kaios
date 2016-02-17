@@ -552,6 +552,8 @@ BluetoothPbapManager::NotifyPbapRequest(const ObexHeaderSet& aHeader)
       BT_LOGR("Illegal phone book object name [%s]",
               NS_ConvertUTF16toUTF8(name).get());
       return ObexResponseCode::NotFound;
+    } else {
+      BT_LOGD("Pull phonebook [%s]", NS_ConvertUTF16toUTF8(name).get());
     }
 
     // Handle missed calls history request
@@ -568,6 +570,8 @@ BluetoothPbapManager::NotifyPbapRequest(const ObexHeaderSet& aHeader)
     // may be sent to retrieve the vCard Listing object of the current folder.
     name = name.IsEmpty() ? mCurrentPath
                           : mCurrentPath + NS_LITERAL_STRING("/") + name;
+
+    BT_LOGD("List phonebook [%s]", NS_ConvertUTF16toUTF8(name).get());
 
     // Handle missed calls history request
     if (strstr(NS_ConvertUTF16toUTF8(name).get(), "mch")) {
