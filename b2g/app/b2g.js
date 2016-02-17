@@ -822,6 +822,8 @@ pref("accessibility.accessfu.skip_empty_images", true);
 // 2 - words, 3 - both)
 pref("accessibility.accessfu.keyboard_echo", 3);
 
+pref("ui.largeText.enabled", false);
+
 // Enable hit-target fluffing
 pref("ui.touch.radius.enabled", true);
 pref("ui.touch.radius.leftmm", 3);

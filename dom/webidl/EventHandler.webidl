@@ -135,6 +135,7 @@ interface WindowEventHandlers {
            attribute OnBeforeUnloadEventHandler onbeforeunload;
            attribute EventHandler onhashchange;
            attribute EventHandler onlanguagechange;
+           attribute EventHandler onlargetextenabledchange;
            attribute EventHandler onmessage;
            attribute EventHandler onoffline;
            attribute EventHandler ononline;

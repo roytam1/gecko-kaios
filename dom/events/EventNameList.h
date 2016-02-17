@@ -512,6 +512,10 @@ WINDOW_EVENT(languagechange,
              eLanguageChange,
              EventNameType_HTMLBodyOrFramesetOnly,
              eBasicEventClass)
+WINDOW_EVENT(largetextenabledchange,
+             eLargeTextEnabledChange,
+             EventNameType_HTMLBodyOrFramesetOnly,
+             eBasicEventClass)
 // XXXbz Should the onmessage attribute on <body> really not work?  If so, do we
 // need a different macro to flag things like that (IDL, but not content
 // attributes on body/frameset), or is just using EventNameType_None enough?
@@ -671,7 +675,7 @@ NON_IDL_EVENT(DOMFocusOut,
               eLegacyDOMFocusOut,
               EventNameType_HTMLXUL,
               eUIEventClass)
-                                  
+
 NON_IDL_EVENT(DOMMouseScroll,
               eLegacyMouseLineOrPageScroll,
               EventNameType_HTMLXUL,
@@ -680,7 +684,7 @@ NON_IDL_EVENT(MozMousePixelScroll,
               eLegacyMousePixelScroll,
               EventNameType_HTMLXUL,
               eMouseScrollEventClass)
-                                                
+
 NON_IDL_EVENT(open,
               eOpen,
               EventNameType_None,
@@ -1037,4 +1041,3 @@ NON_IDL_EVENT(complete,
 #undef DOCUMENT_ONLY_EVENT
 #undef NON_IDL_EVENT
 #endif /* MESSAGE_TO_EVENT */
-

@@ -488,6 +488,13 @@ interface NavigatorConcurrentHardware {
 };
 
 partial interface Navigator {
+  // largeTextEnabled is not allowed to be accessed from workers, and it is
+  // updated when pref ui.largeText.enabled is changed.
+  [AvailableIn=CertifiedApps]
+  readonly attribute boolean largeTextEnabled;
+};
+
+partial interface Navigator {
   // This is a safety catch for System App.
   // Return the current flip status. This attribute is only available for apps
   // who runs on the main process, and it should be accessed by System App only.

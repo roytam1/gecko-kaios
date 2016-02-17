@@ -1223,6 +1223,7 @@ nsGlobalWindow::nsGlobalWindow(nsGlobalWindow *aOuterWindow)
       }
 
       Preferences::AddStrongObserver(mObserver, "intl.accept_languages");
+      Preferences::AddStrongObserver(mObserver, "ui.largeText.enabled");
     }
 
     InitializeShowFocusRings();
@@ -1519,6 +1520,7 @@ nsGlobalWindow::CleanUp()
     }
 
     Preferences::RemoveObserver(mObserver, "intl.accept_languages");
+    Preferences::RemoveObserver(mObserver, "ui.largeText.enabled");
 
     // Drop its reference to this dying window, in case for some bogus reason
     // the object stays around.
@@ -11287,32 +11289,55 @@ nsGlobalWindow::Observe(nsISupports* aSubject, const char* aTopic,
 #endif // MOZ_B2G
 
   if (!nsCRT::strcmp(aTopic, NS_PREFBRANCH_PREFCHANGE_TOPIC_ID)) {
-    MOZ_ASSERT(!NS_strcmp(aData, MOZ_UTF16("intl.accept_languages")));
-    MOZ_ASSERT(IsInnerWindow());
+    if (!NS_strcmp(aData, MOZ_UTF16("intl.accept_languages"))) {
+      MOZ_ASSERT(IsInnerWindow());
 
-    // The user preferred languages have changed, we need to fire an event on
-    // Window object and invalidate the cache for navigator.languages. It is
-    // done for every change which can be a waste of cycles but those should be
-    // fairly rare.
-    // We MUST invalidate navigator.languages before sending the event in the
-    // very likely situation where an event handler will try to read its value.
+      // The user preferred languages have changed, we need to fire an event on
+      // Window object and invalidate the cache for navigator.languages. It is
+      // done for every change which can be a waste of cycles but those should be
+      // fairly rare.
+      // We MUST invalidate navigator.languages before sending the event in the
+      // very likely situation where an event handler will try to read its value.
 
-    if (mNavigator) {
-      NavigatorBinding::ClearCachedLanguageValue(mNavigator);
-      NavigatorBinding::ClearCachedLanguagesValue(mNavigator);
+      if (mNavigator) {
+        NavigatorBinding::ClearCachedLanguageValue(mNavigator);
+        NavigatorBinding::ClearCachedLanguagesValue(mNavigator);
+      }
+
+      // The event has to be dispatched only to the current inner window.
+      if (!AsInner()->IsCurrentInnerWindow()) {
+        return NS_OK;
+      }
+
+      RefPtr<Event> event = NS_NewDOMEvent(this, nullptr, nullptr);
+      event->InitEvent(NS_LITERAL_STRING("languagechange"), false, false);
+      event->SetTrusted(true);
+
+      bool dummy;
+      return DispatchEvent(event, &dummy);
+    } else if (!NS_strcmp(aData, MOZ_UTF16("ui.largeText.enabled"))) {
+      MOZ_ASSERT(IsInnerWindow());
+
+      nsIPrincipal* principal = GetPrincipal();
+      if (!principal) {
+        return NS_OK;
+      }
+      if (principal->GetAppStatus() < nsIPrincipal::APP_STATUS_CERTIFIED) {
+        return NS_OK;
+      }
+
+      // The event has to be dispatched only to the current inner window.
+      if (!AsInner()->IsCurrentInnerWindow()) {
+        return NS_OK;
+      }
+
+      RefPtr<Event> event = NS_NewDOMEvent(this, nullptr, nullptr);
+      event->InitEvent(NS_LITERAL_STRING("largetextenabledchanged"), false, false);
+      event->SetTrusted(true);
+
+      bool dummy;
+      return DispatchEvent(event, &dummy);
     }
-
-    // The event has to be dispatched only to the current inner window.
-    if (!AsInner()->IsCurrentInnerWindow()) {
-      return NS_OK;
-    }
-
-    RefPtr<Event> event = NS_NewDOMEvent(this, nullptr, nullptr);
-    event->InitEvent(NS_LITERAL_STRING("languagechange"), false, false);
-    event->SetTrusted(true);
-
-    bool dummy;
-    return DispatchEvent(event, &dummy);
   }
 
   NS_WARNING("unrecognized topic in nsGlobalWindow::Observe");

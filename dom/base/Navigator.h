@@ -356,6 +356,8 @@ public:
   // any, else null.
   static already_AddRefed<nsPIDOMWindowInner> GetWindowFromGlobal(JSObject* aGlobal);
 
+  bool LargeTextEnabled();
+
 #ifdef MOZ_EME
   already_AddRefed<Promise>
   RequestMediaKeySystemAccess(const nsAString& aKeySystem,

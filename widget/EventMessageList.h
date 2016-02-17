@@ -67,6 +67,8 @@ NS_EVENT_MESSAGE(eOnline)
 
 NS_EVENT_MESSAGE(eLanguageChange)
 
+NS_EVENT_MESSAGE(eLargeTextEnabledChange)
+
 NS_EVENT_MESSAGE(eMouseMove)
 NS_EVENT_MESSAGE(eMouseUp)
 NS_EVENT_MESSAGE(eMouseDown)
@@ -108,7 +110,7 @@ NS_EVENT_MESSAGE(ePopState)
 NS_EVENT_MESSAGE(eStorage)
 NS_EVENT_MESSAGE(eBeforeUnload)
 NS_EVENT_MESSAGE(eReadyStateChange)
- 
+
 NS_EVENT_MESSAGE(eFormSubmit)
 NS_EVENT_MESSAGE(eFormReset)
 NS_EVENT_MESSAGE(eFormChange)
@@ -157,7 +159,7 @@ NS_EVENT_MESSAGE_FIRST_LAST(eLegacyMutationEvent,
   eLegacySubtreeModified, eLegacyCharacterDataModified)
 
 NS_EVENT_MESSAGE(eUnidentifiedEvent)
- 
+
 // composition events
 NS_EVENT_MESSAGE(eCompositionStart)
 // eCompositionEnd is the message for DOM compositionend event.

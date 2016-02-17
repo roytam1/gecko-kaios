@@ -427,7 +427,18 @@ setUpdateTrackingId();
   });
 })();
 
-// ================ Theming ============
+(function largeTextListener() {
+  let settingsName = 'accessibility.large_text';
+  let prefName = 'ui.largeText.enabled';
+
+  SettingsListener.observe(settingsName, null, function(value) {
+    if (value !== null) {
+      Services.prefs.setBoolPref(prefName, value);
+    }
+  });
+})();
+
+//================ Theming ============
 (function themingSettingsListener() {
   let themingPrefs = ['ui.menu', 'ui.menutext', 'ui.infobackground', 'ui.infotext',
                       'ui.window', 'ui.windowtext', 'ui.highlight'];
