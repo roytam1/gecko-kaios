@@ -3784,12 +3784,23 @@ WifiWorker.prototype = {
   },
 
   handleWifiTetheringEnabled: function(enabled) {
+    let self = this;
     // Make sure Wifi is idle before switching to Wifi hotspot mode.
     if (enabled) {
       this.queueRequest({command: "setWifiEnabled", value: false}, function(data) {
         if (WifiManager.isWifiEnabled(WifiManager.state)) {
           this.disconnectedByWifiTethering = true;
-          this._setWifiEnabled(false, this._setWifiEnabledCallback.bind(this));
+          gSettingsService.createLock().set(
+            SETTINGS_WIFI_ENABLED,
+            false,
+            {
+              handle: function(aName, aResult) {
+                self._setWifiEnabled(false, self._setWifiEnabledCallback.bind(self));
+              },
+              handleError: function(aErrorMessage) {
+                self._setWifiEnabled(false, self._setWifiEnabledCallback.bind(self));
+              }
+            });
         } else {
           this.requestDone();
         }
@@ -3803,7 +3814,17 @@ WifiWorker.prototype = {
     if (!enabled) {
       this.queueRequest({command: "setWifiEnabled", value: true}, function(data) {
         if (this.disconnectedByWifiTethering) {
-          this._setWifiEnabled(true, this._setWifiEnabledCallback.bind(this));
+          gSettingsService.createLock().set(
+            SETTINGS_WIFI_ENABLED,
+            true,
+            {
+              handle: function(aName, aResult) {
+                self._setWifiEnabled(true, self._setWifiEnabledCallback.bind(self));
+              },
+              handleError: function(aErrorMessage) {
+                self._setWifiEnabled(true, self._setWifiEnabledCallback.bind(self));
+              }
+            });
         } else {
           this.requestDone();
         }
