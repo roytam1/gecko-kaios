@@ -443,7 +443,11 @@ status_t VirtualDisplaySurface::queueBuffer(int pslot,
         // Now acquire the buffer from the scratch pool -- should be the same
         // slot and fence as we just queued.
         Mutex::Autolock lock(mMutex);
+#if ANDROID_VERSION >= 23
+        BufferItem item;
+#else
         BufferQueue::BufferItem item;
+#endif
         result = acquireBufferLocked(&item, 0);
         if (result != NO_ERROR)
             return result;
@@ -465,8 +469,14 @@ status_t VirtualDisplaySurface::queueBuffer(int pslot,
         int scalingMode;
         uint32_t transform;
         bool async;
+#if ANDROID_VERSION >= 23
+        android_dataspace dataSpace;
+        input.deflate(&timestamp, &isAutoTimestamp, &dataSpace, &crop, &scalingMode,
+                &transform, &async, &mFbFence);
+#else
         input.deflate(&timestamp, &isAutoTimestamp, &crop, &scalingMode,
                 &transform, &async, &mFbFence);
+#endif
 
         mFbProducerSlot = pslot;
         mOutputFence = mFbFence;
