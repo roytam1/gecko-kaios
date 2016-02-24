@@ -8145,10 +8145,21 @@ nsDocument::GetViewportInfo(const ScreenIntSize& aDisplaySize)
       if (mValidHeight && !aDisplaySize.IsEmpty()) {
         size.width = size.height * aDisplaySize.width / aDisplaySize.height;
       } else {
+        int32_t w = 0;
+
+        nsCOMPtr<nsIBaseWindow> docShellWin(mDocumentContainer);
+        if (docShellWin) {
+          docShellWin->GetPositionAndSize(nullptr, nullptr, &w, nullptr);
+        }
+
+        if (w <= 0) {
+          w = gfxPrefs::DesktopViewportWidth();
+        }
+
         // Stretch CSS pixel size of viewport to keep device pixel size
         // unchanged after full zoom applied.
         // See bug 974242.
-        size.width = gfxPrefs::DesktopViewportWidth() / fullZoom;
+        size.width = w / fullZoom;
       }
     }
 
