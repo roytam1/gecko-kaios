@@ -49,6 +49,10 @@ const SETTINGS_WIFI_DNS2               = "tethering.wifi.dns2";
 const SETTINGS_USB_DHCPSERVER_STARTIP  = "tethering.usb.dhcpserver.startip";
 const SETTINGS_USB_DHCPSERVER_ENDIP    = "tethering.usb.dhcpserver.endip";
 
+// Settings DB for airplane mode.
+const SETTINGS_AIRPLANE_MODE           = "airplaneMode.enabled";
+const SETTINGS_AIRPLANE_MODE_STATUS    = "airplaneMode.status";
+
 // Default value for WIFI tethering.
 const DEFAULT_WIFI_IP                  = "192.168.1.1";
 const DEFAULT_WIFI_PREFIX              = "24";
@@ -2503,11 +2507,26 @@ function WifiWorker() {
     }
   };
 
+  var initAirplaneModeCb = {
+    handle: function handle(aName, aResult) {
+      if (aName !== SETTINGS_AIRPLANE_MODE)
+        return;
+      if (aResult === null)
+        aResult = false;
+      self._airplaneMode = aResult;
+    },
+    handleError: function handleError(aErrorMessage) {
+      debug("Error reading the 'SETTINGS_AIRPLANE_MODE' setting.");
+      self._airplaneMode = false;
+    }
+  };
+
   this.initTetheringSettings();
 
   let lock = gSettingsService.createLock();
   lock.get(SETTINGS_WIFI_ENABLED, initWifiEnabledCb);
   lock.get(SETTINGS_WIFI_DEBUG_ENABLED, initWifiDebuggingEnabledCb);
+  lock.get(SETTINGS_AIRPLANE_MODE, initAirplaneModeCb);
 
   lock.get(SETTINGS_WIFI_SSID, this);
   lock.get(SETTINGS_WIFI_SECURITY_TYPE, this);
@@ -2580,6 +2599,9 @@ WifiWorker.prototype = {
 
   _oldWifiTetheringEnabledState: null,
 
+  _airplaneMode: false,
+  _airplaneMode_status: null,
+
   tetheringSettings: {},
 
   initTetheringSettings: function initTetheringSettings() {
@@ -2596,6 +2618,16 @@ WifiWorker.prototype = {
 
     this.tetheringSettings[SETTINGS_USB_DHCPSERVER_STARTIP] = DEFAULT_USB_DHCPSERVER_STARTIP;
     this.tetheringSettings[SETTINGS_USB_DHCPSERVER_ENDIP] = DEFAULT_USB_DHCPSERVER_ENDIP;
+  },
+
+  isAirplaneMode: function isAirplaneMode() {
+    let airplaneMode = false;
+
+    if (this._airplaneMode && (this._airplaneMode_status === "enabling" ||
+                               this._airplaneMode_status === "enabled")) {
+      airplaneMode = true;
+    }
+    return airplaneMode;
   },
 
   // Internal methods.
@@ -3773,7 +3805,7 @@ WifiWorker.prototype = {
 
     if (!enabled) {
       this.queueRequest({command: "setWifiApEnabled", value: true}, function(data) {
-        if (this.disconnectedByWifi) {
+        if (this.disconnectedByWifi && this.isAirplaneMode() === false) {
           this.setWifiApEnabled(true, this.notifyTetheringOn.bind(this));
         } else {
           this.requestDone();
@@ -3813,7 +3845,7 @@ WifiWorker.prototype = {
 
     if (!enabled) {
       this.queueRequest({command: "setWifiEnabled", value: true}, function(data) {
-        if (this.disconnectedByWifiTethering) {
+        if (this.disconnectedByWifiTethering && this.isAirplaneMode() === false) {
           gSettingsService.createLock().set(
             SETTINGS_WIFI_ENABLED,
             true,
@@ -3873,6 +3905,12 @@ WifiWorker.prototype = {
           aResult = false;
         DEBUG = aResult;
         updateDebug();
+        break;
+      case SETTINGS_AIRPLANE_MODE:
+        this._airplaneMode = aResult;
+        break;
+      case SETTINGS_AIRPLANE_MODE_STATUS:
+        this._airplaneMode_status = aResult;
         break;
       case SETTINGS_WIFI_TETHERING_ENABLED:
         this._oldWifiTetheringEnabledState = this.tetheringSettings[SETTINGS_WIFI_TETHERING_ENABLED];
