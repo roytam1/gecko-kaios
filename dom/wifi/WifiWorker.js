@@ -764,6 +764,11 @@ var WifiManager = (function() {
         notify("passwordmaybeincorrect");
       }
 
+      if (event.indexOf("Authentication with") == 0 &&
+          event.indexOf("timed out") != -1) {
+        notify("authenticationtimeout");
+      }
+
       // This is ugly, but we need to grab the SSID here. BSSID is not guaranteed
       // to be provided, so don't grab BSSID here.
       var match = /Trying to associate with.*SSID[ =]'(.*)'/.exec(event);
@@ -2154,6 +2159,15 @@ function WifiWorker() {
     WifiManager.authenticationFailuresCount++;
   };
 
+  WifiManager.onauthenticationtimeout = function() {
+    // This is a workaround for EAP-XXX authentication timeout.
+    // The timeout for authtication failed is about 60 seconds,
+    // reduce the retry count to have a better user experience.
+    if (!WifiManager.authenticationFailuresCount)
+      WifiManager.authenticationFailuresCount = 1;
+    WifiManager.authenticationFailuresCount++;
+  };
+
   WifiManager.ondisconnected = function() {
     // We may fail to establish the connection, re-enable the
     // rest of our networks.
@@ -2163,7 +2177,11 @@ function WifiWorker() {
     }
 
     let connectionInfo = this.connectionInfo;
-    WifiManager.getNetworkId(connectionInfo.ssid, function(netId) {
+    let ssid = connectionInfo.ssid;
+    if (!ssid) {
+      ssid = dequote(self.currentNetwork.ssid);
+    }
+    WifiManager.getNetworkId(ssid, function(netId) {
       // Trying to get netId from current network.
       if (!netId &&
           self.currentNetwork && self.currentNetwork.ssid &&
@@ -2171,8 +2189,10 @@ function WifiWorker() {
           typeof self.currentNetwork.netId !== "undefined") {
         netId = self.currentNetwork.netId;
       }
-      if (netId) {
-        WifiManager.disableNetwork(netId, function() {});
+      if (netId >= 0) {
+        WifiManager.disableNetwork(netId, function() {
+          debug("disable network - ssid: " + ssid + " id: " + netId)
+        });
       }
     });
     self._fireEvent("onconnectingfailed", {network: netToDOM(self.currentNetwork)});
