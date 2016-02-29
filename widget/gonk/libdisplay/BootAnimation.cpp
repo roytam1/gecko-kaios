@@ -738,7 +738,7 @@ AnimationThread(void *)
         Animation &extAnimation = animVec.back();
         extAnimation.dpy = GonkDisplay::DISPLAY_EXTERNAL;
         extAnimation.format = extDispData.mSurfaceformat;
-        if (!extAnimation.LoadAnimations("/system/media/outside_animation_poweron.zip") ||
+        if (!extAnimation.LoadAnimations("/system/media/bootanimation_external.zip") ||
             !animVec[0].IsFrameCovers(extAnimation)) {
 
             LOGW("Failed to load boot animation file for external screen");
