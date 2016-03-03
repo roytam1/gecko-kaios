@@ -67,7 +67,7 @@ NS_EVENT_MESSAGE(eOnline)
 
 NS_EVENT_MESSAGE(eLanguageChange)
 
-NS_EVENT_MESSAGE(eLargeTextEnabledChange)
+NS_EVENT_MESSAGE(eLargeTextEnabledChanged)
 
 NS_EVENT_MESSAGE(eMouseMove)
 NS_EVENT_MESSAGE(eMouseUp)

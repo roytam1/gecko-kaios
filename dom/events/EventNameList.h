@@ -512,8 +512,8 @@ WINDOW_EVENT(languagechange,
              eLanguageChange,
              EventNameType_HTMLBodyOrFramesetOnly,
              eBasicEventClass)
-WINDOW_EVENT(largetextenabledchange,
-             eLargeTextEnabledChange,
+WINDOW_EVENT(largetextenabledchanged,
+             eLargeTextEnabledChanged,
              EventNameType_HTMLBodyOrFramesetOnly,
              eBasicEventClass)
 // XXXbz Should the onmessage attribute on <body> really not work?  If so, do we

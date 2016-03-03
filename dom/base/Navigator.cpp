@@ -139,7 +139,6 @@ namespace dom {
 
 static bool sDoNotTrackEnabled = false;
 static bool sVibratorEnabled   = false;
-static bool sLargeTextEnabled  = false;
 static uint32_t sMaxVibrateMS  = 0;
 static uint32_t sMaxVibrateListLen = 0;
 
@@ -152,8 +151,6 @@ Navigator::Init()
                                false);
   Preferences::AddBoolVarCache(&sVibratorEnabled,
                                "dom.vibrator.enabled", true);
-  Preferences::AddBoolVarCache(&sLargeTextEnabled,
-                               "ui.largeText.enabled", false);
   Preferences::AddUintVarCache(&sMaxVibrateMS,
                                "dom.vibrator.max_vibrate_ms", 10000);
   Preferences::AddUintVarCache(&sMaxVibrateListLen,
@@ -2845,7 +2842,7 @@ Navigator::GetPresentation(ErrorResult& aRv)
 bool
 Navigator::LargeTextEnabled()
 {
-  return sLargeTextEnabled;
+  return Preferences::GetBool("ui.largeText.enabled", false);
 }
 
 } // namespace dom
