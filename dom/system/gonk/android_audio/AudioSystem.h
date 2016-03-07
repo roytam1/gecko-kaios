@@ -913,6 +913,7 @@ public:
     // IAudioPolicyService interface (see AudioPolicyInterface for method descriptions)
     //
     static status_t setDeviceConnectionState(audio_devices device, device_connection_state state, const char *device_address);
+     static status_t setDeviceConnectionState(audio_devices_t device, audio_policy_dev_state_t state, const char *device_address) __attribute__((weak));
     static device_connection_state getDeviceConnectionState(audio_devices device, const char *device_address);
     static status_t setPhoneState(int state);
 #if ANDROID_VERSION >= 17
@@ -946,7 +947,8 @@ public:
                                         uint32_t format = AUDIO_FORMAT_DEFAULT,
                                         uint32_t channels = AUDIO_CHANNEL_OUT_STEREO,
                                         audio_policy_output_flags_t flags = AUDIO_POLICY_OUTPUT_FLAG_INDIRECT) __attribute__((weak));
-    static status_t setDeviceConnectionState(audio_devices_t device, audio_policy_dev_state_t state, const char *device_address) __attribute__((weak));
+
+    static status_t setDeviceConnectionState(audio_devices_t device, audio_policy_dev_state_t state, const char *device_address, const char* device_name) __attribute__((weak));
     static status_t setFmVolume(float volume) __attribute__((weak));
     static audio_policy_dev_state_t getDeviceConnectionState(audio_devices_t device, const char *device_address) __attribute__((weak));
 

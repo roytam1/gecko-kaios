@@ -410,18 +410,33 @@ AudioManager::UpdateHeadsetConnectionState(hal::SwitchState aState)
   }
 }
 
+static void setDeviceConnectionStateInternal(audio_devices_t device, audio_policy_dev_state_t state, const char *device_address)
+{
+  if (static_cast<
+      status_t (*)(audio_devices_t, audio_policy_dev_state_t, const char*)
+      >(AudioSystem::setDeviceConnectionState)) {
+    AudioSystem::setDeviceConnectionState(device, state, device_address);
+  } else if (static_cast<
+      status_t (*)(audio_devices_t, audio_policy_dev_state_t, const char*, const char*)
+      >(AudioSystem::setDeviceConnectionState)) {
+    AudioSystem::setDeviceConnectionState(device, state, device_address, "");
+  } else {
+    NS_NOTREACHED("Doesn't support audio routing on GB version");
+  }
+}
+
 void
 AudioManager::UpdateDeviceConnectionState(bool aIsConnected, uint32_t aDevice, const nsCString& aDeviceName)
 {
 #if ANDROID_VERSION >= 15
   bool isConnected = mConnectedDevices.Get(aDevice, nullptr);
   if (isConnected && !aIsConnected) {
-    AudioSystem::setDeviceConnectionState(static_cast<audio_devices_t>(aDevice),
+    setDeviceConnectionStateInternal(static_cast<audio_devices_t>(aDevice),
                                           AUDIO_POLICY_DEVICE_STATE_UNAVAILABLE,
                                           aDeviceName.get());
     mConnectedDevices.Remove(aDevice);
   } else if(!isConnected && aIsConnected) {
-    AudioSystem::setDeviceConnectionState(static_cast<audio_devices_t>(aDevice),
+    setDeviceConnectionStateInternal(static_cast<audio_devices_t>(aDevice),
                                           AUDIO_POLICY_DEVICE_STATE_AVAILABLE,
                                           aDeviceName.get());
     mConnectedDevices.Put(aDevice, aDeviceName);
@@ -443,7 +458,7 @@ AudioManager::SetAllDeviceConnectionStates()
   for (auto iter = mConnectedDevices.Iter(); !iter.Done(); iter.Next()) {
     const uint32_t& device = iter.Key();
     nsCString& deviceAddress = iter.Data();
-    AudioSystem::setDeviceConnectionState(static_cast<audio_devices_t>(device),
+    setDeviceConnectionStateInternal(static_cast<audio_devices_t>(device),
                                           AUDIO_POLICY_DEVICE_STATE_AVAILABLE,
                                           deviceAddress.get());
   }
