@@ -470,7 +470,7 @@ struct Animation {
 
     // return true on success
     bool LoadAnimations(const char* fileName);
-    bool IsFrameCovers(Animation &ext);
+    bool CanPlaySimultaneously(Animation &ext);
 };
 
 Animation::Animation()
@@ -571,15 +571,20 @@ bool Animation::LoadAnimations(const char* aFileName)
 }
 
 bool
-Animation::IsFrameCovers(Animation &aExt)
+Animation::CanPlaySimultaneously(Animation &aExt)
 {
-    /* Check number of frames of each parts are greater or equal */
-    if(parts.size() < aExt.parts.size()) {
+    if (fps != aExt.fps) {
+        return false;
+    }
+
+    if(parts.size() != aExt.parts.size()) {
         return false;
     }
 
     for (uint32_t i = 0; i < parts.size(); i++) {
-        if (parts[i].frames.size() < aExt.parts[i].frames.size()) {
+        if (parts[i].pause != aExt.parts[i].pause ||
+            parts[i].count != aExt.parts[i].count ||
+            parts[i].frames.size() != aExt.parts[i].frames.size()) {
             return false;
         }
     }
@@ -739,7 +744,7 @@ AnimationThread(void *)
         extAnimation.dpy = GonkDisplay::DISPLAY_EXTERNAL;
         extAnimation.format = extDispData.mSurfaceformat;
         if (!extAnimation.LoadAnimations("/system/media/bootanimation_external.zip") ||
-            !animVec[0].IsFrameCovers(extAnimation)) {
+            !animVec[0].CanPlaySimultaneously(extAnimation)) {
 
             LOGW("Failed to load boot animation file for external screen");
             ShowSolidColorFrame(display, grmodule, extDispData.mSurfaceformat,
