@@ -85,6 +85,7 @@ private:
   gfx::SurfaceFormat mFormat;
   EGLImage mEGLImage;
   bool mIsOpaque;
+  bool mIsUseEGLImageCrop;
 };
 
 } // namespace layers

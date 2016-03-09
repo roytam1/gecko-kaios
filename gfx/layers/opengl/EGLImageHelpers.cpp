@@ -15,7 +15,7 @@ namespace layers {
 using namespace gl;
 
 EGLImage
-EGLImageCreateFromNativeBuffer(GLContext* aGL, void* aBuffer, const gfx::IntSize& aCropSize)
+EGLImageCreateFromNativeBuffer(GLContext* aGL, void* aBuffer, const gfx::IntSize& aCropSize, bool& aIsUseCrop)
 {
     EGLint attrs[] = {
         LOCAL_EGL_IMAGE_PRESERVED, LOCAL_EGL_TRUE,
@@ -33,8 +33,10 @@ EGLImageCreateFromNativeBuffer(GLContext* aGL, void* aBuffer, const gfx::IntSize
 
     bool hasCropRect = (aCropSize.width != 0 && aCropSize.height != 0);
     EGLint* usedAttrs = attrs;
+    aIsUseCrop = false;
     if (hasCropRect && sEGLLibrary.IsExtensionSupported(GLLibraryEGL::EGL_ANDROID_image_crop)) {
         usedAttrs = cropAttrs;
+        aIsUseCrop = true;
     }
 
     return sEGLLibrary.fCreateImage(sEGLLibrary.Display(),

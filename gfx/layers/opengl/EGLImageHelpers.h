@@ -18,7 +18,7 @@ namespace gl {
 
 namespace layers {
 
-EGLImage EGLImageCreateFromNativeBuffer(gl::GLContext* aGL, void* aBuffer, const gfx::IntSize& aCropSize);
+EGLImage EGLImageCreateFromNativeBuffer(gl::GLContext* aGL, void* aBuffer, const gfx::IntSize& aCropSize, bool& aIsUseCrop);
 void EGLImageDestroy(gl::GLContext* aGL, EGLImage aImage);
 
 } // namespace layers

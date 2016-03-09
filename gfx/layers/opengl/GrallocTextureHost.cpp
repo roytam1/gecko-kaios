@@ -111,6 +111,7 @@ GrallocTextureHostOGL::GrallocTextureHostOGL(TextureFlags aFlags,
   , mFormat(gfx::SurfaceFormat::UNKNOWN)
   , mEGLImage(EGL_NO_IMAGE)
   , mIsOpaque(aDescriptor.isOpaque())
+  , mIsUseEGLImageCrop(false)
 {
   android::GraphicBuffer* graphicBuffer = GetGraphicBufferFromDesc(mGrallocHandle).get();
   MOZ_ASSERT(graphicBuffer);
@@ -359,8 +360,8 @@ GrallocTextureHostOGL::PrepareTextureSource(CompositableTextureSourceRef& aTextu
     if (mCropSize != mSize) {
       cropSize = mCropSize;
     }
-    // Should only happen the first time.
-    mEGLImage = EGLImageCreateFromNativeBuffer(gl, graphicBuffer->getNativeBuffer(), cropSize);
+    // Should only happen the first time if crop not changed.
+    mEGLImage = EGLImageCreateFromNativeBuffer(gl, graphicBuffer->getNativeBuffer(), cropSize, mIsUseEGLImageCrop);
   }
 
   GLenum textureTarget = GetTextureTarget(gl, graphicBuffer->getPixelFormat());
@@ -372,6 +373,8 @@ GrallocTextureHostOGL::PrepareTextureSource(CompositableTextureSourceRef& aTextu
                                  || glSource->NumCompositableRefs() > 1
                                  || glSource->GetTextureTarget() != textureTarget;
 
+  gfx::IntSize textureSize = mIsUseEGLImageCrop ? mCropSize : mSize;
+
   if (shouldCreateTextureSource) {
     GLuint textureHandle;
     gl->fGenTextures(1, &textureHandle);
@@ -381,13 +384,13 @@ GrallocTextureHostOGL::PrepareTextureSource(CompositableTextureSourceRef& aTextu
     gl->fEGLImageTargetTexture2D(textureTarget, mEGLImage);
 
     mGLTextureSource = new GLTextureSource(mCompositor, textureHandle, textureTarget,
-                                           mSize, mFormat);
+                                           textureSize, mFormat);
     aTextureSource = mGLTextureSource.get();
   } else {
     gl->fBindTexture(textureTarget, glSource->GetTextureHandle());
 
     gl->fEGLImageTargetTexture2D(textureTarget, mEGLImage);
-    glSource->SetSize(mSize);
+    glSource->SetSize(textureSize);
     glSource->SetFormat(mFormat);
     mGLTextureSource = glSource;
   }
