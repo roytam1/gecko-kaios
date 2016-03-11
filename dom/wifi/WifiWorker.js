@@ -2130,7 +2130,10 @@ function WifiWorker() {
       // Enable them here to make sure wpa_supplicant helps to connect to known
       // network automatically.
       self._enableAllNetworks();
-      WifiManager.saveConfig(function() {})
+      WifiManager.saveConfig(function() {});
+
+      // Active scan to trigger auto reconnect mechanism in wpa_supplicant.
+      WifiManager.scan(true, function(){});
     });
 
     // Notify everybody, even if they didn't ask us to come up.
