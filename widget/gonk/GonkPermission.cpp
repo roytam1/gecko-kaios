@@ -135,6 +135,14 @@ GonkPermissionService::checkPermission(const String16& permission, int32_t pid,
     return false;
   }
 
+#if ANDROID_VERSION >= 23
+  // We grant this permission to adapt to AOSP's foreground user check for camera, as
+  // in H5OS the permission is sent from the process of camera app instead of system server
+  if (perm8 == "android.permission.CAMERA_SEND_SYSTEM_EVENTS") {
+    return true;
+  }
+#endif
+
   // Only these permissions can be granted to apps through this service.
   if (perm8 != "android.permission.CAMERA" &&
     perm8 != "android.permission.RECORD_AUDIO") {

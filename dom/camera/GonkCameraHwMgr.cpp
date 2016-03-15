@@ -30,6 +30,9 @@
 #include "mozilla/RefPtr.h"
 #if defined(MOZ_WIDGET_GONK) && ANDROID_VERSION >= 21
 #include "GonkBufferQueueProducer.h"
+#if ANDROID_VERSION >= 23
+#include <binder/IServiceManager.h>
+#endif
 #endif
 #include "GonkCameraControl.h"
 #include "CameraCommon.h"
@@ -41,6 +44,13 @@ using namespace android;
 #ifndef MOZ_WIDGET_GONK
 NS_IMPL_ISUPPORTS0(GonkCameraHardware);
 NS_IMPL_ISUPPORTS0(android::Camera);
+#endif
+
+#if defined(MOZ_WIDGET_GONK) && ANDROID_VERSION >= 23
+// We hard-code user id here to adapt to AOSP's multi-user support check for any
+// request to connect to Camera Service, as we only support single user at the moment
+#define DEFAULT_USER_ID           0
+#define CAMERASERVICE_POLL_DELAY  500000
 #endif
 
 GonkCameraHardware::GonkCameraHardware(mozilla::nsGonkCameraControl* aTarget, uint32_t aCameraId, const sp<Camera>& aCamera)
@@ -250,6 +260,27 @@ GonkCameraHardware::Connect(mozilla::nsGonkCameraControl* aTarget, uint32_t aCam
   if (!test.EqualsASCII("hardware")) {
 #ifdef MOZ_WIDGET_GONK
 #if ANDROID_VERSION >= 18
+#if ANDROID_VERSION >= 23
+  sp<IServiceManager> sm = defaultServiceManager();
+  sp<IBinder> binder;
+  sp<ICameraService> gCameraService;
+  do {
+    binder = sm->getService(String16("media.camera"));
+    if (binder != 0) {
+      break;
+    }
+    DOM_CAMERA_LOGW("CameraService not published, waiting...");
+    usleep(CAMERASERVICE_POLL_DELAY);
+  } while(true);
+
+  gCameraService = interface_cast<ICameraService>(binder);
+  int32_t args[1];
+  args[0] = DEFAULT_USER_ID;
+  int32_t event = 1;
+  size_t length = 1;
+
+  gCameraService->notifySystemEvent(event, args, length);
+#endif /* ANDROID_VERSION >= 23 */
     camera = Camera::connect(aCameraId, /* clientPackageName */String16("gonk.camera"), Camera::USE_CALLING_UID);
 #else
     camera = Camera::connect(aCameraId);
