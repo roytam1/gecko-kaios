@@ -2129,11 +2129,12 @@ function WifiWorker() {
       // The select network command we used in associate() disables others networks.
       // Enable them here to make sure wpa_supplicant helps to connect to known
       // network automatically.
-      self._enableAllNetworks();
-      WifiManager.saveConfig(function() {});
-
-      // Active scan to trigger auto reconnect mechanism in wpa_supplicant.
-      WifiManager.scan(true, function(){});
+      self._enableAllNetworks(function() {
+        WifiManager.saveConfig(function() {
+          // Active scan to trigger auto reconnect mechanism in wpa_supplicant.
+          WifiManager.scan(true, function(){});
+        });
+      });
     });
 
     // Notify everybody, even if they didn't ask us to come up.
@@ -2175,7 +2176,7 @@ function WifiWorker() {
     // We may fail to establish the connection, re-enable the
     // rest of our networks.
     if (self._needToEnableNetworks) {
-      self._enableAllNetworks();
+      self._enableAllNetworks(function(){});
       self._needToEnableNetworks = false;
     }
 
@@ -2259,7 +2260,7 @@ function WifiWorker() {
         // password. For now, we require user interaction to break the loop and
         // select a better network!
         if (self._needToEnableNetworks) {
-          self._enableAllNetworks();
+          self._enableAllNetworks(function(){});
           self._needToEnableNetworks = false;
         }
 
@@ -2662,11 +2663,21 @@ WifiWorker.prototype = {
   // networks known to us. However, in general, we want the supplicant to
   // connect to which ever network it thinks is best, so when we select the
   // proper network (or fail to), we need to re-enable the rest.
-  _enableAllNetworks: function() {
-    for (let key in this.configuredNetworks) {
-      let net = this.configuredNetworks[key];
+  _enableAllNetworks: function(callback) {
+    let self = this;
+    var finishEnableCount = 0;
+    var numberOfConfNetworks = Object.keys(self.configuredNetworks).length;
+    if (numberOfConfNetworks === 0) {
+      callback();
+      return;
+    }
+    for each (let net in self.configuredNetworks) {
       WifiManager.enableNetwork(net.netId, false, function(ok) {
-        net.disabled = ok ? 1 : 0;
+        net.disabled = ok ? 0 : 1;
+        ++finishEnableCount;
+        if (finishEnableCount === numberOfConfNetworks) {
+          callback();
+        }
       });
     }
   },
@@ -3473,7 +3484,7 @@ WifiWorker.prototype = {
                                     (this.currentNetwork.ssid === ssid));
       WifiManager.removeNetwork(configured.netId, function(ok) {
         if (self._needToEnableNetworks) {
-          self._enableAllNetworks();
+          self._enableAllNetworks(function(){});
           self._needToEnableNetworks = false;
         }
 
