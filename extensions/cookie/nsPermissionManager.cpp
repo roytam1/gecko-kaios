@@ -42,6 +42,7 @@
 #include "nsINavHistoryService.h"
 #include "nsToolkitCompsCID.h"
 #include "nsIObserverService.h"
+#include "nsIPrefService.h"
 
 static nsPermissionManager *gPermissionManager = nullptr;
 
@@ -834,6 +835,7 @@ nsPermissionManager::InitDB(bool aRemoveFile)
     }
   }
 
+  bool remove = false;
   rv = OpenDatabase(permissionsFile);
   if (rv == NS_ERROR_FILE_CORRUPTED) {
     LogToConsole(NS_LITERAL_STRING("permissions.sqlite is corrupted! Try again!"));
@@ -845,6 +847,7 @@ nsPermissionManager::InitDB(bool aRemoveFile)
     rv = permissionsFile->Remove(false);
     NS_ENSURE_SUCCESS(rv, rv);
     LogToConsole(NS_LITERAL_STRING("Corrupted permissions.sqlite has been removed."));
+    remove = true;
 
     rv = OpenDatabase(permissionsFile);
     NS_ENSURE_SUCCESS(rv, rv);
@@ -862,6 +865,7 @@ nsPermissionManager::InitDB(bool aRemoveFile)
     rv = permissionsFile->Remove(false);
     NS_ENSURE_SUCCESS(rv, rv);
     LogToConsole(NS_LITERAL_STRING("Defective permissions.sqlite has been removed."));
+    remove = true;
 
     // Add telemetry probe
     mozilla::Telemetry::Accumulate(mozilla::Telemetry::DEFECTIVE_PERMISSIONS_SQL_REMOVED, 1);
@@ -875,6 +879,17 @@ nsPermissionManager::InitDB(bool aRemoveFile)
       return NS_ERROR_UNEXPECTED;
   }
 
+  if (remove) {
+    nsCOMPtr<nsIPrefBranch> prefs = do_GetService(NS_PREFSERVICE_CONTRACTID);
+    if (prefs) {
+      // Reset related preference for app permissions reload if permissions.sqlite is re-created.
+      rv = prefs->SetBoolPref("dom.apps.reset-permissions", false);
+      NS_ENSURE_SUCCESS(rv, rv);
+      LogToConsole(NS_LITERAL_STRING("dom.apps.reset-permissions has been reset to false."));
+    }
+    else
+      LogToConsole(NS_LITERAL_STRING("No Preferences service!"));
+  }
 
   bool tableExists = false;
   mDBConn->TableExists(NS_LITERAL_CSTRING("moz_perms"), &tableExists);
