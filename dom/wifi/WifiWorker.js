@@ -26,7 +26,7 @@ const WIFIWORKER_WORKER     = "resource://gre/modules/wifi_worker.js";
 
 const kMozSettingsChangedObserverTopic   = "mozsettings-changed";
 
-const MAX_RETRIES_ON_AUTHENTICATION_FAILURE = 2;
+const MAX_RETRIES_ON_AUTHENTICATION_FAILURE = 0;
 const MAX_SUPPLICANT_LOOP_ITERATIONS = 4;
 const MAX_RETRIES_ON_DHCP_FAILURE = 2;
 
@@ -741,6 +741,28 @@ var WifiManager = (function() {
       notifyStateChange({ state: "AUTHENTICATING" });
       return true;
     }
+    if (event.indexOf("CTRL-EVENT-EAP-STATUS") !== -1) {
+      var space = event.indexOf(" ");
+      var fields = {};
+      var tokens = event.substr(space + 1).split(" ");
+      for (var n = 0; n < tokens.length; ++n) {
+        var kv = tokens[n].split("=");
+        if (kv.length === 2)
+          fields[kv[0]] = kv[1];
+      }
+
+      if ("status" in fields && fields.status.indexOf('completion') === -1) {
+        return true;
+      }
+
+      if ("parameter" in fields && fields.parameter.indexOf('failure') !== -1)  {
+        notify("passwordmaybeincorrect");
+        if (manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
+          manager.authenticationFailuresCount = 0;
+          notify("disconnected", {connectionInfo: manager.connectionInfo});
+        }
+      }
+    }
     return true;
   }
 
@@ -762,6 +784,10 @@ var WifiManager = (function() {
       if (event.indexOf("WPA:") == 0 &&
           event.indexOf("pre-shared key may be incorrect") != -1) {
         notify("passwordmaybeincorrect");
+        if (manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
+          manager.authenticationFailuresCount = 0;
+          notify("disconnected", {connectionInfo: manager.connectionInfo});
+        }
       }
 
       if (event.indexOf("Authentication with") == 0 &&
