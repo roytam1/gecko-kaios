@@ -89,8 +89,6 @@ AssertMainProcess()
   MOZ_ASSERT(GeckoProcessType_Default == XRE_GetProcessType());
 }
 
-#if !defined(MOZ_WIDGET_GONK)
-
 bool
 WindowIsActive(nsPIDOMWindowInner* aWindow)
 {
@@ -100,8 +98,6 @@ WindowIsActive(nsPIDOMWindowInner* aWindow)
   return !document->Hidden();
 }
 
-#endif // !defined(MOZ_WIDGET_GONK)
-
 StaticAutoPtr<WindowIdentifier::IDArrayType> gLastIDToVibrate;
 
 void InitLastIDToVibrate()
@@ -110,7 +106,22 @@ void InitLastIDToVibrate()
   ClearOnShutdown(&gLastIDToVibrate);
 }
 
-} // namespace
+uint16_t GetAppStatusByWindow(nsPIDOMWindowInner* aWindow)
+{
+  uint16_t status = nsIPrincipal::APP_STATUS_NOT_INSTALLED;
+  nsIDocument* document = aWindow->GetDoc();
+  NS_ENSURE_TRUE(document, status);
+  
+  nsIPrincipal* principal = document->NodePrincipal();
+  if (!principal || NS_FAILED(principal->GetAppStatus(&status))) {
+    NS_WARNING("principal is a nullptr or GetAppStatus is failed");
+    return status;
+  }
+
+  return status;
+}
+
+} // anonymous namespace
 
 void
 Vibrate(const nsTArray<uint32_t>& pattern, nsPIDOMWindowInner* window)
@@ -123,18 +134,18 @@ Vibrate(const nsTArray<uint32_t>& pattern, const WindowIdentifier &id)
 {
   AssertMainThread();
 
-#if !defined(MOZ_WIDGET_GONK)
   // Only active windows may start vibrations.  If |id| hasn't gone
   // through the IPC layer -- that is, if our caller is the outside
   // world, not hal_proxy -- check whether the window is active.  If
   // |id| has gone through IPC, don't check the window's visibility;
   // only the window corresponding to the bottommost process has its
   // visibility state set correctly.
-  if (!id.HasTraveledThroughIPC() && !WindowIsActive(id.GetWindow())) {
+  if (!id.HasTraveledThroughIPC() && !WindowIsActive(id.GetWindow()) &&
+      GetAppStatusByWindow(id.GetWindow()) <
+      nsIPrincipal::APP_STATUS_CERTIFIED) {
     HAL_LOG("Vibrate: Window is inactive, dropping vibrate.");
     return;
   }
-#endif // !defined(MOZ_WIDGET_GONK)
 
   if (!InSandbox()) {
     if (!gLastIDToVibrate) {

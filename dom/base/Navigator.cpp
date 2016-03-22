@@ -811,14 +811,27 @@ StaticRefPtr<VibrateWindowListener> gVibrateWindowListener;
 
 static bool
 MayVibrate(nsIDocument* doc) {
-#if MOZ_WIDGET_GONK
-  if (XRE_IsParentProcess()) {
-    return true; // The system app can always vibrate
+  if (!doc || !doc->NodePrincipal()) {
+    return false;
   }
-#endif // MOZ_WIDGET_GONK
 
-  // Hidden documents cannot start or stop a vibration.
-  return (doc && !doc->Hidden());
+  nsIPrincipal* principal = doc->NodePrincipal();
+  uint16_t status;
+  if (NS_FAILED(principal->GetAppStatus(&status))) {
+    return false;
+  }
+
+  // XXX: Inplementation in upstream allows access to Vibrate API if caller is
+  // System App, see: Bug 1207221
+  // https://bugzilla.mozilla.org/show_bug.cgi?id=1207221
+  // However, in fact, any in-process app has the same exception with System App.
+
+  // While our upstream grants the exception if caller app is trusted, with
+  // loser restriction but clearer rule.
+
+  // Hidden documents cannot start or stop a vibration except caller is a
+  // trusted app (certified app).
+  return !doc->Hidden() || status >= nsIPrincipal::APP_STATUS_CERTIFIED;
 }
 
 NS_IMETHODIMP
