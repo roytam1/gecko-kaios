@@ -12,6 +12,8 @@ const TEXT_NODE = 3;
 Cu.import('resource://gre/modules/XPCOMUtils.jsm');
 XPCOMUtils.defineLazyModuleGetter(this, 'Services',
   'resource://gre/modules/Services.jsm');
+XPCOMUtils.defineLazyModuleGetter(this, 'SystemAppProxy',
+  'resource://gre/modules/SystemAppProxy.jsm');
 XPCOMUtils.defineLazyModuleGetter(this, 'Utils',
   'resource://gre/modules/accessibility/Utils.jsm');
 XPCOMUtils.defineLazyModuleGetter(this, 'Logger',
@@ -59,6 +61,7 @@ this.EventManager.prototype = {
         this.addEventListener('wheel', this, true);
         this.addEventListener('scroll', this, true);
         this.addEventListener('resize', this, true);
+        SystemAppProxy.addEventListener('mozContentEvent', this);
         this._preDialogPosition = new WeakMap();
       }
       this.present(Presentation.tabStateChanged(null, 'newtab'));
@@ -82,6 +85,7 @@ this.EventManager.prototype = {
       this.removeEventListener('wheel', this, true);
       this.removeEventListener('scroll', this, true);
       this.removeEventListener('resize', this, true);
+      SystemAppProxy.removeEventListener('mozContentEvent', this);
     } catch (x) {
       // contentScope is dead.
     } finally {
@@ -96,6 +100,10 @@ this.EventManager.prototype = {
 
     try {
       switch (aEvent.type) {
+      case 'mozContentEvent':
+      {
+        break;
+      }
       case 'wheel':
       {
         let attempts = 0;
