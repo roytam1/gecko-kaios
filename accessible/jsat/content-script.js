@@ -109,6 +109,8 @@ addMessageListener(
     addMessageListener('AccessFu:ContextMenu', activateContextMenu);
     addMessageListener('AccessFu:Scroll', scroll);
 
+    Utils.isBrowserFrame = this.docShell.isBrowserElement || false;
+
     if (!contentControl) {
       contentControl = new ContentControl(this);
     }

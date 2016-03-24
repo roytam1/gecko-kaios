@@ -89,6 +89,17 @@ this.Utils = { // jshint ignore:line
     return this._buildApp;
   },
 
+  set isBrowserFrame(value) {
+    this._isBrowserFrame = value;
+  },
+
+  get isBrowserFrame() {
+    if (!this._isBrowserFrame) {
+      this._isBrowserFrame = false;
+    }
+    return this._isBrowserFrame;
+  },
+
   get OS() {
     if (!this._OS) {
       this._OS = Services.appinfo.OS;
