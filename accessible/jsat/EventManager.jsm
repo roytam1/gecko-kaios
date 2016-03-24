@@ -102,6 +102,11 @@ this.EventManager.prototype = {
       switch (aEvent.type) {
       case 'mozContentEvent':
       {
+        if (aEvent.detail.type === 'custom-accessible') {
+          let domNode = aEvent.detail.node;
+          let acc = Utils.AccRetrieval.getAccessibleFor(domNode);
+          this.present(Presentation.selected(acc));
+        }
         break;
       }
       case 'wheel':

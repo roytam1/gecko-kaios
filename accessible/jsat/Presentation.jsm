@@ -137,7 +137,14 @@ Presenter.prototype = {
    * @param  {string} aModifiedText Optional modified text.
    */
   liveRegion: function liveRegionShown(aContext, aIsPolite, aIsHide, // jshint ignore:line
-    aModifiedText) {} // jshint ignore:line
+    aModifiedText) {}, // jshint ignore:line
+
+  /**
+   * Explicitly read out by front-end
+   * @param {nsIAccessible} aAccessible the object that should be
+   *   read out explicitly (usually non-focused item).
+   */
+  selected: function selected(aAccessible) {}
 };
 
 /**
@@ -765,5 +772,9 @@ this.Presentation = { // jshint ignore:line
     }
     return this.presenters.map(p => p.liveRegion(context, aIsPolite, aIsHide,
                                                  aModifiedText));
+  },
+
+  selected: function Presentation_selected(aAccessible) {
+    return [ p.selected(aAccessible) for (p of this.presenters) ]; // jshint ignore:line
   }
 };
