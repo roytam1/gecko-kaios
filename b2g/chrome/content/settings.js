@@ -407,33 +407,15 @@ setUpdateTrackingId();
 })();
 
 (function setupCaptionStyles() {
-  let captionPrefs = ['font-color', 'font-size', 'font-family', 'box-color',
-                      'font-shadow', 'theme'];
-  let prefPrefix = 'cue.';
-  captionPrefs.forEach(function(pref) {
-    SettingsListener.observe('accessibility.caption.' + pref, null, function(value) {
-      if (value) {
-        if (pref === 'theme') {
-          let properties = value.split(';');
-          properties.forEach(function(property) {
-            let rv = property.split(':');
-            Services.prefs.setCharPref(prefPrefix + rv[0], rv[1]);
-          });
-        } else {
-          Services.prefs.setCharPref(prefPrefix + pref, value);
-        }
-      }
-    });
-  });
-})();
-
-(function largeTextListener() {
-  let settingsName = 'accessibility.large_text';
-  let prefName = 'ui.largeText.enabled';
-
-  SettingsListener.observe(settingsName, null, function(value) {
-    if (value !== null) {
-      Services.prefs.setBoolPref(prefName, value);
+  // accessibility.caption.theme is combined by values of basic styling,
+  // e.g. font-color:rgba(255, 255, 255, 1);box-color:rgba(0, 0, 0, 1)
+  SettingsListener.observe('accessibility.caption.theme', null, function(value) {
+    if (value) {
+      let properties = value.split(';');
+      properties.forEach(function(property) {
+        let rv = property.split(':');
+        Services.prefs.setCharPref('cue.' + rv[0], rv[1]);
+      });
     }
   });
 })();
@@ -631,6 +613,10 @@ if (AppConstants.MOZ_B2G_RIL) {
 
 // =================== Various simple mapping  ======================
 var settingsToObserve = {
+  'accessibility.large_text': {
+    prefName: 'ui.largeText.enabled',
+    resetToPref: true
+  },
   'accessibility.screenreader_quicknav_modes': {
     prefName: 'accessibility.accessfu.quicknav_modes',
     resetToPref: true,
