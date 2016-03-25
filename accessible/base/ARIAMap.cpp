@@ -795,6 +795,7 @@ static const EStateRule sWAIUnivStateMap[] = {
   eARIAInvalid,
   eARIAModal,
   eARIARequired,  // XXX not global, Bug 553117
+  eARIACheckedMixed,
   eARIANone
 };
 
