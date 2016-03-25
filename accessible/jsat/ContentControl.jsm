@@ -129,7 +129,8 @@ this.ContentControl.prototype = {
       return;
     }
 
-    let moved = TraversalHelper.move(vc, action, aMessage.json.rule);
+    let moved = Utils.isBrowserFrame ? 
+                  TraversalHelper.move(vc, action, aMessage.json.rule) : false;
 
     if (moved) {
       if (origin === 'child') {
