@@ -647,6 +647,27 @@ B2GPresenter.prototype.noMove =
   };
 
 /**
+ * A B2G presenter for non-browser-framed app.
+ */
+function AppFramePresenter() {}
+AppFramePresenter.prototype = Object.create(B2GPresenter.prototype);
+
+AppFramePresenter.prototype.selected =
+  function AppFramePresenter_selected(aAccessible) {
+    let aContext = new PivotContext(aAccessible, null, -1, -1, true);
+    if (!aContext.accessible) {
+      return null;
+    }
+    return {
+      type: this.type,
+      details: {
+        eventType: 'front-end-selected',
+        data: UtteranceGenerator.genForContext(aContext)
+      }
+    };
+  };
+
+/**
  * A braille presenter
  */
 function BraillePresenter() {}
@@ -688,7 +709,8 @@ this.Presentation = { // jshint ignore:line
     delete this.presenters;
     let presenterMap = {
       'mobile/android': [VisualPresenter, AndroidPresenter],
-      'b2g': [VisualPresenter, B2GPresenter],
+      'b2g': [VisualPresenter,
+              Utils.isBrowserFrame ? B2GPresenter : AppFramePresenter],
       'browser': [VisualPresenter, B2GPresenter, AndroidPresenter]
     };
     this.presenters = presenterMap[Utils.MozBuildApp].map(P => new P());
