@@ -717,6 +717,33 @@ var WifiManager = (function() {
     });
   }
 
+  manager.getNetworksDisabled = function(callback) {
+    wifiCommand.listNetworks(function (reply) {
+      var lines = reply ? reply.split("\n") : [];
+      if (lines.length <= 1) {
+        // We need to make sure we call the callback even if there are no
+        // configured networks.
+        debug("Can't find configured networks");
+        callback(false);
+        return;
+      }
+
+      var total = 0;
+      var disabled = 0;
+      for (var n = 1; n < lines.length; ++n) {
+        var result = lines[n].split("\t");
+        var netId = parseInt(result[0], 10);
+        var config = { netId: netId };
+        total++;
+        if (result[3].indexOf("DISABLED") !== -1) {
+          disabled++;
+          continue;
+        }
+      }
+      (total !== disabled) ? callback(false) : callback(true);
+    });
+  }
+
   function handleWpaEapEvents(event) {
     if (event.indexOf("CTRL-EVENT-EAP-FAILURE") !== -1) {
       if (event.indexOf("EAP authentication failed") !== -1) {
@@ -2437,6 +2464,12 @@ function WifiWorker() {
       self._scanStuckTimer.initWithCallback(scanIsStuck, SCAN_STUCK_WAIT,
                                             Ci.nsITimer.TYPE_ONE_SHOT);
     }
+
+    WifiManager.getNetworksDisabled(function(result){
+      if (result) {
+        self._enableAllNetworks(function(){debug("All network is disable, try to enable them");});
+      }
+    });
 
     if (self.wantScanResults.length === 0) {
       debug("Scan results available, but we don't need them");
