@@ -720,7 +720,7 @@ this.Logger = { // jshint ignore:line
  */
 this.PivotContext = function PivotContext(aAccessible, aOldAccessible, // jshint ignore:line
   aStartOffset, aEndOffset, aIgnoreAncestry = false,
-  aIncludeInvisible = false) {
+  aIncludeInvisible = false, aEmphasizedRole = null) {
   this._accessible = aAccessible;
   this._nestedControl = Utils.getEmbeddedControl(aAccessible);
   this._oldAccessible =
@@ -729,6 +729,7 @@ this.PivotContext = function PivotContext(aAccessible, aOldAccessible, // jshint
   this.endOffset = aEndOffset;
   this._ignoreAncestry = aIgnoreAncestry;
   this._includeInvisible = aIncludeInvisible;
+  this._emphasizedRole = aEmphasizedRole;
 };
 
 PivotContext.prototype = {
@@ -849,6 +850,41 @@ PivotContext.prototype = {
           (currentAncestor, i) => currentAncestor !== this.oldAncestry[i]);
     }
     return this._newAncestry;
+  },
+
+  /**
+   * Get a |aAccessible|'s parent.
+   * @param  {nsIAccessible} aAccessible.
+   * @return {nsIAccessible} aAccessible's parent.
+   */
+  _getParent: function _getParent(aAccessible) {
+    if (!aAccessible) {
+      return null;
+    }
+    return aAccessible.parent;
+  },
+
+  /*
+   * This is another version of 'newAncestry', if '_emphasizedRole' is set,
+   * we should put the elements which are equal to the '_emphasizedRole'
+   * to the diff list.
+   */
+  get parentsDiff() {
+    if (this._getParent(this.accessible) ===
+        this._getParent(this._oldAccessible)) {
+      return [];
+    }
+    if (!this._parentsDiff) {
+      this._parentsDiff = this._ignoreAncestry ? [] :
+        this.currentAncestry.filter(
+          (currentAncestor, i) => {
+            return (currentAncestor !== this.oldAncestry[i]) ||
+                   (this._emphasizedRole &&
+                    this._emphasizedRole === currentAncestor.role);
+          }
+        );
+    }
+    return this._parentsDiff;
   },
 
   /*

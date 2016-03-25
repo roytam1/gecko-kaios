@@ -30,7 +30,8 @@ XPCOMUtils.defineLazyModuleGetter(this, 'Roles', // jshint ignore:line
 XPCOMUtils.defineLazyModuleGetter(this, 'States', // jshint ignore:line
   'resource://gre/modules/accessibility/Constants.jsm');
 
-this.EXPORTED_SYMBOLS = ['UtteranceGenerator', 'BrailleGenerator']; // jshint ignore:line
+this.EXPORTED_SYMBOLS = ['UtteranceGenerator', 'BriefGenerator', // jshint ignore:line
+                         'BrailleGenerator']; // jshint ignore:line
 
 var OutputGenerator = {
 
@@ -840,6 +841,90 @@ this.UtteranceGenerator = {  // jshint ignore:line
 
       return utterance;
     }
+};
+
+/**
+ * The brief version of UtteranceGenerator.
+ *
+ * We found that UtteranceGenerator can generate unwanted informations. So some
+ * of the methods are overwritten by this version, which should be more suitable
+ * for packaged app.
+ */
+this.BriefGenerator = {  // jshint ignore:line
+  __proto__: UtteranceGenerator,
+
+  genForContext: function genForContext(aContext) {
+    let output = [];
+    let self = this;
+    let addOutput = function addOutput(aAccessible) {
+      output.push.apply(output, self.genForObject(aAccessible, aContext));
+    };
+    let addOutputInParents = function addOutputInParents(aAccessible) {
+      let roleString = Utils.AccRetrieval.getStringRole(aAccessible.role);
+      if (roleString === 'heading' || roleString === 'pagetablist') {
+        output.push.apply(output, self.genForObject(aAccessible, aContext));
+        output.push(',');
+      }
+    };
+    let ignoreSubtree = function ignoreSubtree(aAccessible) {
+      let roleString = Utils.AccRetrieval.getStringRole(aAccessible.role);
+      let nameRule = self.roleRuleMap[roleString] || 0;
+      // Ignore subtree if the name is explicit and the role's name rule is the
+      // NAME_FROM_SUBTREE_RULE.
+      return (((nameRule & INCLUDE_VALUE) && aAccessible.value) ||
+              ((nameRule & NAME_FROM_SUBTREE_RULE) &&
+               (Utils.getAttributes(aAccessible)['explicit-name'] === 'true' &&
+               !(nameRule & IGNORE_EXPLICIT_NAME))));
+    };
+
+    let contextStart = this._getContextStart(aContext);
+
+    if (this.outputOrder === OUTPUT_DESC_FIRST) {
+      contextStart.forEach(addOutputInParents);
+      addOutput(aContext.accessible);
+      [addOutput(node) for // jshint ignore:line
+        (node of aContext.subtreeGenerator(true, ignoreSubtree))]; // jshint ignore:line
+    } else {
+      contextStart.reverse().forEach(addOutputInParents);
+      [addOutput(node) for // jshint ignore:line
+        (node of aContext.subtreeGenerator(false, ignoreSubtree))]; // jshint ignore:line
+      addOutput(aContext.accessible);
+    }
+
+    return output;
+  },
+
+  objectOutputFunctions: {
+    __proto__: this.UtteranceGenerator.objectOutputFunctions,
+
+    _generateBaseOutput:
+      function _generateBaseOutput(aAccessible, aRoleStr, aState, aFlags) {
+        let output = [];
+
+        if (aFlags & INCLUDE_DESC) {
+          this._addState(output, aState);
+        }
+
+        if (aFlags & INCLUDE_VALUE && aAccessible.value.trim()) {
+          output[this.outputOrder === OUTPUT_DESC_FIRST ? 'push' : 'unshift'](
+            aAccessible.value);
+        }
+
+        this._addName(output, aAccessible, aFlags);
+
+        return output;
+      },
+
+    heading: function heading(aAccessible, aRoleStr, aState, aFlags) {
+      let output = [];
+      this._addName(output, aAccessible, aFlags);
+      return output;
+    }
+  },
+
+  _getContextStart: function _getContextStart(aContext) {
+    return aContext.parentsDiff;
+  }
 };
 
 this.BrailleGenerator = {  // jshint ignore:line
