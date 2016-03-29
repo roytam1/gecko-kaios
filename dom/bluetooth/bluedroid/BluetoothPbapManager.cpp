@@ -460,6 +460,8 @@ BluetoothPbapManager::NotifyConnectionRequest()
                     NS_LITERAL_STRING(KEY_PBAP),
                     deviceAddressStr));
 
+  BT_LOGR("Notify front-end app of the PBAP connection request.");
+
   return ObexResponseCode::Success;
 }
 
@@ -826,10 +828,13 @@ BluetoothPbapManager::ReplyToConnect(const nsAString& aPassword)
   res[6] = (uint8_t)BluetoothPbapManager::MAX_PACKET_LENGTH;
 
   // Section 6.4 "Establishing an OBEX Session", PBAP 1.2
-  // Headers: [Who:16][Connection ID]
+  // Headers: [Connection Id][Who:16]
+  //
+  // According to section 2.2.11 "Connection Identifie", IrOBEX 1.2,
+  // Connection Id header should be the first header.
+  index += AppendHeaderConnectionId(&res[index], 0x01);
   index += AppendHeaderWho(&res[index], kObexLeastMaxSize,
                            kPbapObexTarget.mUuid, sizeof(BluetoothUuid));
-  index += AppendHeaderConnectionId(&res[index], 0x01);
 
   // Authentication response
   if (!aPassword.IsEmpty()) {
@@ -859,6 +864,8 @@ BluetoothPbapManager::ReplyToConnect(const nsAString& aPassword)
     index += AppendAuthResponse(&res[index], kObexLeastMaxSize - index,
                                 digestResponse, offset);
   }
+
+  BT_LOGR("Reply to PBAP connection request.");
 
   return SendObexData(res, ObexResponseCode::Success, index);
 }
@@ -1279,6 +1286,7 @@ bool
 BluetoothPbapManager::SendObexData(uint8_t* aData, uint8_t aOpcode, int aSize)
 {
   if (!mSocket) {
+    BT_LOGR("Failed to send PBAP obex data. aOpcode: [0x%x] ", aOpcode);
     return false;
   }
 
