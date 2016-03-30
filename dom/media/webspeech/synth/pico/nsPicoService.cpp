@@ -222,7 +222,6 @@ public:
     : mText(NS_ConvertUTF16toUTF8(aText))
     , mRate(aRate)
     , mPitch(aPitch)
-    , mFirstData(true)
     , mTask(aTask)
     , mVoice(aVoice)
     , mService(aService) { }
@@ -245,8 +244,6 @@ private:
   float mRate;
 
   float mPitch;
-
-  bool mFirstData;
 
   // We use this pointer to compare it with the current service task.
   // If they differ, this runnable should stop.
@@ -346,11 +343,9 @@ PicoCallbackRunnable::DispatchSynthDataRunnable(
   {
   public:
     PicoSynthDataRunnable(already_AddRefed<SharedBuffer>& aBuffer,
-                          size_t aBufferSize, bool aFirstData,
-                          PicoCallbackRunnable* aCallback)
+                          size_t aBufferSize, PicoCallbackRunnable* aCallback)
       : mBuffer(aBuffer)
       , mBufferSize(aBufferSize)
-      , mFirstData(aFirstData)
       , mCallback(aCallback) {
     }
 
@@ -364,10 +359,6 @@ PicoCallbackRunnable::DispatchSynthDataRunnable(
 
       nsISpeechTask* task = mCallback->mTask;
 
-      if (mFirstData) {
-        task->Setup(mCallback, PICO_CHANNELS_NUM, PICO_SAMPLE_RATE, 2);
-      }
-
       return task->SendAudioNative(
         mBufferSize ? static_cast<short*>(mBuffer->Data()) : nullptr, mBufferSize / 2);
     }
@@ -377,15 +368,12 @@ PicoCallbackRunnable::DispatchSynthDataRunnable(
 
     size_t mBufferSize;
 
-    bool mFirstData;
-
     RefPtr<PicoCallbackRunnable> mCallback;
   };
 
   nsCOMPtr<nsIRunnable> sendEvent =
-    new PicoSynthDataRunnable(aBuffer, aBufferSize, mFirstData, this);
+    new PicoSynthDataRunnable(aBuffer, aBufferSize, this);
   NS_DispatchToMainThread(sendEvent);
-  mFirstData = false;
 }
 
 // nsISpeechTaskCallback
@@ -491,6 +479,12 @@ nsPicoService::Speak(const nsAString& aText, const nsAString& aUri,
 
   mCurrentTask = aTask;
   RefPtr<PicoCallbackRunnable> cb = new PicoCallbackRunnable(aText, voice, aRate, aPitch, aTask, this);
+  // Calling setup first for preventing the following case
+  // 1. User call speak
+  // 2. before PicoSynthDataRunnable::Run calls Setup, use calls Cancel.
+  // 3. nsSpeechTask::Cancel is unable to inform PicoCallbackRunnable because of mCallback is not set.
+  // 4. nsSpeechTask is deleted and PicoCallbackRunnable has a dangling pointer.
+  aTask->Setup(cb, PICO_CHANNELS_NUM, PICO_SAMPLE_RATE, 2);
   return mThread->Dispatch(cb, NS_DISPATCH_NORMAL);
 }
 
