@@ -818,7 +818,8 @@ this.DOMApplicationRegistry = {
         yield this.updateDataStoreForApp(id);
       }
 
-      yield this.registerAppsHandlers(runUpdate);
+      let loadActicitiesComplete = Services.prefs.getBoolPref("dom.apps.load-activities-complete");
+      yield this.registerAppsHandlers(runUpdate || !loadActicitiesComplete);
     }.bind(this)).then(null, Cu.reportError);
   },
 
@@ -1318,12 +1319,17 @@ this.DOMApplicationRegistry = {
     // they're received.
     switch (aMessage.name) {
       case "Activities:Register:KO":
+        // Activities:Register:KO is activities register fail due to unexpected
+        // reasons. System will dump error message and device cannot boot to
+        // home with this fatal error.
         dump("Activities didn't register correctly!");
+        break;
       case "Activities:Register:OK":
         // Activities:Register:OK is special because it's one way the registryReady
         // promise can be resolved.
         // XXX: What to do when the activities registration failed? At this point
         // just act as if nothing happened.
+        Services.prefs.setBoolPref("dom.apps.load-activities-complete", true);
         this.notifyAppsRegistryReady();
         break;
       case "Webapps:GetList":

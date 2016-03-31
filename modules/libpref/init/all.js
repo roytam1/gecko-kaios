@@ -4784,6 +4784,9 @@ pref("dom.mozApps.maxLocalId", 1000);
 // Reset apps permissions
 pref("dom.apps.reset-permissions", false);
 
+// Load activities indexdb complete
+pref("dom.apps.load-activities-complete", false);
+
 // XXX Security: You CANNOT safely add a new app store for
 // installing privileged apps just by modifying this pref and
 // adding the signing cert for that store to the cert trust

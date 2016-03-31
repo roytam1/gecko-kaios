@@ -635,6 +635,8 @@ this.AppsUtils = {
 
     if ((mstone != savedmstone) || (buildID != savedBuildID)) {
       aPrefBranch.setBoolPref("dom.apps.reset-permissions", false);
+      //Reset dom.apps.load-activities-complete to false for OTA update
+      aPrefBranch.setBoolPref("dom.apps.load-activities-complete", false);
       return true;
     } else {
       return false;
