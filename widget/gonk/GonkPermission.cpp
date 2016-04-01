@@ -195,8 +195,11 @@ GonkPermissionService::GetInstance()
 #if ANDROID_VERSION >= 23
 void
 GonkPermissionService::getPackagesForUid(
-  const uid_t uid, android::Vector<android::String16>& packages)
-{ }
+  const uid_t uid, android::Vector<android::String16>& name)
+{
+  name.add(String16("b2g"));
+  return;
+}
 
 bool
 GonkPermissionService::isRuntimePermission(const android::String16& permission)
