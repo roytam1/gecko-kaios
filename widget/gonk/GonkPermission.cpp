@@ -197,6 +197,10 @@ void
 GonkPermissionService::getPackagesForUid(
   const uid_t uid, android::Vector<android::String16>& name)
 {
+  // In Android AudioFlinger::openRecord(), recordingAllowed(in ServiceUtilities.cpp)
+  // checks the the package name(added in M).
+  // In H5OS, the only one to open the AudioRecord is b2g process,
+  // and the permissionController in GonkPermissionService should return something.
   name.add(String16("b2g"));
   return;
 }
