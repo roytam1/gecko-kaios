@@ -211,6 +211,13 @@ GLCursorImageManager::PrepareCursorImage(nsCursor aCursor, nsWindow* aWindow)
       nsCOMPtr<dom::Element> element =
         cursorElementHolder->GetContentNode();
       nsIFrame* frame = element->GetPrimaryFrame();
+      if (!frame) {
+        // Force the document to construct a primary frame immediately if
+        // it hasn't constructed yet.
+        doc->FlushPendingNotifications(Flush_Frames);
+        frame = element->GetPrimaryFrame();
+      }
+      MOZ_ASSERT(frame);
 
       // Create an empty GLCursorLoadRequest.
       GLCursorLoadRequest &loadRequest =
