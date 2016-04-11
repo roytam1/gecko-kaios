@@ -64,7 +64,7 @@ MapCursorState(nsCursor aCursor)
 class RemoveLoadCursorTaskOnMainThread final : public nsRunnable {
 public:
   RemoveLoadCursorTaskOnMainThread(nsCursor aCursor,
-                                   GLCursorImageManager *aManager)
+                                   GLCursorImageManager* aManager)
       : mCursor(aCursor)
       , mManager(aManager)
   { }
@@ -81,7 +81,7 @@ public:
 
 private:
   nsCursor mCursor;
-  GLCursorImageManager *mManager;
+  GLCursorImageManager* mManager;
 };
 
 NS_IMPL_ISUPPORTS(GLCursorImageManager::LoadCursorTask, imgINotificationObserver)
@@ -89,7 +89,7 @@ NS_IMPL_ISUPPORTS(GLCursorImageManager::LoadCursorTask, imgINotificationObserver
 GLCursorImageManager::LoadCursorTask::LoadCursorTask(
     nsCursor aCursor,
     nsIntPoint aHotspot,
-    GLCursorImageManager *aManager)
+    GLCursorImageManager* aManager)
   : mCursor(aCursor)
   , mHotspot(aHotspot)
   , mManager(aManager)
@@ -101,9 +101,9 @@ GLCursorImageManager::LoadCursorTask::~LoadCursorTask()
 }
 
 NS_IMETHODIMP
-GLCursorImageManager::LoadCursorTask::Notify(imgIRequest *aProxy,
+GLCursorImageManager::LoadCursorTask::Notify(imgIRequest* aProxy,
                                              int32_t aType,
-                                             const nsIntRect *aRect)
+                                             const nsIntRect* aRect)
 {
   if (aType != imgINotificationObserver::DECODE_COMPLETE) {
     return NS_OK;
@@ -182,7 +182,7 @@ GLCursorImageManager::NotifyCursorImageLoadDone(nsCursor aCursor,
 }
 
 void
-GLCursorImageManager::PrepareCursorImage(nsCursor aCursor, nsWindow *aWindow)
+GLCursorImageManager::PrepareCursorImage(nsCursor aCursor, nsWindow* aWindow)
 {
   nsCursor supportedCursor = MapCursorState(aCursor);
   ReentrantMonitorAutoEnter lock(mGLCursorImageManagerMonitor);
@@ -194,11 +194,11 @@ GLCursorImageManager::PrepareCursorImage(nsCursor aCursor, nsWindow *aWindow)
     return;
   }
 
-  // Create a new loading task for cursor
+  // Create a new loading task for cursor.
   RefPtr<mozilla::dom::AnonymousContent> cursorElementHolder;
-  nsIPresShell *presShell = aWindow->GetWidgetListener()->GetPresShell();
+  nsIPresShell* presShell = aWindow->GetWidgetListener()->GetPresShell();
   if (presShell && presShell->GetDocument()) {
-    nsIDocument *doc = presShell->GetDocument();
+    nsIDocument* doc = presShell->GetDocument();
 
     // Insert new element to ensure restyle
     nsCOMPtr<dom::Element> image = doc->CreateHTMLElement(nsGkAtoms::div);
@@ -210,16 +210,16 @@ GLCursorImageManager::PrepareCursorImage(nsCursor aCursor, nsWindow *aWindow)
     if (cursorElementHolder) {
       nsCOMPtr<dom::Element> element =
         cursorElementHolder->GetContentNode();
-      nsIFrame *frame = element->GetPrimaryFrame();
+      nsIFrame* frame = element->GetPrimaryFrame();
 
-      // Create an empty GLCursorLoadRequest
+      // Create an empty GLCursorLoadRequest.
       GLCursorLoadRequest &loadRequest =
         mGLCursorLoadingRequestMap[supportedCursor];
-      const nsStyleUserInterface *ui = frame->StyleUserInterface();
+      const nsStyleUserInterface* ui = frame->StyleUserInterface();
 
-      // Retrieve first cursor property from css
+      // Retrieve first cursor property from css.
       MOZ_ASSERT(ui->mCursorArrayLength > 0);
-      nsCursorImage *item = ui->mCursorArray;
+      nsCursorImage* item = ui->mCursorArray;
       nsIntPoint hotspot(item->mHotspotX, item->mHotspotY);
       loadRequest.mTask =
         new LoadCursorTask(supportedCursor, hotspot, this);
@@ -227,10 +227,10 @@ GLCursorImageManager::PrepareCursorImage(nsCursor aCursor, nsWindow *aWindow)
       item->GetImage()->Clone(loadRequest.mTask.get(),
                               getter_AddRefs(loadRequest.mRequest));
 
-      // Ask decode after load complete
+      // Ask decode after load complete.
       loadRequest.mRequest->StartDecoding();
 
-      // Since we have cloned the imgIRequest, we can remove the element
+      // Since we have cloned the imgIRequest, we can remove the element.
       doc->RemoveAnonymousContent(*cursorElementHolder, rv);
     }
   }

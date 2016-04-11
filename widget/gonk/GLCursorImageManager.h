@@ -25,7 +25,7 @@ public:
 
   // Called by nsWindow.
   // Prepare asynchronous load task for cursor if it doesn't exist.
-  void PrepareCursorImage(nsCursor aCursor, nsWindow *aWindow);
+  void PrepareCursorImage(nsCursor aCursor, nsWindow* aWindow);
   bool IsCursorImageReady(nsCursor aCursor);
   // Get the GLCursorImage corresponding to a cursor, should be called after
   // checking by IsCursorImageReady().
@@ -60,18 +60,18 @@ private:
 
     LoadCursorTask(nsCursor aCursor,
                    nsIntPoint aHotspot,
-                   GLCursorImageManager *aManager);
+                   GLCursorImageManager* aManager);
 
     // This callback function will be called on main thread and notify the
     // status of image decoding process.
-    NS_IMETHODIMP Notify(imgIRequest *aProxy,
+    NS_IMETHODIMP Notify(imgIRequest* aProxy,
                          int32_t aType,
-                         const nsIntRect *aRect) override;
+                         const nsIntRect* aRect) override;
   private:
     ~LoadCursorTask();
     nsCursor mCursor;
     nsIntPoint mHotspot;
-    GLCursorImageManager *mManager;
+    GLCursorImageManager* mManager;
   };
 
   struct GLCursorLoadRequest {
