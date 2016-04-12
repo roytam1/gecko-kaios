@@ -195,6 +195,11 @@ static const char* const gOmxTypes[] = {
   "audio/amr",
   "audio/3gpp",
   "audio/flac",
+#if defined(H5OS_MIDI) && ANDROID_VERSION >= 23
+  //We only supports midi playback after Android M 
+  "audio/midi",
+  "audio/x-midi",
+#endif
   "video/mp4",
   "video/x-m4v",
   "video/3gpp",

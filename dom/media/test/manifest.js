@@ -51,6 +51,16 @@ if (SpecialPowers.Services.appinfo.name != "B2G") {
   ]);
 }
 
+// H5OS supports Midi playback from Android M.
+var androidVersion = SpecialPowers.Cc['@mozilla.org/system-info;1']
+                                  .getService(SpecialPowers.Ci.nsIPropertyBag2)
+                                  .getProperty('version');
+if (navigator.userAgent.indexOf("Mobile") != -1 && androidVersion >= 23) {
+  gSmallTests = gSmallTests.concat([
+    { name:"small-shot.midi", type:"audio/x-midi", duration:4.674 }
+  ]);
+}
+
 // Used by test_bug654550.html, for videoStats preference
 var gVideoTests = [
   { name:"320x240.ogv", type:"video/ogg", width:320, height:240, duration:0.266 },

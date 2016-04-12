@@ -213,6 +213,7 @@ if test -n "$gonkdir" ; then
         fi
         MOZ_NFC=1
         MOZ_RTSP=1
+        H5OS_MIDI=1
         LIBS="$LIBS -lc++"
         android_cxx_stl=libc++
         ;;
@@ -5923,6 +5924,18 @@ if test -n "$MOZ_SYNTH_PICO"; then
     AC_DEFINE(MOZ_SYNTH_PICO)
 fi
 AC_SUBST(MOZ_SYNTH_PICO)
+
+dnl ========================================================
+dnl = Enable H5OS MIDI feature
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(h5os-midi,
+[  --enable-h5os-midi  Set compile flags necessary for compiling H5OS midi features ],
+    H5OS_MIDI=1,
+    H5OS_MIDI= )
+if test -n "H5OS_MIDI"; then
+    AC_DEFINE(H5OS_MIDI)
+fi
+AC_SUBST(ENABLE_H5OS_MIDI_FEATURE)
 
 dnl ========================================================
 dnl = Enable Support for Time Manager API

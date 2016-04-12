@@ -192,6 +192,7 @@ def old_configure_options(*options):
     '--enable-gnomeui',
     '--enable-gold',
     '--enable-gps-debug',
+    '--enable-h5os-midi',
     '--enable-hardware-aec-ns',
     '--enable-icf',
     '--enable-install-strip',
