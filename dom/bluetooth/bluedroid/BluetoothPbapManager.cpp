@@ -1004,6 +1004,8 @@ bool
 BluetoothPbapManager::ReplyToPullPhonebook(BlobParent* aActor,
                                            uint16_t aPhonebookSize)
 {
+  BT_LOGD("ReplyToPullPhonebook with %d contacts.", aPhonebookSize);
+
   RefPtr<BlobImpl> impl = aActor->GetBlobImpl();
   RefPtr<Blob> blob = Blob::Create(nullptr, impl);
 
@@ -1035,6 +1037,8 @@ bool
 BluetoothPbapManager::ReplyToPullvCardListing(BlobParent* aActor,
                                               uint16_t aPhonebookSize)
 {
+  BT_LOGD("ReplyToPullvCardListing with %d contacts.", aPhonebookSize);
+
   RefPtr<BlobImpl> impl = aActor->GetBlobImpl();
   RefPtr<Blob> blob = Blob::Create(nullptr, impl);
 
