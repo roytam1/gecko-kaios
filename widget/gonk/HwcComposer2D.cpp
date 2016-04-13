@@ -741,7 +741,14 @@ HwcComposer2D::TryHwComposition(nsScreenGonk* aScreen)
             return false;
         } else if (blitComposite) {
             // BLIT Composition, flip DispSurface target
-            GetGonkDisplay()->UpdateDispSurface(aScreen->GetEGLDisplay(), aScreen->GetEGLSurface());
+            RefPtr<mozilla::gl::GLContext> GLContext = aScreen->GetGLContext();
+            if (GLContext) {
+                // If using CompositorOGL, we need to do MakeCurrent before
+                // UpdateDispSurface.
+                GLContext->MakeCurrent();
+            }
+            GetGonkDisplay()->UpdateDispSurface(aScreen->GetEGLDisplay(),
+                                                aScreen->GetEGLSurface());
             DisplaySurface* dispSurface = aScreen->GetDisplaySurface();
             if (!dispSurface) {
                 LOGE("H/W Composition failed. NULL DispSurface.");
