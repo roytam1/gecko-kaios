@@ -74,8 +74,6 @@ static GLCursorImageManager sGLCursorImageManager;
 NS_IMPL_ISUPPORTS_INHERITED0(nsWindow, nsBaseWidget)
 
 nsWindow::nsWindow()
-    : mHasGLCursor(false)
-    , mGLCursorPos(OFFSCREEN_CURSOR_POSITION)
 {
     RefPtr<nsScreenManagerGonk> screenManager = nsScreenManagerGonk::GetInstance();
     screenManager->Initialize();
@@ -670,7 +668,7 @@ nsWindow::SetCursor(nsCursor aCursor)
 
     // Prepare GLCursor if it doesn't exist
     sGLCursorImageManager.PrepareCursorImage(aCursor, this);
-    mHasGLCursor = true;
+    sGLCursorImageManager.HasSetCursor();
     KickOffComposition();
 
     return NS_OK;
@@ -687,8 +685,16 @@ NS_IMETHODIMP
 nsWindow::DispatchEvent(WidgetGUIEvent* aEvent, nsEventStatus& aStatus)
 {
     if (aEvent->mMessage == eMouseMove) {
-        mGLCursorPos.x = aEvent->mRefPoint.x;
-        mGLCursorPos.y = aEvent->mRefPoint.y;
+        LayoutDeviceIntPoint position(aEvent->mRefPoint.x, aEvent->mRefPoint.y);
+
+        // Validate whether refPoint exceeds window boundary.
+        position.x = position.x < 0 ? 0 :
+            (position.x > (mBounds.width) ? (mBounds.width) : position.x);
+
+        position.y = position.y < 0 ? 0 :
+            (position.y > (mBounds.height) ? (mBounds.height) : position.y);
+
+        sGLCursorImageManager.SetGLCursorPosition(position);
 
         if (gfxPrefs::GLCursorEnabled()) {
             // Stop rendering with Hwc because virtual cursor is drawn on the
@@ -699,7 +705,8 @@ nsWindow::DispatchEvent(WidgetGUIEvent* aEvent, nsEventStatus& aStatus)
             KickOffComposition();
         }
     } else if (aEvent->mMessage == eMouseExitFromWidget) {
-        mGLCursorPos = OFFSCREEN_CURSOR_POSITION;
+        sGLCursorImageManager.SetGLCursorPosition(
+            GLCursorImageManager::kOffscreenCursorPosition);
 
         if (gfxPrefs::GLCursorEnabled()) {
             // Turn render-with-hwc back on.
@@ -770,12 +777,13 @@ nsWindow::DrawWindowOverlay(LayerManagerComposite* aManager, LayoutDeviceIntRect
     if (aManager) {
       CompositorOGL *compositor = static_cast<CompositorOGL*>(aManager->GetCompositor());
       if (compositor) {
-        if (mHasGLCursor &&
-            mGLCursorPos != OFFSCREEN_CURSOR_POSITION &&
+        if (sGLCursorImageManager.ShouldDrawGLCursor() &&
             sGLCursorImageManager.IsCursorImageReady(mCursor)) {
             GLCursorImageManager::GLCursorImage cursorImage =
                 sGLCursorImageManager.GetGLCursorImage(mCursor);
-            compositor->DrawGLCursor(aRect, mGLCursorPos,
+            LayoutDeviceIntPoint position =
+                sGLCursorImageManager.GetGLCursorPosition();
+            compositor->DrawGLCursor(aRect, position,
                                      cursorImage.mSurface,
                                      cursorImage.mImgSize,
                                      cursorImage.mHotspot);

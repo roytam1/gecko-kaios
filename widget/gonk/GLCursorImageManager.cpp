@@ -12,6 +12,9 @@ using namespace mozilla;
 using namespace mozilla::dom;
 using namespace mozilla::gfx;
 
+const LayoutDeviceIntPoint
+  GLCursorImageManager::kOffscreenCursorPosition = LayoutDeviceIntPoint(-1, -1);
+
 namespace {
 
 nsString
@@ -139,6 +142,8 @@ GLCursorImageManager::LoadCursorTask::Notify(imgIRequest *aProxy,
 
 GLCursorImageManager::GLCursorImageManager()
   : mGLCursorImageManagerMonitor("GLCursorImageManagerMonitor")
+  , mHasSetCursor(false)
+  , mGLCursorPos(kOffscreenCursorPosition)
 {
 }
 
@@ -236,4 +241,32 @@ GLCursorImageManager::RemoveCursorLoadRequest(nsCursor aCursor)
 {
   ReentrantMonitorAutoEnter lock(mGLCursorImageManagerMonitor);
   mGLCursorLoadingRequestMap.erase(aCursor);
+}
+
+void
+GLCursorImageManager::HasSetCursor()
+{
+  ReentrantMonitorAutoEnter lock(mGLCursorImageManagerMonitor);
+  mHasSetCursor = true;
+}
+
+void
+GLCursorImageManager::SetGLCursorPosition(LayoutDeviceIntPoint aPosition)
+{
+  ReentrantMonitorAutoEnter lock(mGLCursorImageManagerMonitor);
+  mGLCursorPos = aPosition;
+}
+
+LayoutDeviceIntPoint
+GLCursorImageManager::GetGLCursorPosition()
+{
+  ReentrantMonitorAutoEnter lock(mGLCursorImageManagerMonitor);
+  return mGLCursorPos;
+}
+
+bool
+GLCursorImageManager::ShouldDrawGLCursor()
+{
+  ReentrantMonitorAutoEnter lock(mGLCursorImageManagerMonitor);
+  return mHasSetCursor && mGLCursorPos != kOffscreenCursorPosition;
 }

@@ -27,15 +27,29 @@ public:
   // Prepare asynchronous load task for cursor if it doesn't exist.
   void PrepareCursorImage(nsCursor aCursor, nsWindow *aWindow);
   bool IsCursorImageReady(nsCursor aCursor);
-  // Get the GLCursorImage corresponding to a cursor, sould be called after
+  // Get the GLCursorImage corresponding to a cursor, should be called after
   // checking by IsCursorImageReady().
   GLCursorImage GetGLCursorImage(nsCursor aCursor);
+
+  // Called by nsWindow::SetCursor, on the main thread.
+  void HasSetCursor();
+
+  // Called by nsWindow::DispatchEvent, on the main thread.
+  void SetGLCursorPosition(mozilla::LayoutDeviceIntPoint aPosition);
+
+  // Called by nsWindow::DrawWindowOverlay, on the compositor thread.
+  mozilla::LayoutDeviceIntPoint GetGLCursorPosition();
+
+  // Called by nsWindow::DrawWindowOverlay, on the compositor thread.
+  bool ShouldDrawGLCursor();
 
   // Called back by LoadCursorTask.
   void NotifyCursorImageLoadDone(nsCursor aCursor,
                                  GLCursorImage &GLCursorImage);
   // Called back by RemoveLoadCursorTaskOnMainThread.
   void RemoveCursorLoadRequest(nsCursor aCursor);
+
+  static const mozilla::LayoutDeviceIntPoint kOffscreenCursorPosition;
 
 private:
   bool IsCursorImageLoading(nsCursor aCursor);
@@ -65,14 +79,19 @@ private:
     RefPtr<LoadCursorTask> mTask;
   };
 
+  // Locks against both mGLCursorImageMap and mGLCursorLoadingRequestMap.
+  // Also locks against mRecvSetCursor and mGLCursorPos.
+  mozilla::ReentrantMonitor mGLCursorImageManagerMonitor;
+
   // Store cursors which are in loading process.
   std::map<nsCursor, GLCursorLoadRequest> mGLCursorLoadingRequestMap;
 
   // Store cursor images which are ready to render.
   std::map<nsCursor, GLCursorImage> mGLCursorImageMap;
 
-  // Locks against both mGLCursorImageMap and mGLCursorLoadingRequestMap.
-  mozilla::ReentrantMonitor mGLCursorImageManagerMonitor;
+  bool mHasSetCursor; // True if we received a SetCursor event.
+
+  mozilla::LayoutDeviceIntPoint mGLCursorPos; // Save the current cursor position.
 };
 
 #endif /* GLCursorImageManager_h */

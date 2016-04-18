@@ -181,10 +181,6 @@ private:
     RefPtr<nsScreenGonk> mScreen;
 
     RefPtr<mozilla::HwcComposer2D> mComposer2D;
-
-    // GL Cursor
-    bool mHasGLCursor;
-    LayoutDeviceIntPoint mGLCursorPos; // Save the current cursor position
 };
 
 #endif /* nsWindow_h */
