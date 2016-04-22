@@ -158,9 +158,6 @@ static bool MatchesAAC(const uint8_t* aData, const uint32_t aLength)
   //|Protection Absent|   1  | 1 if there is no CRC and 0 if there is CRC
   //|-----------------|------|---------------------------------------------------
 
-  //The value of pos + 2 should be less than or equal to aLength.
-  MOZ_ASSERT(pos + 2 <= aLength);
-
   if (pos + 2 > aLength) {
     return false;
   }
