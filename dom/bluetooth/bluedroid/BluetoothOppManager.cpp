@@ -1661,6 +1661,8 @@ void
 BluetoothOppManager::Disconnect(BluetoothProfileController* aController)
 {
   if (mSocket) {
+    SendDisconnectRequest();
+
     mSocket->Close();
   } else {
     BT_WARNING("%s: No ongoing file transfer to stop", __FUNCTION__);
