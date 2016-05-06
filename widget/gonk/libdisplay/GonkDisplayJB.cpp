@@ -36,6 +36,7 @@
 #include "mozilla/Assertions.h"
 
 #define DEFAULT_XDPI 75.0
+#define GET_FRAMEBUFFER_FORMAT_FROM_HWC
 
 using namespace android;
 
@@ -90,11 +91,14 @@ GonkDisplayJB::GonkDisplayJB()
             mFBDevice = nullptr;
         }
 
-        int32_t values[3];
+        int32_t values[4];
         const uint32_t attrs[] = {
             HWC_DISPLAY_WIDTH,
             HWC_DISPLAY_HEIGHT,
             HWC_DISPLAY_DPI_X,
+#ifdef GET_FRAMEBUFFER_FORMAT_FROM_HWC
+            HWC_DISPLAY_FBFORMAT,
+#endif
             HWC_DISPLAY_NO_ATTRIBUTE
         };
         mHwc->getDisplayAttributes(mHwc, 0, 0, attrs, values);
@@ -102,7 +106,11 @@ GonkDisplayJB::GonkDisplayJB()
         mWidth = values[0];
         mHeight = values[1];
         xdpi = values[2] / 1000.0f;
+#ifdef GET_FRAMEBUFFER_FORMAT_FROM_HWC
+        surfaceformat = values[3];
+#else
         surfaceformat = HAL_PIXEL_FORMAT_RGBA_8888;
+#endif
     }
 
     err = hw_get_module(POWER_HARDWARE_MODULE_ID,
