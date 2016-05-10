@@ -73,9 +73,9 @@ int ComfortNoise::Generate(size_t requested_length,
     return kUnknownPayloadType;
   }
   CNG_dec_inst* cng_inst = cng_decoder->CngDecoderInstance();
-  // The expression &(*output)[0][0] is a pointer to the first element in
-  // the first channel.
-  if (WebRtcCng_Generate(cng_inst, &(*output)[0][0],
+
+  std::unique_ptr<int16_t[]> temp(new int16_t[number_of_samples]);
+  if (WebRtcCng_Generate(cng_inst, temp.get(),
                          static_cast<int16_t>(number_of_samples),
                          new_period) < 0) {
     // Error returned.
@@ -83,6 +83,7 @@ int ComfortNoise::Generate(size_t requested_length,
     internal_error_code_ = WebRtcCng_GetErrorCodeDec(cng_inst);
     return kInternalError;
   }
+  (*output)[0].OverwriteAt(temp.get(), number_of_samples, 0);
 
   if (first_call_) {
     // Set tapering window parameters. Values are in Q15.
