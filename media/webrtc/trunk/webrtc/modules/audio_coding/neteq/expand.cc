@@ -105,25 +105,33 @@ int Expand::Process(AudioMultiVector* output) {
       // Use only expand_vector0.
       assert(expansion_vector_position + temp_length <=
              parameters.expand_vector0.Size());
-      memcpy(voiced_vector_storage,
-             &parameters.expand_vector0[expansion_vector_position],
-             sizeof(int16_t) * temp_length);
+      parameters.expand_vector0.CopyTo(temp_length, expansion_vector_position,
+                                       voiced_vector_storage);
     } else if (current_lag_index_ == 1) {
+      std::unique_ptr<int16_t[]> temp_0(new int16_t[temp_length]);
+      parameters.expand_vector0.CopyTo(temp_length, expansion_vector_position,
+                                       temp_0.get());
+      std::unique_ptr<int16_t[]> temp_1(new int16_t[temp_length]);
+      parameters.expand_vector1.CopyTo(temp_length, expansion_vector_position,
+                                       temp_1.get());
       // Mix 3/4 of expand_vector0 with 1/4 of expand_vector1.
-      WebRtcSpl_ScaleAndAddVectorsWithRound(
-          &parameters.expand_vector0[expansion_vector_position], 3,
-          &parameters.expand_vector1[expansion_vector_position], 1, 2,
-          voiced_vector_storage, static_cast<int>(temp_length));
+      WebRtcSpl_ScaleAndAddVectorsWithRound(temp_0.get(), 3, temp_1.get(), 1, 2,
+                                            voiced_vector_storage, static_cast<int>(temp_length));
     } else if (current_lag_index_ == 2) {
       // Mix 1/2 of expand_vector0 with 1/2 of expand_vector1.
       assert(expansion_vector_position + temp_length <=
              parameters.expand_vector0.Size());
       assert(expansion_vector_position + temp_length <=
              parameters.expand_vector1.Size());
-      WebRtcSpl_ScaleAndAddVectorsWithRound(
-          &parameters.expand_vector0[expansion_vector_position], 1,
-          &parameters.expand_vector1[expansion_vector_position], 1, 1,
-          voiced_vector_storage, static_cast<int>(temp_length));
+
+      std::unique_ptr<int16_t[]> temp_0(new int16_t[temp_length]);
+      parameters.expand_vector0.CopyTo(temp_length, expansion_vector_position,
+                                       temp_0.get());
+      std::unique_ptr<int16_t[]> temp_1(new int16_t[temp_length]);
+      parameters.expand_vector1.CopyTo(temp_length, expansion_vector_position,
+                                       temp_1.get());
+      WebRtcSpl_ScaleAndAddVectorsWithRound(temp_0.get(), 1, temp_1.get(), 1, 1,
+                                            voiced_vector_storage, static_cast<int>(temp_length));
     }
 
     // Get tapering window parameters. Values are in Q15.
@@ -293,8 +301,7 @@ int Expand::Process(AudioMultiVector* output) {
     } else {
       assert(output->Size() == current_lag);
     }
-    memcpy(&(*output)[channel_ix][0], temp_data,
-           sizeof(temp_data[0]) * current_lag);
+    (*output)[channel_ix].OverwriteAt(temp_data, current_lag, 0);
   }
 
   // Increase call number and cap it.
@@ -361,8 +368,11 @@ void Expand::AnalyzeSignal(int16_t* random_vector) {
   int fs_mult_lpc_analysis_len = fs_mult * kLpcAnalysisLength;
 
   const size_t signal_length = 256 * fs_mult;
-  const int16_t* audio_history =
-      &(*sync_buffer_)[0][sync_buffer_->Size() - signal_length];
+
+  const size_t audio_history_position = sync_buffer_->Size() - signal_length;
+  std::unique_ptr<int16_t[]> audio_history(new int16_t[signal_length]);
+  (*sync_buffer_)[0].CopyTo(signal_length, audio_history_position,
+                            audio_history.get());
 
   // Initialize.
   InitializeForAnExpandPeriod();
@@ -372,7 +382,7 @@ void Expand::AnalyzeSignal(int16_t* random_vector) {
   int correlation_length = 51;  // TODO(hlundin): Legacy bit-exactness.
   // If it is decided to break bit-exactness |correlation_length| should be
   // initialized to the return value of Correlation().
-  Correlation(audio_history, signal_length, correlation_vector,
+  Correlation(audio_history.get(), signal_length, correlation_vector,
               &correlation_scale);
 
   // Find peaks in correlation vector.
@@ -530,12 +540,14 @@ void Expand::AnalyzeSignal(int16_t* random_vector) {
         parameters.expand_vector1.Extend(
             expansion_length - parameters.expand_vector1.Size());
       }
-      WebRtcSpl_AffineTransformVector(&parameters.expand_vector1[0],
+      std::unique_ptr<int16_t[]> temp_1(new int16_t[expansion_length]);
+      WebRtcSpl_AffineTransformVector(temp_1.get(),
                                       const_cast<int16_t*>(vector2),
                                       amplitude_ratio,
                                       4096,
                                       13,
                                       expansion_length);
+      parameters.expand_vector1.OverwriteAt(temp_1.get(), expansion_length, 0);
     } else {
       // Energy change constraint not fulfilled. Only use last vector.
       parameters.expand_vector0.Clear();
