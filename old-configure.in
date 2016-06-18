@@ -108,13 +108,12 @@ if test -n "$gonkdir" ; then
         ANDROID_VERSION="${PLATFORM_SDK_VERSION}"
     fi
 
-    if ! test -e "$gonkdir/ndk/sources/cxx-stl/stlport/src/iostream.cpp"; then
-        AC_MSG_ERROR([Couldn't find path to stlport sources in the gonk tree])
-    fi
-    STLPORT_CPPFLAGS="-I$_topsrcdir/build/stlport/stlport -I$gonkdir/ndk/sources/cxx-stl/system/include"
-
     case "$ANDROID_VERSION" in
     15)
+        if ! test -e "$gonkdir/ndk/sources/cxx-stl/stlport/src/iostream.cpp"; then
+            AC_MSG_ERROR([Couldn't find path to stlport sources in the gonk tree])
+        fi
+        STLPORT_CPPFLAGS="-I$_topsrcdir/build/stlport/stlport -I$gonkdir/ndk/sources/cxx-stl/system/include"
         GONK_INCLUDES="-I$gonkdir/frameworks/base/opengl/include -I$gonkdir/frameworks/base/native/include -I$gonkdir/frameworks/base/include -I$gonkdir/frameworks/base/services/camera -I$gonkdir/frameworks/base/include/media/ -I$gonkdir/frameworks/base/include/media/stagefright -I$gonkdir/frameworks/base/include/media/stagefright/openmax -I$gonkdir/frameworks/base/media/libstagefright/rtsp -I$gonkdir/frameworks/base/media/libstagefright/include -I$gonkdir/external/dbus -I$gonkdir/external/bluetooth/bluez/lib -I$gonkdir/dalvik/libnativehelper/include/nativehelper"
         MOZ_B2G_BT=1
         MOZ_B2G_BT_BLUEZ=1
@@ -124,8 +123,13 @@ if test -n "$gonkdir" ; then
         AC_SUBST(MOZ_OMX_DECODER)
         MOZ_RTSP=1
         MOZ_SECUREELEMENT=1
+        android_cxx_stl=mozstlport
         ;;
     17|18)
+        if ! test -e "$gonkdir/ndk/sources/cxx-stl/stlport/src/iostream.cpp"; then
+             AC_MSG_ERROR([Couldn't find path to stlport sources in the gonk tree])
+        fi
+        STLPORT_CPPFLAGS="-I$_topsrcdir/build/stlport/stlport -I$gonkdir/ndk/sources/cxx-stl/system/include"
         GONK_INCLUDES="-I$gonkdir/frameworks/native/include -I$gonkdir/frameworks/av/include -I$gonkdir/frameworks/av/include/media -I$gonkdir/frameworks/av/include/camera -I$gonkdir/frameworks/native/include/media/openmax -I$gonkdir/frameworks/av/media/libstagefright/include -I$gonkdir/external/mdnsresponder/mDNSShared"
         if test -d "$gonkdir/external/bluetooth/bluez"; then
             GONK_INCLUDES="$GONK_INCLUDES -I$gonkdir/external/dbus -I$gonkdir/external/bluetooth/bluez/lib"
@@ -145,8 +149,13 @@ if test -n "$gonkdir" ; then
         AC_SUBST(MOZ_OMX_ENCODER)
         AC_DEFINE(MOZ_OMX_ENCODER)
         MOZ_SECUREELEMENT=1
+        android_cxx_stl=mozstlport
         ;;
     19)
+        if ! test -e "$gonkdir/ndk/sources/cxx-stl/stlport/src/iostream.cpp"; then
+            AC_MSG_ERROR([Couldn't find path to stlport sources in the gonk tree])
+        fi
+        STLPORT_CPPFLAGS="-I$_topsrcdir/build/stlport/stlport -I$gonkdir/ndk/sources/cxx-stl/system/include"
         GONK_INCLUDES="-I$gonkdir/frameworks/native/include -I$gonkdir/frameworks/av/include -I$gonkdir/frameworks/av/include/media -I$gonkdir/frameworks/av/include/camera -I$gonkdir/frameworks/native/include/media/openmax -I$gonkdir/frameworks/av/media/libstagefright/include -I$gonkdir/external/mdnsresponder/mDNSShared"
         MOZ_B2G_CAMERA=1
         if test -d "$gonkdir/system/bluetoothd"; then
@@ -162,8 +171,13 @@ if test -n "$gonkdir" ; then
         MOZ_SECUREELEMENT=1
         AC_SUBST(MOZ_AUDIO_OFFLOAD)
         AC_DEFINE(MOZ_AUDIO_OFFLOAD)
+        android_cxx_stl=mozstlport
         ;;
     21|22)
+        if ! test -e "$gonkdir/ndk/sources/cxx-stl/stlport/src/iostream.cpp"; then
+            AC_MSG_ERROR([Couldn't find path to stlport sources in the gonk tree])
+        fi
+        STLPORT_CPPFLAGS="-I$_topsrcdir/build/stlport/stlport -I$gonkdir/ndk/sources/cxx-stl/system/include"
         GONK_INCLUDES="-I$gonkdir/frameworks/native/include -I$gonkdir/frameworks/av/include -I$gonkdir/frameworks/av/include/media -I$gonkdir/frameworks/av/include/camera -I$gonkdir/frameworks/native/include/media/openmax -I$gonkdir/frameworks/av/media/libstagefright/include -I$gonkdir/external/mdnsresponder/mDNSShared"
         MOZ_AUDIO_OFFLOAD=1
         MOZ_OMX_DECODER=1
@@ -178,6 +192,29 @@ if test -n "$gonkdir" ; then
         fi
         MOZ_NFC=1
         MOZ_RTSP=1
+        android_cxx_stl=mozstlport
+        ;;
+    23)
+        GONK_INCLUDES="-I$gonkdir/system/core/base/include -I$gonkdir/frameworks/native/opengl/include -I$gonkdir/frameworks/native/include -I$gonkdir/system/core/libpixelflinger/include -I$gonkdir/system/media/audio/include -isystem $gonkdir/bionic -I$gonkdir/frameworks/av/include -I$gonkdir/frameworks/av/include/media -I$gonkdir/frameworks/av/include/camera -I$gonkdir/frameworks/native/include/media/openmax -I$gonkdir/frameworks/av/media/libstagefright/include"
+
+        STLPORT_CPPFLAGS="-I$gonkdir/external/libcxx/include -I$gonkdir/external/libcxx/include/ext -I$gonkdir/ndk/sources/cxx-stl/system/include"
+        MOZ_AUDIO_OFFLOAD=1
+        MOZ_OMX_DECODER=1
+        MOZ_OMX_ENCODER=1
+        AC_DEFINE(MOZ_OMX_ENCODER)
+        AC_SUBST(MOZ_AUDIO_OFFLOAD)
+        AC_DEFINE(MOZ_AUDIO_OFFLOAD)
+        MOZ_FMP4=
+        MOZ_B2G_CAMERA=1
+        MOZ_B2G_BT=1
+        MOZ_B2G_BT_BLUEDROID=1
+        if test -d "$gonkdir/system/bluetoothd"; then
+            MOZ_B2G_BT_DAEMON=1
+        fi
+        MOZ_NFC=1
+        MOZ_RTSP=1
+        LIBS="$LIBS -lc++"
+        android_cxx_stl=libc++
         ;;
     *)
         AC_MSG_ERROR([Unsupported platform version: $ANDROID_VERSION])
@@ -197,7 +234,6 @@ if test -n "$gonkdir" ; then
     AC_DEFINE(HAVE_SYS_UIO_H)
     AC_DEFINE(HAVE_PTHREADS)
     direct_nspr_config=1
-    android_cxx_stl=mozstlport
 else
     if test "$COMPILE_ENVIRONMENT"; then
         MOZ_ANDROID_NDK

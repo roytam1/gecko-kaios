@@ -47,7 +47,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
         'mozpng',
     ]
     OS_LIBS += CONFIG['MOZ_ZLIB_LIBS']
-    if CONFIG['ANDROID_VERSION'] in ('17', '18', '19', '21', '22'):
+    if CONFIG['ANDROID_VERSION'] in ('17', '18', '19', '21', '22', '23'):
         OS_LIBS += [
             'gui',
         ]
@@ -58,7 +58,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
         'hardware_legacy',
         'hardware',
     ]
-    if CONFIG['ANDROID_VERSION'] in ('17', '18', '19', '21', '22'):
+    if CONFIG['ANDROID_VERSION'] in ('17', '18', '19', '21', '22', '23'):
         OS_LIBS += [
             'suspend',
         ]

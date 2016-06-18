@@ -90,8 +90,16 @@ if test -n "$gonkdir" ; then
         ANDROID_VERSION="${PLATFORM_SDK_VERSION}"
     fi
 
-    STLPORT_CPPFLAGS="-I$_topsrcdir/build/stlport/stlport -I$gonkdir/ndk/sources/cxx-stl/system/include"
-    STLPORT_LIBS="-lstlport"
+    case "$ANDROID_VERSION" in
+        15|16|17|18|19|20|21|22)
+            STLPORT_CPPFLAGS="-I$_topsrcdir/build/stlport/stlport -I$gonkdir/ndk/sources/cxx-stl/system/include"
+            STLPORT_LIBS="-lstlport"
+            ;;
+        *)
+            STLPORT_CPPFLAGS="-I$gonkdir/external/libcxx/include -I$gonkdir/external/libcxx/include/ext -I$gonkdir/ndk/sources/cxx-stl/system/include"
+            STLPORT_LIBS="-lc++"
+            ;;
+        esac
 
     CPPFLAGS="-DANDROID $TARGET_C_INCLUDES -I$gonkdir/frameworks/base/native/include -I$gonkdir/system/core/include -isystem $gonkdir/bionic $CPPFLAGS -I$gonkdir/external/valgrind/fxos-include"
     CFLAGS="-mandroid -fno-short-enums -fno-exceptions $CFLAGS"
