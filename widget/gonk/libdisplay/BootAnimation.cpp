@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <endian.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <string>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -168,7 +169,8 @@ public:
             return false;
         }
 
-        madvise(mBuf, sb.st_size, MADV_SEQUENTIAL);
+        madvise(const_cast<void*>(static_cast<const void*>(mBuf)), sb.st_size,
+            MADV_SEQUENTIAL);
 
         mEnd = (cdir_end *)(mBuf + mBuflen - sizeof(cdir_end));
         while (!mEnd->Valid() &&
@@ -601,7 +603,7 @@ AnimationThread(void *)
                 name.length() >= 256)
                 continue;
 
-            part.frames.push_back();
+            part.frames.push_back(AnimationFrame());
             AnimationFrame &frame = part.frames.back();
             strcpy(frame.path, name.c_str());
             frame.file = reader.GetLocalEntry(entry);

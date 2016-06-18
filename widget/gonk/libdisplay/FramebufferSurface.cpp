@@ -29,6 +29,9 @@
 #include <EGL/egl.h>
 
 #include <hardware/hardware.h>
+#if ANDROID_VERSION >= 23
+#include <gui/BufferItem.h>
+#endif
 #if ANDROID_VERSION == 17
 #include <gui/SurfaceTextureClient.h>
 #endif
@@ -94,7 +97,11 @@ status_t FramebufferSurface::advanceFrame() {
 status_t FramebufferSurface::nextBuffer(sp<GraphicBuffer>& outBuffer, sp<Fence>& outFence) {
     Mutex::Autolock lock(mMutex);
 
+#if ANDROID_VERSION >= 23
+    BufferItem item;
+#else
     BufferQueue::BufferItem item;
+#endif
 #if ANDROID_VERSION >= 19
     status_t err = acquireBufferLocked(&item, 0);
 #else
