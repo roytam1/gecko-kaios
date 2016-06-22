@@ -312,7 +312,7 @@ private:
 };
 
 class ConsoleRunnable : public nsRunnable
-                      , public WorkerFeature
+                      , public WorkerHolder
                       , public StructuredCloneHolderBase
 {
 public:
@@ -380,7 +380,7 @@ private:
       return false;
     }
 
-    if (NS_WARN_IF(!mWorkerPrivate->AddFeature(this))) {
+    if (NS_WARN_IF(!HoldWorker(mWorkerPrivate))) {
       return false;
     }
 
@@ -425,7 +425,7 @@ private:
 
         Cancel();
 
-        aWorkerPrivate->RemoveFeature(mRunnable);
+        mRunnable->ReleaseWorker();
         return true;
       }
 

@@ -1729,7 +1729,7 @@ XMLHttpRequest::MaybePin(ErrorResult& aRv)
     return;
   }
 
-  if (!mWorkerPrivate->AddFeature(this)) {
+  if (!HoldWorker(mWorkerPrivate)) {
     aRv.Throw(NS_ERROR_FAILURE);
     return;
   }
@@ -1847,7 +1847,7 @@ XMLHttpRequest::Unpin()
 
   MOZ_ASSERT(mRooted, "Mismatched calls to Unpin!");
 
-  mWorkerPrivate->RemoveFeature(this);
+  ReleaseWorker();
 
   mRooted = false;
 

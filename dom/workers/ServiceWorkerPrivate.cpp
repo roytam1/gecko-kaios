@@ -403,7 +403,7 @@ private:
  * with advancing the job queue for install/activate tasks.
  */
 class LifeCycleEventWatcher final : public PromiseNativeHandler,
-                                    public WorkerFeature
+                                    public WorkerHolder
 {
   WorkerPrivate* mWorkerPrivate;
   RefPtr<LifeCycleEventCallback> mCallback;
@@ -449,7 +449,7 @@ public:
     //    case the registration/update promise will be rejected
     // 2. A new service worker is registered which will terminate the current
     //    installing worker.
-    if (NS_WARN_IF(!mWorkerPrivate->AddFeature(this))) {
+    if (NS_WARN_IF(!HoldWorker(mWorkerPrivate))) {
       NS_WARNING("LifeCycleEventWatcher failed to add feature.");
       ReportResult(false);
       return false;
@@ -487,7 +487,7 @@ public:
       NS_RUNTIMEABORT("Failed to dispatch life cycle event handler.");
     }
 
-    mWorkerPrivate->RemoveFeature(this);
+    ReleaseWorker();
   }
 
   void

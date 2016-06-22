@@ -10,7 +10,7 @@
 #include "mozilla/DOMEventTargetHelper.h"
 #include "nsProxyRelease.h"
 
-#include "WorkerFeature.h"
+#include "WorkerHolder.h"
 
 namespace mozilla {
 
@@ -100,7 +100,7 @@ private:
 };
 
 class DataStoreChangeEventProxy final : public nsIDOMEventListener
-                                      , public WorkerFeature
+                                      , public WorkerHolder
 {
 public:
   NS_DECL_THREADSAFE_ISUPPORTS
@@ -114,7 +114,7 @@ public:
   WorkerDataStore* GetWorkerStore() const;
 
 protected:
-  // WorkerFeature implementation.
+  // WorkerHolder implementation.
 
   bool Notify(Status aStatus) override;
 

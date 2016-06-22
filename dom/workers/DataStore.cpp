@@ -911,7 +911,7 @@ DataStoreChangeEventProxy::DataStoreChangeEventProxy(
 
   // We do this to make sure the worker thread won't shut down before the event
   // is dispatched to the WorkerStore on the worker thread.
-  if (!mWorkerPrivate->AddFeature(this)) {
+  if (!HoldWorker(mWorkerPrivate)) {
     MOZ_ASSERT(false, "cannot add the worker feature!");
     return;
   }
@@ -959,7 +959,7 @@ DataStoreChangeEventProxy::HandleEvent(nsIDOMEvent* aEvent)
   return NS_OK;
 }
 
-// WorkerFeature implementation.
+// WorkerHolder implementation.
 
 bool
 DataStoreChangeEventProxy::Notify(Status aStatus)
@@ -967,7 +967,7 @@ DataStoreChangeEventProxy::Notify(Status aStatus)
   MutexAutoLock lock(mCleanUpLock);
 
   // |mWorkerPrivate| might not be safe to use anymore if we have already
-  // cleaned up and RemoveFeature(), so we need to check |mCleanedUp| first.
+  // cleaned up and ReleaseWorker(), so we need to check |mCleanedUp| first.
   if (mCleanedUp) {
     return true;
   }
@@ -979,7 +979,7 @@ DataStoreChangeEventProxy::Notify(Status aStatus)
   // features of the worker thread since the worker thread has been cancelled.
   if (aStatus >= Canceling) {
     mWorkerStore = nullptr;
-    mWorkerPrivate->RemoveFeature(this);
+    ReleaseWorker();
     mCleanedUp = true;
   }
 

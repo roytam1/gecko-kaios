@@ -31,7 +31,7 @@ private:
   class Callback;
 
   // This class must be constructed using CacheChild::CreatePushStream()
-  CachePushStreamChild(Feature* aFeature, nsISupports* aParent,
+  CachePushStreamChild(CacheWorkerHolder* aWorkerHolder, nsISupports* aParent,
                        nsIAsyncInputStream* aStream);
   ~CachePushStreamChild();
 

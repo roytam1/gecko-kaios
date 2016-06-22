@@ -37,7 +37,7 @@ public:
 
     // If this fails, then it means the owning thread is a Worker that has
     // been shutdown.  Its ok to lose the event in this case because the
-    // CachePushStreamChild listens for this event through the Feature.
+    // CachePushStreamChild listens for this event through the WorkerHolder.
     nsresult rv = mOwningThread->Dispatch(this, nsIThread::DISPATCH_NORMAL);
     if (NS_FAILED(rv)) {
       NS_WARNING("Failed to dispatch stream readable event to owning thread");
@@ -61,7 +61,7 @@ public:
   {
     // Cancel() gets called when the Worker thread is being shutdown.  We have
     // nothing to do here because CachePushStreamChild handles this case via
-    // the Feature.
+    // the WorkerHolder.
     return NS_OK;
   }
 
@@ -92,7 +92,7 @@ NS_IMPL_ISUPPORTS_INHERITED(CachePushStreamChild::Callback,
                             CancelableRunnable,
                             nsIInputStreamCallback);
 
-CachePushStreamChild::CachePushStreamChild(Feature* aFeature,
+CachePushStreamChild::CachePushStreamChild(CacheWorkerHolder* aWorkerHolder,
                                            nsISupports* aParent,
                                            nsIAsyncInputStream* aStream)
   : mParent(aParent)
@@ -101,8 +101,8 @@ CachePushStreamChild::CachePushStreamChild(Feature* aFeature,
 {
   MOZ_ASSERT(mParent);
   MOZ_ASSERT(mStream);
-  MOZ_ASSERT_IF(!NS_IsMainThread(), aFeature);
-  SetFeature(aFeature);
+  MOZ_ASSERT_IF(!NS_IsMainThread(), aWorkerHolder);
+  SetWorkerHolder(aWorkerHolder);
 }
 
 CachePushStreamChild::~CachePushStreamChild()
@@ -144,7 +144,7 @@ CachePushStreamChild::ActorDestroy(ActorDestroyReason aReason)
     mCallback = nullptr;
   }
 
-  RemoveFeature();
+  RemoveWorkerHolder();
 }
 
 void
