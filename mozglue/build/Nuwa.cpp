@@ -762,10 +762,6 @@ _thread_create_startup(void *arg) {
   thread_info_t *tinfo = (thread_info_t *)arg;
   void *r;
 
-  // Save thread info; especially, stackaddr & stacksize.
-  // Reuse the stack in the new thread.
-  pthread_getattr_np(REAL(pthread_self)(), &tinfo->threadAttr);
-
   SET_THREAD_INFO(tinfo);
   tinfo->origThreadID = REAL(pthread_self)();
   tinfo->origNativeThreadID = gettid();
