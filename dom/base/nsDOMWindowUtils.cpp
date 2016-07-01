@@ -993,6 +993,28 @@ nsDOMWindowUtils::SendKeyEvent(const nsAString& aType,
 }
 
 NS_IMETHODIMP
+nsDOMWindowUtils::SendKeyEventByKeyName(const nsAString& aType,
+                                        const nsAString& aKeyName,
+                                        int32_t aKeyCode,
+                                        int32_t aCharCode,
+                                        int32_t aModifiers,
+                                        uint32_t aAdditionalFlags,
+                                        bool* aDefaultActionTaken)
+{
+  // get the widget to send the event to
+  nsCOMPtr<nsIWidget> widget = GetWidget();
+
+  return nsContentUtils::SendKeyEventByKeyName(widget,
+                                               aType,
+                                               aKeyName,
+                                               aKeyCode,
+                                               aCharCode,
+                                               aModifiers,
+                                               aAdditionalFlags,
+                                               aDefaultActionTaken);
+}
+
+NS_IMETHODIMP
 nsDOMWindowUtils::SendNativeKeyEvent(int32_t aNativeKeyboardLayout,
                                      int32_t aNativeKeyCode,
                                      int32_t aModifiers,

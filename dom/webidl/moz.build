@@ -288,6 +288,7 @@ WEBIDL_FILES = [
     'IterableIterator.webidl',
     'KeyAlgorithm.webidl',
     'KeyboardEvent.webidl',
+    'KeyboardEventGenerator.webidl',
     'KeyEvent.webidl',
     'KeyframeEffect.webidl',
     'KillSwitch.webidl',

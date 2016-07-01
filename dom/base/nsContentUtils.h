@@ -2456,6 +2456,15 @@ public:
                                uint32_t aAdditionalFlags,
                                bool* aDefaultActionTaken);
 
+  static nsresult SendKeyEventByKeyName(nsIWidget* aWidget,
+                                        const nsAString& aType,
+                                        const nsAString& aKeyName,
+                                        int32_t aKeyCode,
+                                        int32_t aCharCode,
+                                        int32_t aModifiers,
+                                        uint32_t aAdditionalFlags,
+                                        bool* aDefaultActionTaken);
+
   /**
    * Synthesize a mouse event to the given widget
    * (see nsIDOMWindowUtils.sendMouseEvent).

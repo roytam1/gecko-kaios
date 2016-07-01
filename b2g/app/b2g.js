@@ -1196,5 +1196,8 @@ pref("gfx.glcursor.enabled", true);
 // Enable the spatial navigation service on non-touch devices.
 pref("dom.spatialnavigation.enabled", true);
 
+// Enable keyboardEventGenerator on touch devices.
+pref("dom.keyboardEventGenerator.enabled", false);
+
 // In compatibility mode, 'Firefox' will be added to UA.
 pref("general.useragent.compatMode.firefox", true);

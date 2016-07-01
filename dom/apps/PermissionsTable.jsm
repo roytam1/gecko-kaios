@@ -542,6 +542,12 @@ this.PermissionsTable =  { geolocation: {
                              trusted: DENY_ACTION,
                              privileged: DENY_ACTION,
                              certified: ALLOW_ACTION
+                           },
+                           "keyboard-event-generator": {
+                             app: DENY_ACTION,
+                             trusted: DENY_ACTION,
+                             privileged: DENY_ACTION,
+                             certified: ALLOW_ACTION
                            }
                          };
 

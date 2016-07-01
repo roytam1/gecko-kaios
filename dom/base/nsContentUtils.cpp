@@ -7658,6 +7658,20 @@ nsContentUtils::SendKeyEvent(nsIWidget* aWidget,
                              uint32_t aAdditionalFlags,
                              bool* aDefaultActionTaken)
 {
+  return SendKeyEventByKeyName(aWidget, aType, NullString(), aKeyCode, aCharCode,
+                               aModifiers, aAdditionalFlags, aDefaultActionTaken);
+}
+
+NS_IMETHODIMP
+nsContentUtils::SendKeyEventByKeyName(nsIWidget* aWidget,
+                                      const nsAString& aType,
+                                      const nsAString& aKeyName,
+                                      int32_t aKeyCode,
+                                      int32_t aCharCode,
+                                      int32_t aModifiers,
+                                      uint32_t aAdditionalFlags,
+                                      bool* aDefaultActionTaken)
+{
   // get the widget to send the event to
   if (!aWidget)
     return NS_ERROR_FAILURE;
@@ -7674,6 +7688,11 @@ nsContentUtils::SendKeyEvent(nsIWidget* aWidget,
 
   WidgetKeyboardEvent event(true, msg, aWidget);
   event.mModifiers = GetWidgetModifiers(aModifiers);
+
+  if (!aKeyName.IsEmpty()) {
+    event.mKeyNameIndex = KEY_NAME_INDEX_USE_STRING;
+    event.mKeyValue = aKeyName;
+  }
 
   if (msg == eKeyPress) {
     event.keyCode = aCharCode ? 0 : aKeyCode;
