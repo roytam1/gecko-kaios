@@ -10,6 +10,7 @@
 #include "mozilla/unused.h"
 #include "nsThreadUtils.h"
 #include "NuwaParent.h"
+#include "PreallocatedProcessManager.h"
 
 using namespace mozilla::ipc;
 using namespace mozilla::dom;
@@ -224,6 +225,23 @@ NuwaParent::ForkNewProcess(uint32_t& aPid,
 {
   MOZ_ASSERT(mWorkerThread);
   MOZ_ASSERT(NS_IsMainThread());
+
+  /*
+   * We should process one new fork at one time,
+   * because mNewProcessFds will be used in RecvAddNewProcess later.
+   * Otherwise there will be race condition in RecvAddNewProcess.
+   * - Wait and continue blocking call (Supposedly this shouldn't happen).
+   * - Schedule a new fork and return non-blocking call.
+   */
+  if (mNewProcessFds) {
+    if (!aBlocking) {
+      PreallocatedProcessManager::AllocateAfterDelay();
+      return false;
+    }
+    while (mNewProcessFds) {
+      PR_Sleep(PR_MillisecondsToInterval(10));
+    }
+  }
 
   mNewProcessFds = Move(aFds);
 
