@@ -5448,8 +5448,8 @@ WorkerPrivate::DestroySyncLoop(uint32_t aLoopIndex, nsIThreadInternal* aThread)
   MOZ_ALWAYS_SUCCEEDS(aThread->PopEventQueue(nestedEventTarget));
 
   if (!mSyncLoopStack.Length() && mPendingEventQueueClearing) {
-    ClearMainEventQueue(WorkerRan);
     mPendingEventQueueClearing = false;
+    ClearMainEventQueue(WorkerRan);
   }
 
   return result;
