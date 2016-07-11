@@ -502,6 +502,10 @@
 @RESPATH@/components/SmsService.js
 @RESPATH@/components/SmsService.manifest
 #endif
+@RESPATH@/components/DOMDataCallManager.js
+@RESPATH@/components/DOMDataCallManager.manifest
+@RESPATH@/components/DataCallService.js
+@RESPATH@/components/DataCallService.manifest
 @RESPATH@/components/StkCmdFactory.js
 @RESPATH@/components/StkCmdFactory.manifest
 @RESPATH@/components/RILSystemMessengerHelper.js

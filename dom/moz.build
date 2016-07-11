@@ -116,6 +116,7 @@ DIRS += [
     'vr',
     'newapps',
     'u2f',
+    'datacall',
     'usb',
 ]
 
