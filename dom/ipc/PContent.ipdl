@@ -26,6 +26,8 @@ include protocol PHeapSnapshotTempFileHelper;
 include protocol PIcc;
 include protocol PProcessHangMonitor;
 include protocol PImageBridge;
+include protocol PImsRegServiceFinder;
+include protocol PImsRegistration;
 include protocol PMedia;
 include protocol PMemoryReportRequest;
 include protocol PMobileConnection;
@@ -421,6 +423,8 @@ prio(normal upto urgent) sync protocol PContent
     manages PHandlerService;
     manages PHeapSnapshotTempFileHelper;
     manages PIcc;
+    manages PImsRegServiceFinder;
+    manages PImsRegistration;
     manages PMedia;
     manages PMemoryReportRequest;
     manages PMobileConnection;
@@ -825,6 +829,10 @@ parent:
     async PHeapSnapshotTempFileHelper();
 
     async PIcc(uint32_t serviceId);
+
+    async PImsRegServiceFinder();
+    
+    async PImsRegistration(uint32_t aServiceId);
 
     async PMobileConnection(uint32_t clientId);
 

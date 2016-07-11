@@ -146,6 +146,9 @@ public:
   bool
   DoRequest(const SetRadioEnabledRequest& aRequest);
 
+  bool
+  DoRequest(const GetDeviceIdentitiesRequest& aRequest);
+
 protected:
   virtual
   ~MobileConnectionRequestParent()

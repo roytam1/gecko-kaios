@@ -283,6 +283,19 @@ public:
   virtual bool
   DeallocPMobileConnectionChild(PMobileConnectionChild* aActor) override;
 
+  virtual PImsRegServiceFinderChild*
+  AllocPImsRegServiceFinderChild() override;
+  virtual bool
+  DeallocPImsRegServiceFinderChild(PImsRegServiceFinderChild*) override;
+
+  PImsRegistrationChild*
+  SendPImsRegistrationConstructor(PImsRegistrationChild* aActor,
+                                  const uint32_t& aServiceId);
+  virtual PImsRegistrationChild*
+  AllocPImsRegistrationChild(const uint32_t& aServiceId) override;
+  virtual bool
+  DeallocPImsRegistrationChild(PImsRegistrationChild* aActor) override;
+
   virtual PNeckoChild* AllocPNeckoChild() override;
 
   virtual bool DeallocPNeckoChild(PNeckoChild*) override;

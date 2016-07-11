@@ -676,3 +676,11 @@ dictionary MozClirStatus
    */
   unsigned short m;
 };
+
+dictionary MobileDeviceIds
+{
+  DOMString imei;
+  DOMString imeisv;
+  DOMString esn;
+  DOMString meid;
+};

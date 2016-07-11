@@ -20,6 +20,8 @@
 namespace mozilla {
 namespace dom {
 
+class ImsRegHandler;
+
 class MobileConnection final : public DOMEventTargetHelper
                              , private nsIMobileConnectionListener
                              , private nsIIccListener
@@ -73,6 +75,9 @@ public:
   MobileConnectionInfo*
   Data() const;
 
+  already_AddRefed<DOMRequest>
+  GetDeviceIdentities(ErrorResult& aRv);
+
   void
   GetIccId(nsString& aRetVal) const;
 
@@ -87,6 +92,9 @@ public:
 
   void
   GetSupportedNetworkTypes(nsTArray<MobileNetworkType>& aTypes) const;
+
+  already_AddRefed<ImsRegHandler>
+  GetImsHandler() const;
 
   already_AddRefed<DOMRequest>
   GetNetworks(ErrorResult& aRv);
@@ -171,6 +179,8 @@ private:
   RefPtr<Listener> mListener;
   RefPtr<MobileConnectionInfo> mVoice;
   RefPtr<MobileConnectionInfo> mData;
+  // mutable for lazy initialization in GetImsRegHandler() const.
+  mutable RefPtr<ImsRegHandler> mImsHandler;
 
   bool
   CheckPermission(const char* aType) const;

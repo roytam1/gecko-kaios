@@ -141,6 +141,9 @@ public:
   DoReply(const MobileConnectionReplySuccessBoolean& aReply);
 
   bool
+  DoReply(const MobileConnectionReplySuccessDeviceIdentities& aReply);
+
+  bool
   DoReply(const MobileConnectionReplySuccessNetworks& aReply);
 
   bool

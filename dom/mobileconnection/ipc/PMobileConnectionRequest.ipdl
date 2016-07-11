@@ -73,6 +73,11 @@ struct MobileConnectionReplySuccessRoamingPreference
   int32_t mode;
 };
 
+struct MobileConnectionReplySuccessDeviceIdentities
+{
+  nsMobileDeviceIdentities result;
+};
+
 // Error
 struct MobileConnectionReplyError
 {
@@ -91,6 +96,7 @@ union MobileConnectionReply
   MobileConnectionReplySuccessClirStatus;
   MobileConnectionReplySuccessPreferredNetworkType;
   MobileConnectionReplySuccessRoamingPreference;
+  MobileConnectionReplySuccessDeviceIdentities;
   // Error
   MobileConnectionReplyError;
 };

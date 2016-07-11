@@ -804,6 +804,14 @@ private:
 
   virtual bool DeallocPMobileConnectionParent(PMobileConnectionParent* aActor) override;
 
+  virtual PImsRegServiceFinderParent* AllocPImsRegServiceFinderParent() override;
+
+  virtual bool DeallocPImsRegServiceFinderParent(PImsRegServiceFinderParent* aActor) override;
+
+  virtual PImsRegistrationParent* AllocPImsRegistrationParent(const uint32_t& aClientId) override;
+
+  virtual bool DeallocPImsRegistrationParent(PImsRegistrationParent* aActor) override;
+
   virtual bool DeallocPNeckoParent(PNeckoParent* necko) override;
 
   virtual PPSMContentDownloaderParent*

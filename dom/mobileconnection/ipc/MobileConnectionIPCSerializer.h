@@ -10,6 +10,7 @@
 #include "ipc/IPCMessageUtils.h"
 #include "mozilla/dom/mobileconnection/MobileCallForwardingOptions.h"
 #include "mozilla/dom/MobileCellInfo.h"
+#include "mozilla/dom/MobileDeviceIdentities.h"
 #include "mozilla/dom/MobileConnectionInfo.h"
 #include "mozilla/dom/MobileNetworkInfo.h"
 #include "mozilla/dom/MozMobileConnectionBinding.h"
@@ -19,11 +20,13 @@ using mozilla::dom::mobileconnection::MobileCallForwardingOptions;
 using mozilla::dom::MobileNetworkInfo;
 using mozilla::dom::MobileCellInfo;
 using mozilla::dom::MobileConnectionInfo;
+using mozilla::dom::MobileDeviceIdentities;
 
 typedef nsIMobileCellInfo* nsMobileCellInfo;
 typedef nsIMobileConnectionInfo* nsMobileConnectionInfo;
 typedef nsIMobileNetworkInfo* nsMobileNetworkInfo;
 typedef nsIMobileCallForwardingOptions* nsMobileCallForwardingOptions;
+typedef nsIMobileDeviceIdentities* nsMobileDeviceIdentities;
 
 namespace IPC {
 
@@ -236,6 +239,8 @@ struct ParamTraits<nsIMobileCellInfo*>
 
     int32_t pLong;
     int64_t pLongLong;
+    int16_t pShort;
+    bool pBool;
 
     aParam->GetGsmLocationAreaCode(&pLong);
     WriteParam(aMsg, pLong);
@@ -257,6 +262,15 @@ struct ParamTraits<nsIMobileCellInfo*>
 
     aParam->GetCdmaNetworkId(&pLong);
     WriteParam(aMsg, pLong);
+
+    aParam->GetCdmaRoamingIndicator(&pShort);
+    WriteParam(aMsg, pShort);
+
+    aParam->GetCdmaDefaultRoamingIndicator(&pShort);
+    WriteParam(aMsg, pShort);
+
+    aParam->GetCdmaSystemIsInPRL(&pBool);
+    WriteParam(aMsg, pBool);
 
     // We release the ref here given that ipdl won't handle reference counting.
     aParam->Release();
@@ -283,6 +297,9 @@ struct ParamTraits<nsIMobileCellInfo*>
     int32_t cdmaBsLong;
     int32_t cdmaSystemId;
     int32_t cdmaNetworkId;
+    int16_t cdmaRoamingIndicator;
+    int16_t cdmaDefaultRoamingIndicator;
+    bool cdmaSystemIsInPRL;
 
     // It's not important to us where it fails, but rather if it fails
     if (!(ReadParam(aMsg, aIter, &gsmLac) &&
@@ -291,12 +308,17 @@ struct ParamTraits<nsIMobileCellInfo*>
           ReadParam(aMsg, aIter, &cdmaBsLat) &&
           ReadParam(aMsg, aIter, &cdmaBsLong) &&
           ReadParam(aMsg, aIter, &cdmaSystemId) &&
-          ReadParam(aMsg, aIter, &cdmaNetworkId))) {
+          ReadParam(aMsg, aIter, &cdmaNetworkId) &&
+          ReadParam(aMsg, aIter, &cdmaRoamingIndicator) &&
+          ReadParam(aMsg, aIter, &cdmaDefaultRoamingIndicator) &&
+          ReadParam(aMsg, aIter, &cdmaSystemIsInPRL))) {
       return false;
     }
 
     *aResult = new MobileCellInfo(gsmLac, gsmCellId, cdmaBsId, cdmaBsLat,
-                                  cdmaBsLong, cdmaSystemId, cdmaNetworkId);
+                                  cdmaBsLong, cdmaSystemId, cdmaNetworkId,
+                                  cdmaRoamingIndicator, cdmaDefaultRoamingIndicator,
+                                  cdmaSystemIsInPRL);
     // We release this ref after receiver finishes processing.
     NS_ADDREF(*aResult);
 
@@ -640,6 +662,82 @@ struct ParamTraits<MozCallForwardingOptions>
         }
       }
     }
+
+    return true;
+  }
+};
+
+/**
+ * nsIMobileDeviceIdentities Serialize/De-serialize.
+ */
+template <>
+struct ParamTraits<nsIMobileDeviceIdentities*>
+{
+  typedef nsIMobileDeviceIdentities* paramType;
+
+  // Function to serialize a MobileDeviceIdentities.
+  static void Write(Message *aMsg, const paramType& aParam)
+  {
+    bool isNull = !aParam;
+    WriteParam(aMsg, isNull);
+
+    // If it is a null object, then we are done.
+    if (isNull) {
+      return;
+    }
+
+    AutoJSContext cx;
+    nsString pString;
+    JS::Rooted<JS::Value> pJsval(cx);
+
+    aParam->GetImei(pString);
+    WriteParam(aMsg, pString);
+
+    aParam->GetImeisv(pString);
+    WriteParam(aMsg, pString);
+
+    aParam->GetEsn(pString);
+    WriteParam(aMsg, pString);
+
+    aParam->GetMeid(pString);
+    WriteParam(aMsg, pString);
+
+    // We release the ref here given that ipdl won't handle reference counting.
+    aParam->Release();
+  }
+
+  // Function to de-serialize a MobileDeviceIdentities.
+  static bool Read(const Message* aMsg, void **aIter, paramType* aResult)
+  {
+    // Check if is the null pointer we have transfered.
+    bool isNull;
+    if (!ReadParam(aMsg, aIter, &isNull)) {
+      return false;
+    }
+
+    if (isNull) {
+      *aResult = nullptr;
+      return true;
+    }
+
+    AutoJSContext cx;
+    nsString imei;
+    nsString imeisv;
+    nsString esn;
+    nsString meid;
+
+    // It's not important to us where it fails, but rather if it fails
+    if (!(ReadParam(aMsg, aIter, &imei) &&
+          ReadParam(aMsg, aIter, &imeisv) &&
+          ReadParam(aMsg, aIter, &esn) &&
+          ReadParam(aMsg, aIter, &meid))) {
+      return false;
+    }
+
+    *aResult = new MobileDeviceIdentities(imei, imeisv, esn, meid);
+
+    // We release this ref after receiver finishes processing.
+    NS_ADDREF(*aResult);
 
     return true;
   }

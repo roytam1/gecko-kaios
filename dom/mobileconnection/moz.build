@@ -7,14 +7,19 @@
 MOCHITEST_MANIFESTS += ['tests/mochitest/mochitest.ini']
 
 EXPORTS.mozilla.dom += [
+    'ImsDeviceConfiguration.h',
+    'ImsRegHandler.h',
     'MobileCellInfo.h',
     'MobileConnection.h',
     'MobileConnectionArray.h',
     'MobileConnectionInfo.h',
+    'MobileDeviceIdentities.h',
     'MobileNetworkInfo.h',
 ]
 
 EXPORTS.mozilla.dom.mobileconnection += [
+    'ipc/ImsRegistrationChild.h',
+    'ipc/ImsRegistrationParent.h',
     'ipc/MobileConnectionChild.h',
     'ipc/MobileConnectionIPCSerializer.h',
     'ipc/MobileConnectionParent.h',
@@ -23,6 +28,7 @@ EXPORTS.mozilla.dom.mobileconnection += [
 
 XPIDL_SOURCES += [
     'interfaces/nsICellInfo.idl',
+    'interfaces/nsIImsRegService.idl',
     'interfaces/nsIMobileCallForwardingOptions.idl',
     'interfaces/nsIMobileCellInfo.idl',
     'interfaces/nsIMobileConnectionInfo.idl',
@@ -34,6 +40,12 @@ XPIDL_SOURCES += [
 
 UNIFIED_SOURCES += [
     'Assertions.cpp',
+    'ImsDeviceConfiguration.cpp',
+    'ImsRegCallback.cpp',
+    'ImsRegHandler.cpp',
+    'ipc/ImsRegIPCService.cpp',
+    'ipc/ImsRegistrationChild.cpp',
+    'ipc/ImsRegistrationParent.cpp',
     'ipc/MobileConnectionChild.cpp',
     'ipc/MobileConnectionIPCService.cpp',
     'ipc/MobileConnectionParent.cpp',
@@ -42,6 +54,7 @@ UNIFIED_SOURCES += [
     'MobileConnectionArray.cpp',
     'MobileConnectionCallback.cpp',
     'MobileConnectionInfo.cpp',
+    'MobileDeviceIdentities.cpp',
     'MobileNetworkInfo.cpp',
 ]
 
@@ -53,6 +66,9 @@ if CONFIG['_MSC_VER'] and CONFIG['CPU_ARCH'] == 'x86_64':
     SOURCES['MobileConnection.cpp'].no_pgo = True # VS2013 crashes, bug 1084162
 
 IPDL_SOURCES += [
+    'ipc/PImsRegistration.ipdl',
+    'ipc/PImsRegistrationRequest.ipdl',
+    'ipc/PImsRegServiceFinder.ipdl',
     'ipc/PMobileConnection.ipdl',
     'ipc/PMobileConnectionRequest.ipdl',
     'ipc/PMobileConnectionTypes.ipdlh',

@@ -7,9 +7,11 @@
 #include "mozilla/dom/MobileConnection.h"
 
 #include "MobileConnectionCallback.h"
+#include "MobileDeviceIdentities.h"
 #include "mozilla/AsyncEventDispatcher.h"
 #include "mozilla/dom/CFStateChangeEvent.h"
 #include "mozilla/dom/DataErrorEvent.h"
+#include "mozilla/dom/ImsRegHandler.h"
 #include "mozilla/dom/MozClirModeEvent.h"
 #include "mozilla/dom/MozEmergencyCbModeEvent.h"
 #include "mozilla/dom/MozOtaStatusEvent.h"
@@ -89,6 +91,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(MobileConnection,
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mVoice)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mData)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mIccHandler)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mImsHandler)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(MobileConnection,
@@ -97,6 +100,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(MobileConnection,
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mVoice)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mData)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mIccHandler)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mImsHandler)
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(MobileConnection)
@@ -376,6 +380,27 @@ MobileConnection::Data() const
   return mData;
 }
 
+already_AddRefed<DOMRequest>
+MobileConnection::GetDeviceIdentities(ErrorResult& aRv)
+{
+  if (!mMobileConnection) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return nullptr;
+  }
+
+  RefPtr<DOMRequest> request = new DOMRequest(GetOwner());
+  RefPtr<MobileConnectionCallback> requestCallback =
+    new MobileConnectionCallback(GetOwner(), request);
+
+  nsresult rv = mMobileConnection->GetDeviceIdentities(requestCallback);
+  if (NS_FAILED(rv)) {
+    aRv.Throw(rv);
+    return nullptr;
+  }
+
+  return request.forget();
+}
+
 void
 MobileConnection::GetIccId(nsString& aRetVal) const
 {
@@ -461,6 +486,38 @@ MobileConnection::GetSupportedNetworkTypes(nsTArray<MobileNetworkType>& aTypes) 
   }
 
   free(types);
+}
+
+already_AddRefed<ImsRegHandler>
+MobileConnection::GetImsHandler() const
+{
+  if (!mMobileConnection) {
+    return nullptr;
+  }
+
+  if (mImsHandler) {
+    RefPtr<ImsRegHandler> handler = mImsHandler;
+    return handler.forget();
+  }
+
+  nsCOMPtr<nsIImsRegService> imsService = do_GetService(IMS_REG_SERVICE_CONTRACTID);
+  if (!imsService) {
+    NS_WARNING("Could not acquire nsIImsRegService!");
+    return nullptr;
+  }
+
+  nsCOMPtr<nsIImsRegHandler> internalHandler;
+  imsService->GetHandlerByServiceId(mClientId, getter_AddRefs(internalHandler));
+  // ImsRegHandler is optional, always check even if it was retreived successfully.
+  if (!internalHandler) {
+    NS_WARNING("Could not acquire nsIImsRegHandler!");
+    return nullptr;
+  }
+
+  mImsHandler = new ImsRegHandler(GetOwner(), internalHandler);
+  RefPtr<ImsRegHandler> handler = mImsHandler;
+
+  return handler.forget();
 }
 
 already_AddRefed<DOMRequest>

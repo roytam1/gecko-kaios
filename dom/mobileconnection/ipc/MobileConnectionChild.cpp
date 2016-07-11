@@ -351,6 +351,13 @@ MobileConnectionChild::GetCellInfoList(nsICellInfoListCallback* aCallback)
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 
+NS_IMETHODIMP
+MobileConnectionChild::GetDeviceIdentities(nsIMobileConnectionCallback* aCallback)
+{
+  return SendRequest(GetDeviceIdentitiesRequest(), aCallback)
+    ? NS_OK : NS_ERROR_FAILURE;
+}
+
 bool
 MobileConnectionChild::SendRequest(const MobileConnectionRequest& aRequest,
                                    nsIMobileConnectionCallback* aCallback)
@@ -531,6 +538,13 @@ MobileConnectionRequestChild::DoReply(const MobileConnectionReplySuccessBoolean&
 }
 
 bool
+MobileConnectionRequestChild::DoReply(const MobileConnectionReplySuccessDeviceIdentities& aReply)
+{
+  nsCOMPtr<nsIMobileDeviceIdentities> result = dont_AddRef(aReply.result());
+  return NS_SUCCEEDED(mRequestCallback->NotifyGetDeviceIdentitiesRequestSuccess(result));
+}
+
+bool
 MobileConnectionRequestChild::DoReply(const MobileConnectionReplySuccessNetworks& aReply)
 {
   uint32_t count = aReply.results().Length();
@@ -621,6 +635,8 @@ MobileConnectionRequestChild::Recv__delete__(const MobileConnectionReply& aReply
       return DoReply(aReply.get_MobileConnectionReplySuccessCallWaiting());
     case MobileConnectionReply::TMobileConnectionReplySuccessClirStatus:
       return DoReply(aReply.get_MobileConnectionReplySuccessClirStatus());
+    case MobileConnectionReply::TMobileConnectionReplySuccessDeviceIdentities:
+      return DoReply(aReply.get_MobileConnectionReplySuccessDeviceIdentities());
     case MobileConnectionReply::TMobileConnectionReplySuccessPreferredNetworkType:
       return DoReply(aReply.get_MobileConnectionReplySuccessPreferredNetworkType());
     case MobileConnectionReply::TMobileConnectionReplySuccessRoamingPreference:

@@ -91,6 +91,8 @@ MobileConnectionParent::RecvPMobileConnectionRequestConstructor(PMobileConnectio
       return actor->DoRequest(aRequest.get_ExitEmergencyCbModeRequest());
     case MobileConnectionRequest::TSetRadioEnabledRequest:
       return actor->DoRequest(aRequest.get_SetRadioEnabledRequest());
+    case MobileConnectionRequest::TGetDeviceIdentitiesRequest:
+      return actor->DoRequest(aRequest.get_GetDeviceIdentitiesRequest());
     default:
       MOZ_CRASH("Received invalid request type!");
   }
@@ -488,6 +490,14 @@ MobileConnectionRequestParent::DoRequest(const SetRadioEnabledRequest& aRequest)
   return NS_SUCCEEDED(mMobileConnection->SetRadioEnabled(aRequest.enabled(), this));
 }
 
+bool
+MobileConnectionRequestParent::DoRequest(const GetDeviceIdentitiesRequest& aRequest)
+{
+  NS_ENSURE_TRUE(mMobileConnection, false);
+
+  return NS_SUCCEEDED(mMobileConnection->GetDeviceIdentities(this));
+}
+
 nsresult
 MobileConnectionRequestParent::SendReply(const MobileConnectionReply& aReply)
 {
@@ -570,6 +580,13 @@ NS_IMETHODIMP
 MobileConnectionRequestParent::NotifyGetRoamingPreferenceSuccess(int32_t aMode)
 {
   return SendReply(MobileConnectionReplySuccessRoamingPreference(aMode));
+}
+
+NS_IMETHODIMP
+MobileConnectionRequestParent::NotifyGetDeviceIdentitiesRequestSuccess(
+  nsIMobileDeviceIdentities* aResult)
+{
+  return SendReply(MobileConnectionReplySuccessDeviceIdentities(aResult));
 }
 
 NS_IMETHODIMP

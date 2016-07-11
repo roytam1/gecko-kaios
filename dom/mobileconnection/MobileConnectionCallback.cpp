@@ -246,6 +246,40 @@ MobileConnectionCallback::NotifyGetRoamingPreferenceSuccess(int32_t aMode)
 };
 
 NS_IMETHODIMP
+MobileConnectionCallback::NotifyGetDeviceIdentitiesRequestSuccess(
+  nsIMobileDeviceIdentities* aResult)
+{
+  nsString pString;
+  MobileDeviceIds result;
+
+  aResult->GetImei(pString);
+  result.mImei.Construct(pString);
+
+  aResult->GetImeisv(pString);
+  result.mImeisv.Construct(pString);
+
+  aResult->GetEsn(pString);
+  result.mEsn.Construct(pString);
+
+  aResult->GetMeid(pString);
+  result.mMeid.Construct(pString);
+
+  AutoJSAPI jsapi;
+  if (NS_WARN_IF(!jsapi.Init(mWindow))) {
+    return NS_ERROR_FAILURE;
+  }
+
+  JSContext* cx = jsapi.cx();
+  JS::Rooted<JS::Value> jsResult(cx);
+  if (!ToJSValue(cx, result, &jsResult)) {
+    JS_ClearPendingException(cx);
+    return NS_ERROR_TYPE_ERR;
+  }
+
+  return NotifySuccess(jsResult);
+};
+
+NS_IMETHODIMP
 MobileConnectionCallback::NotifyError(const nsAString& aName)
 {
   nsCOMPtr<nsIDOMRequestService> rs = do_GetService(DOMREQUEST_SERVICE_CONTRACTID);

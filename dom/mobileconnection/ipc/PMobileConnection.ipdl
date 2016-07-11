@@ -158,6 +158,10 @@ struct SetRadioEnabledRequest
   bool enabled;
 };
 
+struct GetDeviceIdentitiesRequest
+{
+};
+
 union MobileConnectionRequest
 {
   GetNetworksRequest;
@@ -180,6 +184,7 @@ union MobileConnectionRequest
   GetCallingLineIdRestrictionRequest;
   ExitEmergencyCbModeRequest;
   SetRadioEnabledRequest;
+  GetDeviceIdentitiesRequest;
 };
 
 } // namespace mobileconnection

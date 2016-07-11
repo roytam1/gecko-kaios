@@ -114,7 +114,7 @@ interface nsIMobileConnectionListener : nsISupports
 #define NO_ADDITIONAL_INFORMATION 0
 %}
 
-[scriptable, uuid(ef5e02a6-adff-4425-8634-ec49ced1f14f)]
+[scriptable, uuid(813b9620-77b5-11e5-a837-0800200c9a66)]
 interface nsIMobileConnectionCallback : nsISupports
 {
   /**
@@ -141,6 +141,8 @@ interface nsIMobileConnectionCallback : nsISupports
   void notifyGetPreferredNetworkTypeSuccess(in long type);
 
   void notifyGetRoamingPreferenceSuccess(in long mode);
+
+  void notifyGetDeviceIdentitiesRequestSuccess(in nsIMobileDeviceIdentities result);
 
   /**
    * notifyError() will be called, when request is failed.
@@ -171,7 +173,7 @@ already_AddRefed<nsIMobileConnectionService>
 NS_CreateMobileConnectionService();
 %}
 
-[scriptable, uuid(7a557116-8753-11e5-9f9b-6794b577c0a1)]
+[scriptable, uuid(b9845f09-7cbb-46d0-b713-773d82249e0d)]
 interface nsIMobileConnection : nsISupports
 {
   /*
@@ -740,4 +742,13 @@ interface nsIMobileConnection : nsISupports
    *        for details.
    */
   void getCellInfoList(in nsICellInfoListCallback callback);
+
+  /**
+   * Request device identities (ie: IMEI/IMEIsv/ESN/MEID).
+   *
+   * @param callback
+   *        Called when request is finished. See nsIMobileDeviceIdentities
+   *        for details.
+   */
+  void getDeviceIdentities(in nsIMobileConnectionCallback requestCallback);
 };

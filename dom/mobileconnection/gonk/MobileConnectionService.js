@@ -21,6 +21,8 @@ const GONK_MOBILECONNECTIONSERVICE_CID =
   Components.ID("{0c9c1a96-2c72-4c55-9e27-0ca73eb16f63}");
 const MOBILECONNECTIONINFO_CID =
   Components.ID("{8162b3c0-664b-45f6-96cd-f07b4e193b0e}");
+const MOBILEDEVICEIDENTITIES_CID =
+  Components.ID("{f38786c0-786a-11e5-a837-0800200c9a66}");
 const MOBILENETWORKINFO_CID =
   Components.ID("{a6c8416c-09b4-46d1-bf29-6520d677d085}");
 const MOBILECELLINFO_CID =
@@ -106,6 +108,9 @@ function MobileCellInfo() {
   this.cdmaBaseStationLongitude = -2147483648;
   this.cdmaSystemId = -1;
   this.cdmaNetworkId = -1;
+  this.cdmaRoamingIndicator = -1;
+  this.cdmaSystemIsInPRL = false;
+  this.cdmaDefaultRoamingIndicator = -1;
 }
 MobileCellInfo.prototype = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIMobileCellInfo]),
@@ -136,6 +141,22 @@ MobileConnectionInfo.prototype = {
   type: null,
   signalStrength: null,
   relSignalStrength: null
+};
+
+function MobileDeviceIdentities() {
+  this.imei = null;
+  this.imeisv = null;
+  this.esn = null;
+  this.meid = null;
+}
+MobileDeviceIdentities.prototype = {
+  QueryInterface: XPCOMUtils.generateQI([Ci.nsIMobileDeviceIdentities]),
+  classID:        MOBILEDEVICEIDENTITIES_CID,
+  classInfo:      XPCOMUtils.generateCI({
+    classID:          MOBILENETWORKINFO_CID,
+    classDescription: "MobileDeviceIdentities",
+    interfaces:       [Ci.nsIMobileDeviceIdentities]
+  })
 };
 
 function MobileCallForwardingOptions(aOptions) {
@@ -521,6 +542,18 @@ MobileConnectionProvider.prototype = {
   isInEmergencyCbMode: false,
 
   /**
+   * Device indetities:
+   * IMEI if GSM subscription is available.
+   * IMEISV if GSM subscription is available.
+   * ESN if CDMA subscription is available.
+   * MEID if CDMA subscription is available.
+   */
+  _imei: null,
+  _imeisv: null,
+  _esn: null,
+  _meid: null,
+
+  /**
    * A utility function to dump debug message.
    */
   _debug: function(aMessage) {
@@ -661,6 +694,13 @@ MobileConnectionProvider.prototype = {
     // Check roaming state
     isUpdated = this._checkRoamingBetweenOperators(aDestInfo) || isUpdated;
     return isUpdated;
+  },
+
+  _updateDeviceIdentities: function(aImei, aImeisv, aEsn, aMeid) {
+    this._imei = aImei;
+    this._imeisv = aImeisv;
+    this._esn = aEsn;
+    this._meid = aMeid;
   },
 
   /**
@@ -1426,6 +1466,16 @@ MobileConnectionProvider.prototype = {
 
     }.bind(this));
   },
+
+  getDeviceIdentities: function(aCallback) {
+    let deviceId = new MobileDeviceIdentities();
+    deviceId.imei = this._imei;
+    deviceId.imeisv = this._imeisv;
+    deviceId.esn = this._esn;
+    deviceId.meid = this._meid;
+
+    aCallback.notifyGetDeviceIdentitiesRequestSuccess(deviceId);
+  },
 };
 
 function MobileConnectionService() {
@@ -1500,6 +1550,18 @@ MobileConnectionService.prototype = {
     }
 
     this.getItemByServiceId(aClientId).updateVoiceInfo(aVoiceInfo);
+  },
+
+  notifyDeviceIdentities: function(aClientId, aMessage) {
+    if (DEBUG) {
+      debug("notifyDeviceIdentities for " + aClientId + ": " +
+            JSON.stringify(aMessage));
+    }
+
+    this.getItemByServiceId(aClientId)._updateDeviceIdentities(aMessage.imei,
+                                                               aMessage.imeisv,
+                                                               aMessage.esn,
+                                                               aMessage.meid);
   },
 
   notifyDataInfoChanged: function(aClientId, aDataInfo) {

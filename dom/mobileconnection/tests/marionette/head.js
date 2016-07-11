@@ -1249,8 +1249,36 @@ function startDSDSTestCommon(aTestCaseMain, aAdditionalPermissions, aServiceId) 
           .then(aTestCaseMain);
       });
     } else {
-      log("Skipping DSDS tests on single SIM device.")
+      log("Skipping DSDS tests on single SIM device.");
       ok(true);  // We should run at least one test.
       cleanUp();
     }
+}
+
+/**
+ * Get Device Identities.
+ *
+ * @param aServiceId [optional]
+ *        A numeric DSDS service id. Default: the one indicated in
+ *        start*TestCommon() or 0 if not indicated.
+ *
+ * @return A deferred promise.
+ */
+function getDeviceIdentities(aServiceId) {
+  ok(true, "getDeviceIdentities(" + aServiceId + ")");
+  let mobileConn = getMozMobileConnectionByServiceId(aServiceId);
+  let request = mobileConn.getDeviceIdentities();
+  return request.then(function onsuccess() {
+      ok(true, "getDeviceIdentities success.");
+      // Emualtor has 000000000000000 as IMEI.
+      is(request.result.imei, "000000000000000", "Check IMEI");
+      // Emulator has empty IMEIsv.
+      is(request.result.imeisv, "", "Check IMEIsv");
+      // Emulator has empty ESN.
+      is(request.result.esn, "", "Check ESN");
+      // Emulator has empty MEID.
+      is(request.result.meid, "", "Check MEID");
+    }, function onerror() {
+      ok(false, "getDeviceIdentities" + request.error.name);
+    });
 }

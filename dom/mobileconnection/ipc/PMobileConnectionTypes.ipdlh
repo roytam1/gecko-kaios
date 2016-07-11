@@ -9,6 +9,7 @@ using nsMobileNetworkInfo from "mozilla/dom/mobileconnection/MobileConnectionIPC
 using struct mozilla::void_t from "ipc/IPCMessageUtils.h";
 using struct IPC::MozCallForwardingOptions from "mozilla/dom/mobileconnection/MobileConnectionIPCSerializer.h";
 using nsMobileCallForwardingOptions from "mozilla/dom/mobileconnection/MobileConnectionIPCSerializer.h";
+using nsMobileDeviceIdentities from "mozilla/dom/mobileconnection/MobileConnectionIPCSerializer.h";
 
 namespace mozilla {
 namespace dom {
