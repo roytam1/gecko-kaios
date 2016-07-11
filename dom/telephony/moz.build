@@ -12,6 +12,7 @@ XPIDL_SOURCES += [
 XPIDL_MODULE = 'dom_telephony'
 
 EXPORTS.mozilla.dom += [
+    'Assertions.cpp',
     'CallsList.h',
     'MMICall.h',
     'Telephony.h',
@@ -32,6 +33,7 @@ EXPORTS.mozilla.dom.telephony += [
 ]
 
 UNIFIED_SOURCES += [
+    'Assertions.cpp',
     'CallsList.cpp',
     'ipc/TelephonyChild.cpp',
     'ipc/TelephonyIPCService.cpp',
@@ -79,6 +81,8 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk' and CONFIG['MOZ_B2G_RIL']:
 include('/ipc/chromium/chromium-config.mozbuild')
 
 FINAL_LIBRARY = 'xul'
+
+MOCHITEST_MANIFESTS += ['test/mochitest/mochitest.ini']
 
 if CONFIG['GNU_CXX']:
     CXXFLAGS += ['-Wshadow']

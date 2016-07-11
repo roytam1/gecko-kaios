@@ -4,7 +4,7 @@
 
 #include "nsISupports.idl"
 
-[scriptable, uuid(84045b7e-84fb-11e4-a94c-5ba58d0d5932)]
+[scriptable, uuid(086b3ba8-5738-40a9-a126-0e3d85c2e78e)]
 interface nsITelephonyMessenger : nsISupports
 {
   /**
@@ -51,4 +51,21 @@ interface nsITelephonyMessenger : nsISupports
   void notifyUssdReceived(in unsigned long aServiceId,
                           in DOMString aMessage,
                           in boolean aSessionEnded);
+
+  /**
+   * To broadcast 'telephony-hac-mode-changed' system message.
+   *
+   * @param aEnable
+   *        True if HAC is enabled.
+   */
+  void notifyHacModeChanged(in boolean aEnable);
+
+  /**
+   * To broadcast 'telephony-tty-mode-changed' system message.
+   *
+   * @param aMode
+   *        The new TTY mode of the remote party.
+   *        One of nsITelephonyService::TTY_MODE_*.
+   */
+  void notifyTtyModeChanged(in unsigned short aMode);
 };

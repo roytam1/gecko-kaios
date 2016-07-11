@@ -109,6 +109,12 @@ TelephonyParent::RecvPTelephonyRequestConstructor(PTelephonyRequestParent* aActo
       return true;
     }
 
+    case IPCTelephonyRequest::THangUpAllCallsRequest: {
+      const HangUpAllCallsRequest& request = aRequest.get_HangUpAllCallsRequest();
+      service->HangUpAllCalls(request.clientId(), actor->GetCallback());
+      return true;
+    }
+
     case IPCTelephonyRequest::THangUpCallRequest: {
       const HangUpCallRequest& request = aRequest.get_HangUpCallRequest();
       service->HangUpCall(request.clientId(), request.callIndex(), actor->GetCallback());
@@ -224,6 +230,30 @@ TelephonyParent::RecvStopTone(const uint32_t& aClientId)
 }
 
 bool
+TelephonyParent::RecvGetHacMode(bool* aEnabled)
+{
+  *aEnabled = false;
+
+  nsCOMPtr<nsITelephonyService> service =
+    do_GetService(TELEPHONY_SERVICE_CONTRACTID);
+  NS_ENSURE_TRUE(service, true);
+
+  service->GetHacMode(aEnabled);
+  return true;
+}
+
+bool
+TelephonyParent::RecvSetHacMode(const bool& aEnabled)
+{
+  nsCOMPtr<nsITelephonyService> service =
+    do_GetService(TELEPHONY_SERVICE_CONTRACTID);
+  NS_ENSURE_TRUE(service, true);
+
+  service->SetHacMode(aEnabled);
+  return true;
+}
+
+bool
 TelephonyParent::RecvGetMicrophoneMuted(bool* aMuted)
 {
   *aMuted = false;
@@ -268,6 +298,30 @@ TelephonyParent::RecvSetSpeakerEnabled(const bool& aEnabled)
   NS_ENSURE_TRUE(service, true);
 
   service->SetSpeakerEnabled(aEnabled);
+  return true;
+}
+
+bool
+TelephonyParent::RecvGetTtyMode(uint16_t* aMode)
+{
+  *aMode = nsITelephonyService::TTY_MODE_OFF;
+
+  nsCOMPtr<nsITelephonyService> service =
+    do_GetService(TELEPHONY_SERVICE_CONTRACTID);
+  NS_ENSURE_TRUE(service, true);
+
+  service->GetTtyMode(aMode);
+  return true;
+}
+
+bool
+TelephonyParent::RecvSetTtyMode(const uint16_t& aMode)
+{
+  nsCOMPtr<nsITelephonyService> service =
+    do_GetService(TELEPHONY_SERVICE_CONTRACTID);
+  NS_ENSURE_TRUE(service, true);
+
+  service->SetTtyMode(aMode);
   return true;
 }
 
@@ -320,6 +374,33 @@ TelephonyParent::NotifyConferenceError(const nsAString& aName,
 
   return SendNotifyConferenceError(nsString(aName), nsString(aMessage)) ? NS_OK
                                                                         : NS_ERROR_FAILURE;
+}
+
+NS_IMETHODIMP
+TelephonyParent::NotifyRingbackTone(bool aPlayRingbackTone)
+{
+  NS_ENSURE_TRUE(!mActorDestroyed, NS_ERROR_FAILURE);
+
+  return SendNotifyRingbackTone(aPlayRingbackTone) ? NS_OK
+                                                   : NS_ERROR_FAILURE;
+}
+
+NS_IMETHODIMP
+TelephonyParent::NotifyTtyModeReceived(uint16_t mode)
+{
+  NS_ENSURE_TRUE(!mActorDestroyed, NS_ERROR_FAILURE);
+
+  return SendNotifyTtyModeReceived(mode) ? NS_OK
+                                         : NS_ERROR_FAILURE;
+}
+
+NS_IMETHODIMP
+TelephonyParent::NotifyTelephonyCoverageLosing(uint16_t aType)
+{
+  NS_ENSURE_TRUE(!mActorDestroyed, NS_ERROR_FAILURE);
+
+  return SendNotifyTelephonyCoverageLosing(aType) ? NS_OK
+                                                  : NS_ERROR_FAILURE;
 }
 
 NS_IMETHODIMP
@@ -406,6 +487,24 @@ TelephonyRequestParent::NotifyConferenceError(const nsAString& aName,
 }
 
 NS_IMETHODIMP
+TelephonyRequestParent::NotifyRingbackTone(bool aPlayRingbackTone)
+{
+  MOZ_CRASH("Not a TelephonyParent!");
+}
+
+NS_IMETHODIMP
+TelephonyRequestParent::NotifyTtyModeReceived(uint16_t aMode)
+{
+  MOZ_CRASH("Not a TelephonyParent!");
+}
+
+NS_IMETHODIMP
+TelephonyRequestParent::NotifyTelephonyCoverageLosing(uint16_t aType)
+{
+  MOZ_CRASH("Not a TelephonyParent!");
+}
+
+NS_IMETHODIMP
 TelephonyRequestParent::SupplementaryServiceNotification(uint32_t aClientId,
                                                          int32_t aCallIndex,
                                                          uint16_t aNotification)
@@ -456,10 +555,12 @@ TelephonyRequestParent::DialCallback::NotifyDialMMI(const nsAString& aServiceCod
 NS_IMETHODIMP
 TelephonyRequestParent::DialCallback::NotifyDialCallSuccess(uint32_t aClientId,
                                                             uint32_t aCallIndex,
-                                                            const nsAString& aNumber)
+                                                            const nsAString& aNumber,
+                                                            uint16_t aVoiceQuality)
 {
   return SendResponse(DialResponseCallSuccess(aClientId, aCallIndex,
-                                              nsAutoString(aNumber)));
+                                              nsAutoString(aNumber),
+                                              aVoiceQuality));
 }
 
 NS_IMETHODIMP

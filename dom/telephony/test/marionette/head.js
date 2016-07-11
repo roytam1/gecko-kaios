@@ -588,6 +588,11 @@ var Modem = Modems[0];
    * @return Promise
    */
   function checkAll(active, calls, conferenceState, conferenceCalls, callList) {
+    // Check qualitey
+    telephony.calls.forEach(call => is(call.voiceQuality, "Normal", "check voice quality"));
+    conference.calls.forEach(call => is(call.voiceQuality, "Normal", "check voice quality"));
+
+    // Check call list
     checkState(active, calls, conferenceState, conferenceCalls);
     return checkEmulatorCallList(callList);
   }
@@ -786,6 +791,7 @@ var Modem = Modems[0];
         ok(outCall instanceof TelephonyCall, "check instance");
         is(outCall.id.number, number);
         is(outCall.serviceId, serviceId);
+        is(outCall.voiceQuality, "Normal", "check voice quality");
 
         // A CDMA call goes to connected state directly when the operator find
         // its callee, which makes the "connected" state in CDMA calls behaves
@@ -969,6 +975,28 @@ var Modem = Modems[0];
     return Promise.all(promises).then(() => call);
   }
 
+  /*
+   * Locally hang up all calls.
+   *
+   * @param calls
+   *        A collection of TelephonyCall objects.
+   * @return Promise
+   */
+  function hangUpAllCalls(calls) {
+    log("Local hanging up all the calls.");
+
+    let promises = [];
+
+    promises.push(waitForStateChangeEvent(conference, ""));
+    for (let call of calls) {
+      promises.push(waitForNamedStateEvent(call, "disconnected"));
+    }
+
+    promises.push(telephony.hangUpAllCalls());
+
+    return Promise.all(promises).then(waitForNoCall);
+  }
+
   /**
    * Simulate an incoming call.
    *
@@ -1011,6 +1039,7 @@ var Modem = Modems[0];
                                navigator.mozTelephony.calls[0].secondId;
 
         is(call.state, isCdmaSecondCall ? "connected" : "incoming");
+        is(call.voiceQuality, "Normal","check voice quality");
         checkCallId(number, numberPresentation,
                     name, namePresentation,
                     isCdmaSecondCall ? call.secondId.number : call.id.number,
@@ -1532,6 +1561,7 @@ var Modem = Modems[0];
   this.gDialSTK = dialSTK;
   this.gAnswer = answer;
   this.gHangUp = hangUp;
+  this.gHangUpAllCalls = hangUpAllCalls;
   this.gHold = hold;
   this.gResume = resume;
   this.gRemoteDial = remoteDial;

@@ -37,6 +37,7 @@ struct ParamTraits<nsITelephonyCallInfo*>
     uint32_t clientId;
     uint32_t callIndex;
     uint16_t callState;
+    uint16_t voiceQuality;
     nsString disconnectedReason;
 
     nsString number;
@@ -49,10 +50,12 @@ struct ParamTraits<nsITelephonyCallInfo*>
     bool isConference;
     bool isSwitchable;
     bool isMergeable;
+    bool isConferenceParent;
 
     aParam->GetClientId(&clientId);
     aParam->GetCallIndex(&callIndex);
     aParam->GetCallState(&callState);
+    aParam->GetVoiceQuality(&voiceQuality);
     aParam->GetDisconnectedReason(disconnectedReason);
 
     aParam->GetNumber(number);
@@ -65,10 +68,12 @@ struct ParamTraits<nsITelephonyCallInfo*>
     aParam->GetIsConference(&isConference);
     aParam->GetIsSwitchable(&isSwitchable);
     aParam->GetIsMergeable(&isMergeable);
+    aParam->GetIsConferenceParent(&isConferenceParent);
 
     WriteParam(aMsg, clientId);
     WriteParam(aMsg, callIndex);
     WriteParam(aMsg, callState);
+    WriteParam(aMsg, voiceQuality);
     WriteParam(aMsg, disconnectedReason);
 
     WriteParam(aMsg, number);
@@ -81,6 +86,7 @@ struct ParamTraits<nsITelephonyCallInfo*>
     WriteParam(aMsg, isConference);
     WriteParam(aMsg, isSwitchable);
     WriteParam(aMsg, isMergeable);
+    WriteParam(aMsg, isConferenceParent);
   }
 
   static bool Read(const Message* aMsg, void** aIter, paramType* aResult)
@@ -99,6 +105,7 @@ struct ParamTraits<nsITelephonyCallInfo*>
     uint32_t clientId;
     uint32_t callIndex;
     uint16_t callState;
+    uint16_t voiceQuality;
     nsString disconnectedReason;
 
     nsString number;
@@ -111,11 +118,13 @@ struct ParamTraits<nsITelephonyCallInfo*>
     bool isConference;
     bool isSwitchable;
     bool isMergeable;
+    bool isConferenceParent;
 
     // It's not important to us where it fails, but rather if it fails
     if (!(ReadParam(aMsg, aIter, &clientId) &&
           ReadParam(aMsg, aIter, &callIndex) &&
           ReadParam(aMsg, aIter, &callState) &&
+          ReadParam(aMsg, aIter, &voiceQuality) &&
           ReadParam(aMsg, aIter, &disconnectedReason) &&
 
           ReadParam(aMsg, aIter, &number) &&
@@ -127,7 +136,8 @@ struct ParamTraits<nsITelephonyCallInfo*>
           ReadParam(aMsg, aIter, &isEmergency) &&
           ReadParam(aMsg, aIter, &isConference) &&
           ReadParam(aMsg, aIter, &isSwitchable) &&
-          ReadParam(aMsg, aIter, &isMergeable))) {
+          ReadParam(aMsg, aIter, &isMergeable) &&
+          ReadParam(aMsg, aIter, &isConferenceParent))) {
       return false;
     }
 
@@ -135,6 +145,7 @@ struct ParamTraits<nsITelephonyCallInfo*>
         new TelephonyCallInfo(clientId,
                               callIndex,
                               callState,
+                              voiceQuality,
                               disconnectedReason,
 
                               number,
@@ -146,7 +157,8 @@ struct ParamTraits<nsITelephonyCallInfo*>
                               isEmergency,
                               isConference,
                               isSwitchable,
-                              isMergeable);
+                              isMergeable,
+                              isConferenceParent);
 
     info.forget(aResult);
 

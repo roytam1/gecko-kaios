@@ -129,10 +129,10 @@ TelephonyCallGroup::ChangeStateInternal(TelephonyCallGroupState aState)
   if (mState == aState) {
     return;
   }
- 
+
   // Update Current State
   mState = aState;
- 
+
   // Dispatch related events
   NotifyStateChanged();
 }
@@ -249,6 +249,13 @@ TelephonyCallGroup::GetCall(uint32_t aServiceId, uint32_t aCallIndex)
         tempCall->CallIndex() == aCallIndex) {
       call = tempCall;
       break;
+    }
+  }
+
+  if (!call && mConferenceParentCall) {
+    if (mConferenceParentCall->ServiceId() == aServiceId &&
+      mConferenceParentCall->CallIndex() == aCallIndex) {
+      call = mConferenceParentCall;
     }
   }
 
@@ -466,4 +473,16 @@ TelephonyCallGroup::Resume(nsITelephonyCallback* aCallback)
   }
 
   return NS_OK;
+}
+
+void
+TelephonyCallGroup::SetConferenceParentCall(TelephonyCall* aCall)
+{
+  mConferenceParentCall = aCall;
+}
+
+already_AddRefed<TelephonyCall>
+TelephonyCallGroup::GetConferenceParentCall() {
+  RefPtr<TelephonyCall> call = mConferenceParentCall;
+  return call.forget();
 }

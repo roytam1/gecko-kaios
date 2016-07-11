@@ -31,6 +31,7 @@ class TelephonyDialCallback;
 } // namespace telephony
 
 class OwningTelephonyCallOrTelephonyCallGroup;
+enum class TtyMode: uint32_t;
 
 class Telephony final : public DOMEventTargetHelper,
                         public nsIAudioChannelAgentCallback,
@@ -104,6 +105,12 @@ public:
   void
   StopTone(const Optional<uint32_t>& aServiceId, ErrorResult& aRv);
 
+  bool
+  GetHacMode(ErrorResult& aRv) const;
+
+  void
+  SetHacMode(bool aEnabled, ErrorResult& aRv);
+
   // In the audio channel architecture, the system app needs to know the state
   // of every audio channel, including the telephony. Therefore, when a
   // telephony call is activated , the audio channel service would notify the
@@ -125,6 +132,12 @@ public:
   void
   SetSpeakerEnabled(bool aEnabled, ErrorResult& aRv);
 
+  TtyMode
+  GetTtyMode(ErrorResult& aRv) const;
+
+  void
+  SetTtyMode(TtyMode aMode, ErrorResult& aRv);
+
   void
   GetActive(Nullable<OwningTelephonyCallOrTelephonyCallGroup>& aValue);
 
@@ -137,10 +150,16 @@ public:
   already_AddRefed<Promise>
   GetReady(ErrorResult& aRv) const;
 
+  already_AddRefed<Promise>
+  HangUpAllCalls(const Optional<uint32_t>& aServiceId, ErrorResult& aRv);
+
   IMPL_EVENT_HANDLER(incoming)
   IMPL_EVENT_HANDLER(callschanged)
   IMPL_EVENT_HANDLER(remoteheld)
   IMPL_EVENT_HANDLER(remoteresumed)
+  IMPL_EVENT_HANDLER(ringbacktone)
+  IMPL_EVENT_HANDLER(ttymodereceived)
+  IMPL_EVENT_HANDLER(telephonycoveragelosing)
 
   static already_AddRefed<Telephony>
   Create(nsPIDOMWindowInner* aOwner, ErrorResult& aRv);
@@ -211,10 +230,12 @@ private:
              uint32_t aServiceId,
              uint32_t aCallIndex,
              TelephonyCallState aState,
+             TelephonyCallVoiceQuality aVoiceQuality,
              bool aEmergency = false,
              bool aConference = false,
              bool aSwitchable = true,
-             bool aMergeable = true);
+             bool aMergeable = true,
+             bool aConferenceParent = false);
 
   nsresult
   NotifyEvent(const nsAString& aType);
@@ -224,6 +245,15 @@ private:
 
   nsresult
   DispatchCallEvent(const nsAString& aType, TelephonyCall* aCall);
+
+  nsresult
+  DispatchRingbackToneEvent(const nsAString& aType, bool playRingbackTone);
+
+  nsresult
+  DispatchTtyModeReceived(const nsString& aType, uint16_t mode);
+
+  nsresult
+  DispatchTelephonyCoverageLosingEvent(const nsAString& aType, uint16_t type);
 
   already_AddRefed<TelephonyCall>
   GetCall(uint32_t aServiceId, uint32_t aCallIndex);

@@ -46,6 +46,15 @@ protected:
                             const nsString& aMessage) override;
 
   virtual bool
+  RecvNotifyRingbackTone(const bool& PlayRingbackTone) override;
+
+  virtual bool
+  RecvNotifyTtyModeReceived(const uint16_t& aMode) override;
+
+  virtual bool
+  RecvNotifyTelephonyCoverageLosing(const uint16_t& aType) override;
+
+  virtual bool
   RecvNotifySupplementaryService(const uint32_t& aClientId,
                                  const int32_t& aCallIndex,
                                  const uint16_t& aNotification) override;

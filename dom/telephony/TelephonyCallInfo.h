@@ -24,6 +24,7 @@ public:
   TelephonyCallInfo(uint32_t aClientId,
                     uint32_t aCallIndex,
                     uint16_t aCallState,
+                    uint16_t aVoiceQuality,
                     const nsAString& aDisconnectedReason,
 
                     const nsAString& aNumber,
@@ -35,7 +36,8 @@ public:
                     bool aIsEmergency,
                     bool aIsConference,
                     bool aIsSwitchable,
-                    bool aIsMergeable);
+                    bool aIsMergeable,
+                    bool aIsConferenceParent);
 
 private:
   // Don't try to use the default constructor.
@@ -46,6 +48,7 @@ private:
   uint32_t mClientId;
   uint32_t mCallIndex;
   uint16_t mCallState;
+  uint16_t mVoiceQuality;
   nsString mDisconnectedReason;
 
   nsString mNumber;
@@ -58,6 +61,7 @@ private:
   bool mIsConference;
   bool mIsSwitchable;
   bool mIsMergeable;
+  bool mIsConferenceParent;
 };
 
 } // namespace telephony

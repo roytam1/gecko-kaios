@@ -186,6 +186,18 @@ TelephonyIPCService::AnswerCall(uint32_t aClientId, uint32_t aCallIndex,
 }
 
 NS_IMETHODIMP
+TelephonyIPCService::HangUpAllCalls(uint32_t aClientId,
+                                    nsITelephonyCallback *aCallback)
+{
+  if (!mPTelephonyChild) {
+    NS_WARNING("TelephonyService used after shutdown has begun!");
+    return NS_ERROR_FAILURE;
+  }
+
+  return SendRequest(nullptr, aCallback, HangUpAllCallsRequest(aClientId));
+}
+
+NS_IMETHODIMP
 TelephonyIPCService::HangUpCall(uint32_t aClientId, uint32_t aCallIndex,
                                 nsITelephonyCallback *aCallback)
 {
@@ -318,6 +330,30 @@ TelephonyIPCService::CancelUSSD(uint32_t aClientId,
 }
 
 NS_IMETHODIMP
+TelephonyIPCService::GetHacMode(bool* aEnabled)
+{
+  if (!mPTelephonyChild) {
+    NS_WARNING("TelephonyService used after shutdown has begun!");
+    return NS_ERROR_FAILURE;
+  }
+
+  mPTelephonyChild->SendGetHacMode(aEnabled);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TelephonyIPCService::SetHacMode(bool aEnabled)
+{
+  if (!mPTelephonyChild) {
+    NS_WARNING("TelephonyService used after shutdown has begun!");
+    return NS_ERROR_FAILURE;
+  }
+
+  mPTelephonyChild->SendSetHacMode(aEnabled);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 TelephonyIPCService::GetMicrophoneMuted(bool* aMuted)
 {
   if (!mPTelephonyChild) {
@@ -365,6 +401,30 @@ TelephonyIPCService::SetSpeakerEnabled(bool aEnabled)
   return NS_OK;
 }
 
+NS_IMETHODIMP
+TelephonyIPCService::GetTtyMode(uint16_t* aMode)
+{
+  if (!mPTelephonyChild) {
+    NS_WARNING("TelephonyService used after shutdown has begun!");
+    return NS_ERROR_FAILURE;
+  }
+
+  mPTelephonyChild->SendGetTtyMode(aMode);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TelephonyIPCService::SetTtyMode(uint16_t aMode)
+{
+  if (!mPTelephonyChild) {
+    NS_WARNING("TelephonyService used after shutdown has begun!");
+    return NS_ERROR_FAILURE;
+  }
+
+  mPTelephonyChild->SendSetTtyMode(aMode);
+  return NS_OK;
+}
+
 // nsITelephonyListener
 
 NS_IMETHODIMP
@@ -408,6 +468,33 @@ TelephonyIPCService::NotifyConferenceError(const nsAString& aName,
 {
   for (uint32_t i = 0; i < mListeners.Length(); i++) {
     mListeners[i]->NotifyConferenceError(aName, aMessage);
+  }
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TelephonyIPCService::NotifyRingbackTone(bool aPlayRingbackTone)
+{
+  for (uint32_t i = 0; i < mListeners.Length(); i++) {
+    mListeners[i]->NotifyRingbackTone(aPlayRingbackTone);
+  }
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TelephonyIPCService::NotifyTtyModeReceived(uint16_t mode)
+{
+  for (uint32_t i = 0; i < mListeners.Length(); i++) {
+    mListeners[i]->NotifyTtyModeReceived(mode);
+  }
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TelephonyIPCService::NotifyTelephonyCoverageLosing(uint16_t aType)
+{
+  for (uint32_t i = 0; i < mListeners.Length(); i++) {
+    mListeners[i]->NotifyTelephonyCoverageLosing(aType);
   }
   return NS_OK;
 }

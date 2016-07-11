@@ -284,6 +284,7 @@ function TelephonyCallInfo(aCall) {
   this.clientId = aCall.clientId;
   this.callIndex = aCall.callIndex;
   this.callState = aCall.state;
+  this.voiceQuality = nsITelephonyService.CALL_VOICE_QUALITY_NORMAL;
   this.disconnectedReason = aCall.disconnectedReason || "";
 
   this.number = aCall.number;
@@ -296,6 +297,7 @@ function TelephonyCallInfo(aCall) {
   this.isConference = aCall.isConference;
   this.isSwitchable = aCall.isSwitchable;
   this.isMergeable = aCall.isMergeable;
+  this.isConferenceParent = false;
 }
 TelephonyCallInfo.prototype = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsITelephonyCallInfo]),
@@ -311,6 +313,7 @@ TelephonyCallInfo.prototype = {
   clientId: 0,
   callIndex: 0,
   callState: nsITelephonyService.CALL_STATE_UNKNOWN,
+  voiceQuality: nsITelephonyService.CALL_VOICE_QUALITY_NORMAL,
   disconnectedReason: "",
 
   number: "",
@@ -342,7 +345,8 @@ Call.prototype = {
   isConference: false,
   isSwitchable: true,
   isMergeable: true,
-  started: null
+  started: null,
+  isConferenceParent: false
 };
 
 function MobileConnectionListener() {}
@@ -377,6 +381,10 @@ function TelephonyService() {
 
   this._cdmaCallWaitingNumber = null;
 
+  this._headsetState = gAudioService.headsetState;
+  gAudioService.registerListener(this);
+  this._applyTtyMode();
+
   this._updateDebugFlag();
   this.defaultServiceId = this._getDefaultServiceId();
 
@@ -402,6 +410,7 @@ TelephonyService.prototype = {
                                     flags: Ci.nsIClassInfo.SINGLETON}),
   QueryInterface: XPCOMUtils.generateQI([Ci.nsITelephonyService,
                                          Ci.nsIGonkTelephonyService,
+                                         Ci.nsITelephonyAudioListener,
                                          Ci.nsIObserver]),
 
   // The following attributes/functions are used for acquiring/releasing the
@@ -640,6 +649,36 @@ TelephonyService.prototype = {
     }
   },
 
+  _appliedTtyMode: nsITelephonyService.TTY_MODE_OFF,
+  _applyTtyMode: function() {
+    // Apply TTY mode preference only if headset is available.
+    // Otherwise, set to OFF.
+    let ttyMode = (this._headsetState == nsITelephonyAudioService.HEADSET_STATE_HEADSET
+                   || this._headsetState == nsITelephonyAudioService.HEADSET_STATE_HEADPHONE)
+      ? gAudioService.ttyMode
+      : nsITelephonyService.TTY_MODE_OFF;
+
+    // Apply only if it's different from what has been applied.
+    if (this._appliedTtyMode == ttyMode) {
+      return;
+    }
+
+    this._appliedTtyMode = ttyMode;
+    gAudioService.applyTtyMode(ttyMode);
+
+    for (let clientId = 0; clientId < this._numClients; clientId++) {
+      this._sendToRilWorker(clientId, "setTtyMode",
+                            { ttyMode: ttyMode }, aResponse => {
+        if (aResponse.errorMsg) {
+          debug("Failed to set TTY Mode, error: " + aResponse.errorMsg);
+          return;
+        }
+      });
+    }
+    gTelephonyMessenger.notifyTtyModeChanged(ttyMode);
+    // TODO: send request to IMS stack (if existing) for setup IMS TTY bearer.
+  },
+
   /**
    * nsITelephonyService interface.
    */
@@ -842,6 +881,8 @@ TelephonyService.prototype = {
     } else if (aNumber === "3") {
       aCallback.notifyDialMMI(MMI_KS_SC_CALL);
       this._conferenceCallGsm(aClientId, mmiCallback);
+    } else if (aNumber === "4") {
+      this._sendToRilWorker(aClientId, "explicitCallTransfer", null, mmiCallback);
     } else {
       this._dialCall(aClientId, aNumber, undefined, aCallback);
     }
@@ -977,7 +1018,8 @@ TelephonyService.prototype = {
 
       // RIL doesn't hold the 2nd call. We create one by ourselves.
       aCallback.notifyDialCallSuccess(aClientId, CDMA_SECOND_CALL_INDEX,
-                                      aNumber);
+                                      aNumber.
+                                      nsITelephonyService.CALL_VOICE_QUALITY_NORMAL);
 
       let childCall = this._currentCalls[aClientId][CDMA_SECOND_CALL_INDEX] =
         new Call(aClientId, CDMA_SECOND_CALL_INDEX);
@@ -1888,6 +1930,38 @@ TelephonyService.prototype = {
     }
   },
 
+  hangUpAllCalls: function(aClientId, aCallback) {
+    if (!this._hasCalls(aClientId)) {
+      aCallback.notifyError(RIL.GECKO_ERROR_GENERIC_FAILURE);
+      return;
+    }
+
+    let calls = [];
+    for (let cid in this._currentCalls[aClientId]) {
+      let call = this._currentCalls[aClientId][cid];
+      if (call.state !== nsITelephonyService.CALL_STATE_UNKNOWN &&
+          call.state !== nsITelephonyService.CALL_STATE_DISCONNECTED) {
+        calls.push(call);
+      }
+    }
+
+    if (calls.length <= 0) {
+      // No valid call to disconnect, report error back.
+      aCallback.notifyError(RIL.GECKO_ERROR_GENERIC_FAILURE);
+      return;
+    }
+
+    let disconnectCalls = [...new Set(calls)];
+    disconnectCalls.forEach(call => {
+      call.hangUpLocal = true;
+      // TODO: partner can change below code to their own specific API for
+      // preformance improvement, but move _sendToRilWorker out of forEach block.
+      // [Remember to disable test_hangup_all_calls.js if API changes.]
+      this._sendToRilWorker(aClientId, "hangUpCall", { callIndex: call.callIndex },
+                            this._defaultCallbackHandler.bind(this, aCallback));
+    });
+  },
+
   _hangUpForeground: function(aClientId, aCallback) {
     let calls = this._getCallsWithState(aClientId, nsITelephonyService.CALL_STATE_CONNECTED);
     calls.forEach(call => call.hangUpLocal = true);
@@ -2207,6 +2281,14 @@ TelephonyService.prototype = {
     });
   },
 
+  get hacMode() {
+    return gAudioService.hacMode;
+  },
+
+  set hacMode(aEnabled) {
+    gAudioService.hacMode = aEnabled;
+  },
+
   get microphoneMuted() {
     return gAudioService.microphoneMuted;
   },
@@ -2221,6 +2303,15 @@ TelephonyService.prototype = {
 
   set speakerEnabled(aEnabled) {
     gAudioService.speakerEnabled = aEnabled;
+  },
+
+  get ttyMode() {
+    return gAudioService.ttyMode;
+  },
+
+  set ttyMode(aMode) {
+    gAudioService.ttyMode = aMode;
+    this._applyTtyMode();
   },
 
   /**
@@ -2361,7 +2452,8 @@ TelephonyService.prototype = {
         if (this._ongoingDial && this._ongoingDial.clientId === aClientId &&
             call.state !== nsITelephonyService.CALL_STATE_INCOMING) {
           this._ongoingDial.callback.notifyDialCallSuccess(aClientId, i,
-                                                           call.number);
+                                                           call.number,
+                                                           nsITelephonyService.CALL_VOICE_QUALITY_NORMAL);
           this._ongoingDial = null;
         }
       }
@@ -2488,6 +2580,37 @@ TelephonyService.prototype = {
   },
 
   /**
+   * Handle ringback tone changes from RIL.
+   */
+  notifyRingbackTone: function(aClientId, aPlayRingbackTone) {
+    this._notifyAllListeners("notifyRingbackTone", [aPlayRingbackTone]);
+  },
+
+  /**
+   * nsITelephonyAudioListener interface.
+   */
+  _headsetState: nsITelephonyAudioService.HEADSET_STATE_OFF,
+  notifyHeadsetStateChanged: function(aState) {
+    this._headsetState = aState;
+    this._applyTtyMode();
+  },
+
+  /**
+   * Handle TTY mode received event from stack.
+   *
+   */
+   notifyTtyModeReceived: function(aClientId, aMode) {
+    this._notifyAllListeners("notifyTtyModeReceived", [aMode]);
+  },
+
+  /**
+   * Handle service coverage losing event from stack.
+   */
+   notifyTelephonyCoverageLosing: function(aClientId, aType) {
+     this._notifyAllListeners("notifyTelephonyCoverageLosing", [aType]);
+   },
+
+  /**
    * nsIObserver interface.
    */
 
@@ -2504,7 +2627,7 @@ TelephonyService.prototype = {
       case NS_XPCOM_SHUTDOWN_OBSERVER_ID:
         // Release the CPU wake lock for handling the incoming call.
         this._releaseCallRingWakeLock();
-
+        gAudioService.unregisterListener(this);
         Services.obs.removeObserver(this, NS_XPCOM_SHUTDOWN_OBSERVER_ID);
         break;
     }

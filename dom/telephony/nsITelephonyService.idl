@@ -75,12 +75,36 @@ interface nsITelephonyListener : nsISupports
    */
   void notifyConferenceError(in AString name,
                              in AString message);
+
+  /**
+   * Called when RIL receives ringback tone event.
+   *
+   * @param playRingbackTone
+   *        Possible values are: true, false
+   */
+  void notifyRingbackTone(in bool playRingbackTone);
+
+  /**
+   * Called when telephony framework receives TTY mode event.
+   *
+   * @param mode
+   *        One of the nsITelephonyService::TTY_MODE_* values.
+   */
+  void notifyTtyModeReceived(in unsigned short mode);
+
+  /**
+   * Called when telephony framework receives handover failure event.
+   *
+   * @param mode
+   *        One of the nsITelephonyService::COVERAGE_LOST_* values.
+   */
+  void notifyTelephonyCoverageLosing(in unsigned short type);
 };
 
 /**
  * A callback interface for handling asynchronous response.
  */
-[scriptable, uuid(cffc3f9d-2c88-4a14-8ebc-f216caf0cc1d)]
+[scriptable, uuid(10662a91-cdcc-4094-9ddd-2ba37adaa924)]
 interface nsITelephonyCallback : nsISupports
 {
   void notifySuccess();
@@ -90,7 +114,7 @@ interface nsITelephonyCallback : nsISupports
 /**
  * A callback interface for handling asynchronous response for telephony.dial.
  */
-[scriptable, uuid(e16c6e6f-93c6-4e1e-99bf-592b98f67e15)]
+[scriptable, uuid(7f9548cd-db3e-48df-a098-91a9131f75d6)]
 interface nsITelephonyDialCallback : nsITelephonyCallback
 {
   /**
@@ -115,7 +139,8 @@ interface nsITelephonyDialCallback : nsITelephonyCallback
    */
   void notifyDialCallSuccess(in unsigned long cliendId,
                              in unsigned long callIndex,
-                             in AString number);
+                             in AString number,
+                             in unsigned short voiceQuality);
 
   /**
    * Called when a MMI code request succeeds.
@@ -150,7 +175,7 @@ interface nsITelephonyDialCallback : nsITelephonyCallback
  * XPCOM component (in the content process) that provides the telephony
  * information.
  */
-[scriptable, uuid(75e4b5e3-6710-4156-bdaa-ba1081f390f4)]
+[scriptable, uuid(6b072284-d2eb-47b4-8352-89d78e61f0ae)]
 interface nsITelephonyService : nsISupports
 {
   const unsigned short CALL_STATE_UNKNOWN = 0;
@@ -168,6 +193,16 @@ interface nsITelephonyService : nsISupports
   const unsigned short CALL_PRESENTATION_RESTRICTED = 1;
   const unsigned short CALL_PRESENTATION_UNKNOWN = 2;
   const unsigned short CALL_PRESENTATION_PAYPHONE = 3;
+
+  const unsigned short TTY_MODE_OFF = 0;
+  const unsigned short TTY_MODE_FULL = 1;
+  const unsigned short TTY_MODE_HCO = 2;
+  const unsigned short TTY_MODE_VCO = 3;
+
+  const unsigned short CALL_VOICE_QUALITY_NORMAL = 0;
+  const unsigned short CALL_VOICE_QUALITY_HD = 1;
+
+  const unsigned short COVERAGE_LOST_IMS_OVER_WIFI = 0;
 
   readonly attribute unsigned long defaultServiceId;
 
@@ -204,6 +239,8 @@ interface nsITelephonyService : nsISupports
   void rejectCall(in unsigned long clientId,
                   in unsigned long callIndex,
                   in nsITelephonyCallback callback);
+  void hangUpAllCalls(in unsigned long clientId,
+                      in nsITelephonyCallback callback);
   void hangUpCall(in unsigned long clientId,
                   in unsigned long callIndex,
                   in nsITelephonyCallback callback);
@@ -243,8 +280,16 @@ interface nsITelephonyService : nsISupports
    */
   void cancelUSSD(in unsigned long cliendId, in nsITelephonyCallback callback);
 
+  attribute bool hacMode;
   attribute bool microphoneMuted;
   attribute bool speakerEnabled;
+
+  /**
+   * Current TTY mode.
+   *
+   * One of the nsITelephonyService::TTY_MODE_* values.
+   */
+  attribute unsigned short ttyMode;
 };
 
 %{C++

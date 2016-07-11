@@ -15,8 +15,8 @@ NS_IMPL_ISUPPORTS(TelephonyCallInfo, nsITelephonyCallInfo)
 TelephonyCallInfo::TelephonyCallInfo(uint32_t aClientId,
                                      uint32_t aCallIndex,
                                      uint16_t aCallState,
+                                     uint16_t aVoiceQuality,
                                      const nsAString& aDisconnectedReason,
-
                                      const nsAString& aNumber,
                                      uint16_t aNumberPresentation,
                                      const nsAString& aName,
@@ -26,10 +26,12 @@ TelephonyCallInfo::TelephonyCallInfo(uint32_t aClientId,
                                      bool aIsEmergency,
                                      bool aIsConference,
                                      bool aIsSwitchable,
-                                     bool aIsMergeable)
+                                     bool aIsMergeable,
+                                     bool aIsConferenceParent)
   : mClientId(aClientId),
     mCallIndex(aCallIndex),
     mCallState(aCallState),
+    mVoiceQuality(aVoiceQuality),
     mDisconnectedReason(aDisconnectedReason),
 
     mNumber(aNumber),
@@ -41,7 +43,8 @@ TelephonyCallInfo::TelephonyCallInfo(uint32_t aClientId,
     mIsEmergency(aIsEmergency),
     mIsConference(aIsConference),
     mIsSwitchable(aIsSwitchable),
-    mIsMergeable(aIsMergeable)
+    mIsMergeable(aIsMergeable),
+    mIsConferenceParent(aIsConferenceParent)
 {
 }
 
@@ -133,6 +136,20 @@ NS_IMETHODIMP
 TelephonyCallInfo::GetIsMergeable(bool* aIsMergeable)
 {
   *aIsMergeable = mIsMergeable;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TelephonyCallInfo::GetVoiceQuality(uint16_t* aVoiceQuality)
+{
+  *aVoiceQuality = mVoiceQuality;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TelephonyCallInfo::GetIsConferenceParent(bool* aIsConferenceParent)
+{
+  *aIsConferenceParent = mIsConferenceParent;
   return NS_OK;
 }
 

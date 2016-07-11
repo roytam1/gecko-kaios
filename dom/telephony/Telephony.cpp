@@ -11,6 +11,9 @@
 #include "mozilla/dom/MozMobileConnectionBinding.h"
 #include "mozilla/dom/Promise.h"
 #include "mozilla/dom/TelephonyBinding.h"
+#include "mozilla/dom/RingbackToneEvent.h"
+#include "mozilla/dom/TtyModeReceivedEvent.h"
+#include "mozilla/dom/TelephonyCoverageLosingEvent.h"
 #include "mozilla/unused.h"
 
 #include "nsCharSeparatedTokenizer.h"
@@ -250,8 +253,10 @@ Telephony::CreateCallId(const nsAString& aNumber, uint16_t aNumberPresentation,
 already_AddRefed<TelephonyCall>
 Telephony::CreateCall(TelephonyCallId* aId, uint32_t aServiceId,
                       uint32_t aCallIndex, TelephonyCallState aState,
+                      TelephonyCallVoiceQuality aVoiceQuality,
                       bool aEmergency, bool aConference,
-                      bool aSwitchable, bool aMergeable)
+                      bool aSwitchable, bool aMergeable,
+                      bool aConferenceParent)
 {
   // We don't have to create an already ended call.
   if (aState == TelephonyCallState::Disconnected) {
@@ -259,8 +264,9 @@ Telephony::CreateCall(TelephonyCallId* aId, uint32_t aServiceId,
   }
 
   RefPtr<TelephonyCall> call =
-    TelephonyCall::Create(this, aId, aServiceId, aCallIndex, aState,
-                          aEmergency, aConference, aSwitchable, aMergeable);
+    TelephonyCall::Create(this, aId, aServiceId, aCallIndex, aState, aVoiceQuality,
+                          aEmergency, aConference, aSwitchable, aMergeable,
+                          aConferenceParent);
 
   NS_ASSERTION(call, "This should never fail!");
   NS_ASSERTION(aConference ? mGroup->CallsArray().Contains(call)
@@ -317,27 +323,34 @@ Telephony::HandleCallInfo(nsITelephonyCallInfo* aInfo)
   uint32_t serviceId;
   uint32_t callIndex;
   uint16_t callState;
+  uint16_t voiceQuality;
+
   bool isEmergency;
   bool isConference;
   bool isSwitchable;
   bool isMergeable;
+  bool isConferenceParent;
 
   aInfo->GetClientId(&serviceId);
   aInfo->GetCallIndex(&callIndex);
   aInfo->GetCallState(&callState);
+  aInfo->GetVoiceQuality(&voiceQuality);
   aInfo->GetIsEmergency(&isEmergency);
   aInfo->GetIsConference(&isConference);
   aInfo->GetIsSwitchable(&isSwitchable);
   aInfo->GetIsMergeable(&isMergeable);
+  aInfo->GetIsConferenceParent(&isConferenceParent);
 
   TelephonyCallState state = TelephonyCall::ConvertToTelephonyCallState(callState);
+  TelephonyCallVoiceQuality quality =
+      TelephonyCall::ConvertToTelephonyCallVoiceQuality(voiceQuality);
 
   RefPtr<TelephonyCall> call = GetCallFromEverywhere(serviceId, callIndex);
   // Handle a newly created call.
   if (!call) {
     RefPtr<TelephonyCallId> id = CreateCallId(aInfo);
-    call = CreateCall(id, serviceId, callIndex, state, isEmergency,
-                      isConference, isSwitchable, isMergeable);
+    call = CreateCall(id, serviceId, callIndex, state, quality, isEmergency,
+                      isConference, isSwitchable, isMergeable, isConferenceParent);
     // The newly created call is an incoming call.
     if (call &&
         state == TelephonyCallState::Incoming) {
@@ -352,6 +365,7 @@ Telephony::HandleCallInfo(nsITelephonyCallInfo* aInfo)
   call->UpdateSwitchable(isSwitchable);
   call->UpdateMergeable(isMergeable);
 
+  call->UpdateVoiceQuality(quality);
   nsAutoString number;
   aInfo->GetNumber(number);
   RefPtr<TelephonyCallId> id = call->Id();
@@ -393,6 +407,38 @@ Telephony::HandleCallInfo(nsITelephonyCallInfo* aInfo)
   }
 
   return NS_OK;
+}
+
+already_AddRefed<Promise>
+Telephony::HangUpAllCalls(const Optional<uint32_t>& aServiceId,
+                          ErrorResult& aRv)
+{
+  uint32_t serviceId = GetServiceId(aServiceId,
+                                    true /* aGetIfActiveCall */);
+
+  nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetOwner());
+  if (!global) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return nullptr;
+  }
+
+  RefPtr<Promise> promise = Promise::Create(global, aRv);
+  if (aRv.Failed()) {
+    return nullptr;
+  }
+
+  if (!promise) {
+    return nullptr;
+  }
+
+  nsCOMPtr<nsITelephonyCallback> callback = new TelephonyCallback(promise);
+  nsresult rv = mService->HangUpAllCalls(serviceId, callback);
+  if (NS_FAILED(rv)) {
+    promise->MaybeReject(NS_ERROR_DOM_INVALID_STATE_ERR);
+    return promise.forget();
+  }
+
+  return promise.forget();
 }
 
 NS_IMPL_CYCLE_COLLECTION_CLASS(Telephony)
@@ -588,6 +634,21 @@ Telephony::HandleAudioAgentState()
 }
 
 bool
+Telephony::GetHacMode(ErrorResult& aRv) const
+{
+  bool enabled = false;
+  aRv = mService->GetHacMode(&enabled);
+
+  return enabled;
+}
+
+void
+Telephony::SetHacMode(bool aEnabled, ErrorResult& aRv)
+{
+  aRv = mService->SetHacMode(aEnabled);
+}
+
+bool
 Telephony::GetMuted(ErrorResult& aRv) const
 {
   bool muted = false;
@@ -615,6 +676,19 @@ void
 Telephony::SetSpeakerEnabled(bool aEnabled, ErrorResult& aRv)
 {
   aRv = mService->SetSpeakerEnabled(aEnabled);
+}
+
+TtyMode
+Telephony::GetTtyMode(ErrorResult& aRv) const {
+  uint16_t mode;
+  aRv = mService->GetTtyMode(&mode);
+
+  return static_cast<TtyMode>(mode);
+}
+
+void
+Telephony::SetTtyMode(TtyMode aMode, ErrorResult& aRv) {
+  aRv = mService->SetTtyMode(static_cast<uint16_t>(aMode));
 }
 
 void
@@ -826,6 +900,27 @@ Telephony::NotifyConferenceError(const nsAString& aName,
   return NS_OK;
 }
 
+NS_IMETHODIMP
+Telephony::NotifyRingbackTone(bool aPlayRingbackTone)
+{
+  DispatchRingbackToneEvent(NS_LITERAL_STRING("ringbacktone"), aPlayRingbackTone);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+Telephony::NotifyTtyModeReceived(uint16_t aMode)
+{
+  DispatchTtyModeReceived(NS_LITERAL_STRING("ttymodereceived"), aMode);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+Telephony::NotifyTelephonyCoverageLosing(uint16_t aType)
+{
+  DispatchTelephonyCoverageLosingEvent(NS_LITERAL_STRING("telephonycoveragelosing"), aType);
+  return NS_OK;
+}
+
 nsresult
 Telephony::DispatchCallEvent(const nsAString& aType,
                              TelephonyCall* aCall)
@@ -840,6 +935,34 @@ Telephony::DispatchCallEvent(const nsAString& aType,
 
   RefPtr<CallEvent> event = CallEvent::Constructor(this, aType, init);
 
+  return DispatchTrustedEvent(event);
+}
+
+nsresult
+Telephony::DispatchRingbackToneEvent(const nsAString& aType,
+                                     bool playRingbackTone)
+{
+  RingbackToneEventInit init;
+  init.mPlayRingbackTone = playRingbackTone;
+  RefPtr<RingbackToneEvent> event = RingbackToneEvent::Constructor(this, aType, init);
+  return DispatchTrustedEvent(event);
+}
+
+nsresult
+Telephony::DispatchTelephonyCoverageLosingEvent(const nsAString& aType, uint16_t type)
+{
+  TelephonyCoverageLosingEventInit init;
+  init.mType = static_cast<TelephonyBearer>(type);
+  RefPtr<TelephonyCoverageLosingEvent> event = TelephonyCoverageLosingEvent::Constructor(this, aType, init);
+  return DispatchTrustedEvent(event);
+}
+
+nsresult
+Telephony::DispatchTtyModeReceived(const nsString& aType, uint16_t aMode)
+{
+  TtyModeReceivedEventInit init;
+  init.mMode = static_cast<TtyMode>(aMode);
+  RefPtr<TtyModeReceivedEvent> event = TtyModeReceivedEvent::Constructor(this, aType, init);
   return DispatchTrustedEvent(event);
 }
 

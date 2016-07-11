@@ -54,6 +54,12 @@ protected:
   RecvStopTone(const uint32_t& aClientId) override;
 
   virtual bool
+  RecvGetHacMode(bool* aEnabled) override;
+
+  virtual bool
+  RecvSetHacMode(const bool& aEnabled) override;
+
+  virtual bool
   RecvGetMicrophoneMuted(bool* aMuted) override;
 
   virtual bool
@@ -64,6 +70,12 @@ protected:
 
   virtual bool
   RecvSetSpeakerEnabled(const bool& aEnabled) override;
+
+  virtual bool
+  RecvGetTtyMode(uint16_t* aEnabled) override;
+
+  virtual bool
+  RecvSetTtyMode(const uint16_t& aEnabled) override;
 
 private:
   bool mActorDestroyed;

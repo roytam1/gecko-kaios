@@ -24,6 +24,8 @@ class TelephonyCallGroup final : public DOMEventTargetHelper
 
   TelephonyCallGroupState mState;
 
+  RefPtr<TelephonyCall> mConferenceParentCall;
+
 public:
   NS_DECL_ISUPPORTS_INHERITED
   NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(TelephonyCallGroup,
@@ -104,6 +106,12 @@ public:
 
   nsresult
   NotifyError(const nsAString& aName, const nsAString& aMessage);
+
+  void
+  SetConferenceParentCall(TelephonyCall* aCall);
+
+  already_AddRefed<TelephonyCall>
+  GetConferenceParentCall();
 
 private:
   explicit TelephonyCallGroup(nsPIDOMWindowInner* aOwner);

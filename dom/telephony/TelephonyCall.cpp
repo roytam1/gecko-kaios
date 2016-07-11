@@ -6,7 +6,6 @@
 
 #include "TelephonyCall.h"
 #include "mozilla/dom/CallEvent.h"
-#include "mozilla/dom/TelephonyCallBinding.h"
 #include "mozilla/dom/telephony/TelephonyCallback.h"
 
 #include "mozilla/dom/DOMError.h"
@@ -67,6 +66,20 @@ TelephonyCall::ConvertToTelephonyCallState(uint32_t aCallState)
   NS_NOTREACHED("Unknown state!");
   return TelephonyCallState::Disconnected;
 }
+// static
+TelephonyCallVoiceQuality
+TelephonyCall::ConvertToTelephonyCallVoiceQuality(uint16_t aQuality)
+{
+  switch (aQuality) {
+  case nsITelephonyService::CALL_VOICE_QUALITY_HD:
+    return TelephonyCallVoiceQuality::HD;
+  case nsITelephonyService::CALL_VOICE_QUALITY_NORMAL:
+    return TelephonyCallVoiceQuality::Normal;
+ }
+
+  NS_NOTREACHED("Unknown state!");
+  return TelephonyCallVoiceQuality::Normal;
+}
 
 // static
 already_AddRefed<TelephonyCall>
@@ -75,10 +88,12 @@ TelephonyCall::Create(Telephony* aTelephony,
                       uint32_t aServiceId,
                       uint32_t aCallIndex,
                       TelephonyCallState aState,
+                      TelephonyCallVoiceQuality aVoiceQuality,
                       bool aEmergency,
                       bool aConference,
                       bool aSwitchable,
-                      bool aMergeable)
+                      bool aMergeable,
+                      bool aConferenceParent)
 {
   NS_ASSERTION(aTelephony, "Null aTelephony pointer!");
   NS_ASSERTION(aId, "Null aId pointer!");
@@ -90,11 +105,13 @@ TelephonyCall::Create(Telephony* aTelephony,
   call->mId = aId;
   call->mServiceId = aServiceId;
   call->mCallIndex = aCallIndex;
+  call->mVoiceQuality = aVoiceQuality;
   call->mEmergency = aEmergency;
   call->mGroup = aConference ? aTelephony->ConferenceGroup() : nullptr;
   call->mSwitchable = aSwitchable;
   call->mMergeable = aMergeable;
   call->mError = nullptr;
+  call->mIsConferenceParent = aConferenceParent;
 
   call->ChangeStateInternal(aState, false);
   return call.forget();
@@ -123,6 +140,21 @@ TelephonyCall::ChangeStateInternal(TelephonyCallState aState, bool aFireEvents)
 
   // Update current state
   mState = aState;
+
+  if (mIsConferenceParent) {
+    RefPtr<TelephonyCallGroup> group = mTelephony->ConferenceGroup();
+    RefPtr<TelephonyCall> conferenceParentCall = group->GetConferenceParentCall();
+    if (aState == TelephonyCallState::Disconnected) {
+      if (conferenceParentCall) {
+        group->SetConferenceParentCall(nullptr);
+      }
+    } else {
+      if (conferenceParentCall != this) {
+        group->SetConferenceParentCall(this);
+      }
+    }
+    return;
+  }
 
   // Handle disconnected calls
   if (mState == TelephonyCallState::Disconnected) {

@@ -4,7 +4,7 @@
 
 #include "nsISupports.idl"
 
-[scriptable, uuid(e5e1be26-a3d4-49b3-8d9f-c1df5192b364)]
+[scriptable, uuid(2d5e7494-a4cf-4136-92f3-adc41a13f54a)]
 interface nsITelephonyCallInfo : nsISupports
 {
   /**
@@ -13,7 +13,7 @@ interface nsITelephonyCallInfo : nsISupports
   readonly attribute unsigned long clientId;
 
   /**
-   * Call identifier assigned by the RIL.
+   * Call identifier assigned by nsITelephonyService.
    */
   readonly attribute unsigned long callIndex;
 
@@ -21,6 +21,14 @@ interface nsITelephonyCallInfo : nsISupports
    * One of the nsITelephonyService::CALL_STATE_* values.
    */
   readonly attribute unsigned short callState;
+
+  /**
+   * One of the nsITelephonyService::CALL_VOICE_QUALITY_* values.
+   *
+   * Set to CALL_VOICE_QUALITY_HD to indicate the voice quality is high definition.
+   * e.g. AMR-WB is adopted.
+   */
+  readonly attribute unsigned short voiceQuality;
 
   /**
    * The disconnectedReason of a call is defualt to an empty string when the
@@ -78,4 +86,9 @@ interface nsITelephonyCallInfo : nsISupports
    * Indicates whether this call be be added into a conference.
    */
   readonly attribute boolean isMergeable;
+
+  /**
+   * Indicates whether this call is a conference parent.
+   */
+   readonly attribute boolean isConferenceParent;
 };

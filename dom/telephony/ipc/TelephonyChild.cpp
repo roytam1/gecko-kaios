@@ -92,6 +92,33 @@ TelephonyChild::RecvNotifyConferenceError(const nsString& aName,
 }
 
 bool
+TelephonyChild::RecvNotifyRingbackTone(const bool& aPlayRingbackTone)
+{
+  MOZ_ASSERT(mService);
+
+  mService->NotifyRingbackTone(aPlayRingbackTone);
+  return true;
+}
+
+bool
+TelephonyChild::RecvNotifyTtyModeReceived(const uint16_t& aMode)
+{
+  MOZ_ASSERT(mService);
+
+  mService->NotifyTtyModeReceived(aMode);
+  return true;
+}
+
+bool
+TelephonyChild::RecvNotifyTelephonyCoverageLosing(const uint16_t& aType)
+{
+  MOZ_ASSERT(mService);
+
+  mService->NotifyTelephonyCoverageLosing(aType);
+  return true;
+}
+
+bool
 TelephonyChild::RecvNotifySupplementaryService(const uint32_t& aClientId,
                                                const int32_t& aCallIndex,
                                                const uint16_t& aNotification)
@@ -189,7 +216,8 @@ TelephonyRequestChild::DoResponse(const DialResponseCallSuccess& aResponse)
   MOZ_ASSERT(mCallback);
   nsCOMPtr<nsITelephonyDialCallback> callback = do_QueryInterface(mCallback);
   callback->NotifyDialCallSuccess(aResponse.clientId(), aResponse.callIndex(),
-                                  aResponse.number());
+                                  aResponse.number(),
+                                  aResponse.voiceQuality());
   return true;
 }
 

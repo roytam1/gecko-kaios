@@ -285,6 +285,24 @@ TelephonyListener::NotifyCdmaCallWaiting(uint32_t aServiceId,
   return NS_OK;
 }
 
+NS_IMETHODIMP
+TelephonyListener::NotifyRingbackTone(bool playRingbackTone)
+{
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TelephonyListener::NotifyTtyModeReceived(uint16_t mode)
+{
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TelephonyListener::NotifyTelephonyCoverageLosing(uint16_t aType)
+{
+  return NS_OK;
+}
+
 bool
 TelephonyListener::Listen(bool aStart)
 {

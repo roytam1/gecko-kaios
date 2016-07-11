@@ -40,6 +40,9 @@ class TelephonyCall final : public DOMEventTargetHelper
   uint32_t mCallIndex;
   bool mLive;
 
+  TelephonyCallVoiceQuality mVoiceQuality;
+  bool mIsConferenceParent;
+
 public:
   NS_DECL_ISUPPORTS_INHERITED
   NS_REALLY_FORWARD_NSIDOMEVENTTARGET(DOMEventTargetHelper)
@@ -88,6 +91,12 @@ public:
     return mMergeable;
   }
 
+  TelephonyCallVoiceQuality
+  VoiceQuality() const
+  {
+    return mVoiceQuality;
+  }
+
   bool
   IsActive() const
   {
@@ -132,11 +141,21 @@ public:
   static TelephonyCallState
   ConvertToTelephonyCallState(uint32_t aCallState);
 
+  static TelephonyCallVoiceQuality
+  ConvertToTelephonyCallVoiceQuality(uint16_t aQuality);
+
   static already_AddRefed<TelephonyCall>
-  Create(Telephony* aTelephony, TelephonyCallId* aId,
-         uint32_t aServiceId, uint32_t aCallIndex, TelephonyCallState aState,
-         bool aEmergency = false, bool aConference = false,
-         bool aSwitchable = true, bool aMergeable = true);
+  Create(Telephony* aTelephony,
+         TelephonyCallId* aId,
+         uint32_t aServiceId,
+         uint32_t aCallIndex,
+         TelephonyCallState aState,
+         TelephonyCallVoiceQuality aVoiceQuality,
+         bool aEmergency = false,
+         bool aConference = false,
+         bool aSwitchable = true,
+         bool aMergeable = true,
+         bool aConferenceParent = false);
 
   void
   ChangeState(TelephonyCallState aState)
@@ -178,6 +197,11 @@ public:
   void
   UpdateSecondId(TelephonyCallId* aId) {
     mSecondId = aId;
+  }
+
+  void
+  UpdateVoiceQuality(TelephonyCallVoiceQuality aVoiceQuality) {
+    mVoiceQuality = aVoiceQuality;
   }
 
   void
