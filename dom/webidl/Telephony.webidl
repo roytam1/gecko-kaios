@@ -4,6 +4,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * The possible values of TTY mode.
+ *
+ * "off"  - indicating TTY mode is disabled.
+ * "full" - indicating both hearing carryover and voice carryover are enabled.
+ * "hco"  - indicating hearing carryover is enabled.
+ * "vco"  - indicating voice carryover is enabled.
+ */
+enum TtyMode { "off", "full", "hco", "vco" };
+
 [Pref="dom.telephony.enabled"]
 interface Telephony : EventTarget {
   /**
@@ -27,6 +37,12 @@ interface Telephony : EventTarget {
 
   [Throws]
   Promise<TelephonyCall> dialEmergency(DOMString number, optional unsigned long serviceId);
+
+  /**
+   * Hangup all calls.
+   */
+  [NewObject]
+  Promise<void> hangUpAllCalls(optional unsigned long serviceId);
 
 /**
   * Send a series of DTMF tones.
@@ -56,10 +72,16 @@ interface Telephony : EventTarget {
   void ownAudioChannel();
 
   [Throws]
+  attribute boolean hacMode;
+
+  [Throws]
   attribute boolean muted;
 
   [Throws]
   attribute boolean speakerEnabled;
+
+  [Throws]
+  attribute TtyMode ttyMode;
 
   readonly attribute (TelephonyCall or TelephonyCallGroup)? active;
 
@@ -75,4 +97,7 @@ interface Telephony : EventTarget {
   attribute EventHandler oncallschanged;
   attribute EventHandler onremoteheld;
   attribute EventHandler onremoteresumed;
+  attribute EventHandler onringbacktone;
+  attribute EventHandler onttymodereceived;
+  attribute EventHandler ontelephonycoveragelosing;
 };
