@@ -4,7 +4,7 @@
 
 #include "nsISupports.idl"
 
-[scriptable, uuid(19b24f93-7c02-4acf-addd-2f53bbb4e3fd)]
+[scriptable, uuid(b1367554-51c6-4153-b20a-effec50ca827)]
 interface nsIMobileMessageCallback : nsISupports
 {
   /**
