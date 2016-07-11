@@ -116,6 +116,12 @@ this.SystemMessagePermissionsTable = {
   "telephony-call-ended": {
     "telephony": []
   },
+  "telephony-hac-mode-changed": {
+    "telephony": []
+  },
+  "telephony-tty-mode-changed": {
+    "telephony": []
+  },
   "ussd-received": {
     "mobileconnection": []
   },

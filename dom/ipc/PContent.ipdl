@@ -831,7 +831,7 @@ parent:
     async PIcc(uint32_t serviceId);
 
     async PImsRegServiceFinder();
-    
+
     async PImsRegistration(uint32_t aServiceId);
 
     async PMobileConnection(uint32_t clientId);
