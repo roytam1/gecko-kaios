@@ -994,14 +994,26 @@ void NetworkUtils::setIpForwardingEnabled(CommandChain* aChain,
   char command[MAX_COMMAND_SIZE];
 
   if (GET_FIELD(mEnable)) {
-    snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd enable");
+    if (SDK_VERSION >= 23) {
+      // ipfwd enable <requester>
+      snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd enable tethering");
+    } else {
+      // ipfwd enable
+      snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd enable");
+    }
   } else {
     // Don't disable ip forwarding because others interface still need it.
     // Send the dummy command to continue the function chain.
     if (GET_FIELD(mInterfaceList).Length() > 1) {
       snprintf(command, MAX_COMMAND_SIZE - 1, "%s", DUMMY_COMMAND);
     } else {
-      snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd disable");
+      if (SDK_VERSION >= 23) {
+        // ipfwd disable <requester>
+        snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd disable tethering");
+      } else{
+        // ipfwd disable
+        snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd disable");
+      }
     }
   }
 

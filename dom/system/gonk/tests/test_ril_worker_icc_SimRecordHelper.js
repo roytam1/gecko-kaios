@@ -178,6 +178,10 @@ add_test(function test_fetch_sim_records() {
       ifCalled.push("readAD");
     };
 
+    simRecord.readCphsONS = function() {
+      ifCalled.push("readCphsONS");
+    };
+
     simRecord.readCphsInfo = function(onsuccess, onerror) {
       ifCalled.push("readCphsInfo");
       if (expectCphsSuccess) {
@@ -201,7 +205,7 @@ add_test(function test_fetch_sim_records() {
     }
   }
 
-  let expectCalled = ["getIMSI", "readAD", "readCphsInfo", "readSST"];
+  let expectCalled = ["getIMSI", "readAD", "readCphsONS", "readCphsInfo", "readSST"];
   testFetchSimRecordes(expectCalled, true);
   testFetchSimRecordes(expectCalled, false);
 
@@ -1643,6 +1647,67 @@ add_test(function test_pnn_with_different_content() {
 
   ril.appType = CARD_APPTYPE_SIM;
   do_test_pnn();
+
+  run_next_test();
+});
+
+/**
+ * Verify the result of CPHS ONS overriding.
+ */
+add_test(function test_cphs_ons() {
+  let worker = newUint8Worker();
+  let context = worker.ContextPool._contexts[0];
+  let record = context.SimRecordHelper;
+  let helper = context.GsmPDUHelper;
+  let ril    = context.RIL;
+  let buf    = context.Buf;
+  let io     = context.ICCIOHelper;
+
+  // Create empty operator object.
+  ril.operator = {};
+  ril.operator.longName = "PLMN Long Name";
+  ril.operator.shortName = "PLMN Short Name";
+
+  function do_test_ons(roaming) {
+    // ONS
+    let ons = [0x4F, 0x4E, 0x53];
+    // ONS Short
+    let ons_short = [0x4F, 0x4E, 0x53, 0x20, 0x53, 0x68, 0x6F, 0x72, 0x74];
+
+    ril.voiceRegistrationState.roaming = roaming;
+
+    io.loadTransparentEF = function fakeLoadTransparentEF(options) {
+      let ons_hex_data = (options.fileId == ICC_EF_CPHS_ONS) ? ons : ons_short;
+      // Write data size
+      buf.writeInt32(ons_hex_data.length * 2);
+
+      // Write data
+      for (let i = 0; i < ons_hex_data.length; i++) {
+        helper.writeHexOctet(ons_hex_data[i]);
+      }
+
+      // Write string delimiter.
+      buf.writeStringDelimiter(ons_hex_data.length * 2);
+
+      if (options.callback) {
+        options.callback(options);
+      }
+   };
+
+   record.readCphsONS();
+   record.readCphsONSF();
+  }
+
+  // Roaming case
+  do_test_ons(true);
+
+  do_check_eq(ril.operator.longName, "PLMN Long Name");
+  do_check_eq(ril.operator.shortName, "PLMN Short Name");
+
+  // Home case
+  do_test_ons(false);
+  do_check_eq(ril.operator.longName, "ONS");
+  do_check_eq(ril.operator.shortName, "ONS Short");
 
   run_next_test();
 });

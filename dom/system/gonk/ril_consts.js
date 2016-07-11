@@ -475,6 +475,11 @@ this.CALL_PRESENTATION_PAYPHONE = 3;
 // Call forwarding actions, see TS 27.007 7.11 "mode"
 this.CALL_FORWARD_ACTION_QUERY_STATUS = 2;
 
+this.TTY_MODE_OFF = 0;
+this.TTY_MODE_FULL = 1;
+this.TTY_MODE_HCO = 2;
+this.TTY_MODE_VCO = 3;
+
 // ICC commands, see TS 27.007 +CRSM commands
 this.ICC_COMMAND_SEEK = 0xa2;
 this.ICC_COMMAND_READ_BINARY = 0xb0;
@@ -515,8 +520,10 @@ this.ICC_EF_CFIS   = 0x6fcb;
 this.ICC_EF_SPDI   = 0x6fcd;
 
 // CPHS files to be supported
+this.ICC_EF_CPHS_ONS = 0x6f14; // Operator Name String
 this.ICC_EF_CPHS_INFO = 0x6f16; // CPHS Information
 this.ICC_EF_CPHS_MBN  = 0x6f17; // Mailbox Numbers
+this.ICC_EF_CPHS_ONSF = 0x6f18; // Operator Name ShortForm
 
 // CSIM files
 this.ICC_EF_CSIM_IMSI_M   = 0x6f22;
@@ -2491,8 +2498,13 @@ this.DATACALL_PROFILE_DEFAULT = 0;
 this.DATACALL_PROFILE_TETHERED = 1;
 this.DATACALL_PROFILE_OEM_BASE = 1000;
 
+// Keep consistent with nsINetworkManager.REASON_*.
 this.DATACALL_DEACTIVATE_NO_REASON = 0;
 this.DATACALL_DEACTIVATE_RADIO_SHUTDOWN = 1;
+this.DATACALL_DEACTIVATE_APN_CHANGED = 2;
+this.DATACALL_DEACTIVATE_SERVICEID_CHANGED = 3;
+this.DATACALL_RETRY_FAILED = 4;
+this.DATACALL_PERMANENT_FAILURE = 5;
 
 this.DATACALL_ACTIVE_UNKNOWN = -1;
 this.DATACALL_INACTIVE = 0;

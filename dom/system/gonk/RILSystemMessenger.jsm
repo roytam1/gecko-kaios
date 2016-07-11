@@ -72,6 +72,25 @@ RILSystemMessenger.prototype = {
     this.broadcastMessage("telephony-call-ended", data);
   },
 
+  /**
+   * Wrapper to send "telephony-hac-mode-changed" system message.
+   */
+  notifyHacModeChanged: function(aEnable) {
+    this.broadcastMessage("telephony-hac-mode-changed", { hacMode: aEnable });
+  },
+
+  /**
+   * Wrapper to send "telephony-tty-mode-changed" system message.
+   */
+  notifyTtyModeChanged: function(aMode) {
+    let ttyMode = ["off", "full", "hco", "vco"][aMode];
+    if (!ttyMode) {
+      throw new Error("Invalid TTY Mode: " + aMode);
+    }
+
+    this.broadcastMessage("telephony-tty-mode-changed", { ttyMode: ttyMode });
+  },
+
   _convertSmsMessageClass: function(aMessageClass) {
     return RIL.GECKO_SMS_MESSAGE_CLASSES[aMessageClass] || null;
   },

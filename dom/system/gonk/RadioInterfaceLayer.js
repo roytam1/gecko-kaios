@@ -727,6 +727,12 @@ RadioInterface.prototype = {
                                                             dataCalls.length,
                                                             dataCalls);
         break;
+      case "ringbackTone":
+        gTelephonyService.notifyRingbackTone(this.clientId, message.playRingbackTone);
+        break;
+      case "datacallerror":
+        connHandler.handleDataCallError(message);
+        break;
       case "emergencyCbModeChange":
         gMobileConnectionService.notifyEmergencyCallbackModeChanged(this.clientId,
                                                                     message.active,

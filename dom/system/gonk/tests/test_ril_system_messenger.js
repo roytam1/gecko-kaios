@@ -594,6 +594,50 @@ add_test(function test_mobileconnection_notify_cdma_info() {
 });
 
 /**
+ * Verify RILSystemMessenger.notifyHacModeChanged()
+ */
+add_test(function test_telephony_messenger_notify_Hac_mode_changed() {
+  let messenger = newRILSystemMessenger();
+
+  messenger.notifyHacModeChanged(true);
+  equal_received_system_message("telephony-hac-mode-changed",
+                                { hacMode: true });
+  messenger.notifyHacModeChanged(false);
+  equal_received_system_message("telephony-hac-mode-changed",
+                                { hacMode: false });
+
+  run_next_test();
+});
+
+/**
+ * Verify RILSystemMessenger.notifyTtyModeChanged()
+ */
+add_test(function test_telephony_messenger_notify_tty_mode_changed() {
+  const INVALID_VALUE = 4;
+  let messenger = newRILSystemMessenger();
+
+  messenger.notifyTtyModeChanged(Ci.nsITelephonyService.TTY_MODE_OFF);
+    equal_received_system_message("telephony-tty-mode-changed",
+                                 { ttyMode: "off" });
+  messenger.notifyTtyModeChanged(Ci.nsITelephonyService.TTY_MODE_FULL);
+    equal_received_system_message("telephony-tty-mode-changed",
+                                  { ttyMode: "full" });
+  messenger.notifyTtyModeChanged(Ci.nsITelephonyService.TTY_MODE_HCO);
+    equal_received_system_message("telephony-tty-mode-changed",
+                                  { ttyMode: "hco" });
+  messenger.notifyTtyModeChanged(Ci.nsITelephonyService.TTY_MODE_VCO);
+    equal_received_system_message("telephony-tty-mode-changed",
+                                  { ttyMode: "vco" });
+
+  try {
+    messenger.notifyTtyModeChanged(INVALID_VALUE);
+    ok(false, "An invalid TTY mode value doesn't cause an exception.");
+  } catch (e) {}
+
+  run_next_test();
+});
+
+/**
  * Verify Error Handling of StkProactiveCmdFactory.createCommand()
  */
 add_test(function test_icc_stk_cmd_factory_create_command_error() {

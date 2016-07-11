@@ -6,11 +6,15 @@ subscriptLoader.loadSubScript("resource://gre/modules/ril_consts.js", this);
 const SMSC_ATT = '+13123149810';
 const SMSC_ATT_TYPO = '+++1312@@@314$$$9,8,1,0';
 const SMSC_ATT_TEXT = '"+13123149810",145';
+<<<<<<< HEAD
 const SMSC_ATT_TEXT_INCORRECT_TOA = '"+13123149810",129';
+=======
+>>>>>>> bc855c7... KaiOS/KaiOS#32: [Telephony] Merge system/gonk from Moz 2.2r. r=Ethan.
 const SMSC_ATT_PDU = '07913121139418F0';
 const SMSC_O2 = '+447802000332';
 const SMSC_O2_TEXT = '"+447802000332",145';
 const SMSC_O2_PDU = '0791448720003023';
+<<<<<<< HEAD
 const SMSC_EMPTY = '';
 const SMSC_TON_UNKNOWN = '0407485455'
 const SMSC_TON_UNKNOWN_TEXT = '"0407485455",129';
@@ -19,13 +23,22 @@ const SMSC_TON_UNKNOWN_TEXT_INVALID_TOA = '"0407485455",abc';
 const SMSC_TON_UNKNOWN_PDU = '06814070844555';
 const SMSC_EMPTY_PDU = 'FFFFFFFFFFFFFFFFFFFFFFFF';
 const SMSC_EMPTY_TEXT = '';
+=======
+const SMSC_TON_UNKNOWN = '0407485455'
+const SMSC_TON_UNKNOWN_TEXT = '"0407485455",129';
+const SMSC_TON_UNKNOWN_PDU = '06814070844555';
+>>>>>>> bc855c7... KaiOS/KaiOS#32: [Telephony] Merge system/gonk from Moz 2.2r. r=Ethan.
 
 function run_test() {
   run_next_test();
 }
 
 function setSmsc(context, smsc, ton, npi, expected) {
+<<<<<<< HEAD
   context.Buf.postRILMessage = function() {
+=======
+  context.Buf.sendParcel = function() {
+>>>>>>> bc855c7... KaiOS/KaiOS#32: [Telephony] Merge system/gonk from Moz 2.2r. r=Ethan.
     equal(this.readString(), expected);
   };
 
@@ -36,6 +49,7 @@ function setSmsc(context, smsc, ton, npi, expected) {
   });
 }
 
+<<<<<<< HEAD
 function getSmsc(worker, context, raw, smsc, ton, npi) {
   worker.postMessage = function(message) {
     equal(message.smscAddress, smsc);
@@ -47,6 +61,8 @@ function getSmsc(worker, context, raw, smsc, ton, npi) {
   context.RIL[REQUEST_GET_SMSC_ADDRESS](0, { rilMessageType: "getSmscAddress"});
 }
 
+=======
+>>>>>>> bc855c7... KaiOS/KaiOS#32: [Telephony] Merge system/gonk from Moz 2.2r. r=Ethan.
 add_test(function test_setSmscAddress() {
   let worker = newUint8Worker();
   let context = worker.ContextPool._contexts[0];
@@ -86,6 +102,7 @@ add_test(function test_setSmscAddress() {
   run_next_test();
 });
 
+<<<<<<< HEAD
 add_test(function test_getSmscAddress() {
   let worker = newUint8Worker();
   let context = worker.ContextPool._contexts[0];
@@ -110,3 +127,5 @@ add_test(function test_getSmscAddress() {
 
   run_next_test();
 });
+=======
+>>>>>>> bc855c7... KaiOS/KaiOS#32: [Telephony] Merge system/gonk from Moz 2.2r. r=Ethan.

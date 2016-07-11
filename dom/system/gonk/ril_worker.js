@@ -797,17 +797,38 @@ RilObject.prototype = {
   },
 
   /**
+   * PLMN name display priority: EONS > ONS > NITZ (done by rild) > PLMN.
+   *
+   * @return true if PLMN name is overridden, false otherwise.
+   */
+  overrideNetworkName: function() {
+    if (!this.operator) {
+      return false;
+    }
+
+    if (this.overrideEonsNetworkName()) {
+      if (DEBUG) {
+        this.context.debug("Network name is overridden by EONS");
+      }
+      return true;
+    } else if (this.overrideOnsNetworkName()) {
+      if (DEBUG) {
+        this.context.debug("Network name is overridden by ONS");
+      }
+      return true;
+    }
+
+    return false;
+  },
+
+  /**
    * Check if operator name needs to be overriden by current voiceRegistrationState
    * , EFOPL and EFPNN. See 3GPP TS 31.102 clause 4.2.58 EFPNN and 4.2.59 EFOPL
    *  for detail.
    *
    * @return true if operator name is overridden, false otherwise.
    */
-  overrideICCNetworkName: function() {
-    if (!this.operator) {
-      return false;
-    }
-
+  overrideEonsNetworkName: function() {
     // We won't get network name using PNN and OPL if voice registration isn't
     // ready.
     if (!this.voiceRegistrationState.cell ||
@@ -836,6 +857,30 @@ RilObject.prototype = {
 
     this._sendNetworkInfoMessage(NETWORK_INFO_OPERATOR, this.operator);
     return true;
+  },
+
+  /**
+   * Check if operator name needs to be overriden by current voiceRegistrationState
+   * , CPHS Operator Name String and Operator Name Shortform. See B.4.1.2
+   * Network Operator Namefor detail.
+   *
+   * @return true if operator name is overridden, false otherwise.
+   */
+  overrideOnsNetworkName: function() {
+    if (!this.iccInfoPrivate.ons) {
+      return false;
+    }
+
+    // If ONS exists, only replace alpha long/short while under HPLMN.
+    if (!this.voiceRegistrationState.roaming) {
+      this.operator.longName = this.iccInfoPrivate.ons;
+      this.operator.shortName = this.iccInfoPrivate.ons_short_form || "";
+
+      this._sendNetworkInfoMessage(NETWORK_INFO_OPERATOR, this.operator);
+      return true;
+    }
+
+    return false;
   },
 
   /**
@@ -924,6 +969,14 @@ RilObject.prototype = {
     Buf.newParcel(REQUEST_SCREEN_STATE);
     Buf.writeInt32(1);
     Buf.writeInt32(options.on ? 1 : 0);
+    Buf.sendParcel();
+  },
+
+  setTtyMode: function(options) {
+    let Buf = this.context.Buf;
+    Buf.newParcel(REQUEST_SET_TTY_MODE, options);
+    Buf.writeInt32(1);
+    Buf.writeInt32(options.ttyMode);
     Buf.sendParcel();
   },
 
@@ -1191,6 +1244,21 @@ RilObject.prototype = {
   },
 
   /**
+   * Send deviceIdentities to upper layer (ex: MobileConnectionService).
+   */
+  _notifyDeviceIdentities: function() {
+    this.sendChromeMessage({rilMessageType: "deviceIdentities",
+                            imei: this.deviceIdentities.imei,
+                            imeisv: this.deviceIdentities.imeisv,
+                            esn: this.deviceIdentities.meid,
+                            meid: this.deviceIdentities.meid});
+
+    this.sendChromeMessage({rilMessageType: "deviceidentitieschange",
+                            deviceIdentities: this.deviceIdentities
+    });
+  },
+
+  /**
    * Dial a non-emergency number.
    *
    * @param isEmergency
@@ -1305,6 +1373,16 @@ RilObject.prototype = {
       Buf.writeInt32(1);
       Buf.writeInt32(options.callIndex);
       Buf.sendParcel();
+    });
+  },
+
+  explicitCallTransfer: function(options) {
+    if (this._isCdma) {
+      return;
+    }
+
+    this.telephonyRequestQueue.push(REQUEST_EXPLICIT_CALL_TRANSFER, () => {
+      this.context.Buf.simpleRequest(REQUEST_EXPLICIT_CALL_TRANSFER, options);
     });
   },
 
@@ -1642,6 +1720,7 @@ RilObject.prototype = {
     }
 
     // Init parcel.
+    this.SMSC = null;
     let Buf = this.context.Buf;
     Buf.newParcel(REQUEST_SET_SMSC_ADDRESS, options);
 
@@ -2864,22 +2943,28 @@ RilObject.prototype = {
       // let cssIndicator = this.parseInt(state[7]);
       let cdmaSystemId = this.parseInt(state[8], -1);
       let cdmaNetworkId = this.parseInt(state[9], -1);
-      // let roamingIndicator = this.parseInt(state[10]);
-      // let systemIsInPRL = this.parseInt(state[11]);
-      // let defaultRoamingIndicator = this.parseInt(state[12]);
+      let cdmaRoamingIndicator = this.parseInt(state[10], -1);
+      let cdmaSystemIsInPRL = !!this.parseInt(state[11], false);
+      let cdmaDefaultRoamingIndicator = this.parseInt(state[12], -1);
       // let reasonForDenial = this.parseInt(state[13]);
 
       if (cell.cdmaBaseStationId !== cdmaBaseStationId ||
           cell.cdmaBaseStationLatitude !== cdmaBaseStationLatitude ||
           cell.cdmaBaseStationLongitude !== cdmaBaseStationLongitude ||
           cell.cdmaSystemId !== cdmaSystemId ||
-          cell.cdmaNetworkId !== cdmaNetworkId) {
+          cell.cdmaNetworkId !== cdmaNetworkId ||
+          cell.cdmaRoamingIndicator !== cdmaRoamingIndicator ||
+          cell.cdmaSystemIsInPRL !== cdmaSystemIsInPRL ||
+          cell.cdmaDefaultRoamingIndicator !== cdmaDefaultRoamingIndicator) {
         stateChanged = true;
         cell.cdmaBaseStationId = cdmaBaseStationId;
         cell.cdmaBaseStationLatitude = cdmaBaseStationLatitude;
         cell.cdmaBaseStationLongitude = cdmaBaseStationLongitude;
         cell.cdmaSystemId = cdmaSystemId;
         cell.cdmaNetworkId = cdmaNetworkId;
+        cell.cdmaRoamingIndicator = cdmaRoamingIndicator;
+        cell.cdmaSystemIsInPRL = cdmaSystemIsInPRL;
+        cell.cdmaDefaultRoamingIndicator = cdmaDefaultRoamingIndicator;
       }
     }
 
@@ -2946,10 +3031,10 @@ RilObject.prototype = {
         ICCUtilsHelper.handleICCInfoChange();
       }
 
-      // NETWORK_INFO_OPERATOR message will be sent out by overrideICCNetworkName
+      // NETWORK_INFO_OPERATOR message will be sent out by overrideNetworkName
       // itself if operator name is overridden after checking, or we have to
       // do it by ourself.
-      if (!this.overrideICCNetworkName()) {
+      if (!this.overrideNetworkName()) {
         this._sendNetworkInfoMessage(NETWORK_INFO_OPERATOR, this.operator);
       }
     }
@@ -3117,6 +3202,8 @@ RilObject.prototype = {
     if (this._waitingRadioTech || isCdma != this._isCdma) {
       this._isCdma = isCdma;
       this._waitingRadioTech = false;
+
+      this.getDeviceIdentity();
       this.getICCStatus();
     }
   },
@@ -4343,8 +4430,40 @@ RilObject.prototype[REQUEST_SET_CALL_WAITING] = function REQUEST_SET_CALL_WAITIN
   this.sendChromeMessage(options);
 };
 RilObject.prototype[REQUEST_SMS_ACKNOWLEDGE] = null;
-RilObject.prototype[REQUEST_GET_IMEI] = null;
-RilObject.prototype[REQUEST_GET_IMEISV] = null;
+RilObject.prototype[REQUEST_GET_IMEI] = function REQUEST_GET_IMEI(length, options) {
+  let newIMEI = this.context.Buf.readString();
+
+  if (newIMEI != this.deviceIdentities.imei) {
+    this.deviceIdentities.imei = newIMEI;
+    this._notifyDeviceIdentities();
+  }
+
+  let rilMessageType = options.rilMessageType;
+  // So far we only send the IMEI back to chrome if it was requested via MMI.
+  if (rilMessageType !== "sendMMI") {
+    return;
+  }
+
+  options.success = (options.rilRequestError === 0);
+  options.errorMsg = RIL_ERROR_TO_GECKO_ERROR[options.rilRequestError];
+  if ((!options.success || this.deviceIdentities.imei == null) && !options.errorMsg) {
+    options.errorMsg = GECKO_ERROR_GENERIC_FAILURE;
+  }
+  options.statusMessage = this.deviceIdentities.imei;
+  this.sendChromeMessage(options);
+};
+RilObject.prototype[REQUEST_GET_IMEISV] = function REQUEST_GET_IMEISV(length, options) {
+  if (options.rilRequestError) {
+    return;
+  }
+
+  let newIMEISV = this.context.Buf.readString();
+
+  if (this.deviceIdentities.imeisv != newIMEISV) {
+    this.deviceIdentities.imeisv = newIMEISV;
+    this._notifyDeviceIdentities();
+  }
+};
 RilObject.prototype[REQUEST_ANSWER] = function REQUEST_ANSWER(length, options) {
   this.sendDefaultResponse(options);
 };
@@ -4555,7 +4674,13 @@ RilObject.prototype[REQUEST_STK_SET_PROFILE] = null;
 RilObject.prototype[REQUEST_STK_SEND_ENVELOPE_COMMAND] = null;
 RilObject.prototype[REQUEST_STK_SEND_TERMINAL_RESPONSE] = null;
 RilObject.prototype[REQUEST_STK_HANDLE_CALL_SETUP_REQUESTED_FROM_SIM] = null;
-RilObject.prototype[REQUEST_EXPLICIT_CALL_TRANSFER] = null;
+RilObject.prototype[REQUEST_EXPLICIT_CALL_TRANSFER] = function REQUEST_EXPLICIT_CALL_TRANSFER(length, options) {
+  options.success = (options.rilRequestError === 0);
+  if (!options.success) {
+    options.errorMsg = RIL_ERROR_TO_GECKO_ERROR[options.rilRequestError];
+  }
+  this.sendChromeMessage(options);
+};
 RilObject.prototype[REQUEST_SET_PREFERRED_NETWORK_TYPE] = function REQUEST_SET_PREFERRED_NETWORK_TYPE(length, options) {
   this.sendChromeMessage(options);
 };
@@ -4701,7 +4826,15 @@ RilObject.prototype[REQUEST_CDMA_QUERY_ROAMING_PREFERENCE] = function REQUEST_CD
   }
   this.sendChromeMessage(options);
 };
-RilObject.prototype[REQUEST_SET_TTY_MODE] = null;
+RilObject.prototype[REQUEST_SET_TTY_MODE] = function REQUEST_SET_TTY_MODE(length, options) {
+  if (options.rilRequestError) {
+    options.errorMsg = RIL_ERROR_TO_GECKO_ERROR[options.rilRequestError];
+    this.sendChromeMessage(options);
+    return;
+  }
+
+  this.sendChromeMessage(options);
+};
 RilObject.prototype[REQUEST_QUERY_TTY_MODE] = null;
 RilObject.prototype[REQUEST_CDMA_SET_PREFERRED_VOICE_PRIVACY_MODE] = function REQUEST_CDMA_SET_PREFERRED_VOICE_PRIVACY_MODE(length, options) {
   this.sendChromeMessage(options);
@@ -4761,21 +4894,36 @@ RilObject.prototype[REQUEST_CDMA_DELETE_SMS_ON_RUIM] = null;
 RilObject.prototype[REQUEST_DEVICE_IDENTITY] = function REQUEST_DEVICE_IDENTITY(length, options) {
   if (options.errorMsg) {
     this.context.debug("Failed to get device identities:" + options.errorMsg);
+    // Fallback to getIMEI/getIMEISV in case some RILD did not handle this API
+    // properly.
+    if (!this._isCdma) {
+      this.getIMEI();
+      this.getIMEISV();
+    }
     return;
   }
 
   let result = this.context.Buf.readStringList();
-  this.deviceIdentities = {
-    imei: result[0] || null,
-    imeisv: result[1] || null,
-    esn: result[2] || null,
-    meid: result[3] || null,
-  };
 
-  this.sendChromeMessage({
-    rilMessageType: "deviceidentitieschange",
-    deviceIdentities: this.deviceIdentities
-  });
+  let newIMEI, newIMEISV, newESN, newMEID;
+  newIMEI = result[0];
+  newIMEISV = result[1];
+  newESN = result[2];
+  newMEID = result[3];
+
+  if ((newIMEI != this.deviceIdentities.imei) ||
+      (newIMEISV != this.deviceIdentities.imeisv) ||
+      (newESN != this.deviceIdentities.esn) ||
+      (newMEID != this.deviceIdentities.meid)) {
+
+    this.deviceIdentities = {
+      imei: newIMEI || null,
+      imeisv: newIMEISV || null,
+      esn: newESN || null,
+      meid: newMEID || null,
+    };
+    this._notifyDeviceIdentities();
+  }
 };
 RilObject.prototype[REQUEST_EXIT_EMERGENCY_CALLBACK_MODE] = function REQUEST_EXIT_EMERGENCY_CALLBACK_MODE(length, options) {
   if (options.internal) {
@@ -4875,6 +5023,10 @@ RilObject.prototype[REQUEST_GET_SMSC_ADDRESS] = function REQUEST_GET_SMSC_ADDRES
 RilObject.prototype[REQUEST_SET_SMSC_ADDRESS] = function REQUEST_SET_SMSC_ADDRESS(length, options) {
   if (!options.rilMessageType || options.rilMessageType !== "setSmscAddress") {
     return;
+  }
+
+  if (options.rilRequestError) {
+    optioins.errorMsg = RIL_ERROR_TO_GECKO_ERROR[options.rilRequestError];
   }
 
   this.sendChromeMessage(options);
@@ -5038,6 +5190,9 @@ RilObject.prototype[UNSOLICITED_RESPONSE_RADIO_STATE_CHANGED] = function UNSOLIC
        this.radioState == GECKO_RADIOSTATE_DISABLED) &&
        newState == GECKO_RADIOSTATE_ENABLED) {
     // The radio became available, let's get its info.
+    if (!this._waitingRadioTech) {
+      this.getDeviceIdentity();
+    }
     this.getBasebandVersion();
     this.updateCellBroadcastConfig();
     if ((RILQUIRKS_DATA_REGISTRATION_ON_DEMAND ||
@@ -5317,7 +5472,14 @@ RilObject.prototype[UNSOLICITED_CDMA_INFO_REC] = function UNSOLICITED_CDMA_INFO_
   });
 };
 RilObject.prototype[UNSOLICITED_OEM_HOOK_RAW] = null;
-RilObject.prototype[UNSOLICITED_RINGBACK_TONE] = null;
+RilObject.prototype[UNSOLICITED_RINGBACK_TONE] = function UNSOLICITED_RINGBACK_TONE(length) {
+  let playRingbackTone = this.context.Buf.readInt32List()[0] == 1 ? true : false;
+  if (DEBUG) {
+    this.context.debug("Receiving unsolicited ringback tone. playRingbackTone : " + playRingbackTone);
+  }
+
+  this.sendChromeMessage({rilMessageType: "ringbackTone", playRingbackTone: playRingbackTone});
+};
 RilObject.prototype[UNSOLICITED_RESEND_INCALL_MUTE] = null;
 RilObject.prototype[UNSOLICITED_CDMA_SUBSCRIPTION_SOURCE_CHANGED] = null;
 RilObject.prototype[UNSOLICITED_CDMA_PRL_CHANGED] = function UNSOLICITED_CDMA_PRL_CHANGED(length) {
@@ -11135,6 +11297,8 @@ ICCFileHelperObject.prototype = {
       case ICC_EF_GID1:
       case ICC_EF_CPHS_INFO:
       case ICC_EF_CPHS_MBN:
+      case ICC_EF_CPHS_ONS:
+      case ICC_EF_CPHS_ONSF:
         return EF_PATH_MF_SIM + EF_PATH_DF_GSM;
       default:
         return null;
@@ -11167,6 +11331,8 @@ ICCFileHelperObject.prototype = {
       // path equal to MF_SIM/DF_GSM.
       case ICC_EF_CPHS_INFO:
       case ICC_EF_CPHS_MBN:
+      case ICC_EF_CPHS_ONS:
+      case ICC_EF_CPHS_ONSF:
         return EF_PATH_MF_SIM + EF_PATH_ADF_USIM;
       default:
         // The file ids in USIM phone book entries are decided by the
@@ -12299,6 +12465,12 @@ SimRecordHelperObject.prototype = {
   fetchSimRecords: function() {
     this.context.RIL.getIMSI();
     this.readAD();
+
+    // Due to CPHS ONS is mandatory in CPHS spec., but no clear definition on
+    // how to determine valid or not. Force to read ONS here, but leave ONSF to
+    // CphsInfo block.
+    this.readCphsONS();
+
     // CPHS was widely introduced in Europe during GSM(2G) era to provide easier
     // access to carrier's core service like voicemail, call forwarding, manual
     // PLMN selection, and etc.
@@ -12655,6 +12827,13 @@ SimRecordHelperObject.prototype = {
         this.readMWIS();
       } else {
         if (DEBUG) this.context.debug("MWIS: MWIS is not available");
+      }
+
+      if (ICCUtilsHelper.isCphsServiceAvailable("ONSF")) {
+        if (DEBUG) this.context.debug("ONSF: ONSF is available");
+        this.readCphsONSF();
+      } else {
+        if (DEBUG) this.context.debug("ONSF: ONSF is not available");
       }
 
       if (ICCUtilsHelper.isICCServiceAvailable("SPDI")) {
@@ -13092,7 +13271,7 @@ SimRecordHelperObject.prototype = {
         ICCIOHelper.loadNextRecord(options);
       } else {
         RIL.iccInfoPrivate.OPL = opl;
-        RIL.overrideICCNetworkName();
+        RIL.overrideNetworkName();
       }
     }
 
@@ -13159,7 +13338,7 @@ SimRecordHelperObject.prototype = {
           }
         }
         RIL.iccInfoPrivate.PNN = pnn;
-        RIL.overrideICCNetworkName();
+        RIL.overrideNetworkName();
       }
     }
 
@@ -13411,6 +13590,61 @@ SimRecordHelperObject.prototype = {
 
     this.context.ICCIOHelper.loadLinearFixedEF({
       fileId: ICC_EF_CPHS_MBN,
+      callback: callback.bind(this)
+    });
+  },
+
+  /**
+    * Process CHPS Operator Name String/Operator Name Short Form.
+    *
+    * @return A string corresponding to the CPHS ONS.
+    */
+  _processCphsOnsResponse: function() {
+    let Buf = this.context.Buf;
+    let strLen = Buf.readInt32();
+       // Each octet is encoded into two chars.
+       let octetLen = strLen / 2;
+       let ons = this.context.ICCPDUHelper.readAlphaIdentifier(octetLen);
+       Buf.readStringDelimiter(strLen);
+       return ons;
+  },
+
+  /**
+    * Read CPHS Operator Name String from the SIM.
+    */
+   readCphsONS: function() {
+     function callback() {
+       let RIL = this.context.RIL;
+       RIL.iccInfoPrivate.ons = this._processCphsOnsResponse();
+       if (DEBUG) {
+         this.context.debug("CPHS Operator Name String = " +
+                            RIL.iccInfoPrivate.ons);
+       }
+       RIL.overrideNetworkName();
+     }
+
+     this.context.ICCIOHelper.loadTransparentEF({
+       fileId: ICC_EF_CPHS_ONS,
+       callback: callback.bind(this)
+     });
+  },
+
+  /**
+   * Read CPHS Operator Name Shortform from the SIM.
+   */
+  readCphsONSF: function() {
+    function callback() {
+      let RIL = this.context.RIL;
+      RIL.iccInfoPrivate.ons_short_form = this._processCphsOnsResponse();
+      if (DEBUG) {
+        this.context.debug("CPHS Operator Name Shortform = " +
+                           RIL.iccInfoPrivate.ons_short_form);
+      }
+      RIL.overrideNetworkName();
+    }
+
+    this.context.ICCIOHelper.loadTransparentEF({
+      fileId: ICC_EF_CPHS_ONSF,
       callback: callback.bind(this)
     });
   }
@@ -15179,8 +15413,11 @@ var ContextPool = {
     RILQUIRKS_SEND_STK_PROFILE_DOWNLOAD = quirks.sendStkProfileDownload;
     RILQUIRKS_DATA_REGISTRATION_ON_DEMAND = quirks.dataRegistrationOnDemand;
     RILQUIRKS_SUBSCRIPTION_CONTROL = quirks.subscriptionControl;
+<<<<<<< HEAD
     RILQUIRKS_SIGNAL_EXTRA_INT32 = quirks.signalExtraInt;
     RILQUIRKS_AVAILABLE_NETWORKS_EXTRA_STRING = quirks.availableNetworkExtraStr;
+=======
+>>>>>>> bc855c7... KaiOS/KaiOS#32: [Telephony] Merge system/gonk from Moz 2.2r. r=Ethan.
     RILQUIRKS_SMSC_ADDRESS_FORMAT = quirks.smscAddressFormat;
   },
 
