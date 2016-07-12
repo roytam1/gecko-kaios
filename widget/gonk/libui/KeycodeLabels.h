@@ -284,6 +284,7 @@ static const KeycodeLabel KEYCODES[] = {
     { "TV_MEDIA_CONTEXT_MENU", 257 },
     { "TV_TIMER_PROGRAMMING", 258 },
     { "HELP", 259 },
+    { "FLIP", 260 },
 
     // NOTE: If you add a new keycode here you must also add it to several other files.
     //       Refer to frameworks/base/core/java/android/view/KeyEvent.java for the full list.

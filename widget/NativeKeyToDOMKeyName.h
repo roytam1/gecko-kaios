@@ -1298,21 +1298,16 @@ KEY_MAP_QT      (ZoomToggle, Qt::Key_Zoom)
  * Keys not defined by any standards
  ******************************************************************************/
 
-// HomeScreen
-KEY_MAP_ANDROID (HomeScreen, AKEYCODE_HOME)
-
-// Focus
-KEY_MAP_QT      (CameraFocusAdjust, Qt::Key_CameraFocus)
-KEY_MAP_ANDROID (CameraFocusAdjust, AKEYCODE_FOCUS)
-
-// PhoneCall
-KEY_MAP_ANDROID (PhoneCall, AKEYCODE_CALL)
-
 // SoftLeft
 KEY_MAP_ANDROID (SoftLeft, AKEYCODE_SOFT_LEFT)
 
 // SoftRight
 KEY_MAP_ANDROID (SoftRight, AKEYCODE_SOFT_RIGHT)
+
+// Add for KaiOS design
+KEY_MAP_ANDROID (Call, AKEYCODE_CALL)
+KEY_MAP_ANDROID (Flip, AKEYCODE_FLIP)
+KEY_MAP_ANDROID (Notification, AKEYCODE_NOTIFICATION)
 
 #undef KEY_MAP_WIN
 #undef KEY_MAP_WIN_JPN

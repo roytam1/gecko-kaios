@@ -26,16 +26,6 @@
 DEFINE_KEYNAME_WITH_SAME_NAME(Unidentified)
 
 /******************************************************************************
- * Our Internal Key Values (must have "Moz" prefix)
- *****************************************************************************/
-DEFINE_KEYNAME_INTERNAL(PrintableKey, "MozPrintableKey")
-DEFINE_KEYNAME_INTERNAL(HomeScreen, "MozHomeScreen")
-DEFINE_KEYNAME_INTERNAL(CameraFocusAdjust, "MozCameraFocusAdjust")
-DEFINE_KEYNAME_INTERNAL(PhoneCall, "MozPhoneCall")
-DEFINE_KEYNAME_INTERNAL(SoftLeft, "MozSoftLeft")
-DEFINE_KEYNAME_INTERNAL(SoftRight, "MozSoftRight")
-
-/******************************************************************************
  * Modifier Keys
  *****************************************************************************/
 DEFINE_KEYNAME_WITH_SAME_NAME(Alt)
@@ -355,6 +345,13 @@ DEFINE_KEYNAME_WITH_SAME_NAME(TVPower)
 DEFINE_KEYNAME_WITH_SAME_NAME(VideoModeNext)
 DEFINE_KEYNAME_WITH_SAME_NAME(Wink)
 DEFINE_KEYNAME_WITH_SAME_NAME(ZoomToggle)
+
+// Add for KaiOS design
+DEFINE_KEYNAME_WITH_SAME_NAME(Call)
+DEFINE_KEYNAME_WITH_SAME_NAME(Flip)
+DEFINE_KEYNAME_WITH_SAME_NAME(Notification)
+DEFINE_KEYNAME_WITH_SAME_NAME(SoftLeft)
+DEFINE_KEYNAME_WITH_SAME_NAME(SoftRight)
 
 #undef DEFINE_KEYNAME_WITH_SAME_NAME
 #undef DEFINE_KEYNAME_INTERNAL
