@@ -71,14 +71,14 @@ inline void Transform8888To565(uint8_t* outbuf, const uint8_t* inbuf, int PixelN
 #endif
 }
 
-NativeFramebufferDevice::NativeFramebufferDevice(int backlightFd)
+NativeFramebufferDevice::NativeFramebufferDevice(int aBacklightFd, int aExtFbFd)
     : mWidth(320)
     , mHeight(480)
     , mSurfaceformat(HAL_PIXEL_FORMAT_RGBA_8888)
     , mXdpi(DEFAULT_XDPI)
-    , mFd(-1)
+    , mFd(aExtFbFd)
     , mGrmodule(nullptr)
-    , mBacklightFd(backlightFd)
+    , mBacklightFd(aBacklightFd)
     , mBrightness(255)
 {
 }
@@ -93,54 +93,56 @@ NativeFramebufferDevice::Create()
 {
     char propValue[PROPERTY_VALUE_MAX];
 
-    if (property_get("ro.h5.display.fb1_backlightdev", propValue, NULL) <= 0) {
+    // Check for dev node path of external screen's backlight.
+    if (property_get("ro.kaios.display.ext_bl_dev",
+          propValue, NULL) <= 0) {
         return nullptr;
     }
 
     int fd = open(propValue, O_RDWR, 0);
-
     if (fd < 0) {
         ALOGE("Failed to open backligth device %s", propValue);
         return nullptr;
     }
 
-    return new NativeFramebufferDevice(fd);
-}
-
-bool
-NativeFramebufferDevice::Open(const char* deviceName)
-{
-    if (!deviceName) {
-        return false;
+    // Check for dev node path of external screen's framebuffer;
+    if (property_get("ro.kaios.display.ext_fb_dev", propValue, NULL) <= 0) {
+        return nullptr;
     }
 
     char const *const device_template[] = {
             "/dev/graphics/%s",
-            "/dev/fb%s",
+            "/dev/%s",
             0 };
 
-    int i=0;
+    int i = 0;
     char name[64];
 
-    while ((mFd == -1) && device_template[i]) {
-        snprintf(name, 64, device_template[i], deviceName);
-        mFd = open(name, O_RDWR, 0);
+    int fbFd = -1;
+    while ((fbFd == -1) && device_template[i]) {
+        snprintf(name, 64, device_template[i], propValue);
+        fbFd = open(name, O_RDWR, 0);
         i++;
     }
-
-    if (mFd < 0) {
-        ALOGE("Failed to open framebuffer device %s", deviceName);
-        return false;
+    if (fbFd < 0) {
+        ALOGE("Failed to open external framebuffer device %s", propValue);
+        return nullptr;
     }
 
+    return new NativeFramebufferDevice(fd, fbFd);
+}
+
+bool
+NativeFramebufferDevice::Open()
+{
     if (ioctl(mFd, FBIOGET_FSCREENINFO, &mFInfo) == -1) {
-        ALOGE("FBIOGET_FSCREENINFO failed with %s", deviceName);
+        ALOGE("FBIOGET_FSCREENINFO failed");
         Close();
         return false;
     }
 
     if (ioctl(mFd, FBIOGET_VSCREENINFO, &mVInfo) == -1) {
-        ALOGE("FBIOGET_VSCREENINFO: failed with %s", deviceName);
+        ALOGE("FBIOGET_VSCREENINFO: failed");
         Close();
         return false;
     }
@@ -238,7 +240,10 @@ NativeFramebufferDevice::Open(const char* deviceName)
     mWidth = mVInfo.xres;
     mHeight = mVInfo.yres;
     mXdpi = xdpi;
-    mSurfaceformat = HAL_PIXEL_FORMAT_RGBA_8888;
+
+    // ToDo: Not sure what kind of situation that surface format reported to
+    //       gecko should be different then fb format.
+    mSurfaceformat = mFBSurfaceformat;
 
     return true;
 }
@@ -263,7 +268,8 @@ NativeFramebufferDevice::Post(buffer_handle_t buf)
         return false;
     }
 
-    if (mFBSurfaceformat == HAL_PIXEL_FORMAT_RGB_565) {
+    if (mFBSurfaceformat == HAL_PIXEL_FORMAT_RGB_565 &&
+        mSurfaceformat == HAL_PIXEL_FORMAT_RGBA_8888) {
         Transform8888To565((uint8_t*)fbp, (uint8_t*)vaddr, mVInfo.xres*mVInfo.yres);
     } else {
         memcpy(fbp, vaddr, mFInfo.line_length * mVInfo.yres);

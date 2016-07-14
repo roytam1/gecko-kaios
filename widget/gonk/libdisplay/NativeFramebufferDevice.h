@@ -24,13 +24,11 @@ namespace mozilla {
 
 class NativeFramebufferDevice {
 public:
-    NativeFramebufferDevice(int backlightFd);
-
     ~NativeFramebufferDevice();
 
     static NativeFramebufferDevice* Create();
 
-    bool Open(const char* deviceName);
+    bool Open();
 
     bool Post(buffer_handle_t buf);
 
@@ -44,7 +42,6 @@ public:
 
     bool IsValid();
 
-public:
     // Only be valid after open sucessfully
     uint32_t mWidth;
     uint32_t mHeight;
@@ -52,6 +49,8 @@ public:
     float mXdpi;
 
 private:
+    NativeFramebufferDevice(int aBacklightFd, int aExtFbFd);
+
     int mFd;
     struct fb_var_screeninfo mVInfo;
     struct fb_fix_screeninfo mFInfo;

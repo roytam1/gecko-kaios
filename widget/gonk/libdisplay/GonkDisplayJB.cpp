@@ -156,7 +156,7 @@ GonkDisplayJB::GonkDisplayJB()
     mExtFBDevice = NativeFramebufferDevice::Create();
 
     if (mExtFBDevice) {
-        if (mExtFBDevice->Open("fb1")) {
+        if (mExtFBDevice->Open()) {
             extDispData.mWidth = mExtFBDevice->mWidth;
             extDispData.mHeight = mExtFBDevice->mHeight;
             extDispData.mSurfaceformat = mExtFBDevice->mSurfaceformat;
