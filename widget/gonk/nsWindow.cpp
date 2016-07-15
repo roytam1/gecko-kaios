@@ -97,42 +97,53 @@ nsWindow::DoDraw(void)
         return;
     }
 
-    RefPtr<nsScreenGonk> screen = nsScreenManagerGonk::GetPrimaryScreen();
-    const nsTArray<nsWindow*>& windows = screen->GetTopWindows();
-
-    if (windows.IsEmpty()) {
-        LOG("  no window to draw, bailing");
-        return;
-    }
-
-    /* Add external screen when the external fb is available. The AddScreen
-       should be called after shell.js is loaded to receive the display-changed event. */
+    uint32_t screenNums = 0;
     RefPtr<nsScreenManagerGonk> screenManager = nsScreenManagerGonk::GetInstance();
-    if (GetGonkDisplay()->IsExtFBDeviceEnabled() &&
-        !screenManager->IsScreenConnected(GonkDisplay::DISPLAY_EXTERNAL)) {
-        screenManager->AddScreen(GonkDisplay::DISPLAY_EXTERNAL);
-    }
+    screenManager->GetNumberOfScreens(&screenNums);
 
-    nsWindow *targetWindow = (nsWindow *)windows[0];
-    while (targetWindow->GetLastChild()) {
-        targetWindow = (nsWindow *)targetWindow->GetLastChild();
-    }
+    while (screenNums--) {
+        nsCOMPtr<nsIScreen> screen;
+        screenManager->ScreenForId(screenNums, getter_AddRefs(screen));
+        MOZ_ASSERT(screen);
+        if (!screen) {
+            continue;
+        }
 
-    nsIWidgetListener* listener = targetWindow->GetWidgetListener();
-    if (listener) {
-        listener->WillPaintWindow(targetWindow);
-    }
+        const nsTArray<nsWindow*>& windows =
+          static_cast<nsScreenGonk*>(screen.get())->GetTopWindows();
+        if (windows.IsEmpty()) {
+            continue;
+        }
 
-    LayerManager* lm = targetWindow->GetLayerManager();
-    if (mozilla::layers::LayersBackend::LAYERS_CLIENT == lm->GetBackendType()) {
-        // No need to do anything, the compositor will handle drawing
-    } else {
-        NS_RUNTIMEABORT("Unexpected layer manager type");
-    }
+        /* Add external screen when the external fb is available. The AddScreen
+           should be called after shell.js is loaded to receive the
+           display-changed event. */
+        if (!screenManager->IsScreenConnected(GonkDisplay::DISPLAY_EXTERNAL) &&
+            screenNums == 0 && GetGonkDisplay()->IsExtFBDeviceEnabled()) {
+            screenManager->AddScreen(GonkDisplay::DISPLAY_EXTERNAL);
+        }
 
-    listener = targetWindow->GetWidgetListener();
-    if (listener) {
-        listener->DidPaintWindow();
+        nsWindow *targetWindow = (nsWindow *)windows[0];
+        while (targetWindow->GetLastChild()) {
+            targetWindow = (nsWindow *)targetWindow->GetLastChild();
+        }
+
+        nsIWidgetListener* listener = targetWindow->GetWidgetListener();
+        if (listener) {
+            listener->WillPaintWindow(targetWindow);
+        }
+
+        LayerManager* lm = targetWindow->GetLayerManager();
+        if (mozilla::layers::LayersBackend::LAYERS_CLIENT == lm->GetBackendType()) {
+            // No need to do anything, the compositor will handle drawing
+        } else {
+           NS_RUNTIMEABORT("Unexpected layer manager type");
+        }
+
+        listener = targetWindow->GetWidgetListener();
+        if (listener) {
+            listener->DidPaintWindow();
+        }
     }
 }
 
