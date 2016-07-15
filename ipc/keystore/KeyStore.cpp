@@ -356,13 +356,13 @@ public:
 #elif ANDROID_VERSION == 18
   virtual int32_t lock() {return ::UNDEFINED_ACTION;}
   virtual int32_t unlock(const String16& password) {return ::UNDEFINED_ACTION;}
-  virtual int32_t generate(const String16& name, int32_t uid, int32_t keyType, int32_t keySize, int32_t flags, Vector<sp<KeystoreArg> >* args) {return ::UNDEFINED_ACTION;}
-  virtual int32_t is_hardware_backed(const String16& keyType) {return ::UNDEFINED_ACTION;}
+  virtual int32_t generate(const String16& name, int uid, int32_t flags) {return ::UNDEFINED_ACTION;}
+  virtual int32_t is_hardware_backed() {return ::UNDEFINED_ACTION;}
 #else
   virtual int32_t lock() {return ::UNDEFINED_ACTION;}
   virtual int32_t unlock(const String16& password) {return ::UNDEFINED_ACTION;}
-  virtual int32_t generate(const String16& name, int uid, int32_t flags) {return ::UNDEFINED_ACTION;}
-  virtual int32_t is_hardware_backed() {return ::UNDEFINED_ACTION;}
+  virtual int32_t generate(const String16& name, int32_t uid, int32_t keyType, int32_t keySize, int32_t flags, Vector<sp<KeystoreArg> >* args) {return ::UNDEFINED_ACTION;}
+  virtual int32_t is_hardware_backed(const String16& keyType) {return ::UNDEFINED_ACTION;}
 #endif
 
 protected:
