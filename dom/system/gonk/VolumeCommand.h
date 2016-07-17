@@ -192,11 +192,20 @@ private:
   RefPtr<Volume>  mVolume;
 };
 
+#if ANDROID_VERSION >= 23
+class VolumeResetCommand : public VolumeCommand
+{
+public:
+  VolumeResetCommand(VolumeResponseCallback* aCallback);
+};
+
+#else
 class VolumeListCommand : public VolumeCommand
 {
 public:
   VolumeListCommand(VolumeResponseCallback* aCallback);
 };
+#endif
 
 } // system
 } // mozilla

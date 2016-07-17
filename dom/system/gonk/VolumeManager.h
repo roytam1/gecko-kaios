@@ -28,6 +28,42 @@ namespace system {
 *
 ***************************************************************************/
 
+#if ANDROID_VERSION >= 23
+class VoulmeInfo final
+{
+  public:
+  NS_INLINE_DECL_REFCOUNTING(VoulmeInfo)
+
+  VoulmeInfo(const nsCSubstring& aId, int aType, const nsCSubstring& aDiskId, int aState);
+
+  const nsCSubstring& getId() const { return mId; }
+  const nsCSubstring& getMountPoint() const { return mMountPoint; }
+  void setMountPoint(const nsACString& aMountPoint);
+  void setState(int aState) { mState = aState; }
+
+  enum STATE
+  {
+    STATE_UNMOUNTED = 0,
+    STATE_CHECKING,
+    STATE_MOUNTED,
+    STATE_MOUNTED_READ_ONLY,
+    STATE_FORMATTING,
+    STATE_EJECTING,
+    STATE_UNMOUNTABLE,
+    STATE_REMOVED,
+    STATE_BAD_REMOVAL
+  };
+
+  private:
+  ~VoulmeInfo() {}
+  const nsCString   mId;
+  int mType;
+  const nsCString mDiskId;
+  nsCString mMountPoint;
+  int mState;
+};
+#endif
+
 /***************************************************************************
 *
 *   The VolumeManager class is a front-end for android's vold service.
@@ -81,6 +117,9 @@ public:
   NS_INLINE_DECL_REFCOUNTING(VolumeManager)
 
   typedef nsTArray<RefPtr<Volume>> VolumeArray;
+#if ANDROID_VERSION >= 23
+  typedef nsTArray<RefPtr<VoulmeInfo>> VoulmeInfoArray;
+#endif
 
   VolumeManager();
 
@@ -144,7 +183,11 @@ protected:
 private:
   bool OpenSocket();
 
+#if ANDROID_VERSION >= 23
+  friend class VolumeResetCallback;
+#else
   friend class VolumeListCallback; // Calls SetState
+#endif
 
   static void SetState(STATE aNewState);
 
@@ -162,6 +205,9 @@ private:
   VolumeArray         mVolumeArray;
   CommandQueue        mCommands;
   bool                mCommandPending;
+#if ANDROID_VERSION >= 23
+  VoulmeInfoArray     mVolumeInfoArray;
+#endif
   MessageLoopForIO::FileDescriptorWatcher mReadWatcher;
   MessageLoopForIO::FileDescriptorWatcher mWriteWatcher;
   RefPtr<VolumeResponseCallback>          mBroadcastCallback;

@@ -585,7 +585,17 @@ Volume::HandleVoldResponse(int aResponseCode, nsCWhitespaceTokenizer& aTokenizer
     case ::ResponseCode::VolumeBadRemoval:
       SetMediaPresent(false);
       break;
+#if ANDROID_VERSION >= 23
+    case ::ResponseCode::VolumeStateChanged: {
+      nsDependentCSubstring id(aTokenizer.nextToken());
+      nsDependentCSubstring mountpoint(aTokenizer.nextToken());
+      SetMountPoint(mountpoint);
+      mCanBeShared = false;
+      SetState(nsIVolume::STATE_MOUNTED);
 
+      break;
+    }
+#endif
     default:
       LOG("Volume: %s unrecognized reponse code (ignored)", NameStr());
       break;
