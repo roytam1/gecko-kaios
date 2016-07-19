@@ -20,6 +20,8 @@
 
 BEGIN_FMRADIO_NAMESPACE
 
+class WakeLock;
+
 class FMRadioReplyRunnable : public nsRunnable
 {
 public:
@@ -215,6 +217,8 @@ private:
   void SetState(FMRadioState aState);
   void UpdatePowerState();
   void UpdateFrequency();
+  void WakeLockCreate();
+  void WakeLockRelease();
 
 private:
   bool mEnabled;
@@ -262,6 +266,9 @@ private:
   bool mRDSGroupSet;
   bool mPSNameSet;
   bool mRadiotextSet;
+
+  bool mRequireWakeLock;
+  RefPtr<WakeLock> mWakeLock;
 };
 
 END_FMRADIO_NAMESPACE

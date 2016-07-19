@@ -21,6 +21,8 @@
 #include "mozilla/dom/BindingUtils.h"
 #include "mozilla/dom/SettingChangeNotificationBinding.h"
 #include "mozilla/DebugOnly.h"
+#include "mozilla/dom/WakeLock.h"
+#include "mozilla/dom/power/PowerManagerService.h"
 
 #define TUNE_THREAD_TIMEOUT_MS  5000
 
@@ -82,6 +84,9 @@ FMRadioService::FMRadioService()
     mPendingFrequencyInKHz = hal::GetFMRadioFrequency();
     SetState(Enabled);
   }
+
+  // Read the pref which is set by device config.
+  mRequireWakeLock = Preferences::GetBool("device.fm.requirewakelock", false);
 
   switch (Preferences::GetInt("dom.fmradio.band", BAND_87500_108000_kHz)) {
     case BAND_76000_90000_kHz:
@@ -1181,6 +1186,16 @@ FMRadioService::UpdatePowerState()
     mEnabled = enabled;
     NotifyFMRadioEvent(EnabledChanged);
   }
+
+  if( mRequireWakeLock ) {
+    if (enabled) {
+      // Acquire wake lock to keep playing FM when screen off.
+      WakeLockCreate();
+    } else {
+      // Release wake lock when FM is paused/stopped.
+      WakeLockRelease();
+    }
+  }
 }
 
 void
@@ -1197,6 +1212,33 @@ FMRadioService::UpdateFrequency()
     mRDSGroupSet = false;
     mPSNameSet = false;
     mRadiotextSet = false;
+  }
+}
+
+
+void
+FMRadioService::WakeLockCreate()
+{
+  if (!mWakeLock) {
+    RefPtr<power::PowerManagerService> pmService =
+      power::PowerManagerService::GetInstance();
+    NS_ENSURE_TRUE_VOID(pmService);
+
+    ErrorResult rv;
+    mWakeLock = pmService->NewWakeLock(NS_LITERAL_STRING("cpu"),
+                                       nullptr,
+                                       rv);
+  }
+}
+
+void
+FMRadioService::WakeLockRelease()
+{
+  if (mWakeLock) {
+    ErrorResult rv;
+    mWakeLock->Unlock(rv);
+    NS_WARN_IF_FALSE(!rv.Failed(), "Failed to unlock the wakelock.");
+    mWakeLock = nullptr;
   }
 }
 
