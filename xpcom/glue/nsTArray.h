@@ -532,9 +532,6 @@ public:
   bool LessThan(const A& aA, const B& aB) const { return aA < aB; }
 };
 
-template<class E> class InfallibleTArray;
-template<class E> class FallibleTArray;
-
 template<bool IsPod, bool IsSameType>
 struct AssignRangeAlgorithm
 {
