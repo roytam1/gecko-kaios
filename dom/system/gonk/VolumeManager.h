@@ -29,17 +29,44 @@ namespace system {
 ***************************************************************************/
 
 #if ANDROID_VERSION >= 23
-class VoulmeInfo final
+class VolumeInfo final
 {
-  public:
-  NS_INLINE_DECL_REFCOUNTING(VoulmeInfo)
+public:
+  NS_INLINE_DECL_REFCOUNTING(VolumeInfo)
 
-  VoulmeInfo(const nsCSubstring& aId, int aType, const nsCSubstring& aDiskId, int aState);
+  VolumeInfo(const nsCSubstring& aId, int aType, const nsCSubstring& aDiskId, int aState);
 
+  const nsCSubstring& getFsLabel() const { return mFsLabel; }
+  const nsCSubstring& getFsType() const { return mFsType; }
   const nsCSubstring& getId() const { return mId; }
+  const nsCSubstring& getInternalMountPoint() const { return mInternalMountPoint; }
   const nsCSubstring& getMountPoint() const { return mMountPoint; }
-  void setMountPoint(const nsACString& aMountPoint);
-  void setState(int aState) { mState = aState; }
+  const nsCSubstring& getUuid() const { return mUuid; }
+
+  void setFsLabel(const nsACString& aFsLabel)
+  {
+    mFsLabel = aFsLabel;
+  }
+  void setFsType(const nsACString& aFsType)
+  {
+    mFsType = aFsType;
+  }
+  void setInternalMountPoint(const nsACString& aInternalMountPoint)
+  {
+    mInternalMountPoint = aInternalMountPoint;
+  }
+  void setMountPoint(const nsACString& aMountPoint)
+  {
+    mMountPoint = aMountPoint;
+  }
+  void setState(int aState)
+  {
+    mState = aState;
+  }
+  void setUuid(const nsACString& aUuid)
+  {
+    mUuid = aUuid;
+  }
 
   enum STATE
   {
@@ -54,13 +81,18 @@ class VoulmeInfo final
     STATE_BAD_REMOVAL
   };
 
-  private:
-  ~VoulmeInfo() {}
-  const nsCString   mId;
+private:
+  ~VolumeInfo() {}
+  const nsCString mId;
   int mType;
   const nsCString mDiskId;
-  nsCString mMountPoint;
   int mState;
+
+  nsCString mFsLabel;
+  nsCString mFsType;
+  nsCString mInternalMountPoint;
+  nsCString mMountPoint;
+  nsCString mUuid;
 };
 #endif
 
@@ -118,7 +150,7 @@ public:
 
   typedef nsTArray<RefPtr<Volume>> VolumeArray;
 #if ANDROID_VERSION >= 23
-  typedef nsTArray<RefPtr<VoulmeInfo>> VoulmeInfoArray;
+  typedef nsTArray<RefPtr<VolumeInfo>> VolumeInfoArray;
 #endif
 
   VolumeManager();
@@ -206,7 +238,7 @@ private:
   CommandQueue        mCommands;
   bool                mCommandPending;
 #if ANDROID_VERSION >= 23
-  VoulmeInfoArray     mVolumeInfoArray;
+  VolumeInfoArray     mVolumeInfoArray;
 #endif
   MessageLoopForIO::FileDescriptorWatcher mReadWatcher;
   MessageLoopForIO::FileDescriptorWatcher mWriteWatcher;

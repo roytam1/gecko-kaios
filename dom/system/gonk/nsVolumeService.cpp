@@ -269,7 +269,7 @@ nsVolumeService::GetVolumeNames(nsIArray** aVolNames)
 }
 
 void
-nsVolumeService::GetVolumesForIPC(nsTArray<VolumeInfo>* aResult)
+nsVolumeService::GetVolumesForIPC(nsTArray<dom::VolumeInfo>* aResult)
 {
   MOZ_ASSERT(XRE_IsParentProcess());
   MOZ_ASSERT(NS_IsMainThread());
@@ -280,7 +280,7 @@ nsVolumeService::GetVolumesForIPC(nsTArray<VolumeInfo>* aResult)
   nsVolume::Array::index_type volIndex;
   for (volIndex = 0; volIndex < numVolumes; volIndex++) {
     RefPtr<nsVolume> vol = mVolumeArray[volIndex];
-    VolumeInfo* volInfo = aResult->AppendElement();
+    dom::VolumeInfo* volInfo = aResult->AppendElement();
 
     volInfo->name()             = vol->mName;
     volInfo->mountPoint()       = vol->mMountPoint;
@@ -297,7 +297,7 @@ nsVolumeService::GetVolumesForIPC(nsTArray<VolumeInfo>* aResult)
 }
 
 void
-nsVolumeService::RecvVolumesFromParent(const nsTArray<VolumeInfo>& aVolumes)
+nsVolumeService::RecvVolumesFromParent(const nsTArray<dom::VolumeInfo>& aVolumes)
 {
   if (XRE_IsParentProcess()) {
     // We are the parent. Therefore our volumes are already correct.
@@ -309,7 +309,7 @@ nsVolumeService::RecvVolumesFromParent(const nsTArray<VolumeInfo>& aVolumes)
   }
 
   for (uint32_t i = 0; i < aVolumes.Length(); i++) {
-    const VolumeInfo& volInfo(aVolumes[i]);
+    const dom::VolumeInfo& volInfo(aVolumes[i]);
     RefPtr<nsVolume> vol = new nsVolume(volInfo.name(),
                                           volInfo.mountPoint(),
                                           volInfo.volState(),
