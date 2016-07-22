@@ -315,6 +315,11 @@ interface nsIMobileConnection : nsISupports
   readonly attribute nsIMobileConnectionInfo data;
 
   /**
+   * The current state of emergency callback mode.
+   */
+  readonly attribute boolean isInEmergencyCbMode;
+
+  /**
    * The selection mode of the voice and data networks. One of the
    * nsIMobileConnection.NETWORK_SELECTION_MODE_* values.
    */

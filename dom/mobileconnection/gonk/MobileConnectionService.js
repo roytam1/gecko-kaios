@@ -518,6 +518,7 @@ MobileConnectionProvider.prototype = {
   lastKnownHomeNetwork: null,
   supportedNetworkTypes: null,
   deviceIdentities: null,
+  isInEmergencyCbMode: false,
 
   /**
    * A utility function to dump debug message.
@@ -1525,9 +1526,9 @@ MobileConnectionService.prototype = {
             JSON.stringify({active: aActive, timeoutMs: aTimeoutMs}));
     }
 
-    this.getItemByServiceId(aClientId)
-        .deliverListenerEvent("notifyEmergencyCbModeChanged",
-                              [aActive, aTimeoutMs]);
+    let provider = this.getItemByServiceId(aClientId);
+    provider.isInEmergencyCbMode = aActive;
+    provider.deliverListenerEvent("notifyEmergencyCbModeChanged", [aActive, aTimeoutMs]);
   },
 
   notifyOtaStatusChanged: function(aClientId, aStatus) {

@@ -382,6 +382,25 @@ MobileConnection::GetIccId(nsString& aRetVal) const
   aRetVal = mIccId;
 }
 
+bool
+MobileConnection::GetIsInEmergencyCbMode(ErrorResult& aRv) const
+{
+  bool result = false;
+
+  if (!mMobileConnection) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return result;
+  }
+
+  nsresult rv = mMobileConnection->GetIsInEmergencyCbMode(&result);
+  if (NS_FAILED(rv)) {
+    aRv.Throw(rv);
+    return result;
+  }
+
+  return result;
+}
+
 Nullable<MobileNetworkSelectionMode>
 MobileConnection::GetNetworkSelectionMode() const
 {

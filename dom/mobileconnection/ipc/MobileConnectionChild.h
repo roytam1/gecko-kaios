@@ -112,6 +112,7 @@ private:
   nsString mLastHomeNetwork;
   int32_t mNetworkSelectionMode;
   nsTArray<int32_t> mSupportedNetworkTypes;
+  bool mEmergencyCbMode;
 };
 
 /******************************************************************************

@@ -98,6 +98,12 @@ interface MozMobileConnection : EventTarget
   readonly attribute DOMString? iccId;
 
   /**
+   * The current state of emergency callback mode.
+   */
+  [Throws, CheckAnyPermissions="mobileconnection"]
+  readonly attribute boolean isInEmergencyCbMode;
+
+  /**
    * The selection mode of the voice and data networks.
    */
   [CheckAnyPermissions="mobileconnection"]

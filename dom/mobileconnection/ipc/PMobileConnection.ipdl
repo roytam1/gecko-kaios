@@ -49,7 +49,7 @@ parent:
     returns (nsMobileConnectionInfo aVoice, nsMobileConnectionInfo aData,
              nsString aLastKnownNetwork, nsString aLastKnownHomeNetwork,
              int32_t aNetworkSelectionMode, int32_t aRadioState,
-             int32_t[] aSupportedNetworkTypes);
+             int32_t[] aSupportedNetworkTypes, bool aEmergencyCbMode);
 };
 
 /**

@@ -128,7 +128,8 @@ MobileConnectionParent::RecvInit(nsMobileConnectionInfo* aVoice,
                                  nsString* aLastKnownHomeNetwork,
                                  int32_t* aNetworkSelectionMode,
                                  int32_t* aRadioState,
-                                 nsTArray<int32_t>* aSupportedNetworkTypes)
+                                 nsTArray<int32_t>* aSupportedNetworkTypes,
+                                 bool* aEmergencyCbMode)
 {
   NS_ENSURE_TRUE(mMobileConnection, false);
 
@@ -138,6 +139,7 @@ MobileConnectionParent::RecvInit(nsMobileConnectionInfo* aVoice,
   NS_ENSURE_SUCCESS(mMobileConnection->GetLastKnownHomeNetwork(*aLastKnownHomeNetwork), false);
   NS_ENSURE_SUCCESS(mMobileConnection->GetNetworkSelectionMode(aNetworkSelectionMode), false);
   NS_ENSURE_SUCCESS(mMobileConnection->GetRadioState(aRadioState), false);
+  NS_ENSURE_SUCCESS(mMobileConnection->GetIsInEmergencyCbMode(aEmergencyCbMode), false);
 
   int32_t* types = nullptr;
   uint32_t length = 0;

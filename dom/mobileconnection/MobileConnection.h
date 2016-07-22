@@ -76,6 +76,9 @@ public:
   void
   GetIccId(nsString& aRetVal) const;
 
+  bool
+  GetIsInEmergencyCbMode(ErrorResult& aRv) const;
+
   Nullable<MobileNetworkSelectionMode>
   GetNetworkSelectionMode() const;
 

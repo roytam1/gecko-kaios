@@ -54,7 +54,7 @@ protected:
   RecvInit(nsMobileConnectionInfo* aVoice, nsMobileConnectionInfo* aData,
            nsString* aLastKnownNetwork, nsString* aLastKnownHomeNetwork,
            int32_t* aNetworkSelectionMode, int32_t* aRadioState,
-           nsTArray<int32_t>* aSupportedNetworkTypes) override;
+           nsTArray<int32_t>* aSupportedNetworkTypes, bool* aEmergencyCbMode) override;
 
 private:
   nsCOMPtr<nsIMobileConnection> mMobileConnection;
