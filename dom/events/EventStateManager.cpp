@@ -2360,6 +2360,18 @@ EventStateManager::SendPixelScrollEvent(nsIFrame* aTargetFrame,
 
 nsIFrame*
 EventStateManager::ComputeScrollTarget(nsIFrame* aTargetFrame,
+                                       double aDirectionX,
+                                       double aDirectionY)
+{
+  WidgetWheelEvent wheelEvent(true, eWheel, nullptr);
+  wheelEvent.mDeltaX = aDirectionX;
+  wheelEvent.mDeltaY = aDirectionY;
+  return ComputeScrollTarget(aTargetFrame, &wheelEvent,
+                             COMPUTE_SCROLLABLE_ALONG_AXISES);
+}
+
+nsIFrame*
+EventStateManager::ComputeScrollTarget(nsIFrame* aTargetFrame,
                                        WidgetWheelEvent* aEvent,
                                        ComputeScrollTargetOptions aOptions)
 {

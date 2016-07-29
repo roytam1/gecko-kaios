@@ -119,6 +119,10 @@ public:
   void SetNFCFocus(bool isFocus,
                    ErrorResult& aRv);
 
+  void SetSpatialNavigationEnabled(bool aEnabled, ErrorResult& aRv);
+
+  bool GetSpatialNavigationEnabled(ErrorResult& aRv);
+
   // Helper
   static void GenerateAllowedAudioChannels(
                  nsPIDOMWindowInner* aWindow,

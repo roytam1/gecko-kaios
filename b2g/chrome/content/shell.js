@@ -74,6 +74,10 @@ XPCOMUtils.defineLazyServiceGetter(Services, 'captivePortalDetector',
                                   '@mozilla.org/toolkit/captive-detector;1',
                                   'nsICaptivePortalDetector');
 
+XPCOMUtils.defineLazyServiceGetter(Services, 'spatialNavigationService',
+                                   '@mozilla.org/spatialnavigation/service;1',
+                                   'nsISpatialNavigationService');
+
 if (AppConstants.MOZ_SAFE_BROWSING) {
   XPCOMUtils.defineLazyModuleGetter(this, "SafeBrowsing",
                 "resource://gre/modules/SafeBrowsing.jsm");
@@ -431,6 +435,7 @@ var shell = {
     WebappsHelper.init();
     UserAgentOverrides.init();
     CaptivePortalLoginHelper.init();
+    Services.spatialNavigationService.init(window);
 
     this.contentBrowser.src = homeURL;
     this._isEventListenerReady = false;

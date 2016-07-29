@@ -316,6 +316,8 @@ public:
   virtual bool RecvRespondStartSwipeEvent(const uint64_t& aInputBlockId,
                                           const bool& aStartSwipe) override;
 
+  virtual bool RecvUpdateSpatialNavigationCursorPosition(const LayoutDeviceIntPoint& aPoint) override;
+
   virtual bool
   RecvDispatchWheelEvent(const mozilla::WidgetWheelEvent& aEvent) override;
 

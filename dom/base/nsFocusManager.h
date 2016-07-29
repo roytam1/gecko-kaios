@@ -98,6 +98,11 @@ public:
    */
   void UpdateCaretForCaretBrowsingMode();
 
+  bool IsContentFocusable(nsIContent* aContent, uint32_t aFlags)
+  {
+    return CheckIfFocusable(aContent, aFlags) != nullptr;
+  }
+
   /**
    * Returns the content node that would be focused if aWindow was in an
    * active window. This will traverse down the frame hierarchy, starting at

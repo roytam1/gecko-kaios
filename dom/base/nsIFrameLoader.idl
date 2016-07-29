@@ -17,7 +17,7 @@ interface nsIDOMElement;
 interface nsITabParent;
 interface nsILoadContext;
 
-[scriptable, builtinclass, uuid(1645af04-1bc7-4363-8f2c-eb9679220ab1)]
+[scriptable, builtinclass, uuid(a1ec2e84-e6d7-4804-bc2d-d2b97c8ee9d4)]
 interface nsIFrameLoader : nsISupports
 {
   /**
@@ -194,6 +194,11 @@ interface nsIFrameLoader : nsISupports
    * have a notion of visibility in the parent process when frames are OOP.
    */
   [infallible] attribute boolean visible;
+
+  /**
+   * Enable Spatial Navigation on this iframe by setting this value to true.
+   */
+  [infallible] attribute boolean spatialNavigationEnabled;
 
   /**
    * Find out whether the owner content really is a mozbrowser or app frame

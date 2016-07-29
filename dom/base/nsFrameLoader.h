@@ -391,6 +391,9 @@ private:
   // whether this frameloader's <iframe mozbrowser> is setVisible(true)'ed, and
   // doesn't necessarily correlate with docshell/document visibility.
   bool mVisible : 1;
+
+  // True if spatial navigation is active on this iframe.
+  bool mSpatialNavigationEnabled : 1;
 };
 
 #endif

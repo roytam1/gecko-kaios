@@ -208,6 +208,7 @@
 @RESPATH@/components/dom_tv.xpt
 @RESPATH@/components/dom_inputport.xpt
 @RESPATH@/components/dom_views.xpt
+@RESPATH@/components/dom_spatialnavigation.xpt
 @RESPATH@/components/dom_voicemail.xpt
 #ifdef MOZ_WEBSPEECH
 @RESPATH@/components/dom_webspeechrecognition.xpt

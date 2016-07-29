@@ -1161,6 +1161,14 @@ BrowserElementParent.prototype = {
     }
   },
 
+  setSpatialNavigationEnabled: defineNoReturnMethod(function(enabled) {
+    this._frameLoader.spatialNavigationEnabled = enabled;
+  }),
+
+  getSpatialNavigationEnabled: function() {
+    return this._frameLoader.spatialNavigationEnabled;
+  },
+
   getAudioChannelVolume: function(aAudioChannel) {
     return this._sendDOMRequest('get-audio-channel-volume',
                                 {audioChannel: aAudioChannel});

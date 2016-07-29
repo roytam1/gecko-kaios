@@ -690,7 +690,7 @@ pref("javascript.options.mem.gc_max_empty_chunk_count", 2);
 // Show/Hide scrollbars when active/inactive
 pref("ui.showHideScrollbars", 1);
 pref("ui.useOverlayScrollbars", 1);
-pref("ui.scrollbarFadeBeginDelay", 450);
+pref("ui.scrollbarFadeBeginDelay", 1800);
 pref("ui.scrollbarFadeDuration", 0);
 
 // Scrollbar position follows the document `dir` attribute
@@ -1180,7 +1180,10 @@ pref("google.geocoding.URL", "https://maps.googleapis.com/maps/api/geocode/json?
 
 // GLCursor draws a cursor image if widget receives eMouseMove event. It is
 // usually enabled with SpatialNavigation.
-pref("gfx.glcursor.enabled", false);
+pref("gfx.glcursor.enabled", true);
+
+// Enable the spatial navigation service on non-touch devices.
+pref("dom.spatialnavigation.enabled", true);
 
 // In compatibility mode, 'Firefox' will be added to UA.
 pref("general.useragent.compatMode.firefox", true);

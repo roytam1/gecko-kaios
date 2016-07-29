@@ -271,6 +271,8 @@ static void Shutdown();
 
 #include "mozilla/TextInputProcessor.h"
 
+#include "SpatialNavigationService.h"
+
 #ifdef MOZ_B2G
 #include "nsIHardwareKeyHandler.h"
 #include "mozilla/HardwareKeyHandler.h"
@@ -278,6 +280,7 @@ static void Shutdown();
 
 using namespace mozilla;
 using namespace mozilla::dom;
+using namespace mozilla::toolkit;
 using mozilla::dom::alarm::AlarmHalService;
 using mozilla::dom::power::PowerManagerService;
 using mozilla::dom::quota::QuotaManagerService;
@@ -422,6 +425,9 @@ NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsIPresentationService,
                                          NS_CreatePresentationService)
 NS_GENERIC_FACTORY_CONSTRUCTOR(PresentationTCPSessionTransport)
 NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(NotificationTelemetryService, Init)
+
+NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsISpatialNavigationService,
+                                         SpatialNavigationService::GetOrCreate)
 
 #ifndef MOZ_SIMPLEPUSH
 NS_GENERIC_FACTORY_CONSTRUCTOR(PushNotifier)
@@ -899,6 +905,8 @@ NS_DEFINE_NAMED_CID(PRESENTATION_TCP_SESSION_TRANSPORT_CID);
 
 NS_DEFINE_NAMED_CID(TEXT_INPUT_PROCESSOR_CID);
 
+NS_DEFINE_NAMED_CID(SPATIAL_NAVIGATION_SERVICE_CID);
+
 #ifdef MOZ_B2G
 NS_DEFINE_NAMED_CID(NS_HARDWARE_KEY_HANDLER_CID);
 #endif
@@ -1207,6 +1215,7 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
 #ifdef MOZ_B2G
   { &kNS_HARDWARE_KEY_HANDLER_CID, false, nullptr, nsIHardwareKeyHandlerConstructor },
 #endif
+  { &kSPATIAL_NAVIGATION_SERVICE_CID, false, nullptr, nsISpatialNavigationServiceConstructor },
   { nullptr }
 };
 
@@ -1382,6 +1391,7 @@ static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
 #ifdef MOZ_B2G
   { NS_HARDWARE_KEY_HANDLER_CONTRACTID, &kNS_HARDWARE_KEY_HANDLER_CID },
 #endif
+  { SPATIAL_NAVIGATION_SERVICE_CONTRACTID, &kSPATIAL_NAVIGATION_SERVICE_CID },
   { nullptr }
 };
 

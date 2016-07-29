@@ -277,6 +277,10 @@ public:
   // wheel (as opposed to, say, a selection or touch scroll).
   static bool CanVerticallyScrollFrameWithWheel(nsIFrame* aFrame);
 
+  nsIFrame* ComputeScrollTarget(nsIFrame* aTargetFrame,
+                                double aDirectionX,
+                                double aDirectionY);
+
   // Holds the point in screen coords that a mouse event was dispatched to,
   // before we went into pointer lock mode. This is constantly updated while
   // the pointer is not locked, but we don't update it while the pointer is
@@ -688,7 +692,10 @@ protected:
     COMPUTE_SCROLLABLE_ANCESTOR_ALONG_X_AXIS     =
       (PREFER_ACTUAL_SCROLLABLE_TARGET_ALONG_X_AXIS | START_FROM_PARENT),
     COMPUTE_SCROLLABLE_ANCESTOR_ALONG_Y_AXIS     =
-      (PREFER_ACTUAL_SCROLLABLE_TARGET_ALONG_Y_AXIS | START_FROM_PARENT)
+      (PREFER_ACTUAL_SCROLLABLE_TARGET_ALONG_Y_AXIS | START_FROM_PARENT),
+    COMPUTE_SCROLLABLE_ALONG_AXISES     =
+      (PREFER_ACTUAL_SCROLLABLE_TARGET_ALONG_X_AXIS |
+       PREFER_ACTUAL_SCROLLABLE_TARGET_ALONG_Y_AXIS)
   };
   static ComputeScrollTargetOptions RemovePluginFromTarget(
                                       ComputeScrollTargetOptions aOptions)

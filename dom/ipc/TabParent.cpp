@@ -98,6 +98,7 @@
 #include "UnitTransforms.h"
 #include <algorithm>
 #include "mozilla/WebBrowserPersistDocumentParent.h"
+#include "SpatialNavigationService.h"
 
 using namespace mozilla::dom;
 using namespace mozilla::ipc;
@@ -106,6 +107,7 @@ using namespace mozilla::layout;
 using namespace mozilla::services;
 using namespace mozilla::widget;
 using namespace mozilla::jsipc;
+using namespace mozilla::toolkit;
 
 // The flags passed by the webProgress notifications are 16 bits shifted
 // from the ones registered by webProgressListeners.
@@ -2690,6 +2692,17 @@ TabParent::RecvRespondStartSwipeEvent(const uint64_t& aInputBlockId,
   if (nsCOMPtr<nsIWidget> widget = GetWidget()) {
     widget->ReportSwipeStarted(aInputBlockId, aStartSwipe);
   }
+  return true;
+}
+
+bool
+TabParent::RecvUpdateSpatialNavigationCursorPosition(
+  const LayoutDeviceIntPoint& aPoint)
+{
+  RefPtr<SpatialNavigationService> service =
+    SpatialNavigationService::GetOrCreate();
+  service->RecvUpdateCursorPosition(aPoint);
+
   return true;
 }
 

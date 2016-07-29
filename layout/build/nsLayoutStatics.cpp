@@ -132,6 +132,7 @@ using namespace mozilla::system;
 #include "mozilla/layers/CompositorLRU.h"
 #include "mozilla/dom/devicestorage/DeviceStorageStatics.h"
 #include "mozilla/StaticPresData.h"
+#include "SpatialNavigationService.h"
 
 #ifdef MOZ_B2G_BT
 #include "mozilla/dom/BluetoothUUID.h"
@@ -141,6 +142,7 @@ using namespace mozilla;
 using namespace mozilla::net;
 using namespace mozilla::dom;
 using namespace mozilla::dom::ipc;
+using namespace mozilla::toolkit;
 
 nsrefcnt nsLayoutStatics::sLayoutStaticRefcnt = 0;
 
@@ -332,6 +334,7 @@ nsLayoutStatics::Shutdown()
   // Don't need to shutdown nsWindowMemoryReporter, that will be done by the
   // memory reporter manager.
 
+  SpatialNavigationService::Shutdown();
   nsMessageManagerScriptExecutor::Shutdown();
   nsFocusManager::Shutdown();
 #ifdef MOZ_XUL

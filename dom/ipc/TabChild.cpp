@@ -111,6 +111,7 @@
 #include "nsDeviceContext.h"
 #include "nsSandboxFlags.h"
 #include "FrameLayerBuilder.h"
+#include "SpatialNavigationServiceChild.h"
 
 #define BROWSER_ELEMENT_CHILD_SCRIPT \
     NS_LITERAL_STRING("chrome://global/content/BrowserElementChild.js")
@@ -128,6 +129,7 @@ using namespace mozilla::layout;
 using namespace mozilla::docshell;
 using namespace mozilla::widget;
 using namespace mozilla::jsipc;
+using namespace mozilla::toolkit;
 
 NS_IMPL_ISUPPORTS(ContentListener, nsIDOMEventListener)
 
@@ -1654,6 +1656,12 @@ TabChild::RecvUpdateDimensions(const CSSRect& rect, const CSSSize& size,
                           screenRect.y + clientOffset.y + chromeDisp.y,
                           screenSize.width, screenSize.height, true);
 
+    RefPtr<SpatialNavigationServiceChild> service =
+      SpatialNavigationServiceChild::Get();
+    if (service) {
+      service->RecvUpdateDimensions(mChromeDisp);
+    }
+
     return true;
 }
 
@@ -2289,6 +2297,30 @@ TabChild::RecvAppOfflineStatus(const uint32_t& aId, const bool& aOffline)
     gIOService->SetAppOfflineInternal(aId, aOffline ?
       nsIAppOfflineInfo::OFFLINE : nsIAppOfflineInfo::ONLINE);
   }
+  return true;
+}
+
+bool
+TabChild::RecvActivateSpatialNavigation(const LayoutDeviceIntPoint& aPoint)
+{
+  RefPtr<SpatialNavigationServiceChild> service =
+    SpatialNavigationServiceChild::GetOrCreate();
+  nsCOMPtr<nsPIDOMWindowOuter> window = do_GetInterface(WebNavigation());
+
+  service->Activate(window, aPoint, mChromeDisp);
+
+  return true;
+}
+
+bool
+TabChild::RecvDeactivateSpatialNavigation()
+{
+  RefPtr<SpatialNavigationServiceChild> service =
+    SpatialNavigationServiceChild::GetOrCreate();
+  nsCOMPtr<nsPIDOMWindowOuter> window = do_GetInterface(WebNavigation());
+
+  service->Deactivate();
+
   return true;
 }
 

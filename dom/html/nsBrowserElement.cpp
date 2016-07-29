@@ -750,6 +750,35 @@ nsBrowserElement::SetNFCFocus(bool aIsFocus,
   }
 }
 
+void
+nsBrowserElement::SetSpatialNavigationEnabled(bool aEnabled,
+                                              ErrorResult& aRv)
+{
+  NS_ENSURE_TRUE_VOID(IsBrowserElementOrThrow(aRv));
+
+  nsresult rv = mBrowserElementAPI->SetSpatialNavigationEnabled(aEnabled);
+
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
+  }
+}
+
+bool
+nsBrowserElement::GetSpatialNavigationEnabled(ErrorResult& aRv)
+{
+  NS_ENSURE_TRUE(IsBrowserElementOrThrow(aRv), false);
+
+  bool enabled = false;
+  nsresult rv = mBrowserElementAPI->GetSpatialNavigationEnabled(&enabled);
+
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
+    return false;
+  }
+
+  return enabled;
+}
+
 already_AddRefed<DOMRequest>
 nsBrowserElement::ExecuteScript(const nsAString& aScript,
                                 const BrowserElementExecuteScriptOptions& aOptions,

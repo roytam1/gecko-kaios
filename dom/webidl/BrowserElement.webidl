@@ -186,3 +186,11 @@ interface BrowserElementPrivileged {
   DOMRequest getWebManifest();
 
 };
+
+partial interface BrowserElementPrivileged {
+  // Setting this value to true enables the spatial navigation on this iframe.
+  [Throws,
+   Pref="dom.mozBrowserFramesEnabled",
+   CheckAllPermissions="browser"]
+  attribute boolean spatialNavigationEnabled;
+};
