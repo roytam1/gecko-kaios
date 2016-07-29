@@ -179,21 +179,17 @@ ContactManager.prototype = {
       case "Contacts:Clear:Return:OK":
       case "Contact:Remove:Return:OK":
       case "Contacts:RemoveSpeedDial:Return:OK":
+      case "Contacts:SetSpeedDial:Return:OK":
         req = this.getRequest(msg.requestID);
-        if (req)
+        if (req) {
           Services.DOMRequest.fireSuccess(req.request, null);
+        }
         break;
       case "Contacts:GetSpeedDials:Return:OK":
         req = this.getRequest(msg.requestID);
         if (req) {
           let result = this._convertSpeedDials(msg.speedDials);
           Services.DOMRequest.fireSuccess(req.request, result);
-        }
-        break;
-      case "Contacts:SetSpeedDial:Return:OK":
-        req = this.getRequest(msg.requestID);
-        if (req) {
-          Services.DOMRequest.fireSuccess(req.request, null);
         }
         break;
       case "Contacts:Find:Return:KO":
@@ -622,7 +618,7 @@ ContactManager.prototype = {
                               "Contacts:Revision", "Contacts:GetRevision:Return:KO",
                               "Contacts:GetSpeedDials:Return:OK", "Contacts:GetSpeedDials:Return:KO",
                               "Contacts:SetSpeedDial:Return:OK", "Contacts:SetSpeedDial:Return:KO",
-                              "Contacts:RemoveSpeedDial:Return:OK", "Contacts:RemoveSpeedDial:Return:KO", ]);
+                              "Contacts:RemoveSpeedDial:Return:OK", "Contacts:RemoveSpeedDial:Return:KO",]);
 
     let allowCallback = function() {
       cpmm.sendAsyncMessage("Contacts:RegisterForMessages");

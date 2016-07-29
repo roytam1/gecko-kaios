@@ -1381,6 +1381,7 @@ ContactDB.prototype = {
     if (DEBUG) debug("ContactDB:_findAll:  " + JSON.stringify(options));
     if (!txn.result)
       txn.result = {};
+
     // Sorting functions takes care of limit if set.
     let limit = options.sortBy === 'undefined' ? options.filterLimit : null;
     store.mozGetAll(null, limit).onsuccess = function (event) {
@@ -1396,18 +1397,18 @@ ContactDB.prototype = {
     this.newTxn("readonly", SPEED_DIALS_STORE_NAME, function (txn, store) {
       if (!txn.result)
         txn.result = {};
+
       var req = store.mozGetAll();
       req.onsuccess = function (event) {
         let speedDials = event.target.result;
         if (DEBUG) debug("Request successful. Speed Dials :" + speedDials.length);
         speedDials.sort();
-        /*speedDials.forEach((item) => txn.result[item.speedDial] = "something");*/
         for (let i in speedDials) {
           txn.result[speedDials[i].speedDial] = speedDials[i];
         }
       }.bind(this);
-      req.onerror = function(error) {
-        dump("ContactDB: " + error);
+      req.onerror = function(e) {
+        dump("getSpeedDials: " + e);
       }.bind(this);
     }, aSuccessCb, aFailureCb);
   },
@@ -1430,17 +1431,15 @@ ContactDB.prototype = {
         let req = txn.objectStore(STORE_NAME).get(aContactId);
         req.onsuccess = function (event) {
           if (!event.target.result) {
-            dump("ContactDB: contact with id " + aContactId + " is not exist!");
+            dump("ContactDB: contact with id " + aContactId + " does not exist!");
             txn.abort();
           }
           speedDialObj.contactId = aContactId;
           txn.objectStore(SPEED_DIALS_STORE_NAME).put(speedDialObj);
-
           this.incrementRevision(txn);
         }.bind(this);
       } else {
         txn.objectStore(SPEED_DIALS_STORE_NAME).put(speedDialObj);
-
         this.incrementRevision(txn);
       }
     }.bind(this), aSuccessCb, aFailureCb);
