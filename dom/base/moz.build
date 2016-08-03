@@ -429,6 +429,7 @@ LOCAL_INCLUDES += [
     '../media',
     '../network',
     '../time',
+    '../usb',
     '/caps',
     '/docshell/base',
     '/dom/base',

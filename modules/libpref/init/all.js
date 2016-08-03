@@ -4600,6 +4600,9 @@ pref("dom.vibrator.max_vibrate_list_len", 128);
 // Battery API
 pref("dom.battery.enabled", true);
 
+// Usb API
+pref("dom.usb.enabled", true);
+
 // Image srcset
 pref("dom.image.srcset.enabled", true);
 

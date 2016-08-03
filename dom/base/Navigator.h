@@ -59,6 +59,10 @@ namespace battery {
 class BatteryManager;
 } // namespace battery
 
+namespace usb {
+class UsbManager;
+} // namespace usb
+
 #ifdef MOZ_B2G_FM
 class FMRadio;
 #endif
@@ -169,6 +173,7 @@ public:
   battery::BatteryManager* GetDeprecatedBattery(ErrorResult& aRv);
 
   already_AddRefed<Promise> GetFlipManager(ErrorResult& aRv);
+  usb::UsbManager* GetUsb(ErrorResult& aRv);
 
   static already_AddRefed<Promise> GetDataStores(nsPIDOMWindowInner* aWindow,
                                                  const nsAString& aName,
@@ -384,6 +389,7 @@ private:
   RefPtr<battery::BatteryManager> mBatteryManager;
   RefPtr<FlipManager> mFlipManager;
   RefPtr<Promise> mBatteryPromise;
+  RefPtr<usb::UsbManager> mUsbManager;
 #ifdef MOZ_B2G_FM
   RefPtr<FMRadio> mFMRadio;
 #endif

@@ -31,6 +31,11 @@ struct BatteryInformation {
   double remainingTime;
 };
 
+struct UsbStatus {
+  bool deviceAttached;
+  bool deviceConfigured;
+};
+
 struct SensorData {
   SensorType sensor;
   PRTime timestamp;
@@ -101,10 +106,12 @@ prio(normal upto urgent) sync protocol PHal {
 
 child:
     async NotifyBatteryChange(BatteryInformation aBatteryInfo);
+    async NotifyUsbStatus(UsbStatus aUsbStatus);
     async NotifyNetworkChange(NetworkInformation aNetworkInfo);
     async NotifyWakeLockChange(WakeLockInformation aWakeLockInfo);
     async NotifyScreenConfigurationChange(ScreenConfiguration aScreenOrientation);
     async NotifySwitchChange(SwitchEvent aEvent);
+
     async NotifySystemClockChange(int64_t aClockDeltaMS); 
     async NotifySystemTimezoneChange(SystemTimezoneChangeInformation aSystemTimezoneChangeInfo);
     async NotifyFlipState(bool aFlipState);
@@ -121,6 +128,11 @@ parent:
     async DisableBatteryNotifications();
     sync GetCurrentBatteryInformation()
       returns (BatteryInformation aBatteryInfo);
+
+    async EnableUsbNotifications();
+    async DisableUsbNotifications();
+    sync GetCurrentUsbStatus()
+      returns (UsbStatus aUsbStatus);
 
     async EnableNetworkNotifications();
     async DisableNetworkNotifications();
@@ -166,7 +178,7 @@ parent:
     sync LockScreenOrientation(ScreenOrientationInternal aOrientation)
       returns (bool allowed);
     async UnlockScreenOrientation();
- 
+
     async EnableSwitchNotifications(SwitchDevice aDevice);
     async DisableSwitchNotifications(SwitchDevice aDevice);
     sync GetCurrentSwitchState(SwitchDevice aDevice)

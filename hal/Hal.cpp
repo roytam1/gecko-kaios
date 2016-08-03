@@ -308,6 +308,24 @@ BatteryObservers()
   return sBatteryObservers;
 }
 
+class UsbObserversManager : public CachingObserversManager<UsbStatus>
+{
+protected:
+  void EnableNotifications() {
+    PROXY_IF_SANDBOXED(EnableUsbNotifications());
+  }
+
+  void DisableNotifications() {
+    PROXY_IF_SANDBOXED(DisableUsbNotifications());
+  }
+
+  void GetCurrentInformationInternal(UsbStatus* aStatus) {
+    PROXY_IF_SANDBOXED(GetCurrentUsbStatus(aStatus));
+  }
+};
+
+static UsbObserversManager sUsbObservers;
+
 class NetworkObserversManager : public CachingObserversManager<NetworkInformation>
 {
 protected:
@@ -452,6 +470,35 @@ RequestCurrentFlipState()
 {
   AssertMainThread();
   PROXY_IF_SANDBOXED(RequestCurrentFlipState());
+}
+
+void
+RegisterUsbObserver(UsbObserver* aUsbObserver)
+{
+  AssertMainThread();
+  sUsbObservers.AddObserver(aUsbObserver);
+}
+
+void
+UnregisterUsbObserver(UsbObserver* aUsbObserver)
+{
+  AssertMainThread();
+  sUsbObservers.RemoveObserver(aUsbObserver);
+}
+
+void
+GetCurrentUsbStatus(UsbStatus* aUsbStatus)
+{
+  AssertMainThread();
+  *aUsbStatus = sUsbObservers.GetCurrentInformation();
+}
+
+void
+NotifyUsbStatus(const UsbStatus& aUsbStatus)
+{
+  AssertMainThread();
+  sUsbObservers.CacheInformation(aUsbStatus);
+  sUsbObservers.BroadcastCachedInformation();
 }
 
 bool GetScreenEnabled()

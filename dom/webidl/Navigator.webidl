@@ -144,6 +144,13 @@ partial interface Navigator {
   Promise<FlipManager> getFlipManager();
 };
 
+[NoInterfaceObject]
+interface NavigatorUsb {
+    [Throws, Pref="dom.usb.enabled"]
+    readonly attribute UsbManager? usb;
+};
+Navigator implements NavigatorUsb;
+
 // https://wiki.mozilla.org/WebAPI/DataStore
 [NoInterfaceObject,
  Exposed=(Window,Worker)]

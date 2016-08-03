@@ -86,6 +86,24 @@ GetCurrentBatteryInformation(BatteryInformation* aBatteryInfo)
 }
 
 void
+EnableUsbNotifications()
+{
+  Hal()->SendEnableUsbNotifications();
+}
+
+void
+DisableUsbNotifications()
+{
+  Hal()->SendDisableUsbNotifications();
+}
+
+void
+GetCurrentUsbStatus(UsbStatus* aUsbStatus)
+{
+  Hal()->SendGetCurrentUsbStatus(aUsbStatus);
+}
+
+void
 EnableNetworkNotifications()
 {
   Hal()->SendEnableNetworkNotifications();
@@ -534,6 +552,7 @@ bool SystemServiceIsRunning(const char* aSvcName)
 
 class HalParent : public PHalParent
                 , public BatteryObserver
+                , public UsbObserver
                 , public NetworkObserver
                 , public ISensorObserver
                 , public WakeLockObserver
@@ -645,6 +664,30 @@ public:
 
   void Notify(const BatteryInformation& aBatteryInfo) override {
     Unused << SendNotifyBatteryChange(aBatteryInfo);
+  }
+
+  virtual bool
+  RecvEnableUsbNotifications() override {
+    // We give all content usb-status permission.
+    hal::RegisterUsbObserver(this);
+    return true;
+  }
+
+  virtual bool
+  RecvDisableUsbNotifications() override {
+    hal::UnregisterUsbObserver(this);
+    return true;
+  }
+
+  virtual bool
+  RecvGetCurrentUsbStatus(UsbStatus* aUsbStatus) override {
+    // We give all content usb-status permission.
+    hal::GetCurrentUsbStatus(aUsbStatus);
+    return true;
+  }
+
+  void Notify(const UsbStatus& aUsbStatus) override {
+    Unused << SendNotifyUsbStatus(aUsbStatus);
   }
 
   virtual bool
@@ -1003,6 +1046,12 @@ public:
   virtual bool
   RecvNotifyBatteryChange(const BatteryInformation& aBatteryInfo) override {
     hal::NotifyBatteryChange(aBatteryInfo);
+    return true;
+  }
+
+  virtual bool
+  RecvNotifyUsbStatus(const UsbStatus& aUsbStatus) override {
+    hal::NotifyUsbStatus(aUsbStatus);
     return true;
   }
 

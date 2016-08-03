@@ -719,6 +719,131 @@ GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo)
 
 namespace {
 
+class UsbUpdater : public nsRunnable {
+public:
+  NS_IMETHOD Run()
+  {
+    hal::UsbStatus info;
+    hal_impl::GetCurrentUsbStatus(&info);
+
+    hal::NotifyUsbStatus(info);
+
+    {
+      nsCOMPtr<nsIObserverService> obsService = mozilla::services::GetObserverService();
+      nsCOMPtr<nsIWritablePropertyBag2> propbag =
+        do_CreateInstance("@mozilla.org/hash-property-bag;1");
+      if (obsService && propbag) {
+        propbag->SetPropertyAsBool(NS_LITERAL_STRING("deviceAttached"),
+                                   info.deviceAttached());
+        propbag->SetPropertyAsBool(NS_LITERAL_STRING("deviceConfigured"),
+                                   info.deviceConfigured());
+        obsService->NotifyObservers(propbag, "gonkhal-usb-notifier", nullptr);
+      }
+    }
+    return NS_OK;
+  }
+};
+
+} // anonymous namespace
+
+class UsbObserver final : public IUeventObserver
+{
+public:
+  NS_INLINE_DECL_REFCOUNTING(UsbObserver)
+
+  UsbObserver()
+    :mUpdater(new UsbUpdater())
+  {
+  }
+
+  virtual void Notify(const NetlinkEvent &aEvent)
+  {
+    // this will run on IO thread
+    NetlinkEvent *event = const_cast<NetlinkEvent*>(&aEvent);
+    const char *subsystem = event->getSubsystem();
+    // e.g. DEVPATH=/devices/virtual/android_usb/android0
+    const char *devpath = event->findParam("DEVPATH");
+    if (strcmp(subsystem, "android_usb") == 0 &&
+        strstr(devpath, "android_usb")) {
+      // aEvent will be valid only in this method.
+      NS_DispatchToMainThread(mUpdater);
+    }
+  }
+
+protected:
+  ~UsbObserver() {}
+
+private:
+  RefPtr<UsbUpdater> mUpdater;
+};
+
+// sUsbObserver is owned by the IO thread. Only the IO thread may
+// create or destroy it.
+static StaticRefPtr<UsbObserver> sUsbObserver;
+
+static void
+RegisterUsbObserverIOThread()
+{
+  MOZ_ASSERT(MessageLoop::current() == XRE_GetIOMessageLoop());
+  MOZ_ASSERT(!sUsbObserver);
+
+  sUsbObserver = new UsbObserver();
+  RegisterUeventListener(sUsbObserver);
+}
+
+void
+EnableUsbNotifications()
+{
+  XRE_GetIOMessageLoop()->PostTask(
+      FROM_HERE,
+      NewRunnableFunction(RegisterUsbObserverIOThread));
+}
+
+static void
+UnregisterUsbObserverIOThread()
+{
+  MOZ_ASSERT(MessageLoop::current() == XRE_GetIOMessageLoop());
+  MOZ_ASSERT(sUsbObserver);
+
+  UnregisterUeventListener(sUsbObserver);
+  sUsbObserver = nullptr;
+}
+
+void
+DisableUsbNotifications()
+{
+  XRE_GetIOMessageLoop()->PostTask(
+      FROM_HERE,
+      NewRunnableFunction(UnregisterUsbObserverIOThread));
+}
+
+void
+GetCurrentUsbStatus(hal::UsbStatus* aUsbStatus)
+{
+   bool success;
+   char usbStateString[16];
+  // see http://androidxref.com/6.0.1_r10/xref/frameworks/base/services/
+  //            usb/java/com/android/server/usb/UsbDeviceManager.java#95
+  success = ReadSysFile("/sys/class/android_usb/android0/state",
+                        usbStateString, sizeof(usbStateString));
+  if (success) {
+    if (strcmp(usbStateString, "CONNECTED") == 0) {
+      aUsbStatus->deviceAttached() = true;
+      aUsbStatus->deviceConfigured() = false;
+    } else if (strcmp(usbStateString, "CONFIGURED") == 0) {
+      aUsbStatus->deviceAttached() = true;
+      aUsbStatus->deviceConfigured() = true;
+    } else if (strcmp(usbStateString, "DISCONNECTED") == 0) {
+      aUsbStatus->deviceAttached() = false;
+      aUsbStatus->deviceConfigured() = false;
+    } else {
+      HAL_ERR("Unexpected usb state : %s ", usbStateString);
+    }
+  }
+}
+
+namespace {
+
 // We can write to screenEnabledFilename to enable/disable the screen, but when
 // we read, we always get "mem"!  So we have to keep track ourselves whether
 // the screen is on or not.

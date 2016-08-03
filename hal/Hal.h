@@ -15,6 +15,7 @@
 #include "mozilla/dom/MozPowerManagerBinding.h"
 #include "mozilla/dom/network/Types.h"
 #include "mozilla/dom/power/Types.h"
+#include "mozilla/dom/usb/Types.h"
 #include "mozilla/dom/ScreenOrientation.h"
 #include "mozilla/hal_sandbox/PHal.h"
 #include "mozilla/HalScreenConfiguration.h"
@@ -111,6 +112,29 @@ void GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo);
  * @param aBatteryInfo The new battery information.
  */
 void NotifyBatteryChange(const hal::BatteryInformation& aBatteryInfo);
+
+/**
+ * Inform the usb backend there is a new usb observer.
+ * @param aUsbObserver The observer that should be added.
+ */
+void RegisterUsbObserver(UsbObserver* aUsbObserver);
+
+/**
+ * Inform the usb backend a usb observer unregistered.
+ * @param aUsbObserver The observer that should be removed.
+ */
+void UnregisterUsbObserver(UsbObserver* aUsbObserver);
+
+/**
+ * Returns the current usb status.
+ */
+void GetCurrentUsbStatus(hal::UsbStatus* aUsbStatus);
+
+/**
+ * Notify of a change in the usb status.
+ * @param aUsbStatus The new usb status.
+ */
+void NotifyUsbStatus(const hal::UsbStatus& aUsbStatus);
 
 /**
  * Inform the flipmanager backend there is a new flip observer.

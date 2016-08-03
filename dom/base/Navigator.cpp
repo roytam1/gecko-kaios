@@ -33,6 +33,7 @@
 #include "mozilla/Preferences.h"
 #include "mozilla/Telemetry.h"
 #include "BatteryManager.h"
+#include "UsbManager.h"
 #include "mozilla/dom/DeviceStorageAreaListener.h"
 #include "mozilla/dom/PowerManager.h"
 #include "mozilla/dom/WakeLock.h"
@@ -195,6 +196,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Navigator)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBatteryManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBatteryPromise)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFlipManager)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mUsbManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPowerManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mCellBroadcast)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mIccManager)
@@ -267,6 +269,11 @@ Navigator::Invalidate()
   if (mFlipManager) {
     mFlipManager->Shutdown();
     mFlipManager = nullptr;
+  }
+
+  if (mUsbManager) {
+    mUsbManager->Shutdown();
+    mUsbManager = nullptr;
   }
 
 #ifdef MOZ_B2G_FM
@@ -1549,6 +1556,23 @@ Navigator::GetDeprecatedBattery(ErrorResult& aRv)
   }
 
   return mBatteryManager;
+}
+
+usb::UsbManager*
+Navigator::GetUsb(ErrorResult& aRv)
+{
+  if (!mUsbManager) {
+    if (!mWindow) {
+      aRv.Throw(NS_ERROR_UNEXPECTED);
+      return nullptr;
+    }
+    NS_ENSURE_TRUE(mWindow->GetDocShell(), nullptr);
+
+    mUsbManager = new usb::UsbManager(mWindow);
+    mUsbManager->Init();
+  }
+
+  return mUsbManager;
 }
 
 already_AddRefed<Promise>
