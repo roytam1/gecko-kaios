@@ -296,6 +296,7 @@ void malloc_init_hard(void);
 void
 MozTagAnonymousMemory(const void* aPtr, size_t aLength, const char* aTag) {}
 
+#if ANDROID_VERSION < 17
 /* mozjemalloc and jemalloc use pthread_atfork, which Android doesn't have.
  * While gecko has one in libmozglue, the replay program can't use that.
  * Since we're not going to fork anyways, make it a dummy function. */
@@ -305,6 +306,7 @@ pthread_atfork(void (*aPrepare)(void), void (*aParent)(void),
 {
   return 0;
 }
+#endif
 #endif
 
 #ifdef MOZ_NUWA_PROCESS
