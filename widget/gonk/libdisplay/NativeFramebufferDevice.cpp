@@ -36,22 +36,6 @@ inline unsigned int roundUpToPageSize(unsigned int x) {
     return (x + (PAGE_SIZE-1)) & ~(PAGE_SIZE-1);
 }
 
-inline bool WriteValueToFile(int backlightFd, int value)
-{
-    if (backlightFd <= 0) {
-        ALOGE("Invalid fd to control backlight device.");
-        return false;
-    }
-
-    if (lseek(backlightFd, 0, SEEK_SET) >= 0) {
-        char buf[16] = {0};
-        snprintf(buf, sizeof(buf), "%d", value);
-        write(backlightFd, buf, 4);
-    }
-
-    return true;
-}
-
 inline void Transform8888To565_Software(uint8_t* outbuf, const uint8_t* inbuf, int PixelNum)
 {
     uint32_t bytes = PixelNum * 4;
@@ -73,7 +57,7 @@ inline void Transform8888To565(uint8_t* outbuf, const uint8_t* inbuf, int PixelN
 #endif
 }
 
-NativeFramebufferDevice::NativeFramebufferDevice(int aBacklightFd, int aExtFbFd)
+NativeFramebufferDevice::NativeFramebufferDevice(int aExtFbFd)
     : mWidth(320)
     , mHeight(480)
     , mSurfaceformat(HAL_PIXEL_FORMAT_RGBA_8888)
@@ -83,8 +67,6 @@ NativeFramebufferDevice::NativeFramebufferDevice(int aBacklightFd, int aExtFbFd)
     , mMappedAddr(nullptr)
     , mMemLength(0)
     , mGrmodule(nullptr)
-    , mBacklightFd(aBacklightFd)
-    , mBrightness(255)
 {
 }
 
@@ -97,18 +79,6 @@ NativeFramebufferDevice*
 NativeFramebufferDevice::Create()
 {
     char propValue[PROPERTY_VALUE_MAX];
-
-    // Check for dev node path of external screen's backlight.
-    if (property_get("ro.kaios.display.ext_bl_dev",
-          propValue, NULL) <= 0) {
-        return nullptr;
-    }
-
-    int fd = open(propValue, O_RDWR, 0);
-    if (fd < 0) {
-        ALOGE("Failed to open backligth device %s", propValue);
-        return nullptr;
-    }
 
     // Check for dev node path of external screen's framebuffer;
     if (property_get("ro.kaios.display.ext_fb_dev", propValue, NULL) <= 0) {
@@ -134,7 +104,7 @@ NativeFramebufferDevice::Create()
         return nullptr;
     }
 
-    return new NativeFramebufferDevice(fd, fbFd);
+    return new NativeFramebufferDevice(fbFd);
 }
 
 bool
@@ -316,11 +286,6 @@ NativeFramebufferDevice::Close()
         mFd = -1;
     }
 
-    if (mBacklightFd != -1) {
-        close(mBacklightFd);
-        mBacklightFd = -1;
-    }
-
     return true;
 }
 
@@ -353,7 +318,6 @@ NativeFramebufferDevice::EnableScreen(int enabled)
 
     if (!enabled) {
         mode = FB_BLANK_POWERDOWN;
-        WriteValueToFile(mBacklightFd, 0);
     }
 
     {
@@ -369,25 +333,7 @@ NativeFramebufferDevice::EnableScreen(int enabled)
         ret = false;
     }
 
-    if (enabled) {
-        /* Use previous brightness to turn on backlight */
-        WriteValueToFile(mBacklightFd, mBrightness);
-    }
-
     return ret;
-}
-
-bool
-NativeFramebufferDevice::SetBrightness(int brightness)
-{
-    mBrightness = brightness;
-    return WriteValueToFile(mBacklightFd, mBrightness);
-}
-
-int
-NativeFramebufferDevice::GetBrightness()
-{
-    return mBrightness;
 }
 
 } // namespace mozilla

@@ -35,10 +35,6 @@ public:
 
     bool EnableScreen(int enabled);
 
-    bool SetBrightness(int brightness);
-
-    int32_t GetBrightness();
-
     bool IsValid();
 
     // Only be valid after open sucessfully
@@ -48,7 +44,7 @@ public:
     float mXdpi;
 
 private:
-    NativeFramebufferDevice(int aBacklightFd, int aExtFbFd);
+    NativeFramebufferDevice(int aExtFbFd);
     bool Close();
     void DrawSolidColorFrame();
 
@@ -60,8 +56,6 @@ private:
     struct fb_fix_screeninfo mFInfo;
     gralloc_module_t *mGrmodule;
     int32_t mFBSurfaceformat;
-    int32_t mBacklightFd;
-    int32_t mBrightness;
 
     // Locks against both mFd and mIsEnable.
     mutable android::Mutex mMutex;

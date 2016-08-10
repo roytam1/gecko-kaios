@@ -132,6 +132,7 @@ enum LightType {
   eHalLightID_Attention     = 5,
   eHalLightID_Bluetooth     = 6,
   eHalLightID_Wifi          = 7,
+  eHalLightID_ExtBacklight  = 8,
   eHalLightID_Count  // This should stay at the end
 };
 enum LightMode {
@@ -181,6 +182,7 @@ InitLights()
 
     err = hw_get_module(LIGHTS_HARDWARE_MODULE_ID, (hw_module_t const**)&module);
     if (err == 0) {
+      // device module name is defined in hardware/libhardware/include/hardware/lights.h
       sLights[eHalLightID_Backlight]
              = GetDevice(module, LIGHT_ID_BACKLIGHT);
       sLights[eHalLightID_Keyboard]
@@ -197,6 +199,10 @@ InitLights()
              = GetDevice(module, LIGHT_ID_BLUETOOTH);
       sLights[eHalLightID_Wifi]
              = GetDevice(module, LIGHT_ID_WIFI);
+#ifdef LIGHT_ID_SECOND_BACKLIGHT
+      sLights[eHalLightID_ExtBacklight]
+             = GetDevice(module, LIGHT_ID_SECOND_BACKLIGHT);
+#endif
         }
     }
 }
@@ -754,11 +760,6 @@ GetExtScreenEnabled()
 void
 SetExtScreenEnabled(bool aEnabled)
 {
-  char propValue[PROPERTY_VALUE_MAX];
-  if (!property_get("ro.kaios.display.ext_bl_dev", propValue, NULL) > 0) {
-    return;
-  }
-
   uint32_t screenId =
     nsScreenManagerGonk::GetIdFromType(GonkDisplay::DISPLAY_EXTERNAL);
 
@@ -777,13 +778,17 @@ SetExtScreenEnabled(bool aEnabled)
   if (aEnabled && softwareDisplay) {
     softwareDisplay->SetPowerMode(aEnabled);
   }
-
 }
 
 double
 GetExtScreenBrightness()
 {
-  uint32_t brightness = GetGonkDisplay()->GetExtBrightness();
+  LightConfiguration config;
+  LightType light = eHalLightID_ExtBacklight;
+
+  GetLight(light, &config);
+  // backlight is brightness only, so using one of the RGB elements as value.
+  int brightness = config.color & 0xFF;
   return brightness / 255.0;
 }
 
@@ -797,9 +802,17 @@ SetExtScreenBrightness(double brightness)
     return;
   }
 
-  // Convert the value in [0, 1] to an int between 0 and 255,
+  // Convert the value in [0, 1] to an int between 0 and 255 and convert to a color
+  // note that the high byte is FF, corresponding to the alpha channel.
   uint32_t val = static_cast<int>(round(brightness * 255.0));
-  GetGonkDisplay()->SetExtBrightness(val);
+  uint32_t color = (0xff<<24) + (val<<16) + (val<<8) + val;
+
+  LightConfiguration config;
+  config.mode = eHalLightMode_User;
+  config.flash = eHalLightFlash_None;
+  config.flashOnMS = config.flashOffMS = 0;
+  config.color = color;
+  SetLight(eHalLightID_ExtBacklight, config);
 }
 
 bool

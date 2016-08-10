@@ -78,10 +78,6 @@ public:
 
     virtual void SetExtEnabled(bool enabled) = 0;
 
-    virtual int GetExtBrightness() = 0;
-
-    virtual void SetExtBrightness(int brightness) = 0;
-
     typedef void (*OnEnabledCallbackType)(bool enabled);
 
     virtual void OnEnabled(OnEnabledCallbackType callback) = 0;

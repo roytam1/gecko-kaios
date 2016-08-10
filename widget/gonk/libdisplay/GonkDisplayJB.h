@@ -35,10 +35,6 @@ public:
 
     virtual void SetExtEnabled(bool enabled);
 
-    virtual int32_t GetExtBrightness();
-
-    virtual void SetExtBrightness(int32_t brightness);
-
     virtual void OnEnabled(OnEnabledCallbackType callback);
 
     virtual void* GetHWCDevice();

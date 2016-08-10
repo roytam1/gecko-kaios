@@ -301,26 +301,6 @@ GonkDisplayJB::SetExtEnabled(bool enabled)
     }
 }
 
-int32_t
-GonkDisplayJB::GetExtBrightness()
-{
-  if (!mExtFBDevice) {
-    return 0;
-  }
-
-  return mExtFBDevice->GetBrightness();
-}
-
-void
-GonkDisplayJB::SetExtBrightness(int aBrightness)
-{
-  if (!mExtFBDevice) {
-    return;
-  }
-
-  mExtFBDevice->SetBrightness(aBrightness);
-}
-
 void
 GonkDisplayJB::OnEnabled(OnEnabledCallbackType callback)
 {
