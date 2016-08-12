@@ -199,6 +199,9 @@ public:
   static already_AddRefed<Volume> GetVolume(VolumeArray::index_type aIndex);
   static already_AddRefed<Volume> FindVolumeByName(const nsCSubstring& aName);
   static already_AddRefed<Volume> FindAddVolumeByName(const nsCSubstring& aName);
+#if ANDROID_VERSION >= 23
+  static already_AddRefed<Volume> FindAddVolumeByName(const nsCSubstring& aName, const nsCSubstring& aUuid);
+#endif
   static bool RemoveVolumeByName(const nsCSubstring& aName);
   static void InitConfig();
 

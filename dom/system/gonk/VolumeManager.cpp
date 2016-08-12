@@ -166,6 +166,21 @@ VolumeManager::FindAddVolumeByName(const nsCSubstring& aName)
   sVolumeManager->mVolumeArray.AppendElement(vol);
   return vol.forget();
 }
+#if ANDROID_VERSION >= 23
+//static
+already_AddRefed<Volume>
+VolumeManager::FindAddVolumeByName(const nsCSubstring& aName, const nsCSubstring& aUuid)
+{
+  RefPtr<Volume> vol = FindVolumeByName(aName);
+  if (vol) {
+    return vol.forget();
+  }
+  // No volume found, create and add a new one.
+  vol = new Volume(aName, aUuid);
+  sVolumeManager->mVolumeArray.AppendElement(vol);
+  return vol.forget();
+}
+#endif
 
 //static
 bool
@@ -564,10 +579,23 @@ VolumeManager::HandleBroadcast(int aResponseCode, nsCString& aResponseLine)
         if (id.Equals(mVolumeInfoArray[volIndex]->getId())) {
           mVolumeInfoArray[volIndex]->setState(state);
           if (state == VolumeInfo::STATE_MOUNTED) {
-            RefPtr<Volume> vol = VolumeManager::FindAddVolumeByName(NS_LITERAL_CSTRING("sdcard"));
+            RefPtr<Volume> vol = VolumeManager::FindAddVolumeByName(NS_LITERAL_CSTRING("sdcard"), id);
             nsCString fakeResponseLine(id);
             fakeResponseLine.Append(" ");
+            fakeResponseLine.Append(state_str);
+            fakeResponseLine.Append(" ");
             fakeResponseLine.Append(mVolumeInfoArray[volIndex]->getMountPoint());
+            nsCWhitespaceTokenizer tokenizer_tmp(fakeResponseLine);
+            vol->HandleVoldResponse(aResponseCode, tokenizer_tmp);
+            return;
+          } else {
+            RefPtr<Volume> vol = FindVolumeByName(NS_LITERAL_CSTRING("sdcard"));
+            if (!vol) {
+              return;
+            }
+            nsCString fakeResponseLine(id);
+            fakeResponseLine.Append(" ");
+            fakeResponseLine.Append(state_str);
             nsCWhitespaceTokenizer tokenizer_tmp(fakeResponseLine);
             vol->HandleVoldResponse(aResponseCode, tokenizer_tmp);
             return;

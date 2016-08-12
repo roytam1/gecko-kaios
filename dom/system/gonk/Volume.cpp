@@ -88,6 +88,30 @@ Volume::Volume(const nsCSubstring& aName)
   DBG("Volume %s: created", NameStr());
 }
 
+#if ANDROID_VERSION >= 23
+Volume::Volume(const nsCSubstring& aName, const nsCSubstring& aUuid)
+  : mMediaPresent(true),
+    mState(nsIVolume::STATE_INIT),
+    mName(aName),
+    mUuid(aUuid),
+    mMountGeneration(-1),
+    mMountLocked(true),  // Needs to agree with nsVolume::nsVolume
+    mSharingEnabled(false),
+    mFormatRequested(false),
+    mMountRequested(false),
+    mUnmountRequested(false),
+    mCanBeShared(true),
+    mIsSharing(false),
+    mIsFormatting(false),
+    mIsUnmounting(false),
+    mIsRemovable(false),
+    mIsHotSwappable(false),
+    mId(sNextId++)
+{
+  DBG("Volume %s: created", NameStr());
+}
+#endif
+
 void
 Volume::Dump(const char* aLabel) const
 {
@@ -435,7 +459,11 @@ Volume::StartFormat(VolumeResponseCallback* aCallback)
   MOZ_ASSERT(XRE_IsParentProcess());
   MOZ_ASSERT(MessageLoop::current() == XRE_GetIOMessageLoop());
 
+#if ANDROID_VERSION >= 23
+  StartCommand(new VolumeActionCommand(this, "format", "auto", aCallback));
+#else
   StartCommand(new VolumeActionCommand(this, "format", "", aCallback));
+#endif
 }
 
 void
@@ -588,11 +616,20 @@ Volume::HandleVoldResponse(int aResponseCode, nsCWhitespaceTokenizer& aTokenizer
 #if ANDROID_VERSION >= 23
     case ::ResponseCode::VolumeStateChanged: {
       nsDependentCSubstring id(aTokenizer.nextToken());
+      nsresult errCode;
+      nsCString token(aTokenizer.nextToken());
+      STATE newState = (STATE)(token.ToInteger(&errCode));
       nsDependentCSubstring mountpoint(aTokenizer.nextToken());
-      SetMountPoint(mountpoint);
-      mCanBeShared = false;
-      SetState(nsIVolume::STATE_MOUNTED);
-
+      if (newState == VolumeInfo::STATE_MOUNTED) {
+        SetMountPoint(mountpoint);
+        SetState(nsIVolume::STATE_MOUNTED);
+      } else if (newState == VolumeInfo::STATE_EJECTING) {
+        SetState(nsIVolume::STATE_UNMOUNTING);
+      } else if (newState == VolumeInfo::STATE_FORMATTING) {
+        SetState(nsIVolume::STATE_FORMATTING);
+      } else if (newState == VolumeInfo::STATE_UNMOUNTED) {
+        SetState(nsIVolume::STATE_IDLE);
+      }
       break;
     }
 #endif
