@@ -290,6 +290,9 @@ NativeFramebufferDevice::Post(buffer_handle_t buf)
 
     mVInfo.activate = FB_ACTIVATE_VBL;
 
+    // Please refer to KaiOS - Bug 307: FB driver needs fsync operation for
+    // triggering the buffer update.
+    fsync(mFd);
     if(0 > ioctl(mFd, FBIOPUT_VSCREENINFO, &mVInfo)) {
       ALOGE("FBIOPUT_VSCREENINFO failed : error on refresh");
     }
