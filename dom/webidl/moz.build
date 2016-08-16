@@ -831,6 +831,7 @@ GENERATED_EVENTS_WEBIDL_FILES = [
     'RecordErrorEvent.webidl',
     'RingbackToneEvent.webidl',
     'ScrollViewChangeEvent.webidl',
+    'SpeedDialChangeEvent.webidl',
     'StyleRuleChangeEvent.webidl',
     'StyleSheetApplicableStateChangeEvent.webidl',
     'StyleSheetChangeEvent.webidl',

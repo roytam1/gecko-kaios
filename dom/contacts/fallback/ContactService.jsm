@@ -264,6 +264,7 @@ var ContactService = this.ContactService = {
           msg.options.contactId,
           function() {
             mm.sendAsyncMessage("Contacts:SetSpeedDial:Return:OK", { requestID: msg.requestID });
+            this.broadcastMessage("Contacts:SpeedDial:Changed", { speedDial: msg.options.speedDial, reason: 'set' });
           }.bind(this),
           function(aErrorMsg) {
             mm.sendAsyncMessage("Contacts:SetSpeedDial:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg });
@@ -277,6 +278,7 @@ var ContactService = this.ContactService = {
           msg.options.speedDial,
           function() {
             mm.sendAsyncMessage("Contacts:RemoveSpeedDial:Return:OK", { requestID: msg.requestID });
+            this.broadcastMessage("Contacts:SpeedDial:Changed", { speedDial: msg.options.speedDial, reason: 'remove' });
           }.bind(this),
           function(aErrorMsg) {
             mm.sendAsyncMessage("Contacts:RemoveSpeedDial:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg });

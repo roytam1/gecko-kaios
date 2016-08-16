@@ -136,4 +136,5 @@ interface ContactManager : EventTarget {
   DOMRequest removeSpeedDial(DOMString speedDial);
 
   attribute  EventHandler oncontactchange;
+  attribute  EventHandler onspeeddialchange;
 };

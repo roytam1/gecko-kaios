@@ -90,6 +90,14 @@ ContactManager.prototype = {
     return this.__DOM_IMPL__.getEventHandler("oncontactchange");
   },
 
+  set onspeeddialchange(aHandler) {
+    this.__DOM_IMPL__.setEventHandler("onspeeddialchange", aHandler);
+  },
+
+  get onspeeddialchange() {
+    return this.__DOM_IMPL__.getEventHandler("onspeeddialchange");
+  },
+
   _convertContact: function(aContact) {
     let properties = aContact.properties;
     if (properties.photo && properties.photo.length) {
@@ -191,6 +199,15 @@ ContactManager.prototype = {
           let result = this._convertSpeedDials(msg.speedDials);
           Services.DOMRequest.fireSuccess(req.request, result);
         }
+        break;
+      case "Contacts:SpeedDial:Changed":
+        // Fire onspeeddailchange event
+        if (DEBUG) debug("Contacts:SpeedDialChanged: " + msg.speedDial + ", " + msg.reason);
+        let speedDialEvent = new this._window.SpeedDialChangeEvent("speeddialchange", {
+          speedDial: msg.speedDial,
+          reason: msg.reason
+        });
+        this.dispatchEvent(speedDialEvent);
         break;
       case "Contacts:Find:Return:KO":
       case "Contact:Save:Return:KO":
@@ -618,6 +635,7 @@ ContactManager.prototype = {
                               "Contacts:Revision", "Contacts:GetRevision:Return:KO",
                               "Contacts:GetSpeedDials:Return:OK", "Contacts:GetSpeedDials:Return:KO",
                               "Contacts:SetSpeedDial:Return:OK", "Contacts:SetSpeedDial:Return:KO",
+                              "Contacts:SpeedDial:Changed",
                               "Contacts:RemoveSpeedDial:Return:OK", "Contacts:RemoveSpeedDial:Return:KO",]);
 
     let allowCallback = function() {
