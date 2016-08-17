@@ -68,6 +68,13 @@ public:
     mUuid = aUuid;
   }
 
+  enum MountFlags {
+    /* Flag that volume is primary external storage */
+    kPrimary = 1 << 0,
+    /* Flag that volume is visible to normal apps */
+    kVisible = 1 << 1,
+  };
+
   enum STATE
   {
     STATE_UNMOUNTED = 0,
