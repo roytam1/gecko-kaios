@@ -1113,6 +1113,11 @@ BluetoothOppManager::ClientDataHandler(UnixSocketBuffer* aMessage)
   const uint8_t* data = aMessage->GetData();
   uint8_t opCode = data[0];
 
+  if (opCode == 0) {
+    BT_LOGR("Receive invalid OBEX response code 0x%X", opCode);
+    return;
+  }
+
   // Check response code and send out system message as finished if the response
   // code is somehow incorrect.
   uint8_t expectedOpCode = ObexResponseCode::Success;
