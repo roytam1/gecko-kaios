@@ -692,7 +692,7 @@ protected:
    *
    * @see ProcessInvalidationList
    */
-  nsTArray<nsIContent*> mInvalidationList;
+  nsTArray<RefPtr<nsIContent>> mInvalidationList;
 
   /**
    * Holds a list of aria-owns relocations.
