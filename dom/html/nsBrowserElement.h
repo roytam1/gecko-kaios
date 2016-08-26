@@ -123,6 +123,10 @@ public:
 
   bool GetSpatialNavigationEnabled(ErrorResult& aRv);
 
+  void SetTouchPanningSimulationEnabled(bool aEnabled, ErrorResult& aRv);
+
+  bool GetTouchPanningSimulationEnabled(ErrorResult& aRv);
+
   void SetCanTakeFocus(bool aCanTake, ErrorResult& aRv);
 
   bool GetCanTakeFocus(ErrorResult& aRv);

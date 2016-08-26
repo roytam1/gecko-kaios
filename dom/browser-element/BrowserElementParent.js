@@ -1169,6 +1169,19 @@ BrowserElementParent.prototype = {
     return this._frameLoader.spatialNavigationEnabled;
   },
 
+  setTouchPanningSimulationEnabled: defineNoReturnMethod(function(enabled) {
+    this._frameLoader.touchPanningSimulationEnabled = enabled;
+  }),
+
+  getTouchPanningSimulationEnabled: function() {
+    if (!this._isAlive()) {
+      throw Components.Exception("Dead content process",
+                                 Cr.NS_ERROR_DOM_INVALID_STATE_ERR);
+    }
+
+    return this._frameLoader.touchPanningSimulationEnabled;
+  },
+
   setCanTakeFocus: defineNoReturnMethod(function(canTakeFocus) {
     this._frameLoader.canTakeFocus = canTakeFocus;
   }),

@@ -17,7 +17,7 @@ interface nsIDOMElement;
 interface nsITabParent;
 interface nsILoadContext;
 
-[scriptable, builtinclass, uuid(2ef77ac1-f550-47b6-a63b-0199ea5148be)]
+[scriptable, builtinclass, uuid(c50c84cf-9075-4454-8dfc-3ce0760f88c6)]
 interface nsIFrameLoader : nsISupports
 {
   /**
@@ -199,6 +199,12 @@ interface nsIFrameLoader : nsISupports
    * Enable Spatial Navigation on this iframe by setting this value to true.
    */
   [infallible] attribute boolean spatialNavigationEnabled;
+
+  /**
+   * Enable simulation of touch panning on this iframe by setting this value to
+   * true. And true of spatialNavigationEnabled is the pre-condition.
+   */
+  [infallible] attribute boolean touchPanningSimulationEnabled;
 
   /**
    * True if this iframe (document's owner window) can take focus away

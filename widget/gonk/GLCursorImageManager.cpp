@@ -68,6 +68,11 @@ MapCursorState(nsCursor aCursor)
   nsCursor mappedCursor = aCursor;
   switch (mappedCursor) {
   case eCursor_standard:
+  case eCursor_wait:
+  case eCursor_select:
+  case eCursor_hyperlink:
+  case eCursor_spinning:
+  case eCursor_vertical_text:
     break;
   default:
     mappedCursor = eCursor_standard;

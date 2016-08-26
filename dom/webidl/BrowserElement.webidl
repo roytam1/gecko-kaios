@@ -201,6 +201,13 @@ partial interface BrowserElementPrivileged {
    Pref="dom.mozBrowserFramesEnabled",
    CheckAllPermissions="browser"]
   attribute boolean spatialNavigationEnabled;
+
+  // If spatialNavigationEnabled is true and this attribute is also true then
+  // user agent will simulate behavior of touch panning by intercepting hw keys.
+  [Throws,
+   Pref="dom.mozBrowserFramesEnabled",
+   CheckAllPermissions="browser"]
+  attribute boolean touchPanningSimulationEnabled;
 };
 
 partial interface BrowserElementPrivileged {

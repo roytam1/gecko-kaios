@@ -106,6 +106,10 @@ interface nsIBrowserElementAPI : nsISupports
   void setSpatialNavigationEnabled(in boolean enabled);
   boolean getSpatialNavigationEnabled();
 
+  void setTouchPanningSimulationEnabled(in boolean enabled);
+
+  boolean getTouchPanningSimulationEnabled();
+
   void setCanTakeFocus(in boolean enabled);
   boolean getCanTakeFocus();
 

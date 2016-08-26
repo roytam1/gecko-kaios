@@ -343,7 +343,32 @@ parsererror|sourcetext {
 }
 
 div:-moz-native-anonymous.kaios-cursor.std {
-  cursor: url("resource://gre/res/cur_default_24px.png") 4 5, default;
+  cursor: url("resource://gre/res/cur_default_26px.png") 7 5, default;
+  visibility: hidden;
+}
+
+div:-moz-native-anonymous.kaios-cursor.wait {
+  cursor: url("resource://gre/res/cur_wait_26px.png") 2 6, default;
+  visibility: hidden;
+}
+
+div:-moz-native-anonymous.kaios-cursor.select {
+  cursor: url("resource://gre/res/cur_text_26px.png") 14 14, default;
+  visibility: hidden;
+}
+
+div:-moz-native-anonymous.kaios-cursor.link {
+  cursor: url("resource://gre/res/cur_pointer_26px.png") 10 2, default;
+  visibility: hidden;
+}
+
+div:-moz-native-anonymous.kaios-cursor.spinning {
+  cursor: url("resource://gre/res/cur_progress_26px.png") 2 6, default;
+  visibility: hidden;
+}
+
+div:-moz-native-anonymous.kaios-cursor.vertical_text {
+  cursor: url("resource://gre/res/cur_vertical_text_26px.png") 14 14, default;
   visibility: hidden;
 }
 

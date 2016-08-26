@@ -168,6 +168,7 @@ nsFrameLoader::nsFrameLoader(Element* aOwner, bool aNetworkCreated)
   , mObservingOwnerContent(false)
   , mVisible(true)
   , mSpatialNavigationEnabled(false)
+  , mTouchPanningSimulationEnabled(false)
   , mCanTakeFocus(true)
 {
   mRemoteFrame = ShouldUseRemoteProcess();
@@ -3117,6 +3118,33 @@ nsFrameLoader::SetSpatialNavigationEnabled(bool aSpatialNavigationEnabled)
 nsFrameLoader::GetSpatialNavigationEnabled(bool* aSpatialNavigationEnabled)
 {
   *aSpatialNavigationEnabled = mSpatialNavigationEnabled;
+  return NS_OK;
+}
+
+/* [infallible] */ NS_IMETHODIMP
+nsFrameLoader::SetTouchPanningSimulationEnabled(bool aEnabled)
+{
+#ifdef MOZ_WIDGET_GONK
+  __android_log_print(ANDROID_LOG_INFO, "SpatialNavigation",
+    "SetTouchPanningSimulationEnabled: %d", aEnabled);
+#endif //MOZ_WIDGET_GONK
+  if (mTouchPanningSimulationEnabled == aEnabled) {
+    return NS_OK;
+  }
+
+  mTouchPanningSimulationEnabled = aEnabled;
+  nsCOMPtr<nsIObserverService> os = services::GetObserverService();
+  if (os) {
+    os->NotifyObservers(NS_ISUPPORTS_CAST(nsIFrameLoader*, this),
+                        "frameloader-touch-panning-simulation-changed", nullptr);
+  }
+  return NS_OK;
+}
+
+/* [infallible] */ NS_IMETHODIMP
+nsFrameLoader::GetTouchPanningSimulationEnabled(bool* aEnabled)
+{
+  *aEnabled = mTouchPanningSimulationEnabled;
   return NS_OK;
 }
 

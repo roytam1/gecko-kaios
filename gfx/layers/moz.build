@@ -8,6 +8,13 @@ with Files('apz/**'):
     BUG_COMPONENT = ('Core', 'Panning and Zooming')
 
 EXPORTS += [
+    'apz/src/APZUtils.h',
+    'apz/src/AsyncPanZoomController.h',
+    'apz/src/Axis.h',
+    'apz/src/DragTracker.h',
+    'apz/src/InputQueue.h',
+    'apz/src/PotentialCheckerboardDurationTracker.h',
+    'apz/src/TouchCounter.h',
     'basic/BasicCanvasLayer.h',
     'basic/BasicImplData.h',
     'basic/BasicLayers.h',

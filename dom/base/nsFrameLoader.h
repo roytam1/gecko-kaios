@@ -395,6 +395,10 @@ private:
   // True if spatial navigation is active on this iframe.
   bool mSpatialNavigationEnabled : 1;
 
+  // True if simulation of touch panning is active on this iframe.
+  // Note: It is only working when mSpatialNavigationEnable is also true.
+  bool mTouchPanningSimulationEnabled : 1;
+
   // True if this iframe (document's owner window) can take focus away
   // from its embedder.
   bool mCanTakeFocus : 1;

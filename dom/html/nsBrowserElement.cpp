@@ -780,6 +780,35 @@ nsBrowserElement::GetSpatialNavigationEnabled(ErrorResult& aRv)
 }
 
 void
+nsBrowserElement::SetTouchPanningSimulationEnabled(bool aEnabled,
+                                                   ErrorResult& aRv)
+{
+  NS_ENSURE_TRUE_VOID(IsBrowserElementOrThrow(aRv));
+
+  nsresult rv = mBrowserElementAPI->SetTouchPanningSimulationEnabled(aEnabled);
+
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
+  }
+}
+
+bool
+nsBrowserElement::GetTouchPanningSimulationEnabled(ErrorResult& aRv)
+{
+  NS_ENSURE_TRUE(IsBrowserElementOrThrow(aRv), false);
+
+  bool enabled = false;
+  nsresult rv = mBrowserElementAPI->GetTouchPanningSimulationEnabled(&enabled);
+
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
+    return false;
+  }
+
+  return enabled;
+}
+
+void
 nsBrowserElement::SetCanTakeFocus(bool aCanTake, ErrorResult& aRv)
 {
   NS_ENSURE_TRUE_VOID(IsBrowserElementOrThrow(aRv));

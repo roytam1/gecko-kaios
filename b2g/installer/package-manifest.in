@@ -766,7 +766,12 @@
 
 ; [Layout Engine Resources]
 ; Style Sheets, Graphics and other Resources used by the layout engine.
-@RESPATH@/res/cur_default_24px.png
+@RESPATH@/res/cur_default_26px.png
+@RESPATH@/res/cur_pointer_26px.png
+@RESPATH@/res/cur_progress_26px.png
+@RESPATH@/res/cur_text_26px.png
+@RESPATH@/res/cur_vertical_text_26px.png
+@RESPATH@/res/cur_wait_26px.png
 @RESPATH@/res/EditorOverride.css
 @RESPATH@/res/contenteditable.css
 @RESPATH@/res/designmode.css

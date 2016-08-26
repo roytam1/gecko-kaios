@@ -27,7 +27,12 @@ UNIFIED_SOURCES += [
 
 FINAL_LIBRARY = 'xul'
 RESOURCE_FILES += [
-    'res/cur_default_24px.png',
+    'res/cur_default_26px.png',
+    'res/cur_pointer_26px.png',
+    'res/cur_progress_26px.png',
+    'res/cur_text_26px.png',
+    'res/cur_vertical_text_26px.png',
+    'res/cur_wait_26px.png',
     'res/EditorOverride.css',
     'res/grabber.gif',
     'res/table-add-column-after-active.gif',
