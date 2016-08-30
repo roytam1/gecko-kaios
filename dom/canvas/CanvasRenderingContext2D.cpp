@@ -319,9 +319,16 @@ public:
     nsIntRegion fillPaintNeededRegion;
     nsIntRegion strokePaintNeededRegion;
 
-    FilterSupport::ComputeSourceNeededRegions(
-      aCtx->CurrentState().filter, mPostFilterBounds,
-      sourceGraphicNeededRegion, fillPaintNeededRegion, strokePaintNeededRegion);
+    // This should not be empty, but if it is, we want to handle it
+    // rather than crash, as UpdateFilter() call above could have changed
+    // the number of filter primitives.
+    MOZ_ASSERT(!aCtx->CurrentState().filter.mPrimitives.IsEmpty());
+    if (!aCtx->CurrentState().filter.mPrimitives.IsEmpty()) {
+      FilterSupport::ComputeSourceNeededRegions(
+        aCtx->CurrentState().filter, mPostFilterBounds,
+        sourceGraphicNeededRegion, fillPaintNeededRegion,
+        strokePaintNeededRegion);
+    }
 
     mSourceGraphicRect = sourceGraphicNeededRegion.GetBounds();
     mFillPaintRect = fillPaintNeededRegion.GetBounds();
@@ -396,6 +403,7 @@ public:
     AutoRestoreTransform autoRestoreTransform(mFinalTarget);
     mFinalTarget->SetTransform(Matrix());
 
+    MOZ_RELEASE_ASSERT(!mCtx->CurrentState().filter.mPrimitives.IsEmpty());
     gfx::FilterSupport::RenderFilterDescription(
       mFinalTarget, mCtx->CurrentState().filter,
       gfx::Rect(mPostFilterBounds),
