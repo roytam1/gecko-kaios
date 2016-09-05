@@ -224,7 +224,7 @@ public:
       CreateOffscreenCanvasDrawTarget(const mozilla::gfx::IntSize& aSize, mozilla::gfx::SurfaceFormat aFormat);
 
     virtual already_AddRefed<DrawTarget>
-      CreateDrawTargetForData(unsigned char* aData, const mozilla::gfx::IntSize& aSize, 
+      CreateDrawTargetForData(unsigned char* aData, const mozilla::gfx::IntSize& aSize,
                               int32_t aStride, mozilla::gfx::SurfaceFormat aFormat);
 
     /**
@@ -341,7 +341,7 @@ public:
                     gfxTextPerfMetrics* aTextPerf,
                     gfxUserFontSet *aUserFontSet,
                     gfxFloat aDevToCssSize) = 0;
-                                          
+
     /**
      * Look up a local platform font using the full font face name.
      * (Needed to support @font-face src local().)
@@ -573,7 +573,15 @@ public:
      * Should only exist and be valid on the parent process
      */
     virtual mozilla::gfx::VsyncSource* GetHardwareVsync() {
+#ifndef MOZ_WIDGET_GONK
+    /**
+      * KaiOS Bug 761: In Gonk platform, Vsync will be enabled then disabled
+      * shortly for testing whether Vsync is supported before really setting
+      * mVsyncSource. So it is possible that mVsyncSource is nullptr during
+      * vsync fired.
+      */
       MOZ_ASSERT(mVsyncSource != nullptr);
+#endif
       MOZ_ASSERT(XRE_IsParentProcess());
       return mVsyncSource;
     }
@@ -735,7 +743,7 @@ protected:
 
     int8_t  mBidiNumeralOption;
 
-    // whether to always search font cmaps globally 
+    // whether to always search font cmaps globally
     // when doing system font fallback
     int8_t  mFallbackUsesCmaps;
 
