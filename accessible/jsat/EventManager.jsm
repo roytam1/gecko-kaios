@@ -180,7 +180,12 @@ this.EventManager.prototype = {
 
         if (this.editState.editing &&
             !Utils.getState(position).contains(States.FOCUSED)) {
-          aEvent.accessibleDocument.takeFocus();
+          // For the current UX spec, p. 8 of IME v1.0.3,
+          // we don't need to change focus.
+          // Readout module only needs to process the focus element.
+          if (Utils.widgetToolkit != 'gonk') {
+            aEvent.accessibleDocument.takeFocus();
+          }
         }
         this.present(
           Presentation.pivotChanged(position, oldAccessible, reason,
