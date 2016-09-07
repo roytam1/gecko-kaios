@@ -202,7 +202,7 @@ BluetoothOppManager::BluetoothOppManager() : mConnected(false)
                                            , mAbortFlag(false)
                                            , mNewFileFlag(false)
                                            , mPutFinalFlag(false)
-                                           , mSendTransferCompleteFlag(false)
+                                           , mTransferCompleteFlag(true)
                                            , mSuccessFlag(false)
                                            , mIsServer(true)
                                            , mWaitingForConfirmationFlag(false)
@@ -1487,7 +1487,7 @@ BluetoothOppManager::SendObexData(UniquePtr<uint8_t[]> aData, uint8_t aOpcode,
 void
 BluetoothOppManager::FileTransferComplete()
 {
-  if (mSendTransferCompleteFlag) {
+  if (mTransferCompleteFlag) {
     return;
   }
 
@@ -1503,7 +1503,7 @@ BluetoothOppManager::FileTransferComplete()
 
   BT_ENSURE_TRUE_VOID_BROADCAST_SYSMSG(type, parameters);
 
-  mSendTransferCompleteFlag = true;
+  mTransferCompleteFlag = true;
 }
 
 void
@@ -1520,7 +1520,7 @@ BluetoothOppManager::StartFileTransfer()
 
   BT_ENSURE_TRUE_VOID_BROADCAST_SYSMSG(type, parameters);
 
-  mSendTransferCompleteFlag = false;
+  mTransferCompleteFlag = false;
 }
 
 void
@@ -1549,6 +1549,8 @@ BluetoothOppManager::ReceivingFileConfirmation()
   AppendNamedValue(parameters, "contentType", mContentType);
 
   BT_ENSURE_TRUE_VOID_BROADCAST_SYSMSG(type, parameters);
+
+  mTransferCompleteFlag = false;
 }
 
 void

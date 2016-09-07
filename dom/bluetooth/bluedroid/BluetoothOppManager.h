@@ -182,7 +182,7 @@ private:
   /**
    * Set when FileTransferComplete() is called
    */
-  bool mSendTransferCompleteFlag;
+  bool mTransferCompleteFlag;
 
   /**
    * Set when a transfer is successfully completed.
