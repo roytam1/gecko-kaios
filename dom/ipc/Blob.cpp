@@ -1824,7 +1824,7 @@ protected:
 };
 
 class BlobChild::RemoteBlobImpl::CreateStreamHelper final
-  : public nsRunnable
+  : public CancelableRunnable
 {
   Monitor mMonitor;
   RefPtr<RemoteBlobImpl> mRemoteBlobImpl;
@@ -1839,8 +1839,7 @@ public:
   nsresult
   GetStream(nsIInputStream** aInputStream);
 
-  NS_DECL_ISUPPORTS_INHERITED
-  NS_DECL_NSIRUNNABLE
+  NS_IMETHOD Run() override;
 
 private:
   ~CreateStreamHelper()
@@ -2347,8 +2346,6 @@ CreateStreamHelper::GetStream(nsIInputStream** aInputStream)
   if (EventTargetIsOnCurrentThread(baseRemoteBlobImpl->GetActorEventTarget())) {
     RunInternal(baseRemoteBlobImpl, false);
   } else {
-    MOZ_ASSERT(!NS_IsMainThread());
-
     nsCOMPtr<nsIEventTarget> target = baseRemoteBlobImpl->GetActorEventTarget();
     if (!target) {
       target = do_GetMainThread();
@@ -2426,9 +2423,6 @@ CreateStreamHelper::RunInternal(RemoteBlobImpl* aBaseRemoteBlobImpl,
     mDone = true;
   }
 }
-
-NS_IMPL_ISUPPORTS_INHERITED0(BlobChild::RemoteBlobImpl::CreateStreamHelper,
-                             nsRunnable)
 
 NS_IMETHODIMP
 BlobChild::RemoteBlobImpl::
