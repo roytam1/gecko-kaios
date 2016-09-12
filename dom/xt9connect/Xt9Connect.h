@@ -18,9 +18,13 @@ extern "C" {
 #include "et9api.h"
 }
 
-#include "l0109b00.h"
+#include "l0609b00.h" //English US KDB HPD
+#include "l1109b00.h" //English US LDB
+#include "l0612b00.h" //French KDB HPD
+#include "l1212b00.h" //French LDB HPD
+#include "l0610b00.h" //Spanish KDB HPD
+#include "l0810b00.h" //Spanish LDB HPD
 
-#include "l0609b00.h"
 #include "l09255b00.h"
 
 #include <sys/time.h>
@@ -57,6 +61,14 @@ extern "C" {
 
 #endif
 
+#if ET9COREVERSIONNUM == 0x090A0B00
+#define ET9LIDEnglish_US                ((ET9U32)0x0B09)
+#endif
+
+#ifndef ET9_XML_KEYBOARD_LAYOUT
+#define ET9_XML_KEYBOARD_LAYOUT NULL
+#endif
+
 namespace mozilla {
 namespace dom {
 
@@ -68,6 +80,8 @@ static const unsigned char pcMapKeyHPD[] =
 
 static const ET9U32 GENERIC_HQR        = ET9PLIDNull | ET9SKIDATQwertyReg;
 static const ET9U32 ENGLISH_HPD        = ET9PLIDEnglish | ET9SKIDPhonePad;
+static const ET9U32 FRENCH_HPD         = ET9PLIDFrench  | ET9SKIDPhonePad;
+static const ET9U32 SPANISH_HPD        = ET9PLIDSpanish  | ET9SKIDPhonePad;
 static const ET9U16 SEL_LIST_SIZE      = 32;
 static const ET9U32 ASDB_SIZE          = (10 * 1024);
 static const ET9U32 BUFFER_LEN_MAX     = 2000;
@@ -135,8 +149,8 @@ void EditorMoveForward(demoIMEInfo * const pIME);
 
 void AcceptActiveWord(demoIMEInfo * const pIME, const ET9BOOL bAddSpace);
 
-ET9STATUS ET9Handle_IMU_Request(ET9WordSymbInfo * const pWordSymbInfo,
-                                ET9_Request     * const pRequest);
+//ET9STATUS ET9Handle_IMU_Request(ET9WordSymbInfo * const pWordSymbInfo,
+//                                ET9_Request     * const pRequest);
 
 ET9STATUS ET9FARCALL ET9KDBLoad(ET9KDBInfo    * const pKdbInfo,
                                 const ET9U32          dwKdbNum,

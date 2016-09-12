@@ -53,7 +53,6 @@ EditorInitWord(demoIMEInfo * const pIME, nsCString& initWord)
       pEditor->psBuffer);
     pEditor->snCursorPos = pEditor->snBufferLen = initWordLength;
     initWord.Assign("");
-    ET9CursorMoved(&pIME->sWordSymbInfo, 1);
   }
 }
 
@@ -234,8 +233,6 @@ EditorDeleteChar(demoIMEInfo * const pIME)
 
   --pEditor->snCursorPos;
   --pEditor->snBufferLen;
-
-  ET9CursorMoved(&pIME->sWordSymbInfo, 1);
 }
 
 void
@@ -245,7 +242,6 @@ EditorMoveBackward(demoIMEInfo * const pIME)
 
   if (pEditor->snCursorPos > 0) {
     --pEditor->snCursorPos;
-    ET9CursorMoved(&pIME->sWordSymbInfo, 1);
   }
 }
 
@@ -256,7 +252,6 @@ EditorMoveForward(demoIMEInfo * const pIME)
 
   if (pEditor->snCursorPos < pEditor->snBufferLen) {
     ++pEditor->snCursorPos;
-    ET9CursorMoved(&pIME->sWordSymbInfo, 1);
   }
 }
 
@@ -287,56 +282,6 @@ AcceptActiveWord(demoIMEInfo * const pIME, const ET9BOOL bAddSpace)
   ET9ClearAllSymbs(&pIME->sWordSymbInfo);
 }
 
-ET9STATUS
-ET9Handle_IMU_Request(ET9WordSymbInfo * const pWordSymbInfo,
-                                ET9_Request     * const pRequest)
-{
-  demoIMEInfo * const pIME = (demoIMEInfo*)pWordSymbInfo->pPublicExtension;
-
-  if (!pIME  || !pIME->pEditor) {
-    return ET9STATUS_ERROR;
-  }
-
-  switch (pRequest->eType) {
-    case ET9_REQ_AutoAccept:
-      AcceptActiveWord(pIME, pRequest->data.sAutoAcceptInfo.bAddSpace);
-      break;
-
-    case ET9_REQ_AutoCap:
-    {
-      const ET9U32 dwContextLen = (ET9U32)pIME->pEditor->snCursorPos;
-      const ET9U32 dwStartIndex =
-        (dwContextLen <= pRequest->data.sAutoCapInfo.dwMaxBufLen) ? 0 :
-        (dwContextLen - pRequest->data.sAutoCapInfo.dwMaxBufLen - 1);
-
-      pRequest->data.sAutoCapInfo.dwBufLen = dwContextLen - dwStartIndex;
-
-      std::copy(pIME->pEditor->psBuffer+dwStartIndex,
-                pIME->pEditor->psBuffer+(dwStartIndex+pRequest->data.sAutoCapInfo.dwBufLen),
-                pRequest->data.sAutoCapInfo.psBuf);
-    }
-      break;
-
-    case ET9_REQ_BufferContext:
-    {
-      const ET9U32 dwContextLen = (ET9U32)pIME->pEditor->snCursorPos;
-      const ET9U32 dwStartIndex = (dwContextLen <= pRequest->data.sBufferContextInfo.dwMaxBufLen) ? 0 :
-                                  (dwContextLen - pRequest->data.sBufferContextInfo.dwMaxBufLen);
-
-      pRequest->data.sBufferContextInfo.dwBufLen = dwContextLen - dwStartIndex;
-
-      std::copy(pIME->pEditor->psBuffer+dwStartIndex,
-                pIME->pEditor->psBuffer+(dwStartIndex+pRequest->data.sBufferContextInfo.dwBufLen),
-                pRequest->data.sBufferContextInfo.psBuf);
-    }
-      break;
-    default:
-      break;
-  }
-
-  return ET9STATUS_NONE;
-}
-
 ET9STATUS ET9FARCALL
 ET9KDBLoad(ET9KDBInfo*   const pKdbInfo,
            const ET9U32  dwKdbNum,
@@ -347,10 +292,16 @@ ET9KDBLoad(ET9KDBInfo*   const pKdbInfo,
   switch (dwKdbNum) {
     case (6 * 256) +  9 : /* English */
       return ET9KDB_Load_XmlKDB(pKdbInfo, ET9XmlLayoutWidth, ET9XmlLayoutHeight, wPageNum,
-        l0609b00, 3018, NULL, NULL, &nErrorLine);
+          l0609b00, 3018, ET9_XML_KEYBOARD_LAYOUT, NULL, &nErrorLine);
+    case (6 * 256) + 10 : /* Spanish */
+      return ET9KDB_Load_XmlKDB(pKdbInfo, ET9XmlLayoutWidth, ET9XmlLayoutHeight, wPageNum,
+          l0610b00, 3095, ET9_XML_KEYBOARD_LAYOUT, NULL, &nErrorLine);
+    case (6 * 256) + 12 : /* French */
+      return ET9KDB_Load_XmlKDB(pKdbInfo, ET9XmlLayoutWidth, ET9XmlLayoutHeight, wPageNum,
+          l0612b00, 3172, ET9_XML_KEYBOARD_LAYOUT, NULL, &nErrorLine);
     case (9 * 256) + 255 : /* HQR */
       return ET9KDB_Load_XmlKDB(pKdbInfo, ET9XmlLayoutWidth, ET9XmlLayoutHeight, wPageNum,
-        l09255b00, 20492, NULL, NULL, &nErrorLine);
+        l09255b00, 1685, NULL, NULL, &nErrorLine);
     default :
       return ET9STATUS_READ_DB_FAIL;
   }
@@ -362,10 +313,17 @@ ET9AWLdbReadData(ET9AWLingInfo *pLingInfo,
                  ET9U32        *pdwSizeInBytes)
 {
   switch (pLingInfo->pLingCmnInfo->dwLdbNum) {
-  case (1 * 256) + 9 : /* English */
-    *ppbSrc = (ET9U8 ET9FARDATA *)l0109b00; *pdwSizeInBytes = 319969;
-    return ET9STATUS_NONE;
+    case (11 * 256) + 9 : /* English */
+      *ppbSrc = (ET9U8 ET9FARDATA *)l1109b00; *pdwSizeInBytes = 326771;
+      return ET9STATUS_NONE;
+    case (8 * 256) + 10 : /* Spanish */
+      *ppbSrc = (ET9U8 ET9FARDATA *)l0810b00; *pdwSizeInBytes = 349415;
+      return ET9STATUS_NONE;
+    case (12 * 256) + 12 : /* French */
+      *ppbSrc = (ET9U8 ET9FARDATA *)l1212b00; *pdwSizeInBytes = 348099;
+      return ET9STATUS_NONE;
   default :
+    XT9_LOGD("ET9AWLdbReadData = 0x%x", pLingInfo->pLingCmnInfo->dwLdbNum);
     return ET9STATUS_READ_DB_FAIL;
   }
 }
@@ -476,9 +434,9 @@ PrintState(demoIMEInfo *pIME)
       break;
     default:
     case ET9POSTSHIFTMODE_DEFAULT:
-      if (ET9SHIFT_MODE(&pIME->sWordSymbInfo)) {
+      if (ET9SHIFT_MODE(pIME->sKdbInfo.dwStateBits)) {
         XT9_LOGD(" Aa");
-      } else if (ET9CAPS_MODE(&pIME->sWordSymbInfo)) {
+      } else if (ET9CAPS_MODE(pIME->sKdbInfo.dwStateBits)) {
         XT9_LOGD(" A ");
       } else {
         XT9_LOGD(" a ");
@@ -500,9 +458,11 @@ PrintState(demoIMEInfo *pIME)
       break;
   }
 
+/*
   if (ET9NEXTLOCKING_MODE(&pIME->sWordSymbInfo)) {
       XT9_LOGD(" NextLock");
   }
+*/
 
   switch (ET9AW_GetSelectionListMode(&pIME->sLingInfo)) {
     case ET9ASLCORRECTIONMODE_LOW:
@@ -539,7 +499,7 @@ PrintExplicitLearning(demoIMEInfo *pIME)
   ET9BOOL bScanAction;
   ET9BOOL bAskForLanguageDiff;
 
-  if (ET9AWGetExplicitLearning(&pIME->sLingInfo, &bUserAction, &bScanAction, 
+  if (ET9AWGetExplicitLearning(&pIME->sLingInfo, &bUserAction, &bScanAction,
                                &bAskForLanguageDiff) || !bUserAction) {
     return;
   }
@@ -720,12 +680,15 @@ Xt9Connect::Constructor(const GlobalObject& aGlobal,
 nsresult
 Xt9Connect::Init()
 {
+  ET9STATUS LdbValidate_eStatus;
+  ET9STATUS Validate_HPD_eStatus;
+
   memset(&sIME, 0, sizeof(demoIMEInfo));
   memset(&sEditor, 0, sizeof(demoEditorInfo));
 
   sIME.pEditor = &sEditor;
 
-  ET9STATUS SymbInit_eStatus(ET9WordSymbInit(&sIME.sWordSymbInfo, 1, ET9Handle_IMU_Request, &sIME));
+  ET9STATUS SymbInit_eStatus(ET9WordSymbInit(&sIME.sWordSymbInfo, 1));
 
   if (SymbInit_eStatus) {
     XT9_LOGE("Init::SymbInit_eStatus: [%d]", SymbInit_eStatus);
@@ -739,10 +702,24 @@ Xt9Connect::Init()
     return NS_ERROR_FAILURE;
   }
 
-  ET9STATUS LdbValidate_eStatus(ET9AWLdbValidate(&sIME.sLingInfo, ET9PLIDEnglish, &ET9AWLdbReadData));
+  LdbValidate_eStatus = ET9AWLdbValidate(&sIME.sLingInfo, ET9LIDEnglish_US, &ET9AWLdbReadData);
 
   if (LdbValidate_eStatus) {
-    XT9_LOGE("Init::LdbValidate_eStatus: [%d]", LdbValidate_eStatus);
+    XT9_LOGE("Init::LdbValidate_eStatus: [0x%x] [%d]", ET9LIDEnglish_US, LdbValidate_eStatus);
+    return NS_ERROR_FAILURE;
+  }
+
+  LdbValidate_eStatus = ET9AWLdbValidate(&sIME.sLingInfo, ET9LIDFrench_Canada, &ET9AWLdbReadData);
+
+  if (LdbValidate_eStatus) {
+    XT9_LOGE("Init::LdbValidate_eStatus: [0x%x] [%d]", ET9LIDFrench_Canada, LdbValidate_eStatus);
+    return NS_ERROR_FAILURE;
+  }
+
+  LdbValidate_eStatus = ET9AWLdbValidate(&sIME.sLingInfo, ET9LIDSpanish_LatinAmerican, &ET9AWLdbReadData);
+
+  if (LdbValidate_eStatus) {
+    XT9_LOGE("Init::LdbValidate_eStatus: [0x%x] [%d]", ET9LIDSpanish_LatinAmerican, LdbValidate_eStatus);
     return NS_ERROR_FAILURE;
   }
 
@@ -753,7 +730,7 @@ Xt9Connect::Init()
     return NS_ERROR_FAILURE;
   }
 
-  ET9STATUS LdbSetLanguage_eStatus(ET9AWLdbSetLanguage(&sIME.sLingInfo, ET9PLIDEnglish, ET9PLIDNone, 1));
+  ET9STATUS LdbSetLanguage_eStatus(ET9AWLdbSetLanguage(&sIME.sLingInfo, ET9LIDEnglish_US, ET9PLIDNone, 1));
 
   if (LdbSetLanguage_eStatus) {
     XT9_LOGE("Init::LdbSetLanguage_eStatus: [%d]", LdbSetLanguage_eStatus);
@@ -789,7 +766,7 @@ Xt9Connect::Init()
     return NS_ERROR_FAILURE;
   }
 
-  ET9STATUS AWASDBInit_eStatus(ET9AWASDBInit(&sIME.sLingInfo, (ET9AWASDBInfo*)sIME.pbASdb, ASDB_SIZE));
+  ET9STATUS AWASDBInit_eStatus(ET9AWASDBInit(&sIME.sLingInfo, (ET9AWASDBInfo*)sIME.pbASdb, ASDB_SIZE, NULL));
 
   if (AWASDBInit_eStatus) {
     XT9_LOGE("Init::AWASDBInit_eStatus: [%d]", AWASDBInit_eStatus);
@@ -832,10 +809,24 @@ Xt9Connect::Init()
     return NS_ERROR_FAILURE;
   }
 
-  ET9STATUS Validate_HPD_eStatus(ET9KDB_Validate(&sIME.sKdbInfo, ENGLISH_HPD, ET9KDBLoad));
+  Validate_HPD_eStatus = ET9KDB_Validate(&sIME.sKdbInfo, ENGLISH_HPD, ET9KDBLoad);
 
   if (Validate_HPD_eStatus) {
-    XT9_LOGE("Init::Validate_HPD_eStatus: [%d]", Validate_HPD_eStatus);
+    XT9_LOGE("Init::Validate_HPD_eStatus: [0x%x] [%d]", ENGLISH_HPD, Validate_HPD_eStatus);
+    return NS_ERROR_FAILURE;
+  }
+
+  Validate_HPD_eStatus = ET9KDB_Validate(&sIME.sKdbInfo, FRENCH_HPD, ET9KDBLoad);
+
+  if (Validate_HPD_eStatus) {
+    XT9_LOGE("Init::Validate_HPD_eStatus: [0x%x] [%d]", FRENCH_HPD, Validate_HPD_eStatus);
+    return NS_ERROR_FAILURE;
+  }
+
+  Validate_HPD_eStatus = ET9KDB_Validate(&sIME.sKdbInfo, SPANISH_HPD, ET9KDBLoad);
+
+  if (Validate_HPD_eStatus) {
+    XT9_LOGE("Init::Validate_HPD_eStatus: [0x%x] [%d]", SPANISH_HPD, Validate_HPD_eStatus);
     return NS_ERROR_FAILURE;
   }
 
@@ -921,7 +912,7 @@ Xt9Connect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLe
           ET9BOOL bWasFoundInHistory;
 
           ET9AWReselectWord(&sIME.sLingInfo, &sIME.sKdbInfo,
-                            sString.sString, sString.wLen, 0,
+                            sString.sString, sString.wLen,
                             &sIME.bTotWords, &sIME.bActiveWordIndex,
                             &bSelectedWasAutomatic, &bWasFoundInHistory);
 
@@ -965,17 +956,24 @@ Xt9Connect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLe
 
         ET9AWSelLstBuild(&sIME.sLingInfo, &sIME.bTotWords, &sIME.bActiveWordIndex, &sIME.wGestureValue);
 
-        ET9CursorMoved(&sIME.sWordSymbInfo, 1);
-
         break;
       default:
           ET9U8 bKey(CharLookup(&sIME, nInputChar));
 
         if (bKey != 0xFF) {
           if (bKey == 0x80) {
-            const ET9INPUTSHIFTSTATE eShiftState = ET9SHIFT_STATE(&sIME.sWordSymbInfo);
-
+            ET9INPUTSHIFTSTATE eShiftState;
+            if (ET9SHIFT_MODE(sIME.sKdbInfo.dwStateBits)) {
+              eShiftState = ET9SHIFT;
+            } else if (ET9CAPS_MODE(sIME.sKdbInfo.dwStateBits)) {
+              eShiftState = ET9CAPSLOCK;
+            } else {
+              eShiftState = ET9NOSHIFT;
+            }
             ET9AddExplicitSymb(&sIME.sWordSymbInfo, (ET9SYMB)nInputChar, 0, eShiftState, sIME.bActiveWordIndex);
+            if (eShiftState == ET9SHIFT) {
+              ET9SetUnShift(&sIME.sWordSymbInfo);
+            }
           } else {
             ET9SYMB sFunctionKey;
 

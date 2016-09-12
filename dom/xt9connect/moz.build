@@ -1,6 +1,10 @@
-EXPORTS.mozilla.dom += ['l0109b00.h',
-                        'l0609b00.h',
+EXPORTS.mozilla.dom += ['l0609b00.h',
+                        'l0610b00.h',
+                        'l0612b00.h',
+                        'l0810b00.h',
                         'l09255b00.h',
+                        'l1109b00.h',
+                        'l1212b00.h',
                         'Xt9Connect.h']
 
 UNIFIED_SOURCES += ['Xt9Connect.cpp']
