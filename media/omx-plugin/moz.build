@@ -23,10 +23,7 @@ SharedLibrary('omxplugin')
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
     pass
 else:
-    LOCAL_INCLUDES += [
-        'include/ics',
-        'include/ics/media/stagefright/openmax',
-    ]
+    error('KaiOS only supports ANDROID_VERSION >= 23')
 
 if CONFIG['GNU_CXX']:
     # Stagefright header files define many multichar constants.
@@ -61,8 +58,6 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
     ]
 else:
     USE_LIBS += [
-        '/media/omx-plugin/lib/ics/libstagefright/stagefright',
-        '/media/omx-plugin/lib/ics/libutils/utils',
         'videoeditorplayer',
     ]
 

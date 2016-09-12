@@ -15,12 +15,4 @@
 
 #if defined(MOZ_WIDGET_GONK) && ANDROID_VERSION >= 23
 # include "GonkNativeWindowM.h"
-#elif defined(MOZ_WIDGET_GONK) && ANDROID_VERSION >= 21
-# include "GonkNativeWindowLL.h"
-#elif defined(MOZ_WIDGET_GONK) && ANDROID_VERSION >= 19
-# include "GonkNativeWindowKK.h"
-#elif defined(MOZ_WIDGET_GONK) && ANDROID_VERSION >= 17
-# include "GonkNativeWindowJB.h"
-#elif defined(MOZ_WIDGET_GONK) && ANDROID_VERSION == 15
-# include "GonkNativeWindowICS.h"
 #endif

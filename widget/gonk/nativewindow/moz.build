@@ -35,33 +35,8 @@ if CONFIG['ANDROID_VERSION'] >= '23':
         'GonkNativeWindowM.h',
         'IGonkGraphicBufferConsumerM.h',
     ]
-elif CONFIG['ANDROID_VERSION'] >= '21':
-    EXPORTS += [
-        'GonkBufferQueueLL/GonkBufferQueueDefs.h',
-        'GonkBufferQueueLL/GonkBufferQueueLL.h',
-        'GonkBufferQueueLL/GonkBufferQueueProducer.h',
-        'GonkBufferQueueLL/GonkBufferSlot.h',
-        'GonkConsumerBaseLL.h',
-        'GonkNativeWindowLL.h',
-        'IGonkGraphicBufferConsumerLL.h',
-    ]
-elif CONFIG['ANDROID_VERSION'] >= '19':
-    EXPORTS += [
-        'GonkBufferQueueKK.h',
-        'GonkConsumerBaseKK.h',
-        'GonkNativeWindowKK.h',
-        'IGonkGraphicBufferConsumerKK.h',
-    ]
-elif CONFIG['ANDROID_VERSION'] in ('17', '18'):
-    EXPORTS += [
-        'GonkBufferQueueJB.h',
-        'GonkConsumerBaseJB.h',
-        'GonkNativeWindowJB.h',
-    ]
-elif CONFIG['ANDROID_VERSION'] == '15':
-    EXPORTS += [
-        'GonkNativeWindowICS.h',
-    ]
+else:
+    error('KaiOS only supports ANDROID_VERSION >= 23')
 
 if CONFIG['MOZ_B2G_CAMERA'] or CONFIG['MOZ_OMX_DECODER'] or CONFIG['MOZ_WEBRTC']:
     if CONFIG['ANDROID_VERSION'] >= '23':
@@ -77,35 +52,8 @@ if CONFIG['MOZ_B2G_CAMERA'] or CONFIG['MOZ_OMX_DECODER'] or CONFIG['MOZ_WEBRTC']
             'GonkNativeWindowM.cpp',
             'IGonkGraphicBufferConsumerM.cpp',
         ]
-    elif CONFIG['ANDROID_VERSION'] >= '21':
-        SOURCES += [
-            'GonkBufferQueueLL/GonkBufferItem.cpp',
-            'GonkBufferQueueLL/GonkBufferQueueConsumer.cpp',
-            'GonkBufferQueueLL/GonkBufferQueueCore.cpp',
-            'GonkBufferQueueLL/GonkBufferQueueLL.cpp',
-            'GonkBufferQueueLL/GonkBufferQueueProducer.cpp',
-            'GonkBufferQueueLL/GonkBufferSlot.cpp',
-            'GonkConsumerBaseLL.cpp',
-            'GonkNativeWindowLL.cpp',
-            'IGonkGraphicBufferConsumerLL.cpp',
-        ]
-    elif CONFIG['ANDROID_VERSION'] >= '19':
-        SOURCES += [
-            'GonkBufferQueueKK.cpp',
-            'GonkConsumerBaseKK.cpp',
-            'GonkNativeWindowKK.cpp',
-            'IGonkGraphicBufferConsumerKK.cpp',
-        ]
-    elif CONFIG['ANDROID_VERSION'] in ('17', '18'):
-        SOURCES += [
-            'GonkBufferQueueJB.cpp',
-            'GonkConsumerBaseJB.cpp',
-            'GonkNativeWindowJB.cpp',
-        ]
-    elif CONFIG['ANDROID_VERSION'] == '15':
-        SOURCES += [
-            'GonkNativeWindowICS.cpp',
-        ]
+    else:
+        error('KaiOS only supports ANDROID_VERSION >= 23')
 
 if CONFIG['ANDROID_VERSION'] >= '18':
     SOURCES += [
