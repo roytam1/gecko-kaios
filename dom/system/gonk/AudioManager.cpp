@@ -852,7 +852,6 @@ AudioManager::GetMicrophoneMuted(bool* aMicrophoneMuted)
 NS_IMETHODIMP
 AudioManager::SetMicrophoneMuted(bool aMicrophoneMuted)
 {
-  if (!AudioSystem::muteMicrophone(aMicrophoneMuted)) {
 #ifdef MOZ_B2G_RIL
     if (mMuteCallToRIL) {
       // Extra mute request to RIL for specific platform.
@@ -860,11 +859,18 @@ AudioManager::SetMicrophoneMuted(bool aMicrophoneMuted)
       NS_ENSURE_TRUE(ril, NS_ERROR_FAILURE);
       ril->SetMicrophoneMuted(aMicrophoneMuted);
       mIsMicMuted = aMicrophoneMuted;
+      return NS_OK;
     }
 #endif
-    return NS_OK;
+
+  AudioSystem::muteMicrophone(aMicrophoneMuted);
+
+  bool micMuted;
+  AudioSystem::isMicrophoneMuted(&micMuted);
+  if(micMuted != aMicrophoneMuted) {
+    return NS_ERROR_FAILURE;
   }
-  return NS_ERROR_FAILURE;
+  return NS_OK;
 }
 
 NS_IMETHODIMP
