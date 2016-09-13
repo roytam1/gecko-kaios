@@ -192,6 +192,11 @@ public:
   Constructor(const GlobalObject& aGlobal,
               ErrorResult& aRv);
 
+  static already_AddRefed<Xt9Connect>
+  Constructor(const GlobalObject& aGlobal,
+              uint32_t aXt9LID,
+              ErrorResult& aRv);
+
   bool InitEmptyWord() const
   {
       return mEmptyWord;
@@ -247,7 +252,7 @@ public:
 
   explicit Xt9Connect(nsPIDOMWindow* aWindow);
 
-  nsresult Init();
+  nsresult Init(uint32_t aXt9LID);
 
   static void SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLetter, ErrorResult& aRv);
 

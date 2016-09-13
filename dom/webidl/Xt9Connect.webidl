@@ -4,7 +4,8 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-[Constructor]
+[Constructor,
+Constructor(unsigned long et9_lid)]
 interface Xt9Connect {
 	[Throws]
 	void setLetter (unsigned long hexPrefix, unsigned long hexLetter);

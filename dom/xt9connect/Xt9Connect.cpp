@@ -672,13 +672,31 @@ Xt9Connect::Constructor(const GlobalObject& aGlobal,
   }
 
   nsRefPtr<Xt9Connect> xt_object = new Xt9Connect(window);
-  aRv = xt_object->Init();
+  aRv = xt_object->Init(ET9LIDEnglish_US);
+
+  return xt_object.forget();
+}
+
+already_AddRefed<Xt9Connect>
+Xt9Connect::Constructor(const GlobalObject& aGlobal,
+                        uint32_t aXt9LID,
+                        ErrorResult& aRv)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  nsCOMPtr<nsPIDOMWindow> window = do_QueryInterface(aGlobal.GetAsSupports());
+  if (!window) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return nullptr;
+  }
+
+  nsRefPtr<Xt9Connect> xt_object = new Xt9Connect(window);
+  aRv = xt_object->Init(aXt9LID);
 
   return xt_object.forget();
 }
 
 nsresult
-Xt9Connect::Init()
+Xt9Connect::Init(uint32_t aXt9LID)
 {
   ET9STATUS LdbValidate_eStatus;
   ET9STATUS Validate_HPD_eStatus;
@@ -730,10 +748,10 @@ Xt9Connect::Init()
     return NS_ERROR_FAILURE;
   }
 
-  ET9STATUS LdbSetLanguage_eStatus(ET9AWLdbSetLanguage(&sIME.sLingInfo, ET9LIDEnglish_US, ET9PLIDNone, 1));
+  ET9STATUS LdbSetLanguage_eStatus(ET9AWLdbSetLanguage(&sIME.sLingInfo, aXt9LID, ET9PLIDNone, 1));
 
   if (LdbSetLanguage_eStatus) {
-    XT9_LOGE("Init::LdbSetLanguage_eStatus: [%d]", LdbSetLanguage_eStatus);
+    XT9_LOGE("Init::LdbSetLanguage_eStatus: [%d], aXt9LID = 0x%x", LdbSetLanguage_eStatus, aXt9LID);
     return NS_ERROR_FAILURE;
   }
 
