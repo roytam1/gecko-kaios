@@ -51,7 +51,7 @@ if (SpecialPowers.Services.appinfo.name != "B2G") {
   ]);
 }
 
-// H5OS supports Midi playback from Android M.
+// KAIOS supports Midi playback from Android M.
 var androidVersion = SpecialPowers.Cc['@mozilla.org/system-info;1']
                                   .getService(SpecialPowers.Ci.nsIPropertyBag2)
                                   .getProperty('version');
