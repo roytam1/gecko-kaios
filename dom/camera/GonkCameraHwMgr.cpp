@@ -314,6 +314,9 @@ void
 GonkCameraHardware::Close()
 {
   DOM_CAMERA_LOGT("%s:%d : this=%p\n", __func__, __LINE__, (void*)this);
+  if (mClosing) {
+    return;
+  }
 
   mClosing = true;
   if (mCamera.get()) {
