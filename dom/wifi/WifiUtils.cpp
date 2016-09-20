@@ -454,7 +454,7 @@ bool WpaSupplicant::ExecuteCommand(CommandOptions aOptions,
   } else if (aOptions.mCmd.EqualsLiteral("start_supplicant")) {
     aResult.mStatus = mImpl->do_wifi_start_supplicant(GetWifiP2pSupported() ? 1 : 0);
   } else if (aOptions.mCmd.EqualsLiteral("stop_supplicant")) {
-    aResult.mStatus = mImpl->do_wifi_stop_supplicant(0);
+    aResult.mStatus = mImpl->do_wifi_stop_supplicant(GetWifiP2pSupported() ? 1 : 0);
   } else if (aOptions.mCmd.EqualsLiteral("connect_to_supplicant")) {
     aResult.mStatus = mImpl->do_wifi_connect_to_supplicant(aInterface.get());
   } else if (aOptions.mCmd.EqualsLiteral("hostapd_command")) {
