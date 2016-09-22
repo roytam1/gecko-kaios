@@ -458,8 +458,8 @@ NetworkManager.prototype = {
             }
 
             let currentInterfaceLinks = this.networkInterfaceLinks[networkId];
-            let newLinkRoutes = extNetworkInfo.getDnses().concat(
-              extNetworkInfo.httpProxyHost);
+            let newLinkRoutes = network.httpProxyHost ? network.getDnses().concat(network.httpProxyHost) :
+                                                        network.getDnses();
             // If gateways have changed, remove all old routes first.
             return this._handleGateways(networkId, extNetworkInfo.getGateways())
               .then(() => this._updateRoutes(currentInterfaceLinks.linkRoutes,
@@ -850,6 +850,9 @@ NetworkManager.prototype = {
   selectGateway: function(gateways, host) {
     for (let i = 0; i < gateways.length; i++) {
       let gateway = gateways[i];
+      if (!host || !gateway) {
+        continue;
+      }
       if (gateway.match(this.REGEXP_IPV4) && host.match(this.REGEXP_IPV4) ||
           gateway.indexOf(":") != -1 && host.indexOf(":") != -1) {
         return gateway;
