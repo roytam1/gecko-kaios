@@ -3991,7 +3991,7 @@ WifiWorker.prototype = {
     switch(aName) {
       // TODO: Remove function call in Bug 1050147.
       case SETTINGS_WIFI_ENABLED:
-        this.handleWifiEnabled(aResult)
+        this.handleWifiEnabled(aResult);
         break;
       case SETTINGS_WIFI_DEBUG_ENABLED:
         if (aResult === null)
