@@ -19,6 +19,7 @@ uint16_t  Xt9Connect::mTotalWord;
 uint32_t  Xt9Connect::mCursorPosition;
 uint32_t  Xt9Connect::sCursorPosition;
 bool      Xt9Connect::cursorPositionEnabled;
+uint32_t  Xt9Connect::mCurrentEt9LID;
 
 uint32_t GetTickCount() {
   struct timeval tv;
@@ -458,12 +459,6 @@ PrintState(demoIMEInfo *pIME)
       break;
   }
 
-/*
-  if (ET9NEXTLOCKING_MODE(&pIME->sWordSymbInfo)) {
-      XT9_LOGD(" NextLock");
-  }
-*/
-
   switch (ET9AW_GetSelectionListMode(&pIME->sLingInfo)) {
     case ET9ASLCORRECTIONMODE_LOW:
       XT9_LOGD(" NextLock");
@@ -755,6 +750,8 @@ Xt9Connect::Init(uint32_t aXt9LID)
     return NS_ERROR_FAILURE;
   }
 
+  Xt9Connect::mCurrentEt9LID = aXt9LID;
+
   if (sIME.pDLMInfo) {
     free(sIME.pDLMInfo);
     sIME.pDLMInfo = NULL;
@@ -1015,6 +1012,34 @@ Xt9Connect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLe
     }
   }
   PrintScreen(&sIME);
+}
+
+uint32_t
+Xt9Connect::SetLanguage(const uint32_t et9_lid)
+{
+
+  ET9STATUS LdbSetLanguage_eStatus(ET9AWLdbSetLanguage(&sIME.sLingInfo, et9_lid, ET9PLIDNone, 1));
+
+  if (LdbSetLanguage_eStatus) {
+    XT9_LOGE("Init::LdbSetLanguage_eStatus: [%d], aXt9LID = 0x%x", LdbSetLanguage_eStatus, et9_lid);
+    return Xt9Connect::mCurrentEt9LID;
+  }
+
+  Xt9Connect::mCurrentEt9LID = et9_lid;
+
+  if ((sIME.sKdbInfo.dwKdbNum & ET9SLIDMASK) == ET9SKIDPhonePad) {
+    ET9U16  wPageNum;
+    ET9U16  wSecondPageNum;
+    ET9KDB_GetPageNum(&sIME.sKdbInfo, &wPageNum, &wSecondPageNum);
+    ET9KDB_SetKdbNum(&sIME.sKdbInfo, ((sIME.sLingCmnInfo.dwFirstLdbNum & ET9PLIDMASK) |
+    ET9SKIDPhonePad), wPageNum, ((sIME.sLingCmnInfo.dwSecondLdbNum & ET9PLIDMASK) |
+    ET9SKIDPhonePad), wSecondPageNum);
+  }
+
+  ET9AWSelLstBuild(&sIME.sLingInfo, &sIME.bTotWords, &sIME.bActiveWordIndex, &sIME.wGestureValue);
+
+  return Xt9Connect::mCurrentEt9LID;
+
 }
 
 JSObject*

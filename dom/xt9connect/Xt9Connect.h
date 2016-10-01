@@ -18,12 +18,12 @@ extern "C" {
 #include "et9api.h"
 }
 
-#include "l0609b00.h" //English US KDB HPD
-#include "l1109b00.h" //English US LDB
-#include "l0612b00.h" //French KDB HPD
-#include "l1212b00.h" //French LDB HPD
-#include "l0610b00.h" //Spanish KDB HPD
-#include "l0810b00.h" //Spanish LDB HPD
+#include "l0609b00.h" // English US KDB HPD
+#include "l1109b00.h" // English US LDB
+#include "l0612b00.h" // French KDB HPD
+#include "l1212b00.h" // French LDB HPD
+#include "l0610b00.h" // Spanish KDB HPD
+#include "l0810b00.h" // Spanish LDB HPD
 
 #include "l09255b00.h"
 
@@ -149,9 +149,6 @@ void EditorMoveForward(demoIMEInfo * const pIME);
 
 void AcceptActiveWord(demoIMEInfo * const pIME, const ET9BOOL bAddSpace);
 
-//ET9STATUS ET9Handle_IMU_Request(ET9WordSymbInfo * const pWordSymbInfo,
-//                                ET9_Request     * const pRequest);
-
 ET9STATUS ET9FARCALL ET9KDBLoad(ET9KDBInfo    * const pKdbInfo,
                                 const ET9U32          dwKdbNum,
                                 const ET9U16          wPageNum);
@@ -199,45 +196,50 @@ public:
 
   bool InitEmptyWord() const
   {
-      return mEmptyWord;
+    return mEmptyWord;
   }
 
   void SetInitEmptyWord(const bool aResult)
   {
-      mEmptyWord = aResult;
+    mEmptyWord = aResult;
   }
 
   void GetWholeWord(nsAString& aResult)
   {
-      CopyASCIItoUTF16(mWholeWord, aResult);
-      mWholeWord.Assign("");
+    CopyASCIItoUTF16(mWholeWord, aResult);
+    mWholeWord.Assign("");
   }
 
   void SetWholeWord(const nsAString& aResult)
   {
-      LossyCopyUTF16toASCII(aResult, sWholeWord);
+    LossyCopyUTF16toASCII(aResult, sWholeWord);
   }
 
   void GetCandidateWord(nsAString& aResult)
   {
-      CopyASCIItoUTF16(mCandidateWord, aResult);
-      mCandidateWord.Assign("");
+    CopyASCIItoUTF16(mCandidateWord, aResult);
+    mCandidateWord.Assign("");
   }
 
   uint16_t TotalWord() const
   {
-      return mTotalWord;
+    return mTotalWord;
   }
 
   uint32_t CursorPosition() const
   {
-      return mCursorPosition;
+    return mCursorPosition;
   }
 
   void SetCursorPosition(const uint32_t aResult)
   {
-      sCursorPosition = aResult;
-      cursorPositionEnabled = true;
+    sCursorPosition = aResult;
+    cursorPositionEnabled = true;
+  }
+
+  uint32_t CurrentEt9LID() const
+  {
+    return mCurrentEt9LID;
   }
 
   virtual JSObject* WrapObject(JSContext* aCx) MOZ_OVERRIDE;
@@ -247,7 +249,7 @@ public:
 
   nsPIDOMWindow* GetParentObject()
   {
-      return GetOwner();
+    return GetOwner();
   }
 
   explicit Xt9Connect(nsPIDOMWindow* aWindow);
@@ -255,6 +257,7 @@ public:
   nsresult Init(uint32_t aXt9LID);
 
   static void SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLetter, ErrorResult& aRv);
+  static uint32_t SetLanguage(const uint32_t et9_lid);
 
   static bool mEmptyWord;
   static nsCString mWholeWord;
@@ -264,6 +267,7 @@ public:
   static uint32_t  mCursorPosition;
   static uint32_t  sCursorPosition;
   static bool cursorPositionEnabled;
+  static uint32_t mCurrentEt9LID;
 
 private:
   ~Xt9Connect();

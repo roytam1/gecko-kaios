@@ -7,16 +7,20 @@
 [Constructor,
 Constructor(unsigned long et9_lid)]
 interface Xt9Connect {
-	[Throws]
-	void setLetter (unsigned long hexPrefix, unsigned long hexLetter);
+  [Throws]
+  void setLetter (unsigned long hexPrefix, unsigned long hexLetter);
 
-	attribute boolean initEmptyWord;
+  unsigned long setLanguage(unsigned long et9_lid);
 
-	attribute DOMString wholeWord;
+  attribute boolean initEmptyWord;
 
-	readonly attribute DOMString candidateWord;
+  attribute DOMString wholeWord;
 
-	readonly attribute short totalWord;
+  readonly attribute DOMString candidateWord;
 
-	attribute long cursorPosition;
+  readonly attribute short totalWord;
+
+  attribute long cursorPosition;
+
+  readonly attribute unsigned long currentEt9LID;
 };
