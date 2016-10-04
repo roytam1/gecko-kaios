@@ -1048,9 +1048,13 @@ MozMtpDatabase::setObjectPropertyValue(MtpObjectHandle aHandle,
 
   MTP_LOG("renamed '%s' to '%s'", entry->mPath.get(), newFileFullPath.get());
 
+  MtpWatcherNotify(entry, "deleted");
+
   entry->mPath = newFileFullPath;
   entry->mObjectName = BaseName(entry->mPath);
   entry->mDisplayName = entry->mObjectName;
+
+  MtpWatcherNotify(entry, "modified");
 
   return MTP_RESPONSE_OK;
 }
