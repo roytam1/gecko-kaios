@@ -3769,44 +3769,26 @@ this.DOMApplicationRegistry = {
 
     let root = TrustedRootCertificate.index;
 
-    let useReviewerCerts = false;
+    // Use dev certificate to install App from specific origin.
+    let devOrigin;
     try {
-      useReviewerCerts = Services.prefs.
-                           getBoolPref("dom.mozApps.use_reviewer_certs");
-    } catch (ex) { }
+      devOrigin = Services.prefs.getCharPref("apps.serviceCenter.dev_origin");
+    } catch(e) { }
+    // Use dev certificate to verify the app package's signature.
+    // When the app manifest is downloaded from specific url.
+    let manifestUri = Services.io.newURI(aManifestURL, null, null).prePath;
+    if (manifestUri == devOrigin) {
+          root = Ci.nsIX509CertDB.AppServiceCenterDevPublicRoot;
+    }
 
-    // We'll use the reviewer and dev certificates only if the pref is set to
-    // true.
-    if (useReviewerCerts) {
-      let manifestPath = Services.io.newURI(aManifestURL, null, null).path;
-      let isReviewer = false;
-      // There are different reviewer paths for apps & addons so we keep
-      // them in a comma separated preference.
-      try {
-        let reviewerPaths =
-          Services.prefs.getCharPref("dom.apps.reviewer_paths").split(",");
-        isReviewer = reviewerPaths.some(path => { return manifestPath.startsWith(path); });
-      } catch(e) {}
-
-      switch (aInstallOrigin) {
-        case "https://marketplace.firefox.com":
-          root = isReviewer
-               ? Ci.nsIX509CertDB.AppMarketplaceProdReviewersRoot
-               : Ci.nsIX509CertDB.AppMarketplaceProdPublicRoot;
-          break;
-
-        case "https://marketplace-dev.allizom.org":
-          root = isReviewer
-               ? Ci.nsIX509CertDB.AppMarketplaceDevReviewersRoot
-               : Ci.nsIX509CertDB.AppMarketplaceDevPublicRoot;
-          break;
-
-        // The staging server uses the same certificate for both
-        // public and unreviewed apps.
-        case "https://marketplace.allizom.org":
-          root = Ci.nsIX509CertDB.AppMarketplaceStageRoot;
-          break;
-      }
+    // Use test certificate to verify the app package's signature.
+    // When the pref is set to true.
+    let useTestCert = false;
+    try {
+      useTestCert = Services.prefs.getBoolPref("apps.serviceCenter.use_test_key");
+    } catch (e) { }
+    if (useTestCert) {
+          root = Ci.nsIX509CertDB.AppServiceCenterTestRoot;
     }
 
     aCertDb.openSignedAppFileAsync(
