@@ -1212,7 +1212,21 @@ nsFocusManager::SetFocusInner(nsIContent* aNewContent, int32_t aFlags,
     }
     bool subsumes = false;
     focusedPrincipal->Subsumes(newPrincipal, &subsumes);
-    if (!subsumes && !nsContentUtils::LegacyIsCallerChromeOrNativeCode()) {
+
+    // When moving focus between System app and an in-process app, target
+    // window does not have the same or stronger principal because their
+    // origins are different in logic. Granting focus for caller if it has
+    // "embed-apps" permission (i.e. System app).
+    bool isCallerAllowEmbedApps = nsContentUtils::IsSitePermAllow(
+      nsContentUtils::SubjectPrincipal(), "embed-apps");
+
+    // Consider cases of shifting focus from System app to an in-process
+    // app and vice versa.
+    bool hasSameAncestor = IsSameOrAncestor(mFocusedWindow, newWindow) ||
+      IsSameOrAncestor(newWindow, mFocusedWindow);
+
+    if (!subsumes && !nsContentUtils::LegacyIsCallerChromeOrNativeCode() &&
+        !(isCallerAllowEmbedApps && hasSameAncestor)) {
       NS_WARNING("Not allowed to focus the new window!");
       return;
     }
