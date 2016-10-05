@@ -14,7 +14,10 @@
  */
 static const mozilla::LayoutDeviceToScreenScale kViewportMinScale(0.1f);
 static const mozilla::LayoutDeviceToScreenScale kViewportMaxScale(10.0f);
-static const mozilla::CSSIntSize kViewportMinSize(200, 40);
+// The CSS size of a QVGA device is 240x320 (portrait), set the min
+// viewport width to 100 since we allow contents zoom-in up to 2x, which
+// recalculates width to 120.
+static const mozilla::CSSIntSize kViewportMinSize(100, 20);
 static const mozilla::CSSIntSize kViewportMaxSize(10000, 10000);
 
 /**
