@@ -27,11 +27,9 @@ def _create_header(array_name, cert_bytes):
 #   def arrayName(header, cert_filename):
 #     header.write(_create_header("arrayName", cert_filename))
 array_names = [
-  'marketplaceProdPublicRoot',
-  'marketplaceProdReviewersRoot',
-  'marketplaceDevPublicRoot',
-  'marketplaceDevReviewersRoot',
-  'marketplaceStageRoot',
+  'serviceCenterProdPublicRoot',
+  'serviceCenterDevPublicRoot',
+  'serviceCenterTestRoot',
   'trustedAppPublicRoot',
   'trustedAppTestRoot',
   'xpcshellRoot',
