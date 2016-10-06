@@ -69,11 +69,11 @@ using namespace mozilla::layers;
 using namespace mozilla::widget;
 
 static nsWindow *gFocusedWindow = nullptr;
-static GLCursorImageManager sGLCursorImageManager;
 
 NS_IMPL_ISUPPORTS_INHERITED0(nsWindow, nsBaseWidget)
 
 nsWindow::nsWindow()
+    : mGLCursorImageManager(nullptr)
 {
     RefPtr<nsScreenManagerGonk> screenManager = nsScreenManagerGonk::GetInstance();
     screenManager->Initialize();
@@ -661,15 +661,27 @@ nsWindow::SetNativeData(uint32_t aDataType, uintptr_t aVal)
     }
 }
 
+void
+nsWindow::EnsureGLCursorImageManager()
+{
+    if (mGLCursorImageManager) {
+        return;
+    }
+
+    mGLCursorImageManager = new GLCursorImageManager();
+}
+
 NS_IMETHODIMP
 nsWindow::SetCursor(nsCursor aCursor)
 {
     nsBaseWidget::SetCursor(aCursor);
 
-    // Prepare GLCursor if it doesn't exist
-    sGLCursorImageManager.PrepareCursorImage(aCursor, this);
-    sGLCursorImageManager.HasSetCursor();
-    KickOffComposition();
+    if (mGLCursorImageManager) {
+        // Prepare GLCursor if it doesn't exist
+        mGLCursorImageManager->PrepareCursorImage(aCursor, this);
+        mGLCursorImageManager->HasSetCursor();
+        KickOffComposition();
+    }
 
     return NS_OK;
 }
@@ -694,7 +706,8 @@ nsWindow::DispatchEvent(WidgetGUIEvent* aEvent, nsEventStatus& aStatus)
         position.y = position.y < 0 ? 0 :
             (position.y > (mBounds.height) ? (mBounds.height) : position.y);
 
-        sGLCursorImageManager.SetGLCursorPosition(position);
+        EnsureGLCursorImageManager();
+        mGLCursorImageManager->SetGLCursorPosition(position);
 
         if (gfxPrefs::GLCursorEnabled()) {
             // Stop rendering with Hwc because virtual cursor is drawn on the
@@ -705,7 +718,8 @@ nsWindow::DispatchEvent(WidgetGUIEvent* aEvent, nsEventStatus& aStatus)
             KickOffComposition();
         }
     } else if (aEvent->mMessage == eMouseExitFromWidget) {
-        sGLCursorImageManager.SetGLCursorPosition(
+        EnsureGLCursorImageManager();
+        mGLCursorImageManager->SetGLCursorPosition(
             GLCursorImageManager::kOffscreenCursorPosition);
 
         if (gfxPrefs::GLCursorEnabled()) {
@@ -774,15 +788,15 @@ nsWindow::MakeFullScreen(bool aFullScreen, nsIScreen*)
 void
 nsWindow::DrawWindowOverlay(LayerManagerComposite* aManager, LayoutDeviceIntRect aRect)
 {
-    if (aManager) {
+    if (aManager && mGLCursorImageManager) {
       CompositorOGL *compositor = static_cast<CompositorOGL*>(aManager->GetCompositor());
       if (compositor) {
-        if (sGLCursorImageManager.ShouldDrawGLCursor() &&
-            sGLCursorImageManager.IsCursorImageReady(mCursor)) {
+        if (mGLCursorImageManager->ShouldDrawGLCursor() &&
+            mGLCursorImageManager->IsCursorImageReady(mCursor)) {
             GLCursorImageManager::GLCursorImage cursorImage =
-                sGLCursorImageManager.GetGLCursorImage(mCursor);
+                mGLCursorImageManager->GetGLCursorImage(mCursor);
             LayoutDeviceIntPoint position =
-                sGLCursorImageManager.GetGLCursorPosition();
+                mGLCursorImageManager->GetGLCursorPosition();
             compositor->DrawGLCursor(aRect, position,
                                      cursorImage.mSurface,
                                      cursorImage.mImgSize,

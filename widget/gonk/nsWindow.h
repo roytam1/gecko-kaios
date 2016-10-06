@@ -44,6 +44,8 @@ class HwcComposer2D;
 
 class nsScreenGonk;
 
+class GLCursorImageManager;
+
 class nsWindow : public nsBaseWidget
 {
 public:
@@ -174,6 +176,8 @@ protected:
     void DrawWindowOverlay(mozilla::layers::LayerManagerComposite* aManager, LayoutDeviceIntRect aRect);
 
 private:
+    void EnsureGLCursorImageManager();
+
     // This is used by SynthesizeNativeTouchPoint to maintain state between
     // multiple synthesized points
     mozilla::UniquePtr<mozilla::MultiTouchInput> mSynthesizedTouchInput;
@@ -181,6 +185,17 @@ private:
     RefPtr<nsScreenGonk> mScreen;
 
     RefPtr<mozilla::HwcComposer2D> mComposer2D;
+
+    // 1. This member variable would be accessed by main and compositor thread.
+    // 2. Currently there is a lock in GLCursorImageManager to protect it's data
+    //    between two threads already.
+    // 3. For variable itself, currently there is no protection because compo-
+    //    sitor thread will call GLCursorImageManager::ShouldDrawGLCursor() to
+    //    check whether it is ready for drawing. Which is protected as mentioned
+    //    above. On the other hand the timing it becomes nullptr is inside
+    //    destructor of nsWindow and the one access it on compositor thread owns
+    //    strong reference of nsWindow so it is impossible to be happened.
+    nsAutoPtr<GLCursorImageManager> mGLCursorImageManager;
 
     virtual bool IsBelongedToPrimaryScreen() override;
 };
