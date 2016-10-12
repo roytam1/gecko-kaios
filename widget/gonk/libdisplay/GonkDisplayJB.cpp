@@ -423,8 +423,10 @@ GonkDisplayJB::Post(buffer_handle_t buf, int fence, DisplayType aDisplayType)
         // Only support fb1 for certain device, use hwc to control
         // external screen in general case.
         if (mExtFBDevice) {
-            if (fence >= 0)
-                close(fence);
+            if (fence >= 0) {
+                android::sp<Fence> fenceObj = new Fence(fence);
+                fenceObj->waitForever("GonkDisplayJB::Post");
+            }
             return mExtFBDevice->Post(buf);
         }
 
