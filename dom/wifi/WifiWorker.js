@@ -2309,6 +2309,7 @@ function WifiWorker() {
           // The full authentication process is completed, reset the count.
           WifiManager.authenticationFailuresCount = 0;
           WifiManager.loopDetectionCount = 0;
+          WifiManager.associationRejectCount = 0;
           self._startConnectionInfoTimer();
           self._fireEvent("onassociate", { network: netToDOM(self.currentNetwork) });
         };
