@@ -385,6 +385,8 @@ private:
   static void addUpstreamInterface(PARAMS);
   static void removeUpstreamInterface(PARAMS);
   static void setIpForwardingEnabled(PARAMS);
+  static void setInterfaceForwardingEnabled(PARAMS);
+  static void setInterfaceForwardingDisabled(PARAMS);
   static void tetheringStatus(PARAMS);
   static void stopTethering(PARAMS);
   static void startTethering(PARAMS);

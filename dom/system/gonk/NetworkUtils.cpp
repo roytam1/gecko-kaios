@@ -145,6 +145,7 @@ const CommandFunc NetworkUtils::sWifiEnableChain[] = {
   NetworkUtils::addInterfaceToLocalNetwork,
   NetworkUtils::addRouteToLocalNetwork,
   NetworkUtils::setIpForwardingEnabled,
+  NetworkUtils::setInterfaceForwardingEnabled,
   NetworkUtils::tetheringStatus,
   NetworkUtils::startTethering,
   NetworkUtils::setDnsForwarders,
@@ -163,6 +164,7 @@ const CommandFunc NetworkUtils::sWifiDisableChain[] = {
   NetworkUtils::postTetherInterfaceList,
   NetworkUtils::disableNat,
   NetworkUtils::setIpForwardingEnabled,
+  NetworkUtils::setInterfaceForwardingDisabled,
   NetworkUtils::stopTethering,
   NetworkUtils::wifiTetheringSuccess
 };
@@ -171,6 +173,7 @@ const CommandFunc NetworkUtils::sWifiFailChain[] = {
   NetworkUtils::clearWifiTetherParms,
   NetworkUtils::stopSoftAP,
   NetworkUtils::setIpForwardingEnabled,
+  NetworkUtils::setInterfaceForwardingDisabled,
   NetworkUtils::stopTethering
 };
 
@@ -189,6 +192,7 @@ const CommandFunc NetworkUtils::sWifiRetryChain[] = {
   NetworkUtils::addInterfaceToLocalNetwork,
   NetworkUtils::addRouteToLocalNetwork,
   NetworkUtils::setIpForwardingEnabled,
+  NetworkUtils::setInterfaceForwardingEnabled,
   NetworkUtils::tetheringStatus,
   NetworkUtils::startTethering,
   NetworkUtils::setDnsForwarders,
@@ -205,6 +209,7 @@ const CommandFunc NetworkUtils::sUSBEnableChain[] = {
   NetworkUtils::setConfig,
   NetworkUtils::enableNat,
   NetworkUtils::setIpForwardingEnabled,
+  NetworkUtils::setInterfaceForwardingEnabled,
   NetworkUtils::tetherInterface,
   NetworkUtils::addInterfaceToLocalNetwork,
   NetworkUtils::addRouteToLocalNetwork,
@@ -223,6 +228,7 @@ const CommandFunc NetworkUtils::sUSBDisableChain[] = {
   NetworkUtils::removeUpstreamInterface,
   NetworkUtils::disableNat,
   NetworkUtils::setIpForwardingEnabled,
+  NetworkUtils::setInterfaceForwardingDisabled,
   NetworkUtils::stopTethering,
   NetworkUtils::usbTetheringSuccess
 };
@@ -230,6 +236,7 @@ const CommandFunc NetworkUtils::sUSBDisableChain[] = {
 const CommandFunc NetworkUtils::sUSBFailChain[] = {
   NetworkUtils::stopSoftAP,
   NetworkUtils::setIpForwardingEnabled,
+  NetworkUtils::setInterfaceForwardingDisabled,
   NetworkUtils::stopTethering
 };
 
@@ -998,6 +1005,30 @@ void NetworkUtils::setIpForwardingEnabled(CommandChain* aChain,
     }
   }
 
+  doCommand(command, aChain, aCallback);
+}
+
+void NetworkUtils::setInterfaceForwardingEnabled(CommandChain* aChain,
+                                                 CommandCallback aCallback,
+                                                 NetworkResultOptions& aResult)
+{
+  char command[MAX_COMMAND_SIZE];
+  NU_DBG("setInterfaceForwardingEnabled: internal=%s, external=%s", GET_CHAR(mInternalIfname), GET_CHAR(mExternalIfname));
+  // for ipfwd add internal external.
+  snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd add %s %s",
+    GET_CHAR(mInternalIfname), GET_CHAR(mExternalIfname));
+  doCommand(command, aChain, aCallback);
+}
+
+void NetworkUtils::setInterfaceForwardingDisabled(CommandChain* aChain,
+                                                  CommandCallback aCallback,
+                                                  NetworkResultOptions& aResult)
+{
+  char command[MAX_COMMAND_SIZE];
+  NU_DBG("setInterfaceForwardingDisabled: internal=%s, external=%s", GET_CHAR(mInternalIfname), GET_CHAR(mExternalIfname));
+  // for ipfwd remove internal external.
+  snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd remove %s %s",
+    GET_CHAR(mInternalIfname), GET_CHAR(mExternalIfname));
   doCommand(command, aChain, aCallback);
 }
 
@@ -2657,8 +2688,6 @@ CommandResult NetworkUtils::setUSBTethering(NetworkParams& aOptions)
       aOptions.mDns2 = NS_ConvertUTF8toUTF16(interfaceProperties.dns2);
     }
   }
-  dumpParams(aOptions, "USB");
-
   if (SDK_VERSION >= 20) {
     NetIdManager::NetIdInfo netIdInfo;
     if (!mNetIdManager.lookup(aOptions.mExternalIfname, &netIdInfo)) {
@@ -2667,6 +2696,7 @@ CommandResult NetworkUtils::setUSBTethering(NetworkParams& aOptions)
     }
     aOptions.mNetId = netIdInfo.mNetId;
   }
+  dumpParams(aOptions, "USB");
 
   if (enable) {
     NU_DBG("Starting USB Tethering on %s <-> %s",
@@ -3013,6 +3043,9 @@ void NetworkUtils::dumpParams(NetworkParams& aOptions, const char* aType)
   NU_DBG("     dnsserver2: %s", GET_CHAR(mDns2));
   NU_DBG("     internalIfname: %s", GET_CHAR(mInternalIfname));
   NU_DBG("     externalIfname: %s", GET_CHAR(mExternalIfname));
+  if (SDK_VERSION >= 20) {
+    NU_DBG("     netId: %d", GET_FIELD(mNetId));
+  }
   if (!strcmp(aType, "WIFI")) {
     NU_DBG("     wifictrlinterfacename: %s", GET_CHAR(mWifictrlinterfacename));
     NU_DBG("     ssid: %s", GET_CHAR(mSsid));
