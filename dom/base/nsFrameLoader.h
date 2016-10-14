@@ -394,6 +394,10 @@ private:
 
   // True if spatial navigation is active on this iframe.
   bool mSpatialNavigationEnabled : 1;
+
+  // True if this iframe (document's owner window) can take focus away
+  // from its embedder.
+  bool mCanTakeFocus : 1;
 };
 
 #endif

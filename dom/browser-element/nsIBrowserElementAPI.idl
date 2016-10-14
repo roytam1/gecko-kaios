@@ -26,7 +26,7 @@ interface nsIBrowserElementNextPaintListener : nsISupports
  * Interface to the BrowserElementParent implementation. All methods
  * but setFrameLoader throw when the remote process is dead.
  */
-[scriptable, uuid(513db3f5-848b-4a0d-8775-70a51193986a)]
+[scriptable, uuid(0439e452-7ced-422c-ab5c-3a7fa18b3696)]
 interface nsIBrowserElementAPI : nsISupports
 {
   const long FIND_CASE_SENSITIVE = 0;
@@ -105,6 +105,9 @@ interface nsIBrowserElementAPI : nsISupports
 
   void setSpatialNavigationEnabled(in boolean enabled);
   boolean getSpatialNavigationEnabled();
+
+  void setCanTakeFocus(in boolean enabled);
+  boolean getCanTakeFocus();
 
   nsIDOMDOMRequest executeScript(in DOMString script, in jsval options);
 

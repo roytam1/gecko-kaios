@@ -123,6 +123,10 @@ public:
 
   bool GetSpatialNavigationEnabled(ErrorResult& aRv);
 
+  void SetCanTakeFocus(bool aCanTake, ErrorResult& aRv);
+
+  bool GetCanTakeFocus(ErrorResult& aRv);
+
   // Helper
   static void GenerateAllowedAudioChannels(
                  nsPIDOMWindowInner* aWindow,

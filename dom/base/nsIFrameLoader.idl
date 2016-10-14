@@ -17,7 +17,7 @@ interface nsIDOMElement;
 interface nsITabParent;
 interface nsILoadContext;
 
-[scriptable, builtinclass, uuid(a1ec2e84-e6d7-4804-bc2d-d2b97c8ee9d4)]
+[scriptable, builtinclass, uuid(2ef77ac1-f550-47b6-a63b-0199ea5148be)]
 interface nsIFrameLoader : nsISupports
 {
   /**
@@ -201,9 +201,14 @@ interface nsIFrameLoader : nsISupports
   [infallible] attribute boolean spatialNavigationEnabled;
 
   /**
-   * Find out whether the owner content really is a mozbrowser or app frame
-   * Especially, a widget frame is regarded as an app frame.  <xul:browser> is
-   * not considered to be a mozbrowser frame.
+   * True if this iframe (document's owner window) can take focus away
+   * from its embedder.
+   */
+  [infallible] attribute boolean canTakeFocus;
+
+  /**
+   * Find out whether the owner content really is a browser or app frame
+   * Especially, a widget frame is regarded as an app frame.
    */
   readonly attribute boolean ownerIsMozBrowserOrAppFrame;
 

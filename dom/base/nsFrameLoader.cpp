@@ -168,6 +168,7 @@ nsFrameLoader::nsFrameLoader(Element* aOwner, bool aNetworkCreated)
   , mObservingOwnerContent(false)
   , mVisible(true)
   , mSpatialNavigationEnabled(false)
+  , mCanTakeFocus(true)
 {
   mRemoteFrame = ShouldUseRemoteProcess();
 }
@@ -3116,6 +3117,24 @@ nsFrameLoader::SetSpatialNavigationEnabled(bool aSpatialNavigationEnabled)
 nsFrameLoader::GetSpatialNavigationEnabled(bool* aSpatialNavigationEnabled)
 {
   *aSpatialNavigationEnabled = mSpatialNavigationEnabled;
+  return NS_OK;
+}
+
+/* [infallible] */ NS_IMETHODIMP
+nsFrameLoader::SetCanTakeFocus(bool aCanTakeFocus)
+{
+  if (mCanTakeFocus == aCanTakeFocus) {
+    return NS_OK;
+  }
+
+  mCanTakeFocus = aCanTakeFocus;
+  return NS_OK;
+}
+
+/* [infallible] */ NS_IMETHODIMP
+nsFrameLoader::GetCanTakeFocus(bool* aCanTakeFocus)
+{
+  *aCanTakeFocus = mCanTakeFocus;
   return NS_OK;
 }
 

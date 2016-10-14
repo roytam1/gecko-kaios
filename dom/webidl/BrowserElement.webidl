@@ -28,21 +28,29 @@ BrowserElement implements BrowserElementPrivileged;
 
 [NoInterfaceObject]
 interface BrowserElementCommon {
+  // Change the vibility state which its owner has set on (embedder calls
+  // iframe.setVisible()), may update its document's visibility and
+  // fire mozbrowservisibilitychange event.
   [Throws,
    Pref="dom.mozBrowserFramesEnabled",
    CheckAnyPermissions="browser embed-widgets"]
   void setVisible(boolean visible);
 
+  // Return the vibility state of its document.
   [Throws,
    Pref="dom.mozBrowserFramesEnabled",
    CheckAnyPermissions="browser embed-widgets"]
   DOMRequest getVisible();
 
+  // Change the vibility state which its owner has set on, will affect the
+  // process priority.
   [Throws,
    Pref="dom.mozBrowserFramesEnabled",
    CheckAnyPermissions="browser embed-widgets"]
   void setActive(boolean active);
 
+  // Return the vibility state which its owner has set on, throw if this
+  // content process has dead.
   [Throws,
    Pref="dom.mozBrowserFramesEnabled",
    CheckAnyPermissions="browser embed-widgets"]
@@ -193,4 +201,14 @@ partial interface BrowserElementPrivileged {
    Pref="dom.mozBrowserFramesEnabled",
    CheckAllPermissions="browser"]
   attribute boolean spatialNavigationEnabled;
+};
+
+partial interface BrowserElementPrivileged {
+  // Default to true, setting this value to false makes this browser
+  // element (iframe) becomes non-focusable. Active state and visibility
+  // state are not affected.
+  [Throws,
+   Pref="dom.mozBrowserFramesEnabled",
+   CheckAllPermissions="browser"]
+  attribute boolean canTakeFocus;
 };

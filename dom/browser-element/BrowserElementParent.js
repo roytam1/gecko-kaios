@@ -1169,6 +1169,19 @@ BrowserElementParent.prototype = {
     return this._frameLoader.spatialNavigationEnabled;
   },
 
+  setCanTakeFocus: defineNoReturnMethod(function(canTakeFocus) {
+    this._frameLoader.canTakeFocus = canTakeFocus;
+  }),
+
+  getCanTakeFocus: function() {
+    if (!this._isAlive()) {
+      throw Components.Exception("Dead content process",
+                                 Cr.NS_ERROR_DOM_INVALID_STATE_ERR);
+    }
+
+    return this._frameLoader.canTakeFocus;
+  },
+
   getAudioChannelVolume: function(aAudioChannel) {
     return this._sendDOMRequest('get-audio-channel-volume',
                                 {audioChannel: aAudioChannel});

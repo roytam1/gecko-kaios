@@ -779,6 +779,34 @@ nsBrowserElement::GetSpatialNavigationEnabled(ErrorResult& aRv)
   return enabled;
 }
 
+void
+nsBrowserElement::SetCanTakeFocus(bool aCanTake, ErrorResult& aRv)
+{
+  NS_ENSURE_TRUE_VOID(IsBrowserElementOrThrow(aRv));
+
+  nsresult rv = mBrowserElementAPI->SetCanTakeFocus(aCanTake);
+
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
+  }
+}
+
+bool
+nsBrowserElement::GetCanTakeFocus(ErrorResult& aRv)
+{
+  NS_ENSURE_TRUE(IsBrowserElementOrThrow(aRv), false);
+
+  bool canTakeFocus = true;
+  nsresult rv = mBrowserElementAPI->GetCanTakeFocus(&canTakeFocus);
+
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
+    return false;
+  }
+
+  return canTakeFocus;
+}
+
 already_AddRefed<DOMRequest>
 nsBrowserElement::ExecuteScript(const nsAString& aScript,
                                 const BrowserElementExecuteScriptOptions& aOptions,
