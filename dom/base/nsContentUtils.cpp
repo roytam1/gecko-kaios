@@ -6171,6 +6171,27 @@ nsContentUtils::IsUserFocusIgnored(nsINode* aNode)
 }
 
 bool
+nsContentUtils::BrowserFrameCanTakeFocus(nsINode* aNode)
+{
+  nsCOMPtr<nsIMozBrowserFrame> browserFrame = do_QueryInterface(aNode);
+  if (browserFrame &&
+      browserFrame->GetReallyIsBrowserOrApp()) {
+    nsCOMPtr<nsIFrameLoaderOwner> flo = do_QueryInterface(browserFrame);
+    RefPtr<nsFrameLoader> fl;
+    if (flo) {
+      fl = flo->GetFrameLoader();
+    }
+    if (fl) {
+      bool canTake = true;
+      fl->GetCanTakeFocus(&canTake);
+      return canTake;
+    }
+  }
+
+  return true;
+}
+
+bool
 nsContentUtils::HasScrollgrab(nsIContent* aContent)
 {
   nsGenericHTMLElement* element = nsGenericHTMLElement::FromContentOrNull(aContent);

@@ -1561,6 +1561,15 @@ nsFocusManager::CheckIfFocusable(nsIContent* aContent, uint32_t aFlags)
   if (!shell)
     return nullptr;
 
+  // When trying to set focus to an iframe element, check if the value of
+  // canTakeFocus has set to false by its embedder. The default of
+  // canTakeFocus is true, and access to this api is provided by
+  // mozbrowser/mozapp iframe only.
+  if (!nsContentUtils::BrowserFrameCanTakeFocus(aContent)) {
+    LOGCONTENT("Cannot focus %s due to the block of its embedder.", aContent);
+    return nullptr;
+  }
+
   // the root content can always be focused,
   // except in userfocusignored context.
   if (aContent == doc->GetRootElement())

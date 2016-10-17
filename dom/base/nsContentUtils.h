@@ -2071,6 +2071,11 @@ public:
   static bool IsUserFocusIgnored(nsINode* aNode);
 
   /**
+   * Returns true if aNode is browser frame and its canTakeFocus is true.
+   */
+  static bool BrowserFrameCanTakeFocus(nsINode* aNode);
+
+  /**
    * Returns if aContent has the 'scrollgrab' property.
    * aContent may be null (in this case false is returned).
    */
