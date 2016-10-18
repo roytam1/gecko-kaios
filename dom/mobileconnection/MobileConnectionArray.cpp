@@ -39,6 +39,15 @@ MobileConnectionArray::MobileConnectionArray(nsPIDOMWindowInner* aWindow)
 
 MobileConnectionArray::~MobileConnectionArray()
 {
+  uint32_t len = mMobileConnections.Length();
+  for (uint32_t i = 0; i < len; ++i) {
+    if (!mMobileConnections[i]) {
+      continue;
+    }
+
+    mMobileConnections[i]->Shutdown();
+    mMobileConnections[i] = nullptr;
+  }
 }
 
 nsPIDOMWindowInner*

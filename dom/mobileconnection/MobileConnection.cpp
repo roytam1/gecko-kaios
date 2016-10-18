@@ -183,6 +183,11 @@ MobileConnection::Shutdown()
     mListener->Disconnect();
     mListener = nullptr;
   }
+
+  if (mImsHandler) {
+    mImsHandler->Shutdown();
+    mImsHandler = nullptr;
+  }
 }
 
 MobileConnection::~MobileConnection()

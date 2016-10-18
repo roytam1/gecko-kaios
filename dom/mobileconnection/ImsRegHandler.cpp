@@ -71,6 +71,15 @@ ImsRegHandler::~ImsRegHandler()
 }
 
 void
+ImsRegHandler::DisconnectFromOwner()
+{
+  DOMEventTargetHelper::DisconnectFromOwner();
+  // Event listeners can't be handled anymore, so we can shutdown
+  // the MobileConnection.
+  Shutdown();
+}
+
+void
 ImsRegHandler::Shutdown()
 {
   if (mHandler) {

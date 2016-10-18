@@ -29,6 +29,9 @@ public:
 
   ImsRegHandler(nsPIDOMWindowInner *aWindow, nsIImsRegHandler *aHandler);
 
+  virtual void
+  DisconnectFromOwner() MOZ_OVERRIDE;
+
   // WrapperCache
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
@@ -54,13 +57,13 @@ public:
   void
   GetUnregisteredReason(nsString& aReason) const;
 
+  void
+  Shutdown();
+
   IMPL_EVENT_HANDLER(capabilitychange)
 
 private:
   ~ImsRegHandler();
-
-  void
-  Shutdown();
 
   void
   UpdateCapability(int16_t aCapability, const nsAString& aReason);
