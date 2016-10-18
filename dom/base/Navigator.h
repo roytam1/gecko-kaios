@@ -200,6 +200,7 @@ public:
   already_AddRefed<Promise> HasFeature(const nsAString &aName,
                                        ErrorResult& aRv);
 
+  bool FlipOpened();
   bool Vibrate(uint32_t aDuration);
   bool Vibrate(const nsTArray<uint32_t>& aDuration);
   uint32_t MaxTouchPoints();

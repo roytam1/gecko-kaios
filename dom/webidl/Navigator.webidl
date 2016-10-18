@@ -481,3 +481,8 @@ partial interface Navigator {
 interface NavigatorConcurrentHardware {
   readonly attribute unsigned long long hardwareConcurrency;
 };
+
+partial interface Navigator {
+  [AvailableIn=CertifiedApps]
+  readonly attribute boolean flipOpened;
+};

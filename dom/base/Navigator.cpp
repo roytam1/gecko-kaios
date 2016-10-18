@@ -7,6 +7,7 @@
 // Needs to be first.
 #include "base/basictypes.h"
 
+#include <fcntl.h>
 #include "Navigator.h"
 #include "nsIXULAppInfo.h"
 #include "nsPluginArray.h"
@@ -874,6 +875,29 @@ Navigator::RemoveIdleObserver(MozIdleObserver& aIdleObserver, ErrorResult& aRv)
   if (NS_FAILED(mWindow->UnregisterIdleObserver(obs))) {
     NS_WARNING("Failed to remove idle observer.");
   }
+}
+
+bool
+Navigator::FlipOpened()
+{
+  char status, propValue[PROPERTY_VALUE_MAX];
+
+  if (property_get("ro.kaios.flipstatus", propValue, NULL) <= 0) {
+    return true;
+  }
+
+  int fd = open(propValue, O_RDONLY);
+  if (fd < 0) {
+    return true;
+  }
+
+  if (read (fd, &status, sizeof(status)) < 0) {
+    close(fd);
+    return true;
+  }
+
+  close(fd);
+  return !atoi(&status);
 }
 
 bool
