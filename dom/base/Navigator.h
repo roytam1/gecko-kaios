@@ -200,7 +200,9 @@ public:
   already_AddRefed<Promise> HasFeature(const nsAString &aName,
                                        ErrorResult& aRv);
 
+#ifdef MOZ_WIDGET_GONK
   bool FlipOpened();
+#endif
   bool Vibrate(uint32_t aDuration);
   bool Vibrate(const nsTArray<uint32_t>& aDuration);
   uint32_t MaxTouchPoints();
