@@ -119,7 +119,7 @@ var WifiManager = (function() {
   function getStartupPrefs() {
     return {
       sdkVersion: parseInt(libcutils.property_get("ro.build.version.sdk"), 10),
-      unloadDriverEnabled: libcutils.property_get("ro.moz.wifi.unloaddriver") === "1",
+      unloadDriverEnabled: libcutils.property_get("ro.moz.wifi.unloaddriver", "1"),
       schedScanRecovery: libcutils.property_get("ro.moz.wifi.sched_scan_recover") === "false" ? false : true,
       driverDelay: libcutils.property_get("ro.moz.wifi.driverDelay"),
       p2pSupported: libcutils.property_get("ro.moz.wifi.p2p_supported") === "1",
