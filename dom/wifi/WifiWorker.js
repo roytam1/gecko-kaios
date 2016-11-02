@@ -80,8 +80,6 @@ const NETWORK_INTERFACE_DOWN = "down";
 
 const DEFAULT_WLAN_INTERFACE = "wlan0";
 
-const DRIVER_READY_WAIT = 2000;
-
 const SUPP_PROP = "init.svc.wpa_supplicant";
 const WPA_SUPPLICANT = "wpa_supplicant";
 const DHCP_PROP = "init.svc.dhcpcd";
@@ -183,7 +181,7 @@ var WifiManager = (function() {
     manager.ifname = DEFAULT_WLAN_INTERFACE;
   }
   manager.schedScanRecovery = schedScanRecovery;
-  manager.driverDelay = driverDelay ? parseInt(driverDelay, 10) : DRIVER_READY_WAIT;
+  manager.driverDelay = driverDelay ? parseInt(driverDelay, 10) : 0;
 
   // Regular Wifi stuff.
   var netUtil = WifiNetUtil(controlMessage);
@@ -1127,14 +1125,13 @@ var WifiManager = (function() {
                 startSupplicantInternal();
               });
             }
-            // Driver startup on certain platforms takes longer than it takes for us
-            // to return from loadDriver, so wait 2 seconds before starting
-            // the supplicant to give it a chance to start.
-            if (manager.driverDelay > 0) {
-              createWaitForDriverReadyTimer(doStartSupplicant);
-            } else {
-              doStartSupplicant();
-            }
+            // Driver delay timer: Some platform driver startup takes longer
+            // than it takes for us to return from loadDriver, so oem can use
+            // property "ro.moz.wifi.driverDelay" to change it. Default value
+            // is 0.
+            (manager.driverDelay > 0)
+              ? createWaitForDriverReadyTimer(doStartSupplicant)
+              : doStartSupplicant();
           });
         });
       });
@@ -1246,10 +1243,13 @@ var WifiManager = (function() {
           });
         }
 
-        // Driver startup on certain platforms takes longer than it takes
-        // for us to return from loadDriver, so wait 2 seconds before
-        // turning on Wifi tethering.
-        createWaitForDriverReadyTimer(doStartWifiTethering);
+        // Driver delay timer: Some platform driver startup takes longer
+        // than it takes for us to return from loadDriver, so oem can use
+        // property "ro.moz.wifi.driverDelay" to change it. Default value
+        // is 0.
+        (manager.driverDelay > 0)
+          ? createWaitForDriverReadyTimer(doStartWifiTethering)
+          : doStartWifiTethering();
       });
     } else {
       cancelWifiHotspotStatusTimer();
