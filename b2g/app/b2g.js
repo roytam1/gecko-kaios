@@ -1159,3 +1159,6 @@ pref("extensions.blocklist.detailsURL", "https://www.mozilla.com/%LOCALE%/blockl
 #ifdef MOZ_GRAPHENE
 #include ../graphene/graphene.js
 #endif
+// Google geoCoding URL.
+// format as https://maps.googleapis.com/maps/api/geocode/json?latlng=<lat>,<lon>&key=<key>
+pref("google.geocoding.URL", "https://maps.googleapis.com/maps/api/geocode/json?latlng=");

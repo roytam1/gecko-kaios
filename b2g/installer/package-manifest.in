@@ -230,6 +230,7 @@
 @RESPATH@/components/filepicker.xpt
 #endif
 @RESPATH@/components/find.xpt
+@RESPATH@/components/geocoding.xpt
 @RESPATH@/components/gfx.xpt
 @RESPATH@/components/hal.xpt
 @RESPATH@/components/html5.xpt
@@ -618,6 +619,8 @@
 @RESPATH@/components/cryptoComponents.manifest
 @RESPATH@/components/CaptivePortalDetectComponents.manifest
 @RESPATH@/components/captivedetect.js
+@RESPATH@/components/geocoding.js
+@RESPATH@/components/GeoCodingComponents.manifest
 @RESPATH@/components/TelemetryStartup.js
 @RESPATH@/components/TelemetryStartup.manifest
 @RESPATH@/components/XULStore.js
