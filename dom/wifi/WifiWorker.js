@@ -25,6 +25,7 @@ const WIFIWORKER_CID        = Components.ID("{a14e8977-d259-433a-a88d-58dd44657e
 const WIFIWORKER_WORKER     = "resource://gre/modules/wifi_worker.js";
 
 const kMozSettingsChangedObserverTopic   = "mozsettings-changed";
+const kScreenStateChangedTopic           = "screen-state-changed";
 
 const MAX_RETRIES_ON_AUTHENTICATION_FAILURE = 3;
 const MAX_SUPPLICANT_LOOP_ITERATIONS = 4;
@@ -273,26 +274,37 @@ var WifiManager = (function() {
     });
   }
 
-  // A note about background scanning:
-  // Normally, background scanning shouldn't be necessary as wpa_supplicant
-  // has the capability to automatically schedule its own scans at appropriate
-  // intervals. However, with some drivers, this appears to get stuck after
-  // three scans, so we enable the driver's background scanning to work around
-  // that when we're not connected to any network. This ensures that we'll
-  // automatically reconnect to networks if one falls out of range.
-  var reEnableBackgroundScan = false;
+  var screenOn = false;
+  function handleScreenStateChanged(enabled) {
+    screenOn = enabled;
+    if (screenOn) {
+      enableBackgroundScan(false);
+    } else {
+      if (manager.state === "ASSOCIATING" ||
+          manager.state === "ASSOCIATED" ||
+          manager.state === "FOUR_WAY_HANDSHAKE" ||
+          manager.state === "GROUP_HANDSHAKE" ||
+          manager.state === "COMPLETED") {
+        enableBackgroundScan(false);
+      } else {
+        enableBackgroundScan(true);
+      }
+    }
+  }
 
-  // NB: This is part of the internal API.
-  manager.backgroundScanEnabled = false;
-  function setBackgroundScan(enable, callback) {
-    var doEnable = (enable === "ON");
-    if (doEnable === manager.backgroundScanEnabled) {
-      callback(false, true);
-      return;
+  /* PNO(Preferred Network Offload): device will search user known networks if device disconnected and screen off.
+   * It will only work in wlan FW without waking system up.
+   * If wlan FW scan match ssid, it will report to supplicant and wakeup system to reconnect the network.*/
+  function enableBackgroundScan(enable, callback) {
+    if (enable) {
+      notify("enableAllNetworks");
     }
 
-    manager.backgroundScanEnabled = doEnable;
-    wifiCommand.setBackgroundScan(manager.backgroundScanEnabled, callback);
+    wifiCommand.setBackgroundScan(enable, function(success) {
+      if (callback) {
+        callback(success);
+      }
+    });
   }
 
   function scan(forceActive, callback) {
@@ -487,14 +499,23 @@ var WifiManager = (function() {
       return false;
     }
 
-    // Stop background scanning if we're trying to connect to a network.
-    if (manager.backgroundScanEnabled &&
-        (fields.state === "ASSOCIATING" ||
-         fields.state === "ASSOCIATED" ||
-         fields.state === "FOUR_WAY_HANDSHAKE" ||
-         fields.state === "GROUP_HANDSHAKE" ||
-         fields.state === "COMPLETED")) {
-      setBackgroundScan("OFF", function() {});
+    // Enable background scan when device disconnected and screen off.
+    // Disable background scan when device connecting and screen off.
+    if(!screenOn) {
+      if ((manager.state === "ASSOCIATING" ||
+           manager.state === "ASSOCIATED" ||
+           manager.state === "FOUR_WAY_HANDSHAKE" ||
+           manager.state === "GROUP_HANDSHAKE" ||
+           manager.state === "COMPLETED") &&
+           fields.state === "DISCONNECTED") {
+        enableBackgroundScan(true);
+      } else if (fields.state === "ASSOCIATING" ||
+                 fields.state === "ASSOCIATED" ||
+                 fields.state === "FOUR_WAY_HANDSHAKE" ||
+                 fields.state === "GROUP_HANDSHAKE" ||
+                 fields.state === "COMPLETED") {
+        enableBackgroundScan(false);
+      }
     }
 
     fields.prevState = manager.state;
@@ -903,11 +924,10 @@ var WifiManager = (function() {
     }
     if (eventData.indexOf("CTRL-EVENT-SCAN-RESULTS") === 0) {
       debug("Notifying of scan results available");
-      if (reEnableBackgroundScan) {
-        reEnableBackgroundScan = false;
-        setBackgroundScan("ON", function() {});
-      }
       manager.handlePostWifiScan();
+      if (!screenOn && manager.state === "SCANNING") {
+        enableBackgroundScan(true);
+      }
       notify("scanresultsavailable");
       return true;
     }
@@ -967,6 +987,9 @@ var WifiManager = (function() {
     });
     // WPA supplicant already connected.
     manager.setPowerSavingMode(true);
+    manager.setScanInterval(
+      parseInt(libcutils.property_get("ro.moz.wifi.scan_interval", "15"), 10),
+      function(success) {});
     if (p2pSupported) {
       manager.enableP2p(function(success) {});
     }
@@ -1459,7 +1482,6 @@ var WifiManager = (function() {
   }
   manager.getMacAddress = wifiCommand.getMacAddress;
   manager.getScanResults = wifiCommand.scanResults;
-  manager.setBackgroundScan = setBackgroundScan; // Use our own version.
   manager.scan = scan; // Use our own version.
   manager.wpsPbc = wifiCommand.wpsPbc;
   manager.wpsPin = wifiCommand.wpsPin;
@@ -1481,6 +1503,8 @@ var WifiManager = (function() {
   manager.getConnectionInfo = (sdkVersion >= 15)
                               ? wifiCommand.getConnectionInfoICS
                               : wifiCommand.getConnectionInfoGB;
+  manager.setScanInterval = wifiCommand.setScanInterval;
+  manager.handleScreenStateChanged = handleScreenStateChanged;
 
   manager.ensureSupplicantDetached = aCallback => {
     if (!manager.enabled) {
@@ -1930,6 +1954,7 @@ function WifiWorker() {
 
   Services.obs.addObserver(this, kMozSettingsChangedObserverTopic, false);
   Services.obs.addObserver(this, "xpcom-shutdown", false);
+  Services.obs.addObserver(this, kScreenStateChangedTopic, false);
 
   this.wantScanResults = [];
 
@@ -1970,39 +1995,6 @@ function WifiWorker() {
   // Users of instances of nsITimer should keep a reference to the timer until
   // it is no longer needed in order to assure the timer is fired.
   this._callbackTimer = null;
-
-  // XXX On some phones (Otoro and Unagi) the wifi driver doesn't play nicely
-  // with the automatic scans that wpa_supplicant does (it appears that the
-  // driver forgets that it's returned scan results and then refuses to try to
-  // rescan. In order to detect this case we start a timer when we enter the
-  // SCANNING state and reset it whenever we either get scan results or leave
-  // the SCANNING state. If the timer fires, we assume that we are stuck and
-  // forceably try to unstick the supplican, also turning on background
-  // scanning to avoid having to constantly poke the supplicant.
-
-  // How long we wait is controlled by the SCAN_STUCK_WAIT constant.
-  const SCAN_STUCK_WAIT = 12000;
-  this._scanStuckTimer = null;
-  this._turnOnBackgroundScan = false;
-
-  function startScanStuckTimer() {
-    if (WifiManager.schedScanRecovery) {
-      self._scanStuckTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
-      self._scanStuckTimer.initWithCallback(scanIsStuck, SCAN_STUCK_WAIT,
-                                            Ci.nsITimer.TYPE_ONE_SHOT);
-    }
-  }
-
-  function scanIsStuck() {
-    // Uh-oh, we've waited too long for scan results. Disconnect (which
-    // guarantees that we leave the SCANNING state and tells wpa_supplicant to
-    // wait for our next command) ensure that background scanning is on and
-    // then try again.
-    debug("Determined that scanning is stuck, turning on background scanning!");
-    WifiManager.handlePostWifiScan();
-    WifiManager.disconnect(function(ok) {});
-    self._turnOnBackgroundScan = true;
-  }
 
   // A list of requests to turn wifi on or off.
   this._stateRequests = [];
@@ -2186,8 +2178,6 @@ function WifiWorker() {
       self.requestDone();
     });
 
-    if (WifiManager.state === "SCANNING")
-      startScanStuckTimer();
   };
 
   WifiManager.onsupplicantlost = function() {
@@ -2250,12 +2240,6 @@ function WifiWorker() {
         this.state !== "CONNECTED" &&
         this.state !== "COMPLETED") {
       self._stopConnectionInfoTimer();
-    }
-
-    if (this.state !== "SCANNING" &&
-        self._scanStuckTimer) {
-      self._scanStuckTimer.cancel();
-      self._scanStuckTimer = null;
     }
 
     switch (this.state) {
@@ -2354,13 +2338,6 @@ function WifiWorker() {
         self.currentNetwork = null;
         self.ipAddress = "";
 
-        if (self._turnOnBackgroundScan) {
-          self._turnOnBackgroundScan = false;
-          WifiManager.setBackgroundScan("ON", function(did_something, ok) {
-            WifiManager.reassociate(function() {});
-          });
-        }
-
         WifiManager.connectionDropped(function() {
           // We've disconnected from a network because of a call to forgetNetwork.
           // Reconnect to the next available network (if any).
@@ -2395,10 +2372,6 @@ function WifiWorker() {
         self._fireEvent("onauthenticating", {network: netToDOM(self.currentNetwork)});
         break;
       case "SCANNING":
-        // If we're already scanning in the background, we don't need to worry
-        // about getting stuck while scanning.
-        if (!WifiManager.backgroundScanEnabled && WifiManager.enabled)
-          startScanStuckTimer();
         break;
     }
   };
@@ -2446,14 +2419,11 @@ function WifiWorker() {
     self._fireEvent("onconnect", { network: netToDOM(self.currentNetwork) });
   };
 
-  WifiManager.onscanresultsavailable = function() {
-    if (self._scanStuckTimer) {
-      // We got scan results! We must not be stuck for now, try again.
-      self._scanStuckTimer.cancel();
-      self._scanStuckTimer.initWithCallback(scanIsStuck, SCAN_STUCK_WAIT,
-                                            Ci.nsITimer.TYPE_ONE_SHOT);
-    }
+  WifiManager.onenableAllNetworks = function() {
+    self._enableAllNetworks(function(){});
+  }
 
+  WifiManager.onscanresultsavailable = function() {
     WifiManager.getNetworksDisabled(function(result){
       if (result) {
         self._enableAllNetworks(function(){debug("All network is disable, try to enable them");});
@@ -3979,6 +3949,12 @@ WifiWorker.prototype = {
         let wifiCertService = Cc["@mozilla.org/wifi/certservice;1"].getService(Ci.nsIWifiCertService);
         wifiCertService.shutdown();
       });
+      break;
+
+    case kScreenStateChangedTopic:
+      let enabled = (data === "on" ? true : false);
+      debug("Receive ScreenStateChanged=" + enabled);
+      WifiManager.handleScreenStateChanged(enabled);
       break;
     }
   },

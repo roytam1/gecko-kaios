@@ -137,6 +137,11 @@ this.WifiCommand = function(aControlMessage, aInterface, aSdkVersion) {
                      "DRIVER SCAN-PASSIVE", "OK", callback);
   };
 
+  command.setScanInterval =  function (scanInterval, callback) {
+    doBooleanCommand("SCAN_INTERVAL " + scanInterval,
+                     "OK", callback);
+  };
+
   command.scan = function (callback) {
     doBooleanCommand("SCAN", "OK", callback);
   };
