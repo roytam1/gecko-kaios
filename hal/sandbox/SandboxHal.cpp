@@ -984,5 +984,12 @@ PHalParent* CreateHalParent() {
   return new HalParent();
 }
 
+bool
+IsFlipOpened()
+{
+  NS_RUNTIMEABORT("IsFlipOpened() can't be called from sandboxed contexts.");
+  return true;
+}
+
 } // namespace hal_sandbox
 } // namespace mozilla

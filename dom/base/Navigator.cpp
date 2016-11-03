@@ -881,24 +881,7 @@ Navigator::RemoveIdleObserver(MozIdleObserver& aIdleObserver, ErrorResult& aRv)
 bool
 Navigator::FlipOpened()
 {
-  char status, propValue[PROPERTY_VALUE_MAX];
-
-  if (property_get("ro.kaios.flipstatus", propValue, NULL) <= 0) {
-    return true;
-  }
-
-  int fd = open(propValue, O_RDONLY);
-  if (fd < 0) {
-    return true;
-  }
-
-  if (read (fd, &status, sizeof(status)) < 0) {
-    close(fd);
-    return true;
-  }
-
-  close(fd);
-  return !atoi(&status);
+  return hal::IsFlipOpened();
 }
 #endif //MOZ_WIDGET_GONK
 

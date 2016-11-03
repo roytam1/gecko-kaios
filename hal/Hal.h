@@ -655,6 +655,11 @@ void StopSystemService(const char* aSvcName);
  */
 bool SystemServiceIsRunning(const char* aSvcName);
 
+/**
+ * Determine the lid is open or not
+ */
+bool IsFlipOpened();
+
 } // namespace MOZ_HAL_NAMESPACE
 } // namespace mozilla
 

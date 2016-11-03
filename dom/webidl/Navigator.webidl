@@ -482,9 +482,7 @@ interface NavigatorConcurrentHardware {
   readonly attribute unsigned long long hardwareConcurrency;
 };
 
-#ifdef MOZ_WIDGET_GONK
 partial interface Navigator {
   [AvailableIn=CertifiedApps]
   readonly attribute boolean flipOpened;
 };
-#endif

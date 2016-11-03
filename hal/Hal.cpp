@@ -1242,5 +1242,11 @@ bool SystemServiceIsRunning(const char* aSvcName)
   RETURN_PROXY_IF_SANDBOXED(SystemServiceIsRunning(aSvcName), false);
 }
 
+bool IsFlipOpened()
+{
+  AssertMainThread();
+  RETURN_PROXY_IF_SANDBOXED(IsFlipOpened(), true);
+}
+
 } // namespace hal
 } // namespace mozilla

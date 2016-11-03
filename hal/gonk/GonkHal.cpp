@@ -2042,5 +2042,22 @@ FactoryReset(FactoryResetReason& aReason)
   }
 }
 
+bool
+IsFlipOpened()
+{
+  bool status;
+  char propValue[PROPERTY_VALUE_MAX];
+
+  if (property_get("ro.kaios.flipstatus", propValue, NULL) <= 0) {
+    return true;
+  }
+
+  bool success = ReadSysFile(propValue, &status);
+  if (!success) {
+    return true;
+  }
+  return !status;
+}
+
 } // hal_impl
 } // mozilla
