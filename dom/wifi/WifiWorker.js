@@ -1684,7 +1684,9 @@ function getNetworkKey(network)
     ssid = network.ssid;
 
     for (let j = 0; j < security.length; j++) {
-      if (security[j] === "WPA-PSK") {
+      if (security[j] === "WPA-PSK" ||
+          security[j] === "WPA2-PSK" ||
+          security[j] === "WPA/WPA2-PSK") {
         encryption = "WPA-PSK";
         break;
       } else if (security[j] === "WPA-EAP") {
@@ -1740,8 +1742,14 @@ function getKeyManagement(flags) {
   if (!flags)
     return types;
 
-  if (/\[WPA2?-PSK/.test(flags))
+  if ((/\[WPA-PSK/.test(flags)) && (/\[WPA2-PSK/.test(flags))) {
+    // Example of flags : [WPA-PSK-CCMP][WPA2-PSK-CCMP]
+    types.push("WPA/WPA2-PSK");
+  } else if (/\[WPA-PSK/.test(flags)) {
     types.push("WPA-PSK");
+  } else if (/\[WPA2-PSK/.test(flags)) {
+    types.push("WPA2-PSK");
+  }
   if (/\[WPA2?-EAP/.test(flags))
     types.push("WPA-EAP");
   if (/\[WEP/.test(flags))
@@ -3094,7 +3102,9 @@ WifiWorker.prototype = {
           result[id] = 0;
           var security = element[id];
           for (let j = 0; j < security.length; j++) {
-            if (security[j] === "WPA-PSK") {
+            if (security[j] === "WPA-PSK" ||
+                security[j] === "WPA2-PSK" ||
+                security[j] === "WPA/WPA2-PSK") {
               result[id] |= Ci.nsIWifiScanResult.WPA_PSK;
             } else if (security[j] === "WPA-EAP") {
               result[id] |= Ci.nsIWifiScanResult.WPA_EAP;
