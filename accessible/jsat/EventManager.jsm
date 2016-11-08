@@ -61,6 +61,7 @@ this.EventManager.prototype = {
         this.addEventListener('wheel', this, true);
         this.addEventListener('scroll', this, true);
         this.addEventListener('resize', this, true);
+        this.addEventListener('visibilitychange', this);
         SystemAppProxy.addEventListener('mozContentEvent', this);
         this._preDialogPosition = new WeakMap();
       }
@@ -85,6 +86,7 @@ this.EventManager.prototype = {
       this.removeEventListener('wheel', this, true);
       this.removeEventListener('scroll', this, true);
       this.removeEventListener('resize', this, true);
+      this.removeEventListener('visibilitychange', this);
       SystemAppProxy.removeEventListener('mozContentEvent', this);
     } catch (x) {
       // contentScope is dead.
@@ -133,6 +135,13 @@ this.EventManager.prototype = {
         this.present(Presentation.viewportChanged(window));
         break;
       }
+      case 'visibilitychange':
+        // When the window is back to foreground, tells parent process the
+        // latest state.
+        if (!aEvent.target.hidden) {
+          this.present(Presentation.editingModeChanged(this.editState.editing));
+          this.sendMsgFunc("AccessFu:Input", this.editState);
+        }
       }
     } catch (x) {
       Logger.logException(x, 'Error handling DOM event');
