@@ -24,6 +24,7 @@
 #include "mozilla/dom/BrowserElementDictionariesBinding.h"
 #include "mozilla/dom/CustomEvent.h"
 #include "mozilla/layout/RenderFrameParent.h"
+#include "nsNetUtil.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -33,12 +34,34 @@ using namespace mozilla::layout;
 namespace {
 
 using mozilla::BrowserElementParent;
+
+bool
+IsApp(nsIURI* aURI) {
+  bool isApp = false;
+  nsresult rv = aURI->SchemeIs("app", &isApp);
+  NS_ENSURE_SUCCESS(rv, false);
+
+  return isApp;
+}
+
+bool
+IsApp(const nsAString& aURL) {
+  nsCOMPtr<nsIURI> uri;
+  nsresult rv = NS_NewURI(getter_AddRefs(uri), aURL);
+  NS_ENSURE_SUCCESS(rv, false);
+
+  return IsApp(uri);
+}
+
 /**
  * Create an <iframe mozbrowser> owned by the same document as
  * aOpenerFrameElement.
  */
 already_AddRefed<HTMLIFrameElement>
-CreateIframe(Element* aOpenerFrameElement, const nsAString& aName, bool aRemote)
+CreateIframe(Element* aOpenerFrameElement,
+             const nsAString& aName,
+             bool aRemote,
+             bool aAppScheme)
 {
   nsNodeInfoManager *nodeInfoManager =
     aOpenerFrameElement->OwnerDoc()->NodeInfoManager();
@@ -56,7 +79,9 @@ CreateIframe(Element* aOpenerFrameElement, const nsAString& aName, bool aRemote)
   popupFrameElement->SetMozbrowser(true);
 
   // Copy the opener frame's mozapp attribute to the popup frame.
-  if (aOpenerFrameElement->HasAttr(kNameSpaceID_None, nsGkAtoms::mozapp)) {
+  // Iff the URI of popup frame is app:// scheme.
+  if (aOpenerFrameElement->HasAttr(kNameSpaceID_None, nsGkAtoms::mozapp) &&
+      aAppScheme) {
     nsAutoString mozapp;
     aOpenerFrameElement->GetAttr(kNameSpaceID_None, nsGkAtoms::mozapp, mozapp);
     popupFrameElement->SetAttr(kNameSpaceID_None, nsGkAtoms::mozapp,
@@ -220,7 +245,7 @@ BrowserElementParent::OpenWindowOOP(TabParent* aOpenerTabParent,
   NS_ENSURE_TRUE(openerFrameElement,
                  BrowserElementParent::OPEN_WINDOW_IGNORED);
   RefPtr<HTMLIFrameElement> popupFrameElement =
-    CreateIframe(openerFrameElement, aName, /* aRemote = */ true);
+    CreateIframe(openerFrameElement, aName, /* aRemote = */ true, IsApp(aURL));
 
   // Normally an <iframe> element will try to create a frameLoader when the
   // page touches iframe.contentWindow or sets iframe.src.
@@ -282,7 +307,7 @@ BrowserElementParent::OpenWindowInProcess(nsPIDOMWindowOuter* aOpenerWindow,
 
 
   RefPtr<HTMLIFrameElement> popupFrameElement =
-    CreateIframe(openerFrameElement, aName, /* aRemote = */ false);
+    CreateIframe(openerFrameElement, aName, /* aRemote = */ false, IsApp(aURI));
   NS_ENSURE_TRUE(popupFrameElement, BrowserElementParent::OPEN_WINDOW_IGNORED);
 
   nsAutoCString spec;
