@@ -89,6 +89,10 @@ const DHCP = "dhcpcd";
 const MODE_ESS = 0;
 const MODE_IBSS = 1;
 
+const POWER_MODE_DHCP = 1;
+const POWER_MODE_SCREEN_STATE = 1 << 1;
+const POWER_MODE_SETTING_CHANGED = 1 << 2;
+
 XPCOMUtils.defineLazyServiceGetter(this, "gNetworkManager",
                                    "@mozilla.org/network/manager;1",
                                    "nsINetworkManager");
@@ -278,8 +282,12 @@ var WifiManager = (function() {
   function handleScreenStateChanged(enabled) {
     screenOn = enabled;
     if (screenOn) {
+      setSuspendOptimizationsMode(POWER_MODE_SCREEN_STATE, false,
+        function(ok) {});
       enableBackgroundScan(false);
     } else {
+      setSuspendOptimizationsMode(POWER_MODE_SCREEN_STATE, true,
+        function(ok) {});
       if (manager.state === "ASSOCIATING" ||
           manager.state === "ASSOCIATED" ||
           manager.state === "FOUR_WAY_HANDSHAKE" ||
@@ -654,7 +662,16 @@ var WifiManager = (function() {
           runStaticIp(manager.ifname, key);
           return;
       }
+
+      // Disable power saving mode when doing dhcp
+      setSuspendOptimizationsMode(POWER_MODE_DHCP, false, function(ok) {});
+      manager.setPowerMode("ACTIVE", function(ok) {});
+
       netUtil.runDhcp(manager.ifname, dhcpRequestGen++, function(data, gen) {
+        // Re-enable power saving mode after dhcp is done
+        setSuspendOptimizationsMode(POWER_MODE_DHCP, true, function(ok) {});
+        manager.setPowerMode("AUTO", function(ok) {});
+
         dhcpInfo = data.info;
         debug('dhcpRequestGen: ' + dhcpRequestGen + ', gen: ' + gen);
         if (!dhcpInfo) {
@@ -976,13 +993,21 @@ var WifiManager = (function() {
     return true;
   }
 
-  function setPowerSavingMode(enabled) {
-    let mode = enabled ? "AUTO" : "ACTIVE";
-    // Some wifi drivers may not implement this command. Set power mode
-    // even if suspend optimization command failed.
-    manager.setSuspendOptimizations(enabled, function(ok) {
-      manager.setPowerMode(mode, function() {});
-    });
+  var requestOptimizationMode = 0;
+  function setSuspendOptimizationsMode(reason, enable, callback) {
+    debug("setSuspendOptimizationsMode reason = " + reason + ", enable = "
+      + enable + ", requestOptimizationMode = " + requestOptimizationMode);
+    if (enable) {
+      requestOptimizationMode &= ~reason;
+      if (!requestOptimizationMode) {
+        manager.setSuspendOptimizations(enable, callback);
+      } else {
+        callback(true);
+      }
+    } else {
+      requestOptimizationMode |= reason;
+      manager.setSuspendOptimizations(enable, callback);
+    }
   }
 
   function didConnectSupplicant(callback) {
@@ -998,10 +1023,12 @@ var WifiManager = (function() {
       callback();
     });
     // WPA supplicant already connected.
-    manager.setPowerSavingMode(true);
     manager.setScanInterval(
       parseInt(libcutils.property_get("ro.moz.wifi.scan_interval", "15"), 10),
       function(success) {});
+    manager.setPowerMode("AUTO", function(ok) {});
+    manager.setSuspendOptimizations(requestOptimizationMode === 0,
+      function(ok) {});
     if (p2pSupported) {
       manager.enableP2p(function(success) {});
     }
@@ -1501,13 +1528,13 @@ var WifiManager = (function() {
   manager.setPowerMode = (sdkVersion >= 16)
                          ? wifiCommand.setPowerModeJB
                          : wifiCommand.setPowerModeICS;
-  manager.setPowerSavingMode = setPowerSavingMode;
   manager.getHttpProxyNetwork = getHttpProxyNetwork;
   manager.setHttpProxy = setHttpProxy;
   manager.configureHttpProxy = configureHttpProxy;
   manager.setSuspendOptimizations = (sdkVersion >= 16)
                                    ? wifiCommand.setSuspendOptimizationsJB
                                    : wifiCommand.setSuspendOptimizationsICS;
+  manager.setSuspendOptimizationsMode = setSuspendOptimizationsMode;
   manager.setStaticIpMode = setStaticIpMode;
   manager.getRssiApprox = wifiCommand.getRssiApprox;
   manager.getLinkSpeed = wifiCommand.getLinkSpeed;
@@ -2289,8 +2316,6 @@ function WifiWorker() {
         });
         break;
       case "ASSOCIATED":
-        // set to full power mode when ready to do 4 way handsharke.
-        WifiManager.setPowerSavingMode(false);
         if (!self.currentNetwork) {
           self.currentNetwork =
             { bssid: WifiManager.connectionInfo.bssid,
@@ -2337,8 +2362,6 @@ function WifiWorker() {
         }
         break;
       case "CONNECTED":
-        // wifi connection complete, turn on the power saving mode.
-        WifiManager.setPowerSavingMode(true);
         // BSSID is read after connected, update it.
         self.currentNetwork.bssid = WifiManager.connectionInfo.bssid;
         break;
@@ -2352,8 +2375,6 @@ function WifiWorker() {
               this.prevState === "INTERFACE_DISABLED" ||
               this.prevState === "INACTIVE" ||
               this.prevState === "UNINITIALIZED")) {
-          // When in disconnected mode, need to turn on wifi power saving mode.
-          WifiManager.setPowerSavingMode(true);
           return;
         }
 
@@ -3596,7 +3617,6 @@ WifiWorker.prototype = {
     const message = "WifiManager:setPowerSavingMode:Return";
     let self = this;
     let enabled = msg.data;
-    let mode = enabled ? "AUTO" : "ACTIVE";
 
     if (!WifiManager.enabled) {
       this._sendMessage(message, false, "Wifi is disabled", msg);
@@ -3605,14 +3625,13 @@ WifiWorker.prototype = {
 
     // Some wifi drivers may not implement this command. Set power mode
     // even if suspend optimization command failed.
-    WifiManager.setSuspendOptimizations(enabled, function(ok) {
-      WifiManager.setPowerMode(mode, function(ok) {
-        if (ok) {
-          self._sendMessage(message, true, true, msg);
-        } else {
-          self._sendMessage(message, false, "Set power saving mode failed", msg);
-        }
-      });
+    WifiManager.setSuspendOptimizationsMode(POWER_MODE_SETTING_CHANGED, enabled,
+      function(ok) {
+      if (ok) {
+        self._sendMessage(message, true, true, msg);
+      } else {
+        self._sendMessage(message, false, "Set power saving mode failed", msg);
+      }
     });
   },
 
