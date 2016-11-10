@@ -139,6 +139,7 @@ NetworkInterfaceLinks.prototype = {
   gateways: null,
   interfaceName: null,
   extraRoutes: null,
+  clatd: null,
 
   setLinks: function(linkRoutes, gateways, interfaceName) {
     this.linkRoutes = linkRoutes;
@@ -151,6 +152,7 @@ NetworkInterfaceLinks.prototype = {
     this.gateways = [];
     this.interfaceName = "";
     this.extraRoutes = [];
+    this.clatd = null;
   },
 
   compareGateways: function(gateways) {
@@ -166,6 +168,65 @@ NetworkInterfaceLinks.prototype = {
 
     return true;
   }
+};
+
+function Nat464Xlat(network) {
+  this.clear();
+  this.network = network;
+}
+Nat464Xlat.prototype = {
+  CLAT_PREFIX: "v4-",
+  network: null,
+  ifaceName: null,
+  nat464Iface: null,
+
+  isStarted: function() {
+    return this.nat464Iface != null;
+  },
+
+  clear: function() {
+    this.network = null;
+    this.ifaceName = null;
+    this.nat464Iface = null;
+  },
+
+  start: function() {
+    debug("Starting clatd");
+    this.ifaceName = this.network.name;
+    if (this.ifaceName == null) {
+      debug("clatd: Can't start clatd without providing interface");
+      return;
+    }
+
+    if (this.isStarted()) {
+      debug("clatd: already started");
+      return;
+    }
+
+    this.nat464Iface = this.CLAT_PREFIX + this.ifaceName;
+
+    debug("Starting clatd on " + this.ifaceName);
+
+    gNetworkService.startClatd(this.ifaceName, (success) => {
+      debug("Clatd started : " + success);
+    });
+  },
+
+  stop: function() {
+    if (!this.isStarted()) {
+      debug("clatd: already stopped");
+      return;
+    }
+
+    debug("Stopping clatd");
+
+    gNetworkService.stopClatd(this.ifaceName, (success) => {
+      debug("Clatd stopped : " + success);
+      if (success) {
+        this.clear();
+      }
+    });
+  },
 };
 
 /**
@@ -427,6 +488,7 @@ NetworkManager.prototype = {
             return this._setMtu(extNetworkInfo);
           })
           .then(() => this.setAndConfigureActive())
+          .then(() => this.updateClat(network))
           .then(() => {
             // Update data connection when Wifi connected/disconnected
             if (extNetworkInfo.type ==
@@ -479,6 +541,7 @@ NetworkManager.prototype = {
               return this._removeDefaultRoute(extNetworkInfo)
             }
           })
+          .then(() => this.updateClat(network))
           .then(() => {
             // Clear http proxy on active network.
             if (this.activeNetworkInfo &&
@@ -1141,6 +1204,64 @@ NetworkManager.prototype = {
         this.setNetworkProxy(aNetwork);
         aResolve();
       });
+    });
+  },
+
+  requestClat: function(network) {
+    let connected = (network.state == Ci.nsINetworkInterface.NETWORK_STATE_CONNECTED);
+    if (!connected) {
+      return Promise.resolve(false);
+    }
+
+    return new Promise((aResolve, aReject) => {
+      let hasIpv4 = false;
+      let ips = {};
+      let prefixLengths = {};
+      let length = network.getAddresses(ips, prefixLengths);
+      for (let i = 0; i < length; i++) {
+        debug("requestClat routes: " + ips.value[i] + "/" + prefixLengths.value[i]);
+        if (ips.value[i].match(this.REGEXP_IPV4)) {
+          hasIpv4 = true;
+          break;
+        }
+      }
+      debug("requestClat hasIpv4 = " + hasIpv4);
+      aResolve(!hasIpv4);
+    });
+  },
+
+  updateClat: function(network) {
+    debug("UpdateClat Type = " + network.type);
+    if (!this.isNetworkTypeMobile(network.type) &&
+        (network.type != Ci.nsINetworkInterface.NETWORK_TYPE_WIFI)) {
+      return Promise.resolve();
+    }
+
+    return new Promise((aResolve, aReject) => {
+      // Get network ID.
+      let networkId = this.getNetworkId(network);
+      if (!(networkId in this.networkInterfaces)) {
+        throw Components.Exception("No network with that type registered.",
+                                   Cr.NS_ERROR_INVALID_ARG);
+      }
+      debug("UpdateClat networkID = " + networkId);
+      let currentIfaceLinks = this.networkInterfaceLinks[networkId];
+
+      let wasRunning = ((currentIfaceLinks.clatd != null) &&
+                        currentIfaceLinks.clatd.isStarted());
+      this.requestClat(network)
+        .then( (shouldRun) => {
+          debug("UpdateClat wasRunning = " + wasRunning + " , shouldRun = " + shouldRun);
+          if (!wasRunning && shouldRun) {
+            currentIfaceLinks.clatd = new Nat464Xlat(network);
+            currentIfaceLinks.clatd.start();
+          } else if (wasRunning && !shouldRun) {
+            currentIfaceLinks.clatd.stop();
+            currentIfaceLinks.clatd = null;
+          }
+          aResolve();
+        });
+      }
     });
   },
 

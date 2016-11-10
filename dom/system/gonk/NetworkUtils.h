@@ -320,6 +320,9 @@ private:
   CommandResult getInterfaces(NetworkParams& aOptions);
   CommandResult getInterfaceConfig(NetworkParams& aOptions);
   CommandResult setInterfaceConfig(NetworkParams& aOptions);
+  CommandResult startClatd(NetworkParams& aOptions);
+  CommandResult stopClatd(NetworkParams& aOptions);
+  CommandResult isClatdRunning(NetworkParams& aOptions);
 
   CommandResult addHostRouteLegacy(NetworkParams& aOptions);
   CommandResult removeHostRouteLegacy(NetworkParams& aOptions);
@@ -428,6 +431,9 @@ private:
   static void getInterfacesSuccess(PARAMS);
   static void getInterfaceConfigSuccess(PARAMS);
   static void setInterfaceConfigSuccess(PARAMS);
+  static void startClatd(PARAMS);
+  static void stopClatd(PARAMS);
+  static void isClatdRunning(PARAMS);
 
 #undef PARAMS
 

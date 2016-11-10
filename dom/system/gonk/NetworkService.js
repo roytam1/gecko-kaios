@@ -857,6 +857,40 @@ NetworkService.prototype = {
     this.controlMessage(params, function(aResult) {
       aCallback.nativeCommandResult(!aResult.error);
     });
+  },
+
+  startClatd: function(interfaceName, callback) {
+    let params = {
+      cmd: "startClatd",
+      ifname: interfaceName
+    };
+
+    this.controlMessage(params, (result) => {
+      callback.nativeCommandResult(!result.error);
+    });
+  },
+
+  stopClatd: function(interfaceName, callback) {
+    let params = {
+      cmd: "stopClatd",
+      ifname: interfaceName
+    };
+
+    this.controlMessage(params, (result) => {
+      callback.nativeCommandResult(!result.error);
+    });
+  },
+
+  isClatdRunning: function(interfaceName, callback) {
+    let params = {
+      cmd: "isClatdRunning",
+      ifname: interfaceName
+    };
+
+    this.controlMessage(params, (result) => {
+      if (DEBUG) debug("isClatdRunning result = " + result.resultReason);
+      callback.nativeCommandResult(result.resultReason.indexOf("started") >= 0);
+    });
   }
 };
 

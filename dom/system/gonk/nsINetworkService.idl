@@ -201,7 +201,7 @@ interface nsISetInterfaceConfigCallback : nsISupports
 /**
  * Provide network services.
  */
-[scriptable, uuid(341bd946-cb04-4dc7-cc4b-6a827a9c9cb8)]
+[scriptable, uuid(d9ecd234-a65d-11e6-80f5-76304dec7eb7)]
 interface nsINetworkService : nsISupports
 {
   const long MODIFY_ROUTE_ADD    = 0;
@@ -621,4 +621,39 @@ interface nsINetworkService : nsISupports
    */
   void setMtu(in DOMString interfaceName, in long mtu,
               in nsINativeCommandCallback callback);
+
+  /**
+   * Start clatd control.
+   *
+   * @param networkInterface
+   *        The network interface which we want to start.
+   *
+   * @param callback
+   *        Callback to notify the result of clat control.
+   */
+   void startClatd(in DOMString interfaceName,
+                   in nsINativeCommandCallback callback);
+  /**
+   * Stop clatd control.
+   *
+   * @param networkInterface
+   *        The network interface which we want to stop.
+   *
+   * @param callback
+   *        Callback to notify the result of clat control.
+   */
+   void stopClatd(in DOMString interfaceName,
+                  in nsINativeCommandCallback callback);
+
+  /**
+   * Check if clatd is running.
+   *
+   * @param networkInterface
+   *        The network interface which we want to know if clatd is running.
+   *
+   * @param callback
+   *        Callback to notify the result of clat control.
+   */
+   void isClatdRunning(in DOMString interfaceName,
+                       in nsINativeCommandCallback callback);
 };

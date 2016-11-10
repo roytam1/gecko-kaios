@@ -1566,6 +1566,36 @@ void NetworkUtils::setMtu(CommandChain* aChain,
   doCommand(command, aChain, aCallback);
 }
 
+void NetworkUtils::startClatd(CommandChain* aChain,
+                              CommandCallback aCallback,
+                              NetworkResultOptions& aResult)
+{
+  char command[MAX_COMMAND_SIZE];
+  snprintf(command, MAX_COMMAND_SIZE - 1, "clatd start %s", GET_CHAR(mIfname));
+
+  doCommand(command, aChain, aCallback);
+}
+
+void NetworkUtils::stopClatd(CommandChain* aChain,
+                             CommandCallback aCallback,
+                             NetworkResultOptions& aResult)
+{
+  char command[MAX_COMMAND_SIZE];
+  snprintf(command, MAX_COMMAND_SIZE - 1, "clatd stop %s", GET_CHAR(mIfname));
+
+  doCommand(command, aChain, aCallback);
+}
+
+void NetworkUtils::isClatdRunning(CommandChain* aChain,
+                                  CommandCallback aCallback,
+                                  NetworkResultOptions& aResult)
+{
+  char command[MAX_COMMAND_SIZE];
+  snprintf(command, MAX_COMMAND_SIZE - 1, "clatd status %s", GET_CHAR(mIfname));
+
+  doCommand(command, aChain, aCallback);
+}
+
 #undef GET_CHAR
 #undef GET_FIELD
 
@@ -1882,6 +1912,9 @@ void NetworkUtils::ExecuteCommand(NetworkParams aOptions)
     BUILD_ENTRY(getInterfaceConfig),
     BUILD_ENTRY(setInterfaceConfig),
     BUILD_ENTRY(setMtu),
+    BUILD_ENTRY(startClatd),
+    BUILD_ENTRY(stopClatd),
+    BUILD_ENTRY(isClatdRunning),
 
     #undef BUILD_ENTRY
   };
@@ -2988,6 +3021,63 @@ CommandResult NetworkUtils::setMtu(NetworkParams& aOptions)
   };
 
   runChain(aOptions, COMMAND_CHAIN, defaultAsyncFailureHandler);
+  return CommandResult::Pending();
+}
+
+/**
+ * Request to start Clat464.
+ */
+CommandResult NetworkUtils::startClatd(NetworkParams& aOptions)
+{
+  NU_DBG("startClatd: %s", GET_CHAR(mIfname));
+  if (SDK_VERSION < 20) {
+    return SUCCESS;
+  }
+
+  static CommandFunc COMMAND_CHAIN[] = {
+    startClatd,
+    defaultAsyncSuccessHandler,
+  };
+  runChain(aOptions, COMMAND_CHAIN, defaultAsyncFailureHandler);
+
+  return CommandResult::Pending();
+}
+
+/**
+ * Request to stop Clat464.
+ */
+CommandResult NetworkUtils::stopClatd(NetworkParams& aOptions)
+{
+  NU_DBG("stopClatd: %s", GET_CHAR(mIfname));
+  if (SDK_VERSION < 20) {
+    return SUCCESS;
+  }
+
+  static CommandFunc COMMAND_CHAIN[] = {
+    stopClatd,
+    defaultAsyncSuccessHandler,
+  };
+  runChain(aOptions, COMMAND_CHAIN, defaultAsyncFailureHandler);
+
+  return CommandResult::Pending();
+}
+
+/**
+ * Request to check if Clat464 is currently running.
+ */
+CommandResult NetworkUtils::isClatdRunning(NetworkParams& aOptions)
+{
+  NU_DBG("isClatdRunning: %s", GET_CHAR(mIfname));
+  if (SDK_VERSION < 20) {
+    return SUCCESS;
+  }
+
+  static CommandFunc COMMAND_CHAIN[] = {
+    isClatdRunning,
+    defaultAsyncSuccessHandler,
+  };
+  runChain(aOptions, COMMAND_CHAIN, defaultAsyncFailureHandler);
+
   return CommandResult::Pending();
 }
 
