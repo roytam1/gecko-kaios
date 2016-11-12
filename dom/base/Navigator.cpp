@@ -877,13 +877,11 @@ Navigator::RemoveIdleObserver(MozIdleObserver& aIdleObserver, ErrorResult& aRv)
   }
 }
 
-#ifdef MOZ_WIDGET_GONK
 bool
 Navigator::FlipOpened()
 {
   return hal::IsFlipOpened();
 }
-#endif //MOZ_WIDGET_GONK
 
 bool
 Navigator::Vibrate(uint32_t aDuration)
