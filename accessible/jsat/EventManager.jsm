@@ -303,7 +303,10 @@ this.EventManager.prototype = {
         if ([Roles.CHROME_WINDOW,
              Roles.DOCUMENT,
              Roles.APPLICATION].indexOf(acc.role) < 0) {
-          this.contentControl.autoMove(acc);
+          // bug 3442 - when switching apps, the rectangle sometimes not
+          // showing on the screen, ex enter phone app and go to launcher,
+          // Readout module should draw a rectangle on the phone icon.
+          this.contentControl.autoMove(acc, {forcePresent: true});
        }
 
        if (this.inTest) {
