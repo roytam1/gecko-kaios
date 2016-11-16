@@ -967,3 +967,9 @@ nsWindow::GetComposer2D()
 
     return mComposer2D;
 }
+
+bool
+nsWindow::IsBelongedToPrimaryScreen()
+{
+    return mScreen->IsPrimaryScreen();
+}

@@ -181,6 +181,8 @@ private:
     RefPtr<nsScreenGonk> mScreen;
 
     RefPtr<mozilla::HwcComposer2D> mComposer2D;
+
+    virtual bool IsBelongedToPrimaryScreen() override;
 };
 
 #endif /* nsWindow_h */

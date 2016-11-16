@@ -961,7 +961,17 @@ void nsBaseWidget::ConfigureAPZCTreeManager()
 
   ConfigureAPZControllerThread();
 
-  mAPZC->SetDPI(GetDPI());
+  // Under current design, APZC used a static variable to record DPI value. And
+  //   1. in Gonk platform, touch event will be routed to widget of primary
+  //      screen only so there is no neccesary to consider DPI from another
+  //      screens currently.
+  //   2. Even for other platforms, it is still a bug of setting sDPI to last
+  //      created widget of a different screen.
+  // Therefore the temperary solution here is to set DPI from primary screen
+  // only.
+  if (IsBelongedToPrimaryScreen()) {
+    mAPZC->SetDPI(GetDPI());
+  }
 
   RefPtr<APZCTreeManager> treeManager = mAPZC;  // for capture by the lambdas
 

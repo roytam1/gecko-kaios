@@ -598,6 +598,11 @@ protected:
 
   static bool debug_GetCachedBoolPref(const char* aPrefName);
 #endif
+
+private:
+  // To return true in default if platform doesn't support
+  // multiple screen.
+  virtual bool IsBelongedToPrimaryScreen() { return true; }
 };
 
 // A situation can occur when a mouse event occurs over a menu label while the
