@@ -989,8 +989,10 @@
                         // when we remove the attribute.
                         element.clientTop;
                         element.removeAttribute("fadeout");
-                        if (element.classList.contains("controlBar"))
+                        if (element.classList.contains("controlBar")) {
                             this.controlsSpacer.removeAttribute("hideCursor");
+                            this.adjustControlPosition();
+                        }
                     } else {
                         element.setAttribute("fadeout", true);
                         if (element.classList.contains("controlBar") && !this.hasError() &&
@@ -1438,13 +1440,31 @@
                     }
 
                     let size = "normal";
-                    if (videoHeight < minHeightForControlBar)
-                        size = "hidden";
-                    else if (videoWidth < minWidthOnlyPlayPause)
-                        size = "hidden";
-                    else if (videoWidth < minWidthAllControls)
-                        size = "small";
+                    // Force display the control bar, otherwise there's no way
+                    // to control the media.
+                    if (videoHeight < minHeightForControlBar ||
+                        videoWidth < minWidthOnlyPlayPause ||
+                        videoWidth < minWidthAllControls) {
+                      size = "small";
+                    }
+
                     this.controlBar.setAttribute("size", size);
+                },
+
+                adjustControlPosition : function adjustControlPosition() {
+                    // For video element, center the control bar relative to the
+                    // video element.
+                    if (this.video.readyState >= this.video.HAVE_METADATA) {
+                        let videoWidth = this.video.clientWidth;
+                        let controlWidth = this.controlsOverlay.clientWidth;
+                        if (!this.isAudioOnly && this.video.videoWidth &&
+                            this.video.videoHeight && controlWidth > videoWidth) {
+                            let margin = (videoWidth - controlWidth) / 2;
+                            this.controlsOverlay.style.marginLeft = margin + "px";
+                        } else {
+                            this.controlsOverlay.style.marginLeft = "";
+                        }
+                    }
                 },
 
                 init : function (binding) {
