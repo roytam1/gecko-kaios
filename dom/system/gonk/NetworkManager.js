@@ -187,6 +187,7 @@ function NetworkManager() {
   Services.obs.addObserver(this, TOPIC_XPCOM_SHUTDOWN, false);
 
   this.setAndConfigureActive();
+  this.networkInterfacesMap = new Map();
 
   ppmm.addMessageListener('NetworkInterfaceList:ListInterface', this);
 
@@ -204,6 +205,8 @@ NetworkManager.prototype = {
                                          Ci.nsISupportsWeakReference,
                                          Ci.nsIObserver,
                                          Ci.nsISettingsServiceCallback]),
+
+  networkInterfacesMap: null,
 
   // nsIObserver
 
@@ -316,6 +319,40 @@ NetworkManager.prototype = {
     return Promise.all(promises);
   },
 
+  _isIfaceInfoChanged: function(preIface, newIface) {
+    if (!preIface) {
+      return true;
+    }
+
+    // Check if state changes.
+    if (preIface.state != newIface.state) {
+      return true;
+    }
+
+    let pre_ips = {};
+    let pre_prefixLengths = {};
+    let new_ips = {};
+    let new_prefixLengths = {};
+
+    let pre_length = preIface.getAddresses(pre_ips, pre_prefixLengths);
+    let new_length = newIface.getAddresses(new_ips, new_prefixLengths);
+
+    // Check if IP changes.
+    if (pre_length != new_length) {
+      return true;
+    }
+
+    pre_ips.value.forEach((aIpAddress) => {
+      if (new_ips.value.indexOf(aIpAddress) == -1) {
+        return true;
+      }
+    });
+
+    // TODO: We may need to add more check (such as gatways, dnses etc...) if
+    //       necessary. For now, we only check state/IPs change or not.
+    return false;
+  },
+
   updateNetworkInterface: function(network) {
     if (!(network instanceof Ci.nsINetworkInterface)) {
       throw Components.Exception("Argument must be nsINetworkInterface.",
@@ -331,6 +368,13 @@ NetworkManager.prototype = {
 
     // Keep a copy of network in case it is modified while we are updating.
     let extNetworkInfo = new ExtraNetworkInfo(network);
+
+    if (!this._isIfaceInfoChanged(this.networkInterfacesMap.get(extNetworkInfo.type),
+                                  extNetworkInfo)) {
+      debug("Identical network interfaces.");
+      return;
+    }
+    this.networkInterfacesMap.set(extNetworkInfo.type, Object.assign({}, extNetworkInfo));
 
     // Note that since Lollipop we need to allocate and initialize
     // something through netd, so we add createNetwork/destroyNetwork
