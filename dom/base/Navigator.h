@@ -99,6 +99,7 @@ class InputPortManager;
 class DeviceStorageAreaListener;
 class Presentation;
 class LegacyMozTCPSocket;
+class FlipManager;
 
 namespace time {
 class TimeManager;
@@ -166,6 +167,7 @@ public:
   Geolocation* GetGeolocation(ErrorResult& aRv);
   Promise* GetBattery(ErrorResult& aRv);
   battery::BatteryManager* GetDeprecatedBattery(ErrorResult& aRv);
+  FlipManager* GetFlipManager(ErrorResult& aRv);
 
   static already_AddRefed<Promise> GetDataStores(nsPIDOMWindowInner* aWindow,
                                                  const nsAString& aName,
@@ -377,6 +379,7 @@ private:
   RefPtr<Geolocation> mGeolocation;
   RefPtr<DesktopNotificationCenter> mNotification;
   RefPtr<battery::BatteryManager> mBatteryManager;
+  RefPtr<FlipManager> mFlipManager;
   RefPtr<Promise> mBatteryPromise;
 #ifdef MOZ_B2G_FM
   RefPtr<FMRadio> mFMRadio;

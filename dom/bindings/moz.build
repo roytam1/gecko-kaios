@@ -57,6 +57,7 @@ LOCAL_INCLUDES += [
     '/dom/bluetooth/common/webapi',
     '/dom/camera',
     '/dom/canvas',
+    '/dom/flipmanager',
     '/dom/geolocation',
     '/dom/html',
     '/dom/indexedDB',

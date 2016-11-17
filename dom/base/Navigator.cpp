@@ -49,6 +49,7 @@
 #include "mozilla/dom/Voicemail.h"
 #include "mozilla/dom/TVManager.h"
 #include "mozilla/dom/VRDevice.h"
+#include "mozilla/dom/FlipManager.h"
 #include "mozilla/dom/workers/RuntimeService.h"
 #include "mozilla/Hal.h"
 #include "nsISiteSpecificUserAgent.h"
@@ -193,6 +194,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Navigator)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mNotification)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBatteryManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBatteryPromise)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFlipManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPowerManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mCellBroadcast)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mIccManager)
@@ -261,6 +263,11 @@ Navigator::Invalidate()
   }
 
   mBatteryPromise = nullptr;
+
+  if (mFlipManager) {
+    mFlipManager->Shutdown();
+    mFlipManager = nullptr;
+  }
 
 #ifdef MOZ_B2G_FM
   if (mFMRadio) {
@@ -1524,6 +1531,28 @@ Navigator::GetDeprecatedBattery(ErrorResult& aRv)
   }
 
   return mBatteryManager;
+}
+
+FlipManager*
+Navigator::GetFlipManager(ErrorResult& aRv)
+{
+  if (!XRE_IsParentProcess()) {
+    aRv.Throw(NS_ERROR_UNEXPECTED);
+    return nullptr;
+  }
+
+  if (!mFlipManager) {
+    if (!mWindow) {
+      aRv.Throw(NS_ERROR_UNEXPECTED);
+      return nullptr;
+    }
+    NS_ENSURE_TRUE(mWindow->GetDocShell(), nullptr);
+
+    mFlipManager = new FlipManager(mWindow);
+    mFlipManager->Init();
+  }
+
+  return mFlipManager;
 }
 
 /* static */ already_AddRefed<Promise>

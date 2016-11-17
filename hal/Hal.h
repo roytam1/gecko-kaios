@@ -11,6 +11,7 @@
 #include "base/platform_thread.h"
 #include "nsTArray.h"
 #include "mozilla/dom/battery/Types.h"
+#include "mozilla/dom/FlipManager.h"
 #include "mozilla/dom/MozPowerManagerBinding.h"
 #include "mozilla/dom/network/Types.h"
 #include "mozilla/dom/power/Types.h"
@@ -110,6 +111,24 @@ void GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo);
  * @param aBatteryInfo The new battery information.
  */
 void NotifyBatteryChange(const hal::BatteryInformation& aBatteryInfo);
+
+/**
+ * Inform the flipmanager backend there is a new flip observer.
+ * @param aFlipObserver The observer that should be added.
+ */
+void RegisterFlipObserver(mozilla::dom::FlipObserver* aFlipObserver);
+
+/**
+ * Inform the flipmanager backend a flip observer unregistered.
+ * @param aPowerSupplyObserver The observer that should be removed.
+ */
+void UnregisterFlipObserver(mozilla::dom::FlipObserver* aFlipObserver);
+
+/**
+ * Notify of a change in the flip status.
+ * @param aFlipStauts The new flip status.
+ */
+void NotifyFlipStatus(bool aFlipStatus);
 
 /**
  * Determine whether the device's screen is currently enabled.

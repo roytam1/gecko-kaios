@@ -297,6 +297,20 @@ BatteryObservers()
   return sBatteryObservers;
 }
 
+class FlipObserversManager : public ObserversManager<bool>
+{
+protected:
+  void EnableNotifications() {
+    PROXY_IF_SANDBOXED(EnableFlipNotifications());
+  }
+
+  void DisableNotifications() {
+    PROXY_IF_SANDBOXED(DisableFlipNotifications());
+  }
+};
+
+static FlipObserversManager sFlipObservers;
+
 class NetworkObserversManager : public CachingObserversManager<NetworkInformation>
 {
 protected:
@@ -392,6 +406,27 @@ NotifyBatteryChange(const BatteryInformation& aInfo)
   AssertMainThread();
   BatteryObservers().CacheInformation(aInfo);
   BatteryObservers().BroadcastCachedInformation();
+}
+
+void
+RegisterFlipObserver(FlipObserver* aFlipObserver)
+{
+  AssertMainThread();
+  sFlipObservers.AddObserver(aFlipObserver);
+}
+
+void
+UnregisterFlipObserver(FlipObserver* aFlipObserver)
+{
+  AssertMainThread();
+  sFlipObservers.RemoveObserver(aFlipObserver);
+}
+
+void
+NotifyFlipStatus(bool aFlipStatus)
+{
+  AssertMainThread();
+  sFlipObservers.BroadcastInformation(aFlipStatus);
 }
 
 bool GetScreenEnabled()

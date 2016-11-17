@@ -425,6 +425,7 @@ LOCAL_INCLUDES += [
     '../bluetooth/common',
     '../bluetooth/common/webapi',
     '../events',
+    '../flipmanager',
     '../media',
     '../network',
     '../time',

@@ -139,6 +139,11 @@ partial interface Navigator {
   readonly attribute BatteryManager? battery;
 };
 
+partial interface Navigator {
+  [Throws, Pref="dom.flip.enabled", CheckAnyPermissions="flip", AvailableIn=CertifiedApps]
+  readonly attribute FlipManager flipManager;
+};
+
 // https://wiki.mozilla.org/WebAPI/DataStore
 [NoInterfaceObject,
  Exposed=(Window,Worker)]

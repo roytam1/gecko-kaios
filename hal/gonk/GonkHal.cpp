@@ -709,6 +709,80 @@ GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo)
 }
 
 namespace {
+ 
+class FlipUpdater : public nsRunnable {
+public:
+  NS_IMETHOD Run()
+  {
+    bool info = IsFlipOpened();
+    hal::NotifyFlipStatus(info);
+
+    return NS_OK;
+  }
+};
+
+} // anonymous namespace
+
+class FlipObserver : public IUeventObserver
+{
+public:
+  NS_INLINE_DECL_REFCOUNTING(FlipObserver)
+
+  FlipObserver()
+    :mUpdater(new FlipUpdater())
+  {
+  }
+
+  virtual void Notify(const NetlinkEvent &aEvent)
+  {
+    NS_DispatchToMainThread(mUpdater);
+  }
+
+private:
+  nsRefPtr<FlipUpdater> mUpdater;
+};
+
+// sFlipObserver is owned by the IO thread. Only the IO thread may
+// create or destroy it.
+static StaticRefPtr<FlipObserver> sFlipObserver;
+
+static void
+RegisterFlipObserverIOThread()
+{
+  MOZ_ASSERT(MessageLoop::current() == XRE_GetIOMessageLoop());
+  MOZ_ASSERT(!sFlipObserver);
+
+  sFlipObserver = new FlipObserver();
+  RegisterUeventListener(sFlipObserver);
+}
+
+void
+EnableFlipNotifications()
+{
+  XRE_GetIOMessageLoop()->PostTask(
+      FROM_HERE,
+      NewRunnableFunction(RegisterFlipObserverIOThread));
+}
+
+static void
+UnregisterFlipObserverIOThread()
+{
+  MOZ_ASSERT(MessageLoop::current() == XRE_GetIOMessageLoop());
+  MOZ_ASSERT(sFlipObserver);
+
+  UnregisterUeventListener(sFlipObserver);
+  sFlipObserver = nullptr;
+}
+
+void
+DisableFlipNotifications()
+{
+  XRE_GetIOMessageLoop()->PostTask(
+      FROM_HERE,
+      NewRunnableFunction(UnregisterFlipObserverIOThread));
+}
+
+namespace {
 
 // We can write to screenEnabledFilename to enable/disable the screen, but when
 // we read, we always get "mem"!  So we have to keep track ourselves whether

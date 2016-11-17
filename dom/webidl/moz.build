@@ -750,6 +750,7 @@ if CONFIG['MOZ_SECUREELEMENT']:
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
     WEBIDL_FILES += [
+        'FlipManager.webidl',
         'MozNetworkStats.webidl',
         'MozNetworkStatsAlarm.webidl',
         'MozNetworkStatsData.webidl',
