@@ -218,7 +218,6 @@ public:
   void GetCandidateWord(nsAString& aResult)
   {
     CopyASCIItoUTF16(mCandidateWord, aResult);
-    mCandidateWord.Assign("");
   }
 
   uint16_t TotalWord() const

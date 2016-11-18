@@ -36,6 +36,7 @@ EditorInitEmptyWord(demoIMEInfo * const pIME, bool& initEmptyWord)
     nsCString emptyWord("");
     pEditor->snCursorPos = pEditor->snBufferLen = 0;
     initEmptyWord = false;
+    ET9ClearAllSymbs(&pIME->sWordSymbInfo);
   } else {
     XT9_LOGD("EditorInitEmptyWord::Xt9Connect::mEmptyWord: False");
   }
@@ -525,9 +526,11 @@ PrintCandidateList(demoIMEInfo *pIME)
   }
 
   Xt9Connect::mTotalWord = pIME->bTotWords;
+  ET9U8 lower = pIME->bActiveWordIndex - pIME->bActiveWordIndex % 5;
+  const ET9U8 interval = 5;
 
-  for (bCandidateIndex = (pIME->bActiveWordIndex/5)*5;
-       bCandidateIndex < (pIME->bActiveWordIndex/5)*5 + 5 && bCandidateIndex < pIME->bTotWords;
+  for (bCandidateIndex = lower;
+       bCandidateIndex < lower + interval && bCandidateIndex < pIME->bTotWords;
        ++bCandidateIndex) {
     ET9AWWordInfo *pWord;
 
@@ -632,6 +635,11 @@ PrintScreen(demoIMEInfo *pIME)
   PrintExplicitLearning(pIME);
 
   PrintState(pIME);
+
+  // Clear input sequence in xt9connet before libxt9 processing input text or after word applied
+  if (!Xt9Connect::mCandidateWord.IsEmpty()) {
+    Xt9Connect::mCandidateWord.Assign("");
+  }
 
   if (pIME->bTotWords) {
     PrintCandidateList(pIME);
