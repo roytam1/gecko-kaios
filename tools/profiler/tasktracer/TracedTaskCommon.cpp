@@ -165,5 +165,18 @@ CreateTracedTask(Task* aTask)
   return task;
 }
 
+VirtualTask::AutoRunTask::AutoRunTask(VirtualTask* aTask)
+  : AutoSaveCurTraceInfo()
+  , mTask(aTask)
+{
+  mTask->SetTLSTraceInfo();
+  LogBegin(mTask->mTaskId, mTask->mSourceEventId);
+}
+
+VirtualTask::AutoRunTask::~AutoRunTask()
+{
+  LogEnd(mTask->mTaskId, mTask->mSourceEventId);
+}
+
 } // namespace tasktracer
 } // namespace mozilla
