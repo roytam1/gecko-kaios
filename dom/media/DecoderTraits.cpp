@@ -223,6 +223,7 @@ static const char* const gB2GOnlyTypes[] = {
   "video/mp2t",
   "video/avi",
   "video/x-matroska",
+  "audio/aac",
   nullptr
 };
 
