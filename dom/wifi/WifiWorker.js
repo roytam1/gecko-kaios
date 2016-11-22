@@ -848,11 +848,23 @@ var WifiManager = (function() {
         return true;
       fields.state = supplicantStatesMap[fields.state];
 
-      // The BSSID field is only valid in the ASSOCIATING and ASSOCIATED
+      // The BSSID field is only valid in the AUTHENTICATING, ASSOCIATING,
+      // ASSOCIATED, FOUR_WAY_HANDSHAKE, GROUP_HANDSHAKE and COMPLETED
       // states, except when we "reauth", except this seems to depend on the
       // driver, so simply check to make sure that we don't have a null BSSID.
-      if (fields.BSSID !== "00:00:00:00:00:00")
-        manager.connectionInfo.bssid = fields.BSSID;
+      if (manager.connectionInfo.bssid != fields.BSSID) {
+        if ((fields.state === "AUTHENTICATING" ||
+             fields.state === "ASSOCIATING" ||
+             fields.state === "ASSOCIATED" ||
+             fields.state === "FOUR_WAY_HANDSHAKE" ||
+             fields.state === "GROUP_HANDSHAKE" ||
+             fields.state === "COMPLETED") &&
+             fields.BSSID !== "00:00:00:00:00:00") {
+          manager.connectionInfo.bssid = fields.BSSID;
+        } else {
+          manager.connectionInfo.bssid = null;
+        }
+      }
 
       if (notifyStateChange(fields) && fields.state === "COMPLETED") {
         onconnected();
@@ -2498,7 +2510,8 @@ function WifiWorker() {
           }
 
           self.networksArray.push(network);
-          if (network.bssid === WifiManager.connectionInfo.bssid)
+          if (network.bssid === WifiManager.connectionInfo.bssid &&
+            self.ipAddress)
             network.connected = true;
 
           let signal = calculateSignal(Number(match[3]));
