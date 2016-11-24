@@ -58,7 +58,7 @@ public:
 class AutoSourceEvent : public AutoSaveCurTraceInfo
 {
 public:
-  AutoSourceEvent(SourceEventType aType);
+  explicit AutoSourceEvent(SourceEventType aType);
   ~AutoSourceEvent();
 };
 
@@ -74,7 +74,7 @@ void StopLogging();
 UniquePtr<nsTArray<nsCString>> GetLoggedData(TimeStamp aStartTime);
 
 // Returns the timestamp when Task Tracer is enabled in this process.
-const PRTime GetStartTime();
+PRTime GetStartTime();
 
 /**
  * Internal functions.

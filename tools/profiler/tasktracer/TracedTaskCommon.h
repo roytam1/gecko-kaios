@@ -52,7 +52,7 @@ class TracedRunnable : public TracedTaskCommon
 public:
   NS_DECL_NSIRUNNABLE
 
-  TracedRunnable(already_AddRefed<nsIRunnable>&& aOriginalObj);
+  explicit TracedRunnable(already_AddRefed<nsIRunnable>&& aOriginalObj);
 
 private:
   virtual ~TracedRunnable();
@@ -109,7 +109,7 @@ public:
   class AutoRunTask : public AutoSaveCurTraceInfo {
     VirtualTask* mTask;
   public:
-    AutoRunTask(VirtualTask *aTask);
+    explicit AutoRunTask(VirtualTask *aTask);
     ~AutoRunTask();
   };
 };
