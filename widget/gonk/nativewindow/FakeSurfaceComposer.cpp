@@ -212,7 +212,7 @@ uint32_t FakeSurfaceComposer::setDisplayStateLocked(const DisplayState& s)
 
     const uint32_t what = s.what;
     if (what & DisplayState::eSurfaceChanged) {
-        if (disp.surface->asBinder() != s.surface->asBinder()) {
+        if (disp.surface->asBinder(disp.surface) != s.surface->asBinder(s.surface)) {
             disp.surface = s.surface;
             flags |= eDisplayTransactionNeeded;
         }
@@ -370,7 +370,7 @@ class GraphicProducerWrapper : public BBinder, public MessageHandler {
     virtual void handleMessage(const Message& message) {
         android_atomic_release_load(&memoryBarrier);
         if (message.what == MSG_API_CALL) {
-            impl->asBinder()->transact(code, data[0], reply);
+            impl->asBinder(impl)->transact(code, data[0], reply);
             barrier.open();
         } else if (message.what == MSG_EXIT) {
             exitRequested = true;
@@ -475,7 +475,7 @@ FakeSurfaceComposer::captureScreenImp(const sp<IGraphicBufferProducer>& producer
     if (reqWidth > hw_w || reqHeight > hw_h) {
         ALOGE("size mismatch (%d, %d) > (%d, %d)",
                 reqWidth, reqHeight, hw_w, hw_h);
-        static_cast<GraphicProducerWrapper*>(producer->asBinder().get())->exit(BAD_VALUE);
+        static_cast<GraphicProducerWrapper*>(producer->asBinder(producer).get())->exit(BAD_VALUE);
         return;
     }
 
@@ -492,7 +492,7 @@ FakeSurfaceComposer::captureScreenImp(const sp<IGraphicBufferProducer>& producer
             RefPtr<nsScreenGonk> screenAlias = screen;
 
             if (native_window_api_connect(window, NATIVE_WINDOW_API_EGL) != NO_ERROR) {
-                static_cast<GraphicProducerWrapper*>(producer->asBinder().get())->exit(BAD_VALUE);
+                static_cast<GraphicProducerWrapper*>(producer->asBinder(producer).get())->exit(BAD_VALUE);
                 NS_ReleaseOnMainThread(screenAlias.forget());
                 return;
             }
@@ -520,7 +520,7 @@ FakeSurfaceComposer::captureScreenImp(const sp<IGraphicBufferProducer>& producer
                 result = BAD_VALUE;
             }
             native_window_api_disconnect(window, NATIVE_WINDOW_API_EGL);
-            static_cast<GraphicProducerWrapper*>(producer->asBinder().get())->exit(result);
+            static_cast<GraphicProducerWrapper*>(producer->asBinder(producer).get())->exit(result);
             NS_ReleaseOnMainThread(screenAlias.forget());
         });
 

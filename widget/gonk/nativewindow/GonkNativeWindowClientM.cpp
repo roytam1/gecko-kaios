@@ -29,6 +29,7 @@
 
 #include <ui/Fence.h>
 
+#undef B_PACK_CHARS // Avoid compiler error from redefinition
 #include <gui/IProducerListener.h>
 #include "GonkNativeWindowClientM.h"
 

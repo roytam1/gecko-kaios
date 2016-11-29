@@ -407,7 +407,7 @@ public:
         return stream;
     }
 
-    virtual void dump(String8& result, const char* prefix) const {
+    virtual void dumpToString(String8& result, const char* prefix) const {
         Parcel data, reply;
         data.writeInterfaceToken(IGonkGraphicBufferConsumer::getInterfaceDescriptor());
         data.writeString8(result);
@@ -417,7 +417,7 @@ public:
     }
 
     // Added by mozilla
-    virtual mozilla::TemporaryRef<mozilla::layers::TextureClient>
+    virtual already_AddRefed<mozilla::layers::TextureClient>
     getTextureClientFromBuffer(ANativeWindowBuffer* buffer)
     {
         return nullptr;
@@ -556,7 +556,7 @@ status_t BnGonkGraphicBufferConsumer::onTransact(
             CHECK_INTERFACE(IGonkGraphicBufferConsumer, data, reply);
             String8 result = data.readString8();
             String8 prefix = data.readString8();
-            static_cast<IGonkGraphicBufferConsumer*>(this)->dump(result, prefix);
+            static_cast<IGonkGraphicBufferConsumer*>(this)->dumpToString(result, prefix);
             reply->writeString8(result);
             return NO_ERROR;
         }
