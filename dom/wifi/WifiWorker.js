@@ -1823,6 +1823,7 @@ Network.api = {
   security: "r",
   capabilities: "r",
   known: "r",
+  connected: "r",
 
   password: "rw",
   keyManagement: "rw",
@@ -2041,8 +2042,11 @@ function WifiWorker() {
     var pub = new Network(ssid, mode, frequency, security, password);
     if (net.identity)
       pub.identity = dequote(net.identity);
-    if ("netId" in net)
+    if ("netId" in net) {
       pub.known = true;
+      if (net.netId == WifiManager.connectionInfo.id && self.ipAddress)
+        pub.connected = true;
+    }
     if (net.scan_ssid === 1)
       pub.hidden = true;
     if ("ca_cert" in net && net.ca_cert &&
