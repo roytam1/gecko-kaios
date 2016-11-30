@@ -490,6 +490,13 @@ this.DOMApplicationRegistry = {
         let data = aResult[0];
         this.webapps[aId].kind = this.webapps[aId].kind ||
           this.appKind(this.webapps[aId], aResult[0].manifest);
+        // When update apps' permission at first run,
+        // set default apps' enabled according to its manifest.
+        // Leverage this function to avoid reading manifest one more time.
+        if (this.webapps[aId].enabled === undefined ) {
+          this.webapps[aId].enabled = data.manifest.enabled !== undefined ?
+                                      data.manifest.enabled : true;
+        }
         PermissionsInstaller.installPermissions({
           manifest: data.manifest,
           manifestURL: this.webapps[aId].manifestURL,
