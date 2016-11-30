@@ -100,6 +100,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('windows', 'gtk2', 'gtk3'):
 
 EXTRA_PP_JS_MODULES += [
     'AppConstants.jsm',
+    'DeviceUtils.jsm ',
 ]
 
 if 'Android' != CONFIG['OS_TARGET']:
