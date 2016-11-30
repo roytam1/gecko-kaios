@@ -704,7 +704,11 @@ AudioManager::AudioManager()
   AudioSystem::setErrorCallback(BinderDeadCallback);
 #if ANDROID_VERSION >= 21
   android::sp<GonkAudioPortCallback> callback = new GonkAudioPortCallback();
+#if ANDROID_VERSION >= 23
+  AudioSystem::addAudioPortCallback(callback);
+#else
   AudioSystem::setAudioPortCallback(callback);
+#endif
 #endif
 
   // Create VolumeStreamStates
@@ -764,7 +768,9 @@ AudioManager::AudioManager()
 
 AudioManager::~AudioManager() {
   AudioSystem::setErrorCallback(nullptr);
-#if ANDROID_VERSION >= 21
+#if ANDROID_VERSION >= 23
+  AudioSystem::removeAudioPortCallback(nullptr);
+#elif ANDROID_VERSION >= 21
   AudioSystem::setAudioPortCallback(nullptr);
 #endif
   hal::UnregisterSwitchObserver(hal::SWITCH_HEADPHONES, mObserver);

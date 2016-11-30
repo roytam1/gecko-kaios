@@ -1029,7 +1029,12 @@ public:
 
     };
 
+#if ANDROID_VERSION >= 23
+    static status_t addAudioPortCallback(const sp<AudioPortCallback>& callback);
+    static status_t removeAudioPortCallback(const sp<AudioPortCallback>& callback);
+#else
     static void setAudioPortCallback(sp<AudioPortCallback> callBack);
+#endif
 #endif
 
 private:
