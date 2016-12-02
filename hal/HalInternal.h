@@ -35,16 +35,6 @@ void EnableBatteryNotifications();
 void DisableBatteryNotifications();
 
 /**
- * Enables flip notifications from the backend.
- */
-void EnableFlipNotifications();
-
-/**
- * Disables flip notifications from the backend.
- */
-void DisableFlipNotifications();
-
-/**
  * Enables network notifications from the backend.
  */
 void EnableNetworkNotifications();

@@ -332,6 +332,10 @@ KeyEventDispatcher::Dispatch()
         return;
     }
 
+    if (mDOMKeyNameIndex == KEY_NAME_INDEX_Flip){
+        hal::NotifyFlipStateFromInputDevice(!IsKeyPress());
+    }
+
     if (IsKeyPress()) {
         DispatchKeyDownEvent();
     } else {

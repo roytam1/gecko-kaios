@@ -297,20 +297,6 @@ BatteryObservers()
   return sBatteryObservers;
 }
 
-class FlipObserversManager : public ObserversManager<bool>
-{
-protected:
-  void EnableNotifications() {
-    PROXY_IF_SANDBOXED(EnableFlipNotifications());
-  }
-
-  void DisableNotifications() {
-    PROXY_IF_SANDBOXED(DisableFlipNotifications());
-  }
-};
-
-static FlipObserversManager sFlipObservers;
-
 class NetworkObserversManager : public CachingObserversManager<NetworkInformation>
 {
 protected:
@@ -408,25 +394,40 @@ NotifyBatteryChange(const BatteryInformation& aInfo)
   BatteryObservers().BroadcastCachedInformation();
 }
 
+typedef ObserverList<bool> FlipObserverList;
+static StaticAutoPtr<FlipObserverList> sFlipObservers;
+
+static FlipObserverList &
+GetFlipObservers() {
+  if(!sFlipObservers) {
+    sFlipObservers = new FlipObserverList();
+    ClearOnShutdown(&sFlipObservers);
+  }
+  return *sFlipObservers;
+}
+
 void
 RegisterFlipObserver(FlipObserver* aFlipObserver)
 {
   AssertMainThread();
-  sFlipObservers.AddObserver(aFlipObserver);
+  FlipObserverList &observers = GetFlipObservers();
+  observers.AddObserver(aFlipObserver);
 }
 
 void
 UnregisterFlipObserver(FlipObserver* aFlipObserver)
 {
   AssertMainThread();
-  sFlipObservers.RemoveObserver(aFlipObserver);
+  FlipObserverList &observers = GetFlipObservers();
+  observers.RemoveObserver(aFlipObserver);
 }
 
 void
-NotifyFlipStatus(bool aFlipStatus)
+NotifyFlipStateFromInputDevice(bool aFlipStatus)
 {
   AssertMainThread();
-  sFlipObservers.BroadcastInformation(aFlipStatus);
+  FlipObserverList &observers = GetFlipObservers();
+  observers.Broadcast(aFlipStatus);
 }
 
 bool GetScreenEnabled()

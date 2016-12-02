@@ -86,18 +86,6 @@ GetCurrentBatteryInformation(BatteryInformation* aBatteryInfo)
 }
 
 void
-EnableFlipNotifications()
-{
-
-}
-
-void
-DisableFlipNotifications()
-{
-
-}
-
-void
 EnableNetworkNotifications()
 {
   Hal()->SendEnableNetworkNotifications();
