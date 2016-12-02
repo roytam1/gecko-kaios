@@ -547,7 +547,10 @@ var shell = {
         }
         break;
       case 'sizemodechange':
-        if (window.windowState == window.STATE_MINIMIZED && !this.visibleNormalAudioActive) {
+        // Due to bug 4657, the default behavior of video/audio playing from web
+        // sites should be paused when this browser tab has sent back to
+        // background or phone has flip closed.
+        if (window.windowState == window.STATE_MINIMIZED) {
           this.contentBrowser.setVisible(false);
         } else {
           this.contentBrowser.setVisible(true);
