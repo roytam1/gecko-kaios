@@ -190,13 +190,13 @@ GonkDisplayJB::CreateVirtualDisplaySurface(android::IGraphicBufferProducer* aSin
     sp<BufferQueue> consumer = new BufferQueue(mAlloc);
     sp<IGraphicBufferProducer> producer = consumer;
 #endif
-
+/* FIXME: bug 4036, fix the build error in libdisplay
 #if ANDROID_VERSION >= 19
     sp<VirtualDisplaySurface> virtualDisplay;
     virtualDisplay = new VirtualDisplaySurface(-1, aSink, producer, consumer, String8("VirtualDisplaySurface"));
     aDisplaySurface = virtualDisplay;
     aNativeWindow = new Surface(virtualDisplay);
-#endif
+#endif*/
 }
 
 void
