@@ -1141,7 +1141,7 @@ pref("dom.event.highrestimestamp.enabled",  true);
 pref("dom.event.highrestimestamp.enabled",  false);
 #endif
 
-pref("dom.webcomponents.enabled",           false);
+pref("dom.webcomponents.enabled",           true);
 
 pref("javascript.enabled",                  true);
 pref("javascript.options.strict",           false);
