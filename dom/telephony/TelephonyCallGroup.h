@@ -140,6 +140,8 @@ private:
   CreatePromise(ErrorResult& aRv);
 
   bool CanConference(const TelephonyCall& aCall, const TelephonyCall* aSecondCall);
+
+  uint32_t GetServiceId();
 };
 
 } // namespace dom

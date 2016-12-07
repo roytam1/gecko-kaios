@@ -21,6 +21,8 @@
 #define TELEPHONY_GROUP_STATE(_state) \
   (TelephonyCallGroupStateValues::strings[static_cast<int32_t>(_state)].value)
 
+#define DEFAULT_SERVICEID 0
+
 using namespace mozilla::dom;
 using namespace mozilla::dom::telephony;
 using mozilla::ErrorResult;
@@ -243,6 +245,21 @@ TelephonyCallGroup::CanConference(const TelephonyCall& aCall,
           aSecondCall->State() == TelephonyCallState::Connected);
 }
 
+uint32_t
+TelephonyCallGroup::GetServiceId()
+{
+  uint32_t serviceId = DEFAULT_SERVICEID;
+  if (!mCalls.IsEmpty()) {
+    serviceId = mCalls[0]->ServiceId();
+  } else if (mConferenceParentCall) {
+    serviceId = mConferenceParentCall->ServiceId();
+  } else {
+    NS_WARNING("No valid call or conference");
+  }
+
+  return serviceId;
+}
+
 already_AddRefed<TelephonyCall>
 TelephonyCallGroup::GetCall(uint32_t aServiceId, uint32_t aCallIndex)
 {
@@ -394,7 +411,7 @@ TelephonyCallGroup::HangUp(ErrorResult& aRv)
   }
 
   nsCOMPtr<nsITelephonyCallback> callback = new TelephonyCallback(promise);
-  aRv = mTelephony->Service()->HangUpConference(mCalls[0]->ServiceId(),
+  aRv = mTelephony->Service()->HangUpConference(GetServiceId(),
                                                 callback);
   NS_ENSURE_TRUE(!aRv.Failed(), nullptr);
   return promise.forget();
@@ -431,7 +448,7 @@ TelephonyCallGroup::Hold(nsITelephonyCallback* aCallback)
     return NS_ERROR_DOM_INVALID_STATE_ERR;
   }
 
-  nsresult rv = mTelephony->Service()->HoldConference(mCalls[0]->ServiceId(),
+  nsresult rv = mTelephony->Service()->HoldConference(GetServiceId(),
                                                       aCallback);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return NS_ERROR_FAILURE;
@@ -471,7 +488,7 @@ TelephonyCallGroup::Resume(nsITelephonyCallback* aCallback)
     return NS_ERROR_DOM_INVALID_STATE_ERR;
   }
 
-  nsresult rv = mTelephony->Service()->ResumeConference(mCalls[0]->ServiceId(),
+  nsresult rv = mTelephony->Service()->ResumeConference(GetServiceId(),
                                                         aCallback);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return NS_ERROR_FAILURE;
