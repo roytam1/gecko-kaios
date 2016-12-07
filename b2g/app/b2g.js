@@ -203,7 +203,12 @@ pref("geo.cell.scan", true);
 
 // URL for geolocating service, the original URL of B2G OS is
 // "https://location.services.mozilla.com/v1/geolocate?key=%MOZILLA_API_KEY%"
-pref("geo.wifi.uri", "http://api.empowerthings.com:8080/v2.0/lbs/locate");
+// TODO: Bug 5681 - Use HTTPS instead of HTTP for the communication of KaiOS location service.
+pref("geo.wifi.uri", "http://lbs.kaiostech.com:8080/v2.0/lbs/locate");
+
+// The end point to get a access token for KaiOS location service
+// TODO: Bug 5681 - Use HTTPS instead of HTTP for the communication of KaiOS location service.
+pref("geo.token.uri", "http://lbs.kaiostech.com:8080/v2.0/applications/ZL5uJA6yIVxXU3VyFO0z/tokens");
 
 // whether the network geolocation provider need authorization header or not
 pref("geo.provider.need_authorization", true);

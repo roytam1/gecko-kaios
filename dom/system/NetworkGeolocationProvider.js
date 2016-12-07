@@ -6,6 +6,8 @@
 
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 Components.utils.import("resource://gre/modules/Services.jsm");
+Components.utils.import("resource://gre/modules/Promise.jsm");
+Components.utils.import("resource://gre/modules/DeviceUtils.jsm");
 
 const Ci = Components.interfaces;
 const Cc = Components.classes;
@@ -15,6 +17,27 @@ const POSITION_UNAVAILABLE = Ci.nsIDOMGeoPositionError.POSITION_UNAVAILABLE;
 const SETTINGS_DEBUG_ENABLED = "geolocation.debugging.enabled";
 const SETTINGS_CHANGED_TOPIC = "mozsettings-changed";
 const SETTINGS_WIFI_ENABLED = "wifi.enabled";
+const GEO_KAI_ACCESS_TOKEN = "geolocation.kaios.accessToken";
+const GEO_KAI_ACCESS_TOKEN_TIMESTAMP = "geolocation.kaios.accessTokenTimestamp";
+
+const PREF_SERVICE_DEVICE_TYPE = "services.kaiostech.device_type";
+const PREF_SERVICE_DEVICE_BRAND = "services.kaiostech.brand";
+const PREF_SERVICE_DEVICE_MODEL = "services.kaiostech.model";
+const PREF_B2G_OS_NAME = "b2g.osName";
+const PREF_B2G_VERSION = "b2g.version";
+
+const HTTP_CODE_OK = 200;
+const HTTP_CODE_CREATED = 201;
+const HTTP_CODE_BAD_REQUEST = 400;
+const HTTP_CODE_UNAUTHORIZED = 401;
+
+// Define a cooldown to prevent overly retrying in case the location server
+// have any internal errors.
+const TOKEN_REFRESH_COOLDOWN_IN_MS = 1800000; // half hour
+
+XPCOMUtils.defineLazyServiceGetter(this, "gMobileConnectionService",
+                                   "@mozilla.org/mobileconnection/mobileconnectionservice;1",
+                                   "nsIMobileConnectionService");
 
 var gLoggingEnabled = false;
 
@@ -311,6 +334,10 @@ WifiGeoPositionProvider.prototype = {
             self.wifiService = Cc["@mozilla.org/wifi/monitor;1"].getService(Ci.nsIWifiMonitor);
             self.wifiService.startWatching(self);
           }
+        } else if (name == GEO_KAI_ACCESS_TOKEN) {
+          self.access_token = result;
+        } else if (name == GEO_KAI_ACCESS_TOKEN_TIMESTAMP) {
+          self.tokenTimestamp = result;
         }
       },
 
@@ -326,6 +353,13 @@ WifiGeoPositionProvider.prototype = {
       let settings = settingsService.getService(Ci.nsISettingsService);
       settings.createLock().get(SETTINGS_WIFI_ENABLED, settingsCallback);
       settings.createLock().get(SETTINGS_DEBUG_ENABLED, settingsCallback);
+
+      let needAuthorization =
+        Services.prefs.getBoolPref("geo.provider.need_authorization");
+      if (needAuthorization) {
+        settings.createLock().get(GEO_KAI_ACCESS_TOKEN, settingsCallback);
+        settings.createLock().get(GEO_KAI_ACCESS_TOKEN_TIMESTAMP, settingsCallback);
+      }
     }
 
     if (gWifiScanningEnabled && Cc["@mozilla.org/wifi/monitor;1"]) {
@@ -462,6 +496,117 @@ WifiGeoPositionProvider.prototype = {
     this.sendLocationRequest(null);
   },
 
+  getDeviceInfo: function() {
+    let deferred = Promise.defer();
+
+    let prefDeviceType;
+    let prefDeviceBrand;
+    let prefDeviceModel;
+    let prefDeviceOs;
+    let prefDeviceVersion;
+    try {
+      prefDeviceType    = Services.prefs.getIntPref(PREF_SERVICE_DEVICE_TYPE);
+      prefDeviceBrand   = Services.prefs.getCharPref(PREF_SERVICE_DEVICE_BRAND);
+      prefDeviceModel   = Services.prefs.getCharPref(PREF_SERVICE_DEVICE_MODEL);
+      prefDeviceOs      = Services.prefs.getCharPref(PREF_B2G_OS_NAME);
+      prefDeviceVersion = Services.prefs.getCharPref(PREF_B2G_VERSION);
+    } catch (e) {
+      LOG("Failed to get device info. " + e);
+    }
+
+    let device_info = {
+      device_type : prefDeviceType,
+      brand       : prefDeviceBrand,
+      model       : prefDeviceModel,
+      reference   : DeviceUtils.getRefNumber(),
+      os          : prefDeviceOs,
+      os_version  : prefDeviceVersion,
+      device_id   : ""
+    };
+
+    // TODO: handle dual-SIM case properly
+    let conn = gMobileConnectionService.getItemByServiceId(0);
+    conn.getDeviceIdentities({
+      notifyGetDeviceIdentitiesRequestSuccess: function(aResult) {
+        if (aResult.imei && parseInt(aResult.imei) !== 0) {
+          device_info.device_id = aResult.imei;
+        } else if (aResult.meid && parseInt(aResult.meid) !== 0) {
+          device_info.device_id = aResult.meid;
+        } else {
+          device_info.device_id = aResult.esn;
+        }
+        deferred.resolve(device_info);
+      }
+    });
+
+    return deferred.promise;
+  },
+
+  getAccessToken: function () {
+    let deferred = Promise.defer();
+
+    this.getDeviceInfo().then((device_info) => {
+      let url = Services.urlFormatter.formatURLPref("geo.token.uri");
+
+      let xhr = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
+                          .createInstance(Ci.nsIXMLHttpRequest);
+
+      try {
+        xhr.open("POST", url, true);
+      } catch (e) {
+        deferred.reject(HTTP_CODE_BAD_REQUEST);
+        return;
+      }
+      xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+
+      let authorizationKey =
+        Services.urlFormatter.formatURLPref("geo.authorization.jwt");
+
+      xhr.setRequestHeader("Authorization", "Key " + authorizationKey);
+
+      xhr.responseType = "json";
+      xhr.mozBackgroundRequest = true;
+      xhr.channel.loadFlags = Ci.nsIChannel.LOAD_ANONYMOUS;
+      // Prevent the request from reading from the cache.
+      xhr.channel.loadFlags |= Ci.nsIRequest.LOAD_BYPASS_CACHE;
+      // Prevent the request from writing to the cache.
+      xhr.channel.loadFlags |= Ci.nsIRequest.INHIBIT_CACHING;
+      xhr.onerror = (function() {
+        if (xhr.status) {
+          deferred.reject(xhr.status);
+        } else {
+          deferred.reject(HTTP_CODE_BAD_REQUEST);
+        }
+      }).bind(this);
+
+      xhr.onload = (function() {
+        LOG("get access token returned status: " + xhr.status);
+        // only accept status code 200 and 201.
+        let isStatusInvalid = xhr.channel instanceof Ci.nsIHttpChannel &&
+          (xhr.status != HTTP_CODE_OK || xhr.status != HTTP_CODE_CREATED);
+        if (isStatusInvalid || !xhr.response || !xhr.response.access_token) {
+          deferred.reject(xhr.status);
+        } else {
+          // cache access token to settings
+          let settings = Cc["@mozilla.org/settingsService;1"].getService(Ci.nsISettingsService);
+          this.access_token = xhr.response.access_token;
+          settings.createLock().set(GEO_KAI_ACCESS_TOKEN, this.access_token, null);
+
+          this.tokenTimestamp = Date.now();
+          settings.createLock().set(GEO_KAI_ACCESS_TOKEN_TIMESTAMP, this.tokenTimestamp, null);
+
+          deferred.resolve(xhr.response.access_token);
+        }
+      }).bind(this);
+
+      var requestData = JSON.stringify(device_info);
+      LOG("Refresh access token by sending: " + requestData);
+      xhr.send(requestData);
+    });
+
+    return deferred.promise;
+  },
+
   sendLocationRequest: function (wifiData) {
     let data = { cellTowers: undefined, wifiAccessPoints: undefined };
     if (wifiData && wifiData.length >= 2) {
@@ -508,10 +653,7 @@ WifiGeoPositionProvider.prototype = {
     let needAuthorization =
       Services.prefs.getBoolPref("geo.provider.need_authorization");
     if (needAuthorization) {
-      let authorizationKey =
-        Services.urlFormatter.formatURLPref("geo.authorization.jwt");
-
-      xhr.setRequestHeader("Authorization", "Bearer " + authorizationKey);
+      xhr.setRequestHeader("Authorization", "Bearer " + this.access_token);
     }
 
     xhr.responseType = "json";
@@ -529,10 +671,27 @@ WifiGeoPositionProvider.prototype = {
     }).bind(this);
     xhr.onload = (function() {
       LOG("server returned status: " + xhr.status + " --> " +  JSON.stringify(xhr.response));
-      if ((xhr.channel instanceof Ci.nsIHttpChannel && xhr.status != 200) ||
+      if ((xhr.channel instanceof Ci.nsIHttpChannel && xhr.status != HTTP_CODE_OK) ||
           !xhr.response || !xhr.response.location) {
         this.notifyListener("notifyError",
                             [POSITION_UNAVAILABLE]);
+
+        if (needAuthorization && xhr.status == HTTP_CODE_UNAUTHORIZED) {
+          if (!this.tokenTimestamp ||
+              Date.now() - this.tokenTimestamp > TOKEN_REFRESH_COOLDOWN_IN_MS) {
+            this.getAccessToken().then(
+              (access_token) => {
+                LOG("Access token has been refreshed. ");
+                this.access_token = access_token;
+              },
+              (status_code) => {
+                LOG("Failed to refresh access token. status: " + status_code);
+                this.notifyListener("notifyError",
+                                    [POSITION_UNAVAILABLE]);
+              }
+            );
+          }
+        }
         return;
       }
 
