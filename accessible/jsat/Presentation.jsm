@@ -778,7 +778,7 @@ this.Presentation = { // jshint ignore:line
     delete this.presenters;
     let presenterMap = {
       'mobile/android': [VisualPresenter, AndroidPresenter],
-      'b2g': [VisualPresenter,
+      'b2g': [
               Utils.isBrowserFrame ? B2GPresenter : AppFramePresenter],
       'browser': [VisualPresenter, B2GPresenter, AndroidPresenter]
     };
