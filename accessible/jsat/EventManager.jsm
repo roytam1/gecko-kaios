@@ -95,6 +95,8 @@ this.EventManager.prototype = {
     }
   },
 
+  queueEvent: null,
+
   handleEvent: function handleEvent(aEvent) {
     Logger.debug(() => {
       return ['DOMEvent', aEvent.type];
@@ -107,7 +109,17 @@ this.EventManager.prototype = {
         if (aEvent.detail.type === 'custom-accessible') {
           let domNode = aEvent.detail.node;
           let acc = Utils.AccRetrieval.getAccessibleFor(domNode);
-          this.present(Presentation.selected(acc));
+          if (acc == null) {
+            // this event fires too early and the dom tree is still under
+            // constructed, postpone it.
+            this.queueEvent = aEvent.detail.node;
+          } else {
+            this.present(Presentation.selected(acc));
+          }
+        } else if (aEvent.detail.type === 'start-custom-access-output') {
+            this.customAccessOutput = true;
+        } else if (aEvent.detail.type === 'stop-custom-access-output') {
+            this.customAccessOutput = false;
         }
         break;
       }
@@ -168,6 +180,17 @@ this.EventManager.prototype = {
     switch (aEvent.eventType) {
       case Events.VIRTUALCURSOR_CHANGED:
       {
+        if (this.customAccessOutput) {
+          // when customAccessOutput is true, skip it.
+          // On bug 4294, when pop-up menu shows up, it isn't focused(if it
+          // takes focus, the menu will be closed). But readout module will fire
+          // EVENT_VIRTUALCURSOR_CHANGED and it reads the first item of the menu.
+          // This will conflict if user doesn't select the first item.
+          // For such use case, readout module reads the items that user selected
+          // by listening to 'custom-accessible' event.
+          return;
+        }
+
         let pivot = aEvent.accessible.
           QueryInterface(Ci.nsIAccessibleDocument).virtualCursor;
         let position = pivot.position;
@@ -303,10 +326,7 @@ this.EventManager.prototype = {
         if ([Roles.CHROME_WINDOW,
              Roles.DOCUMENT,
              Roles.APPLICATION].indexOf(acc.role) < 0) {
-          // bug 3442 - when switching apps, the rectangle sometimes not
-          // showing on the screen, ex enter phone app and go to launcher,
-          // Readout module should draw a rectangle on the phone icon.
-          this.contentControl.autoMove(acc, {forcePresent: true});
+          this.contentControl.autoMove(acc);
        }
 
        if (this.inTest) {
@@ -329,6 +349,12 @@ this.EventManager.prototype = {
         }
         this._preDialogPosition.set(aEvent.accessible.DOMNode, position);
         this.contentControl.autoMove(aEvent.accessible, { delay: 500 });
+        if (this.queueEvent) {
+          // Reads the event that FE sent too early.
+          let acc = Utils.AccRetrieval.getAccessibleFor(this.queueEvent);
+          this.present(Presentation.selected(acc));
+          this.queueEvent = null;
+        }
         break;
       }
       case Events.VALUE_CHANGE:
@@ -346,6 +372,7 @@ this.EventManager.prototype = {
             this.present(Presentation.valueChanged(target, isPolite));
           }
         }
+        break;
       }
     }
   },
