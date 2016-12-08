@@ -15,6 +15,8 @@ class nsIScriptContext;
 namespace mozilla {
 namespace dom {
 
+class Promise;
+
 typedef Observer<bool> FlipObserver;
 
 class FlipManager final : public DOMEventTargetHelper
@@ -22,12 +24,14 @@ class FlipManager final : public DOMEventTargetHelper
 {
 public:
   NS_DECL_ISUPPORTS_INHERITED
+  NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(FlipManager, DOMEventTargetHelper)
 
   explicit FlipManager(nsPIDOMWindowInner* aWindow);
 
   void Init();
   void Shutdown();
 
+  already_AddRefed<Promise> GetPromise(ErrorResult& aRv);
 
   void Notify(const bool& aIsOpened);
 
@@ -48,12 +52,8 @@ public:
 private:
   ~FlipManager();
 
-  void SetFlipStatus(bool aFlipStatus)
-  {
-    mFlipOpened = aFlipStatus;
-  }
-
   bool mFlipOpened;
+  nsTArray<RefPtr<Promise>> mPendingFlipPromises;
 };
 
 } // namespace dom

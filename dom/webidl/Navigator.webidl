@@ -141,7 +141,7 @@ partial interface Navigator {
 
 partial interface Navigator {
   [Throws, Pref="dom.flip.enabled", CheckAnyPermissions="flip", AvailableIn=CertifiedApps]
-  readonly attribute FlipManager flipManager;
+  Promise<FlipManager> getFlipManager();
 };
 
 // https://wiki.mozilla.org/WebAPI/DataStore
@@ -488,6 +488,9 @@ interface NavigatorConcurrentHardware {
 };
 
 partial interface Navigator {
-  [AvailableIn=CertifiedApps]
+  // This is a safety catch for System App.
+  // Return the current flip status. This attribute is only available for apps
+  // who runs on the main process, and it should be accessed by System App only.
+  [Throws, Pref="dom.flip.enabled", CheckAnyPermissions="flip", AvailableIn=CertifiedApps]
   readonly attribute boolean flipOpened;
 };

@@ -327,6 +327,29 @@ NotifySwitchStateFromInputDevice(SwitchDevice aDevice, SwitchState aState)
   NS_RUNTIMEABORT("Only the main process may notify switch state change.");
 }
 
+void
+NotifyFlipStateFromInputDevice(bool aFlipStatus)
+{
+}
+
+void
+EnableFlipNotifications()
+{
+  Hal()->SendEnableFlipNotifications();
+}
+
+void
+DisableFlipNotifications()
+{
+  Hal()->SendDisableFlipNotifications();
+}
+
+void
+RequestCurrentFlipState()
+{
+  Hal()->SendGetFlipState();
+}
+
 bool
 EnableAlarm()
 {
@@ -492,6 +515,7 @@ class HalParent : public PHalParent
                 , public SwitchObserver
                 , public SystemClockChangeObserver
                 , public SystemTimezoneChangeObserver
+                , public FlipObserver
 {
 public:
   virtual void
@@ -513,6 +537,7 @@ public:
          switchDevice < NUM_SWITCH_DEVICE; ++switchDevice) {
       hal::UnregisterSwitchObserver(SwitchDevice(switchDevice), this);
     }
+    hal::UnregisterFlipObserver(this);
   }
 
   virtual bool
@@ -543,6 +568,33 @@ public:
     WindowIdentifier newID(id, nullptr);
     hal::CancelVibrate(newID);
     return true;
+  }
+
+  virtual bool
+  RecvEnableFlipNotifications() override
+  {
+    hal::RegisterFlipObserver(this);
+    return true;
+  }
+
+  virtual bool
+  RecvDisableFlipNotifications() override
+  {
+    hal::UnregisterFlipObserver(this);
+    return true;
+  }
+
+  virtual bool
+  RecvGetFlipState() override
+  {
+    bool flipState = hal::IsFlipOpened();
+    Unused << SendNotifyFlipState(flipState);
+    return true;
+  }
+
+  void Notify(const bool& aFlipState)
+  {
+    Unused << SendNotifyFlipState(aFlipState);
   }
 
   virtual bool
@@ -965,6 +1017,12 @@ public:
   RecvNotifySystemTimezoneChange(
     const SystemTimezoneChangeInformation& aSystemTimezoneChangeInfo) override {
     hal::NotifySystemTimezoneChange(aSystemTimezoneChangeInfo);
+    return true;
+  }
+
+  virtual bool
+  RecvNotifyFlipState(const bool& aFlipState) {
+    hal::UpdateFlipState(aFlipState);
     return true;
   }
 };

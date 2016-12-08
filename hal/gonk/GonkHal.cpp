@@ -2059,5 +2059,30 @@ IsFlipOpened()
   return !status;
 }
 
+void
+NotifyFlipStateFromInputDevice(bool aFlipState)
+{
+  hal::UpdateFlipState(aFlipState);
+}
+
+void
+RequestCurrentFlipState()
+{
+  bool flipState = IsFlipOpened();
+  hal::UpdateFlipState(flipState);
+}
+
+// Main process receives notifications of flip state change from input device
+// directly.
+void
+EnableFlipNotifications()
+{
+}
+
+void
+DisableFlipNotifications()
+{
+}
+
 } // hal_impl
 } // mozilla

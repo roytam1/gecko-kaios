@@ -106,11 +106,16 @@ child:
     async NotifyScreenConfigurationChange(ScreenConfiguration aScreenOrientation);
     async NotifySwitchChange(SwitchEvent aEvent);
     async NotifySystemClockChange(int64_t aClockDeltaMS); 
-    async NotifySystemTimezoneChange(SystemTimezoneChangeInformation aSystemTimezoneChangeInfo); 
+    async NotifySystemTimezoneChange(SystemTimezoneChangeInformation aSystemTimezoneChangeInfo);
+    async NotifyFlipState(bool aFlipState);
 
 parent:
     async Vibrate(uint32_t[] pattern, uint64_t[] id, PBrowser browser);
     async CancelVibrate(uint64_t[] id, PBrowser browser);
+
+    async EnableFlipNotifications();
+    async DisableFlipNotifications();
+    async GetFlipState();
 
     async EnableBatteryNotifications();
     async DisableBatteryNotifications();

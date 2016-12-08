@@ -885,8 +885,13 @@ Navigator::RemoveIdleObserver(MozIdleObserver& aIdleObserver, ErrorResult& aRv)
 }
 
 bool
-Navigator::FlipOpened()
+Navigator::GetFlipOpened(ErrorResult& aRv)
 {
+  if (!XRE_IsParentProcess()) {
+    aRv.Throw(NS_ERROR_UNEXPECTED);
+    return nullptr;
+  }
+
   return hal::IsFlipOpened();
 }
 
@@ -1533,26 +1538,21 @@ Navigator::GetDeprecatedBattery(ErrorResult& aRv)
   return mBatteryManager;
 }
 
-FlipManager*
+already_AddRefed<Promise>
 Navigator::GetFlipManager(ErrorResult& aRv)
 {
-  if (!XRE_IsParentProcess()) {
+  if (!mWindow || !mWindow->GetDocShell()) {
     aRv.Throw(NS_ERROR_UNEXPECTED);
     return nullptr;
   }
 
   if (!mFlipManager) {
-    if (!mWindow) {
-      aRv.Throw(NS_ERROR_UNEXPECTED);
-      return nullptr;
-    }
-    NS_ENSURE_TRUE(mWindow->GetDocShell(), nullptr);
-
     mFlipManager = new FlipManager(mWindow);
     mFlipManager->Init();
   }
 
-  return mFlipManager;
+  RefPtr<Promise> p = mFlipManager->GetPromise(aRv);
+  return p.forget();
 }
 
 /* static */ already_AddRefed<Promise>

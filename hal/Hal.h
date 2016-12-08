@@ -125,10 +125,22 @@ void RegisterFlipObserver(mozilla::dom::FlipObserver* aFlipObserver);
 void UnregisterFlipObserver(mozilla::dom::FlipObserver* aFlipObserver);
 
 /**
- * Notify of a change in the flip status from input device.
- * @param aFlipStauts The new flip status.
+ * Notify of a change in the flip state from input device.
+ * @param aFlipState The new flip state.
  */
-void NotifyFlipStateFromInputDevice(bool aFlipStatus);
+void NotifyFlipStateFromInputDevice(bool aFlipState);
+
+/**
+ * Request the current flip state. If the request is made by content process,
+ * result will be returned asynchronously.
+ */
+void RequestCurrentFlipState();
+
+/**
+ * Update the flip state in each flip observers.
+ * @param aFlipState The new flip state.
+ */
+void UpdateFlipState(const bool& aFlipState);
 
 /**
  * Determine whether the device's screen is currently enabled.

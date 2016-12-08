@@ -334,6 +334,7 @@ KeyEventDispatcher::Dispatch()
 
     if (mDOMKeyNameIndex == KEY_NAME_INDEX_Flip){
         hal::NotifyFlipStateFromInputDevice(!IsKeyPress());
+        return;
     }
 
     if (IsKeyPress()) {

@@ -167,7 +167,8 @@ public:
   Geolocation* GetGeolocation(ErrorResult& aRv);
   Promise* GetBattery(ErrorResult& aRv);
   battery::BatteryManager* GetDeprecatedBattery(ErrorResult& aRv);
-  FlipManager* GetFlipManager(ErrorResult& aRv);
+
+  already_AddRefed<Promise> GetFlipManager(ErrorResult& aRv);
 
   static already_AddRefed<Promise> GetDataStores(nsPIDOMWindowInner* aWindow,
                                                  const nsAString& aName,
@@ -202,7 +203,7 @@ public:
   already_AddRefed<Promise> HasFeature(const nsAString &aName,
                                        ErrorResult& aRv);
 
-  bool FlipOpened();
+  bool GetFlipOpened(ErrorResult& aRv);
   bool Vibrate(uint32_t aDuration);
   bool Vibrate(const nsTArray<uint32_t>& aDuration);
   uint32_t MaxTouchPoints();

@@ -6,8 +6,7 @@
 
 /**
  * FlipManager reports the current flip status, and dispatch a flipchange event
- * when device has flip opened or closed. Please note that this interface can
- * only be accessed on the chrome(b2g) process for now
+ * when device has flip opened or closed.
  */
 [Pref="dom.flip.enabled", CheckAnyPermissions="flip", AvailableIn=CertifiedApps]
 interface FlipManager : EventTarget {
