@@ -11,6 +11,11 @@
 #include "nsThreadUtils.h"
 #include "mozilla/IOInterposer.h"
 
+#ifdef MOZ_TASK_TRACER
+#include "GeckoTaskTracer.h"
+#include "TracedTaskCommon.h"
+#endif
+
 namespace mozilla {
 namespace net {
 
@@ -95,12 +100,18 @@ nsresult CacheIOThread::DispatchAfterPendingOpens(nsIRunnable* aRunnable)
 
 nsresult CacheIOThread::DispatchInternal(nsIRunnable* aRunnable, uint32_t aLevel)
 {
-  if (NS_WARN_IF(!aRunnable))
+  nsCOMPtr<nsIRunnable> runnable(aRunnable);
+#ifdef MOZ_TASK_TRACER
+  runnable = tasktracer::CreateTracedRunnable(runnable.forget());
+  (static_cast<tasktracer::TracedRunnable*>(runnable.get()))->DispatchTask();
+#endif
+
+  if (NS_WARN_IF(!runnable))
     return NS_ERROR_NULL_POINTER;
 
   mMonitor.AssertCurrentThreadOwns();
 
-  mEventQueue[aLevel].AppendElement(aRunnable);
+  mEventQueue[aLevel].AppendElement(runnable.forget());
   if (mLowestLevelWaiting > aLevel)
     mLowestLevelWaiting = aLevel;
 

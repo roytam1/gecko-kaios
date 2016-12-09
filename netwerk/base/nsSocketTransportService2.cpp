@@ -27,6 +27,10 @@
 #include "nsIFile.h"
 #include "nsIWidget.h"
 
+#ifdef MOZ_TASK_TRACER
+#include "GeckoTaskTracer.h"
+#endif
+
 using namespace mozilla;
 using namespace mozilla::net;
 
@@ -263,8 +267,13 @@ nsSocketTransportService::DetachSocket(SocketContext *listHead, SocketContext *s
     MOZ_ASSERT((listHead == mActiveList) || (listHead == mIdleList),
                "DetachSocket invalid head");
 
-    // inform the handler that this socket is going away
-    sock->mHandler->OnSocketDetached(sock->mFD);
+    {
+#ifdef MOZ_TASK_TRACER
+	tasktracer::AutoSourceEvent taskTracerEvent(tasktracer::SourceEventType::SocketIO);
+#endif
+        // inform the handler that this socket is going away
+        sock->mHandler->OnSocketDetached(sock->mFD);
+    }
     mSentBytesCount += sock->mHandler->ByteCountSent();
     mReceivedBytesCount += sock->mHandler->ByteCountReceived();
 
@@ -1119,6 +1128,9 @@ nsSocketTransportService::DoPollIteration(TimeDuration *pollDuration)
             PRPollDesc &desc = mPollList[i+1];
             SocketContext &s = mActiveList[i];
             if (n > 0 && desc.out_flags != 0) {
+#ifdef MOZ_TASK_TRACER
+		tasktracer::AutoSourceEvent taskTracerEvent(tasktracer::SourceEventType::SocketIO);
+#endif
                 s.mElapsedTime = 0;
                 s.mHandler->OnSocketReady(desc.fd, desc.out_flags);
                 numberOfOnSocketReadyCalls++;
@@ -1138,6 +1150,9 @@ nsSocketTransportService::DoPollIteration(TimeDuration *pollDuration)
                     s.mElapsedTime += uint16_t(pollInterval);
                 // check for timeout expiration 
                 if (s.mElapsedTime >= s.mHandler->mPollTimeout) {
+#ifdef MOZ_TASK_TRACER
+		    tasktracer::AutoSourceEvent taskTracerEvent(tasktracer::SourceEventType::SocketIO);
+#endif
                     s.mElapsedTime = 0;
                     s.mHandler->OnSocketReady(desc.fd, -1);
                     numberOfOnSocketReadyCalls++;
@@ -1289,6 +1304,9 @@ nsSocketTransportService::NotifyKeepaliveEnabledPrefChange(SocketContext *sock)
         return;
     }
 
+#ifdef MOZ_TASK_TRACER
+    tasktracer::AutoSourceEvent taskTracerEvent(tasktracer::SourceEventType::SocketIO);
+#endif
     sock->mHandler->OnKeepaliveEnabledPrefChange(mKeepaliveEnabledPref);
 }
 

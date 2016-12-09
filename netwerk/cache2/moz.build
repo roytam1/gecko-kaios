@@ -53,4 +53,7 @@ LOCAL_INCLUDES += [
     '/netwerk/cache',
 ]
 
+# include for TaskTracer module.
+include('/ipc/chromium/chromium-config.mozbuild')
+
 FINAL_LIBRARY = 'xul'
