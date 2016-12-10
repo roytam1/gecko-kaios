@@ -740,6 +740,13 @@ class Sources(BaseSources):
         BaseSources.__init__(self, context, files, canonical_suffix)
 
 
+class ObjSources(BaseSources):
+    """Represents object files to be compiled during the build."""
+
+    def __init__(self, context, files, canonical_suffix):
+        BaseSources.__init__(self, context, files, canonical_suffix)
+
+
 class GeneratedSources(BaseSources):
     """Represents generated files to be compiled during the build."""
 

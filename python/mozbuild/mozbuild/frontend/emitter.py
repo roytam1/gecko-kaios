@@ -56,6 +56,7 @@ from .data import (
     LocalInclude,
     ObjdirFiles,
     ObjdirPreprocessedFiles,
+    ObjSources,
     PerSourceFlag,
     PreprocessedTestWebIDLFile,
     PreprocessedWebIDLFile,
@@ -601,7 +602,7 @@ class TreeMetadataEmitter(LoggingMixin):
         sources = defaultdict(list)
         gen_sources = defaultdict(list)
         all_flags = {}
-        for symbol in ('SOURCES', 'HOST_SOURCES', 'UNIFIED_SOURCES'):
+        for symbol in ('SOURCES', 'OBJ_SOURCES', 'HOST_SOURCES', 'UNIFIED_SOURCES'):
             srcs = sources[symbol]
             gen_srcs = gen_sources[symbol]
             context_srcs = context.get(symbol, [])
@@ -623,6 +624,7 @@ class TreeMetadataEmitter(LoggingMixin):
 
         # HOST_SOURCES and UNIFIED_SOURCES only take SourcePaths, so
         # there should be no generated source in here
+        assert not gen_sources['OBJ_SOURCES']
         assert not gen_sources['HOST_SOURCES']
         assert not gen_sources['UNIFIED_SOURCES']
 
@@ -651,6 +653,7 @@ class TreeMetadataEmitter(LoggingMixin):
             '.cpp': set(['.cc', '.cxx']),
             '.rs': set(),
             '.S': set(),
+            '.o': set(),
         }
 
         # The inverse of the above, mapping suffixes to their canonical suffix.
@@ -668,6 +671,7 @@ class TreeMetadataEmitter(LoggingMixin):
         all_suffixes = list(suffix_map.keys())
         varmap = dict(
             SOURCES=(Sources, GeneratedSources, all_suffixes),
+            OBJ_SOURCES=(ObjSources, None, ['.o']),
             HOST_SOURCES=(HostSources, None, ['.c', '.mm', '.cpp']),
             UNIFIED_SOURCES=(UnifiedSources, None, ['.c', '.mm', '.cpp']),
         )

@@ -157,6 +157,7 @@ def read_from_gyp(config, path, output, vars, non_unified_sources = set()):
             context['LIBRARY_NAME'] = name.decode('utf-8')
             # gyp files contain headers and asm sources in sources lists.
             sources = []
+            obj_sources = []
             unified_sources = []
             extensions = set()
             for f in spec.get('sources', []):
@@ -165,6 +166,8 @@ def read_from_gyp(config, path, output, vars, non_unified_sources = set()):
                 s = SourcePath(context, f)
                 if ext == '.h':
                     continue
+                if ext == '.o':
+                    obj_sources.append(s)
                 if ext != '.S' and s not in non_unified_sources:
                     unified_sources.append(s)
                 else:
@@ -172,6 +175,7 @@ def read_from_gyp(config, path, output, vars, non_unified_sources = set()):
 
             # The context expects alphabetical order when adding sources
             context['SOURCES'] = alphabetical_sorted(sources)
+            context['OBJ_SOURCES'] = alphabetical_sorted(obj_sources)
             context['UNIFIED_SOURCES'] = alphabetical_sorted(unified_sources)
 
             for define in target_conf.get('defines', []):

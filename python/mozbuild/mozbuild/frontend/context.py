@@ -940,6 +940,11 @@ VARIABLES = {
         Accepts assembler, C, C++, Objective C/C++.
         """),
 
+    'OBJ_SOURCES' : (ContextDerivedTypedList(SourcePath, StrictOrderingOnAppendList), list,
+        """Prebuilt object source files.
+
+        """),
+
     'FILES_PER_UNIFIED_FILE': (int, int,
         """The number of source files to compile into each unified source file.
 
