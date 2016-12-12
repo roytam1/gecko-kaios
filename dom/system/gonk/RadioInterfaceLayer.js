@@ -935,9 +935,14 @@ RadioInterface.prototype = {
     // To set the sytem timezone. Note that we need to convert the time zone
     // value to a UTC repesentation string in the format of "UTC(+/-)hh:mm".
     // Ex, time zone -480 is "UTC+08:00"; time zone 630 is "UTC-10:30".
-    //
-    // We can unapply the DST correction if we want the raw time zone offset:
-    // message.networkTimeZoneInMinutes -= message.networkDSTInMinutes;
+
+    // DST can only be 0|1|2 hr according to 3GPP TS 22.042, besides, there is
+    // no need to unapply the DST correction because FE should be able to get
+    // the correct time zone offset by using "time.timezone.dst" value.
+    gSettingsService.createLock().set("time.timezone.dst",
+                                      message.networkDSTInHr,
+                                      null);
+
     if (message.networkTimeZoneInMinutes != (new Date()).getTimezoneOffset()) {
       let absTimeZoneInMinutes = Math.abs(message.networkTimeZoneInMinutes);
       let timeZoneStr = "UTC";

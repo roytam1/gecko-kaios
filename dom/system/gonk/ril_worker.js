@@ -5314,11 +5314,11 @@ RilObject.prototype[UNSOLICITED_NITZ_TIME_RECEIVED] = function UNSOLICITED_NITZ_
     return;
   }
 
-  this.sendChromeMessage({rilMessageType: "nitzTime",
-                          networkTimeInMS: timeInMS,
-                          networkTimeZoneInMinutes: -(tz * 15),
-                          networkDSTInMinutes: -(dst * 60),
-                          receiveTimeInMS: now});
+  this.sendChromeMessage({rilMessageType           : "nitzTime",
+                          networkTimeInMS          : timeInMS,
+                          networkTimeZoneInMinutes : -(tz * 15),
+                          networkDSTInHr           : dst,
+                          receiveTimeInMS          : now});
 };
 
 RilObject.prototype[UNSOLICITED_SIGNAL_STRENGTH] = function UNSOLICITED_SIGNAL_STRENGTH(length) {
