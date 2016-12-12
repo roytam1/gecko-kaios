@@ -625,7 +625,7 @@ static const nsExtraMimeTypeEntry extraMimeEntries[] =
   { AUDIO_3GPP, "3gpp,3gp", "3GPP Audio" },
   { AUDIO_3GPP2, "3g2", "3GPP2 Audio" },
 #endif
-  { AUDIO_MIDI, "mid, midi", "Standard MIDI Audio" },
+  { AUDIO_MIDI, "mid,midi", "Standard MIDI Audio" },
   { AUDIO_AAC, "aac", "ADTS AAC Audio" },
 };
 
