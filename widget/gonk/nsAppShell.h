@@ -58,6 +58,7 @@ class InputReaderThread;
 
 class GeckoInputReaderPolicy;
 class GeckoInputDispatcher;
+class nsRepeatKeyTimer;
 
 class nsAppShell : public nsBaseAppShell {
 public:

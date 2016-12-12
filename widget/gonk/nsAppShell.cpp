@@ -512,6 +512,7 @@ public:
         , mPowerWakelock(false)
     {
         mTouchDispatcher = GeckoTouchDispatcher::GetInstance();
+        InitRepeatKey();
     }
 
     virtual void dump(String8& dump);
@@ -547,7 +548,10 @@ public:
     virtual void SetMouseDevice(bool aMouseDevice);
 
 protected:
-    virtual ~GeckoInputDispatcher() { }
+    virtual ~GeckoInputDispatcher() {
+        DeinitRepeatKey();
+    }
+    friend class ::nsRepeatKeyTimer;
 
 private:
     // mQueueLock should generally be locked while using mEventQueue.
@@ -561,7 +565,256 @@ private:
     int mKeyDownCount;
     bool mKeyEventsFiltered;
     bool mPowerWakelock;
+
+    nsRefPtr<nsRepeatKeyTimer> mRepeatKeyTimer;
+    void InitRepeatKey();
+    void DeinitRepeatKey();
+    void ReportRepeatKey(UserInputData &data);
+
 };
+
+enum events {
+    SUPPORTED_KEY_DOWN,
+    SUPPORTED_KEY_LONG_PRESSED,
+    STOP_KEY
+};
+
+enum states {
+    STOP,
+    START,
+    REPEAT
+};
+
+class nsRepeatKeyTimer MOZ_FINAL : public nsITimerCallback
+{
+    public:
+
+    NS_DECL_ISUPPORTS
+
+    nsRepeatKeyTimer();
+    nsresult Init(GeckoInputDispatcher* aGeckoInputDispatcher);
+    nsresult Deinit();
+    bool Handler(UserInputData &data);
+
+    protected:
+    virtual ~nsRepeatKeyTimer();
+
+    private:
+    GeckoInputDispatcher* mGeckoInputDispatcher;
+    nsCOMPtr<nsITimer> mTimer;
+    uint32_t mDelay;
+    uint32_t mRepeatCnt;
+    UserInputData mPendingKey;
+    const int32_t mSupportKeys[4] = {AKEYCODE_DPAD_DOWN, AKEYCODE_DPAD_UP, AKEYCODE_DPAD_LEFT, AKEYCODE_DPAD_RIGHT};
+    const uint16_t mSpeeds[9] = {300, 250, 250, 250, 200, 200, 200, 200, 150};
+    enum events mNewEvent;
+    enum states mCurrentState;
+    nsresult Start();
+    nsresult Stop();
+    nsresult SetDelay(uint32_t aDelay);
+    NS_IMETHOD Notify(nsITimer *timer) MOZ_OVERRIDE;
+    bool IsSupportKey(UserInputData &data);
+    uint32_t DelayCalculation(uint32_t &steps);
+    enum events GetEvent(UserInputData &data);
+    void ResetState(void);
+
+};
+
+nsRepeatKeyTimer::nsRepeatKeyTimer()
+    : mDelay(mSpeeds[0])
+    , mRepeatCnt(0)
+    , mCurrentState(STOP)
+{
+}
+
+nsresult
+nsRepeatKeyTimer::Init(GeckoInputDispatcher* aGeckoInputDispatcher)
+{
+    mGeckoInputDispatcher = aGeckoInputDispatcher;
+    ResetState();
+    return NS_OK;
+}
+
+nsresult
+nsRepeatKeyTimer::Deinit()
+{
+    mGeckoInputDispatcher = nullptr;
+    Stop();
+    ResetState();
+    return NS_OK;
+}
+
+bool
+nsRepeatKeyTimer::Handler(UserInputData &data)
+{
+    mNewEvent = GetEvent(data);
+    switch (mNewEvent)
+    {
+        case SUPPORTED_KEY_DOWN:
+            switch (mCurrentState) {
+                case STOP:
+                    memcpy(&mPendingKey, &data, sizeof(UserInputData));
+                    mRepeatCnt = 0;
+                    SetDelay(mSpeeds[0]);
+                    Start();
+                    mRepeatCnt++;
+                    mCurrentState = START;
+                    break;
+                case START:
+                case REPEAT:
+                    Stop();
+                    ResetState();
+                    break;
+                default:
+                    LOG("Unknown nsRepeatKeyTimer State %d", mCurrentState);
+                    Stop();
+                    ResetState();
+                    break;
+                }
+                break;
+        case SUPPORTED_KEY_LONG_PRESSED:
+            switch (mCurrentState) {
+                case START:
+                case REPEAT:
+                    if (mPendingKey.key.keyCode == data.key.keyCode) {
+                        {
+                            uint32_t aDelay = DelayCalculation(mRepeatCnt);
+                            if (aDelay != mDelay)
+                                SetDelay(aDelay);
+                        }
+                        Start();
+                        mRepeatCnt++;
+                        if (mCurrentState == START)
+                            mCurrentState = REPEAT;
+                    }
+                    break;
+                case STOP:
+                    return true; //drop this event
+                default:
+                    LOG("Unknown nsRepeatKeyTimer State %d", mCurrentState);
+                    Stop();
+                    ResetState();
+                    break;
+            }
+            break;
+        case STOP_KEY:
+            switch (mCurrentState) {
+                case START:
+                case REPEAT:
+                    Stop();
+                    ResetState();
+                    break;
+                case STOP:
+                    break;
+                default:
+                    LOG("Unknown nsRepeatKeyTimer State %d", mCurrentState);
+                    Stop();
+                    ResetState();
+                    break;
+            }
+            break;
+        default:
+            LOG("Unknown nsRepeatKeyTimer Event %d", mNewEvent);
+            break;
+    }
+    return false;
+}
+
+nsRepeatKeyTimer::~nsRepeatKeyTimer()
+{
+    if (mTimer) {
+        mTimer->Cancel();
+    }
+}
+
+nsresult
+nsRepeatKeyTimer::Start()
+{
+    if (!mTimer)
+    {
+        nsresult result;
+        mTimer = do_CreateInstance("@mozilla.org/timer;1", &result);
+
+        if (NS_FAILED(result)) {
+            LOG("Fail to get timer instance for repeat key");
+            return result;
+        }
+    }
+
+    return mTimer->InitWithCallback(this, mDelay, nsITimer::TYPE_ONE_SHOT);
+}
+
+nsresult
+nsRepeatKeyTimer::Stop()
+{
+    if (mTimer)
+    {
+        mTimer->Cancel();
+        mTimer = 0;
+    }
+
+    return NS_OK;
+}
+
+nsresult
+nsRepeatKeyTimer::SetDelay(uint32_t aDelay)
+{
+    mDelay = aDelay;
+    return NS_OK;
+}
+
+NS_IMETHODIMP
+nsRepeatKeyTimer::Notify(nsITimer *timer)
+{
+    if (mGeckoInputDispatcher)
+        mGeckoInputDispatcher->ReportRepeatKey(mPendingKey);
+    return NS_OK;
+}
+
+bool
+nsRepeatKeyTimer::IsSupportKey(UserInputData &data)
+{
+    for (size_t i = 0; i < sizeof(mSupportKeys)/sizeof(int32_t); i++)
+        if (mSupportKeys[i] == data.key.keyCode)
+            return true;
+    return false;
+}
+
+uint32_t
+nsRepeatKeyTimer::DelayCalculation(uint32_t &steps)
+{
+    if (steps < sizeof(mSpeeds)/sizeof(uint16_t))
+        return mSpeeds[steps];
+    else
+        return mDelay;
+}
+
+enum events
+nsRepeatKeyTimer::GetEvent(UserInputData &data)
+{
+    if (IsSupportKey(data)) {
+        if (data.action == AKEY_EVENT_ACTION_DOWN)
+            if (data.flags & AKEY_EVENT_FLAG_LONG_PRESS)
+                return SUPPORTED_KEY_LONG_PRESSED;
+            else
+                return SUPPORTED_KEY_DOWN;
+        else
+            return STOP_KEY;
+    } else {
+            return STOP_KEY;
+    }
+}
+
+void
+nsRepeatKeyTimer::ResetState(void)
+{
+    memset(&mPendingKey, 0, sizeof(UserInputData));
+    mDelay = mSpeeds[0];
+    mRepeatCnt = 0;
+    mCurrentState = STOP;
+}
+
+NS_IMPL_ISUPPORTS(nsRepeatKeyTimer, nsITimerCallback)
 
 // GeckoInputReaderPolicy
 void
@@ -653,6 +906,9 @@ GeckoInputDispatcher::dispatchOnce()
             return;
         }
 
+        if (mRepeatKeyTimer->Handler(data) == true) //Drop Event if return true
+            break;
+
         sp<KeyCharacterMap> kcm = mEventHub->getKeyCharacterMap(data.deviceId);
         KeyEventDispatcher dispatcher(data, kcm.get());
         dispatcher.Dispatch();
@@ -699,6 +955,17 @@ void
 GeckoInputDispatcher::SetMouseDevice(bool aMouseDevice)
 {
   mTouchDispatcher->SetMouseDevice(aMouseDevice);
+}
+
+void GeckoInputDispatcher::ReportRepeatKey(UserInputData &data)
+{
+    data.timeMs = nanosecsToMillisecs(systemTime(SYSTEM_TIME_MONOTONIC));
+    data.flags |= AKEY_EVENT_FLAG_LONG_PRESS;
+    {
+        MutexAutoLock lock(mQueueLock);
+        mEventQueue.push(data);
+    }
+    gAppShell->NotifyNativeEvent();
 }
 
 static void
@@ -853,6 +1120,21 @@ status_t
 GeckoInputDispatcher::unregisterInputChannel(const sp<InputChannel>& inputChannel)
 {
     return OK;
+}
+
+void
+GeckoInputDispatcher::InitRepeatKey()
+{
+    mRepeatKeyTimer = new nsRepeatKeyTimer();
+    mRepeatKeyTimer->Init(this);
+}
+void
+GeckoInputDispatcher::DeinitRepeatKey()
+{
+    if (mRepeatKeyTimer) {
+        mRepeatKeyTimer->Deinit();
+        mRepeatKeyTimer = nullptr;
+    }
 }
 
 nsAppShell::nsAppShell()
