@@ -1861,7 +1861,12 @@ BrowserElementChild.prototype = {
       location = Cc["@mozilla.org/docshell/urifixup;1"]
         .getService(Ci.nsIURIFixup).createExposableURI(location);
 
-      sendAsyncMsg('locationchange', { _payload_: location.spec });
+      var isSameDocument =
+        !!(flags & Ci.nsIWebProgressListener.LOCATION_CHANGE_SAME_DOCUMENT);
+
+      sendAsyncMsg('locationchange', { url: location.spec,
+                                       sameDocument: isSameDocument
+                                      });
     },
 
     onStateChange: function(webProgress, request, stateFlags, status) {
