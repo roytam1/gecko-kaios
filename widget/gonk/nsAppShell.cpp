@@ -566,7 +566,7 @@ private:
     bool mKeyEventsFiltered;
     bool mPowerWakelock;
 
-    nsRefPtr<nsRepeatKeyTimer> mRepeatKeyTimer;
+    RefPtr<nsRepeatKeyTimer> mRepeatKeyTimer;
     void InitRepeatKey();
     void DeinitRepeatKey();
     void ReportRepeatKey(UserInputData &data);
@@ -585,7 +585,7 @@ enum states {
     REPEAT
 };
 
-class nsRepeatKeyTimer MOZ_FINAL : public nsITimerCallback
+class nsRepeatKeyTimer final : public nsITimerCallback
 {
     public:
 
@@ -612,7 +612,7 @@ class nsRepeatKeyTimer MOZ_FINAL : public nsITimerCallback
     nsresult Start();
     nsresult Stop();
     nsresult SetDelay(uint32_t aDelay);
-    NS_IMETHOD Notify(nsITimer *timer) MOZ_OVERRIDE;
+    NS_IMETHOD Notify(nsITimer *timer) override;
     bool IsSupportKey(UserInputData &data);
     uint32_t DelayCalculation(uint32_t &steps);
     enum events GetEvent(UserInputData &data);
@@ -814,7 +814,14 @@ nsRepeatKeyTimer::ResetState(void)
     mCurrentState = STOP;
 }
 
-NS_IMPL_ISUPPORTS(nsRepeatKeyTimer, nsITimerCallback)
+NS_IMPL_ADDREF(nsRepeatKeyTimer)
+NS_IMPL_RELEASE(nsRepeatKeyTimer)
+
+NS_INTERFACE_MAP_BEGIN(nsRepeatKeyTimer)
+  NS_INTERFACE_MAP_ENTRY_AMBIGUOUS(nsISupports, nsITimerCallback)
+  NS_INTERFACE_MAP_ENTRY(nsITimerCallback)
+NS_INTERFACE_MAP_END_THREADSAFE
+
 
 // GeckoInputReaderPolicy
 void
