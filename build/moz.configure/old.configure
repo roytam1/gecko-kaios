@@ -165,6 +165,7 @@ def old_configure_options(*options):
     '--enable-b2g-camera',
     '--enable-b2g-ril',
     '--enable-bundled-fonts',
+    '--enable-camera-hdr',
     '--enable-clang-plugin',
     '--enable-content-sandbox',
     '--enable-cookies',
