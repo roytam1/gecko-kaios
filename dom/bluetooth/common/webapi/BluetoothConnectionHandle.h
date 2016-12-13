@@ -29,9 +29,9 @@ public:
   NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(BluetoothConnectionHandle)
 
   static already_AddRefed<BluetoothConnectionHandle>
-    Create(nsPIDOMWindow* aOwner, uint16_t aServiceUuid);
+    Create(nsPIDOMWindowInner* aOwner, uint16_t aServiceUuid);
 
-  nsPIDOMWindow* GetParentObject() const
+  nsPIDOMWindowInner* GetParentObject() const
   {
     return mOwner;
   }
@@ -51,10 +51,10 @@ public:
   already_AddRefed<DOMRequest> Reject(ErrorResult& aRv);
 
 private:
-  BluetoothConnectionHandle(nsPIDOMWindow* aOwner, uint16_t aServiceUuid);
+  BluetoothConnectionHandle(nsPIDOMWindowInner* aOwner, uint16_t aServiceUuid);
   ~BluetoothConnectionHandle();
 
-  nsCOMPtr<nsPIDOMWindow> mOwner;
+  nsCOMPtr<nsPIDOMWindowInner> mOwner;
   uint16_t                mServiceUuid;
 };
 

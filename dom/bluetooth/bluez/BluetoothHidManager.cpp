@@ -239,6 +239,12 @@ BluetoothHidManager::IsConnected()
 }
 
 void
+BluetoothHidManager::ReplyToConnectionRequest(bool aAccept)
+{
+  MOZ_ASSERT(false, "BluetoothHidManager hasn't implemented this function yet.");
+}
+
+void
 BluetoothHidManager::HandleInputPropertyChanged(const BluetoothSignal& aSignal)
 {
   MOZ_ASSERT(NS_IsMainThread());

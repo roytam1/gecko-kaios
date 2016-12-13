@@ -24,7 +24,7 @@ NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(BluetoothConnectionHandle)
   NS_INTERFACE_MAP_ENTRY(nsISupports)
 NS_INTERFACE_MAP_END
 
-BluetoothConnectionHandle::BluetoothConnectionHandle(nsPIDOMWindow* aOwner,
+BluetoothConnectionHandle::BluetoothConnectionHandle(nsPIDOMWindowInner* aOwner,
                                                      uint16_t aServiceUuid)
   : mOwner(aOwner)
   , mServiceUuid(aServiceUuid)
@@ -37,7 +37,8 @@ BluetoothConnectionHandle::~BluetoothConnectionHandle()
 }
 
 already_AddRefed<BluetoothConnectionHandle>
-BluetoothConnectionHandle::Create(nsPIDOMWindow* aOwner, uint16_t aServiceUuid)
+BluetoothConnectionHandle::Create(nsPIDOMWindowInner* aOwner,
+                                  uint16_t aServiceUuid)
 {
   MOZ_ASSERT(aOwner);
 
@@ -50,7 +51,7 @@ BluetoothConnectionHandle::Create(nsPIDOMWindow* aOwner, uint16_t aServiceUuid)
 already_AddRefed<DOMRequest>
 BluetoothConnectionHandle::Accept(ErrorResult& aRv)
 {
-  nsCOMPtr<nsPIDOMWindow> win = GetParentObject();
+  nsCOMPtr<nsPIDOMWindowInner> win = GetParentObject();
   if (!win) {
     aRv.Throw(NS_ERROR_FAILURE);
     return nullptr;
@@ -74,7 +75,7 @@ BluetoothConnectionHandle::Accept(ErrorResult& aRv)
 already_AddRefed<DOMRequest>
 BluetoothConnectionHandle::Reject(ErrorResult& aRv)
 {
-  nsCOMPtr<nsPIDOMWindow> win = GetParentObject();
+  nsCOMPtr<nsPIDOMWindowInner> win = GetParentObject();
   if (!win) {
     aRv.Throw(NS_ERROR_FAILURE);
     return nullptr;
