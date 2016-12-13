@@ -110,7 +110,6 @@ DIRS += [
     'xbl',
     'xml',
     'xslt',
-    'xt9connect',
     'xul',
     'resourcestats',
     'manifest',
@@ -162,6 +161,9 @@ if CONFIG['MOZ_B2G']:
     ]
 
 DIRS += ['presentation']
+
+if CONFIG['ENABLE_NUANCE_XT9']:
+    DIRS += ['xt9connect']
 
 TEST_DIRS += [
     'tests',

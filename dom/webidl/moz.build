@@ -618,7 +618,6 @@ WEBIDL_FILES = [
     'XPathNSResolver.webidl',
     'XPathResult.webidl',
     'XSLTProcessor.webidl',
-    'Xt9Connect.webidl',
     'XULCommandEvent.webidl',
     'XULDocument.webidl',
     'XULElement.webidl',
@@ -947,4 +946,9 @@ if CONFIG['MOZ_B2G']:
 if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
     WEBIDL_FILES += [
         'AlarmsManager.webidl',
+    ]
+
+if CONFIG['ENABLE_NUANCE_XT9']:
+    WEBIDL_FILES += [
+        'Xt9Connect.webidl'
     ]

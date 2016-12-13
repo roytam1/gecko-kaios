@@ -261,7 +261,6 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
         'binder',
         'gui',
         'mtp',
-        'xt9',
     ]
 
     if int(CONFIG['ANDROID_VERSION']) >= 17:
@@ -375,6 +374,11 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     OS_LIBS += [
         'usp10',
         'oleaut32',
+    ]
+
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk' and CONFIG['ENABLE_NUANCE_XT9']:
+    OS_LIBS += [
+         'xt9',
     ]
 
 # This needs to be last

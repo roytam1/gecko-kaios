@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 #ifndef mozilla_dom_xt9connect_Xt9Connect_h
 #define mozilla_dom_xt9connect_Xt9Connect_h
 
@@ -22,13 +26,36 @@ extern "C" {
 #include <sys/time.h>
 #include <stdio.h>
 
-#include <android/log.h>
 #include <string.h>
 #include <errno.h>
 
+#if ANDROID_VERSION >= 23
+#include <algorithm>
+#else
 #include <stl/_algo.h>
+#endif
 
-#define LOG_DBG(args...)  __android_log_print(ANDROID_LOG_DEBUG, "Debug::Xt9Connect::" , ## args)
+#if defined(MOZ_WIDGET_GONK)
+#include <android/log.h>
+#define LOG_XT9_TAG "GeckoXt9Connect"
+#define XT9_DEBUG 0
+
+#define XT9_LOGW(args...)  __android_log_print(ANDROID_LOG_WARN, LOG_XT9_TAG , ## args)
+#define XT9_LOGE(args...)  __android_log_print(ANDROID_LOG_ERROR, LOG_XT9_TAG , ## args)
+
+#if XT9_DEBUG
+#define XT9_LOGD(args...)  __android_log_print(ANDROID_LOG_DEBUG, LOG_XT9_TAG , ## args)
+#else
+#define XT9_LOGD(args...)
+#endif
+
+#else
+
+#define XT9_LOGD(args...)
+#define XT9_LOGW(args...)
+#define XT9_LOGE(args...)
+
+#endif
 
 namespace mozilla {
 namespace dom {
@@ -53,41 +80,39 @@ typedef uint32_t DWORD;
 typedef enum { I_HQR, I_HQD, I_HPD, I_EXP } INPUTMODE;
 
 typedef struct {
-
-	ET9SYMB             psBuffer[BUFFER_LEN_MAX];
-	ET9INT              snBufferLen;
-	ET9INT              snCursorPos;
-
+  ET9SYMB             psBuffer[BUFFER_LEN_MAX];
+  ET9INT              snBufferLen;
+  ET9INT              snCursorPos;
 } demoEditorInfo;
 
 typedef struct {
-	ET9AWLingInfo       sLingInfo;
-	ET9AWLingCmnInfo    sLingCmnInfo;
+  ET9AWLingInfo       sLingInfo;
+  ET9AWLingCmnInfo    sLingCmnInfo;
 
-	ET9WordSymbInfo     sWordSymbInfo;
+  ET9WordSymbInfo     sWordSymbInfo;
 
-	ET9KDBInfo          sKdbInfo;
+  ET9KDBInfo          sKdbInfo;
 
-	ET9U32              dwDLMSize;
-	_ET9DLM_info        *pDLMInfo;
+  ET9U32              dwDLMSize;
+  _ET9DLM_info        *pDLMInfo;
 
-	FILE                *pfEventFile;
+  FILE                *pfEventFile;
 
-	ET9U8               pbASdb[ASDB_SIZE];
+  ET9U8               pbASdb[ASDB_SIZE];
 
-	ET9U8               bTotWords;
-	ET9U8               bActiveWordIndex;
+  ET9U8               bTotWords;
+  ET9U8               bActiveWordIndex;
 
-	ET9U16              wGestureValue;
+  ET9U16              wGestureValue;
 
-	INPUTMODE           eInputMode;
-	ET9BOOL             bSupressSubstitutions;
-	ET9U8               bLastKeyMT;
-	DWORD               dwMultitapStartTime;
+  INPUTMODE           eInputMode;
+  ET9BOOL             bSupressSubstitutions;
+  ET9U8               bLastKeyMT;
+  DWORD               dwMultitapStartTime;
 
-	demoEditorInfo      *pEditor;
+  demoEditorInfo      *pEditor;
 
-	ET9SimpleWord       sExplicitLearningWord;
+  ET9SimpleWord       sExplicitLearningWord;
 } demoIMEInfo;
 
 uint32_t GetTickCount();
@@ -114,11 +139,11 @@ ET9STATUS ET9Handle_IMU_Request(ET9WordSymbInfo * const pWordSymbInfo,
                                 ET9_Request     * const pRequest);
 
 ET9STATUS ET9FARCALL ET9KDBLoad(ET9KDBInfo    * const pKdbInfo,
-                        	    const ET9U32          dwKdbNum,
-                        	    const ET9U16          wPageNum);
+                                const ET9U32          dwKdbNum,
+                                const ET9U16          wPageNum);
 
-ET9STATUS ET9FARCALL ET9AWLdbReadData(ET9AWLingInfo *pLingInfo, 
-                                      ET9U8         * ET9FARDATA *ppbSrc, 
+ET9STATUS ET9FARCALL ET9AWLdbReadData(ET9AWLingInfo *pLingInfo,
+                                      ET9U8         * ET9FARDATA *ppbSrc,
                                       ET9U32        *pdwSizeInBytes);
 
 ET9STATUS ET9Handle_KDB_Request(ET9KDBInfo      * const pKdbInfo,
@@ -145,86 +170,85 @@ void PrintScreen(demoIMEInfo *pIME);
 
 class Xt9Connect MOZ_FINAL : public nsISupports, public nsWrapperCache
 {
-	public:
-		NS_DECL_CYCLE_COLLECTING_ISUPPORTS
-		NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(Xt9Connect)
+public:
+  NS_DECL_CYCLE_COLLECTING_ISUPPORTS
+  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(Xt9Connect)
 
-		static already_AddRefed<Xt9Connect> Constructor(const GlobalObject& aGlobal,
-														ErrorResult& aRv);
+  static already_AddRefed<Xt9Connect> 
+  Constructor(const GlobalObject& aGlobal,
+              ErrorResult& aRv);
 
-		bool InitEmptyWord() const
-		{
-			return mEmptyWord;
-		}
+  bool InitEmptyWord() const
+  {
+      return mEmptyWord;
+  }
 
-		void SetInitEmptyWord(const bool aResult)
-		{
-			mEmptyWord = aResult;
-		}
+  void SetInitEmptyWord(const bool aResult)
+  {
+      mEmptyWord = aResult;
+  }
 
-		void GetWholeWord(nsAString& aResult)
-		{
-			CopyASCIItoUTF16(mWholeWord, aResult);
-			mWholeWord.Assign("");
-		}
+  void GetWholeWord(nsAString& aResult)
+  {
+      CopyASCIItoUTF16(mWholeWord, aResult);
+      mWholeWord.Assign("");
+  }
 
-		void SetWholeWord(const nsAString& aResult)
-		{
-			LossyCopyUTF16toASCII(aResult, sWholeWord);
-		}
+  void SetWholeWord(const nsAString& aResult)
+  {
+      LossyCopyUTF16toASCII(aResult, sWholeWord);
+  }
 
-		void GetCandidateWord(nsAString& aResult)
-		{
-			CopyASCIItoUTF16(mCandidateWord, aResult);
-			mCandidateWord.Assign("");
-		}
+  void GetCandidateWord(nsAString& aResult)
+  {
+      CopyASCIItoUTF16(mCandidateWord, aResult);
+      mCandidateWord.Assign("");
+  }
 
-		uint16_t TotalWord() const
-		{
-			return mTotalWord;
-		}
+  uint16_t TotalWord() const
+  {
+      return mTotalWord;
+  }
 
-		uint32_t CursorPosition() const
-		{
-			return mCursorPosition;
-		}
+  uint32_t CursorPosition() const
+  {
+      return mCursorPosition;
+  }
 
-		void SetCursorPosition(const uint32_t aResult)
-		{
-			sCursorPosition = aResult;
-			cursorPositionEnabled = true;
-		}
+  void SetCursorPosition(const uint32_t aResult)
+  {
+      sCursorPosition = aResult;
+      cursorPositionEnabled = true;
+  }
 
-		virtual JSObject* WrapObject(JSContext* aCx) MOZ_OVERRIDE;
+  virtual JSObject* WrapObject(JSContext* aCx) MOZ_OVERRIDE;
 
-		nsCOMPtr<nsPIDOMWindow> mWindow;
-		nsPIDOMWindow* GetOwner() const { return mWindow; }
+  nsCOMPtr<nsPIDOMWindow> mWindow;
+  nsPIDOMWindow* GetOwner() const { return mWindow; }
 
-		nsPIDOMWindow* GetParentObject()
-		{
-			return GetOwner();
-		}
+  nsPIDOMWindow* GetParentObject()
+  {
+      return GetOwner();
+  }
 
-		explicit Xt9Connect(nsPIDOMWindow* aWindow);
+  explicit Xt9Connect(nsPIDOMWindow* aWindow);
 
-		static already_AddRefed<Xt9Connect> Init(ErrorResult& aRv);
+  nsresult Init();
 
-		static void SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLetter, ErrorResult& aRv);
+  static void SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLetter, ErrorResult& aRv);
 
-		static bool mEmptyWord;
-		static nsCString mWholeWord;
-		static nsCString sWholeWord;
-		static nsCString mCandidateWord;
-		static uint16_t  mTotalWord;
-		static uint32_t  mCursorPosition;
-		static uint32_t  sCursorPosition;
-		static bool cursorPositionEnabled;
+  static bool mEmptyWord;
+  static nsCString mWholeWord;
+  static nsCString sWholeWord;
+  static nsCString mCandidateWord;
+  static uint16_t  mTotalWord;
+  static uint32_t  mCursorPosition;
+  static uint32_t  sCursorPosition;
+  static bool cursorPositionEnabled;
 
-	private:
-
-		~Xt9Connect();
+private:
+  ~Xt9Connect();
 };
-
 } // namespace dom
 } // namespace mozilla
 
