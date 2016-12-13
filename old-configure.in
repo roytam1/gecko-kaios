@@ -95,6 +95,18 @@ DIST="$MOZ_BUILD_ROOT/dist"
 
 MOZ_DEFAULT_COMPILER
 
+dnl ========================================================
+dnl = Enable Nuance XT9 Library Support
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(nuance-xt9,
+[  --enable-nuance-xt9        Enable Nuance's XT9 Library Support for IME],
+    ENABLE_NUANCE_XT9=1,
+    ENABLE_NUANCE_XT9= )
+if test -n "$ENABLE_NUANCE_XT9"; then
+   AC_DEFINE(ENABLE_NUANCE_XT9)
+fi
+AC_SUBST(ENABLE_NUANCE_XT9)
+
 if test -n "$gonkdir" ; then
     dnl export for js/src/configure. We can't pass the option down normally,
     dnl because it's a `--enable-project=b2g`-only option.
@@ -6709,18 +6721,6 @@ AC_SUBST(BUILD_CTYPES)
 if test "$BUILD_CTYPES"; then
     AC_DEFINE(BUILD_CTYPES)
 fi
-
-dnl ========================================================
-dnl = Enable Nuance XT9 Library Support
-dnl ========================================================
-MOZ_ARG_ENABLE_BOOL(nuance-xt9,
-[  --enable-nuance-xt9        Enable Nuance's XT9 Library Support for IME],
-    ENABLE_NUANCE_XT9=1,
-    ENABLE_NUANCE_XT9= )
-if test -n "$ENABLE_NUANCE_XT9"; then
-   AC_DEFINE(ENABLE_NUANCE_XT9)
-fi
-AC_SUBST(ENABLE_NUANCE_XT9)
 
 dnl Build Places if required
 if test "$MOZ_PLACES"; then

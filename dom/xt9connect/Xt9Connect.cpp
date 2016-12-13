@@ -60,7 +60,7 @@ EditorInitWord(demoIMEInfo * const pIME, nsCString& initWord)
 
 void
 EditorSetCursor(demoIMEInfo * const pIME,
-                const uint32_t& initCursor,
+                const int32_t& initCursor,
                 bool& enabledCursor)
 {
   if (enabledCursor) {
@@ -136,7 +136,9 @@ EditorInsertWord(demoIMEInfo * const pIME,
                                  NULL,
                                  0);
 
-  MOZ_ASSERT(!eStatus || eStatus == ET9STATUS_INVALID_TEXT);
+  if (eStatus && eStatus != ET9STATUS_INVALID_TEXT) {
+    MOZ_ASSERT(false);
+  }
 
   pEditor->snCursorPos += snStringLen;
 }
@@ -207,7 +209,9 @@ EditorGetWord(demoIMEInfo * const pIME,
                                  psEmptyString,
                                  0);
 
-  MOZ_ASSERT(!eStatus || eStatus == ET9STATUS_INVALID_TEXT);
+  if (eStatus && eStatus != ET9STATUS_INVALID_TEXT) {
+    MOZ_ASSERT(false);
+  }
 
   /* cut from buffer */
   std::copy(pEditor->psBuffer+snLastPos+1,
@@ -325,7 +329,7 @@ ET9AWLdbReadData(ET9AWLingInfo *pLingInfo,
       *ppbSrc = (ET9U8 ET9FARDATA *)l1212b00; *pdwSizeInBytes = 348099;
       return ET9STATUS_NONE;
   default :
-    XT9_LOGD("ET9AWLdbReadData = 0x%x", pLingInfo->pLingCmnInfo->dwLdbNum);
+    XT9_LOGD("ET9AWLdbReadData = 0x%lx", pLingInfo->pLingCmnInfo->dwLdbNum);
     return ET9STATUS_READ_DB_FAIL;
   }
 }
@@ -419,7 +423,6 @@ PrintLanguage(const ET9U32 dwLanguage)
 void
 PrintState(demoIMEInfo *pIME)
 {
-  ET9U32 dwPrimaryLdbNum = 0;
   ET9POSTSHIFTMODE ePostShiftMode;
 
   ET9AWGetPostShiftMode(&pIME->sLingInfo, &ePostShiftMode);
@@ -658,7 +661,7 @@ NS_WRAPPERCACHE_INTERFACE_MAP_ENTRY
 NS_INTERFACE_MAP_ENTRY(nsISupports)
 NS_INTERFACE_MAP_END
 
-Xt9Connect::Xt9Connect(nsPIDOMWindow* aWindow): mWindow(aWindow)
+Xt9Connect::Xt9Connect(nsPIDOMWindowInner* aWindow): mWindow(aWindow)
 {
     MOZ_ASSERT(mWindow);
 }
@@ -668,13 +671,13 @@ Xt9Connect::Constructor(const GlobalObject& aGlobal,
                         ErrorResult& aRv)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  nsCOMPtr<nsPIDOMWindow> window = do_QueryInterface(aGlobal.GetAsSupports());
+  nsCOMPtr<nsPIDOMWindowInner> window = do_QueryInterface(aGlobal.GetAsSupports());
   if (!window) {
     aRv.Throw(NS_ERROR_FAILURE);
     return nullptr;
   }
 
-  nsRefPtr<Xt9Connect> xt_object = new Xt9Connect(window);
+  RefPtr<Xt9Connect> xt_object = new Xt9Connect(window);
   aRv = xt_object->Init(ET9LIDEnglish_US);
 
   return xt_object.forget();
@@ -686,13 +689,13 @@ Xt9Connect::Constructor(const GlobalObject& aGlobal,
                         ErrorResult& aRv)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  nsCOMPtr<nsPIDOMWindow> window = do_QueryInterface(aGlobal.GetAsSupports());
+  nsCOMPtr<nsPIDOMWindowInner> window = do_QueryInterface(aGlobal.GetAsSupports());
   if (!window) {
     aRv.Throw(NS_ERROR_FAILURE);
     return nullptr;
   }
 
-  nsRefPtr<Xt9Connect> xt_object = new Xt9Connect(window);
+  RefPtr<Xt9Connect> xt_object = new Xt9Connect(window);
   aRv = xt_object->Init(aXt9LID);
 
   return xt_object.forget();
@@ -726,21 +729,21 @@ Xt9Connect::Init(uint32_t aXt9LID)
   LdbValidate_eStatus = ET9AWLdbValidate(&sIME.sLingInfo, ET9LIDEnglish_US, &ET9AWLdbReadData);
 
   if (LdbValidate_eStatus) {
-    XT9_LOGE("Init::LdbValidate_eStatus: [0x%x] [%d]", ET9LIDEnglish_US, LdbValidate_eStatus);
+    XT9_LOGE("Init::LdbValidate_eStatus: [0x%lx] [%d]", ET9LIDEnglish_US, LdbValidate_eStatus);
     return NS_ERROR_FAILURE;
   }
 
   LdbValidate_eStatus = ET9AWLdbValidate(&sIME.sLingInfo, ET9LIDFrench_Canada, &ET9AWLdbReadData);
 
   if (LdbValidate_eStatus) {
-    XT9_LOGE("Init::LdbValidate_eStatus: [0x%x] [%d]", ET9LIDFrench_Canada, LdbValidate_eStatus);
+    XT9_LOGE("Init::LdbValidate_eStatus: [0x%lx] [%d]", ET9LIDFrench_Canada, LdbValidate_eStatus);
     return NS_ERROR_FAILURE;
   }
 
   LdbValidate_eStatus = ET9AWLdbValidate(&sIME.sLingInfo, ET9LIDSpanish_LatinAmerican, &ET9AWLdbReadData);
 
   if (LdbValidate_eStatus) {
-    XT9_LOGE("Init::LdbValidate_eStatus: [0x%x] [%d]", ET9LIDSpanish_LatinAmerican, LdbValidate_eStatus);
+    XT9_LOGE("Init::LdbValidate_eStatus: [0x%lx] [%d]", ET9LIDSpanish_LatinAmerican, LdbValidate_eStatus);
     return NS_ERROR_FAILURE;
   }
 
@@ -835,21 +838,21 @@ Xt9Connect::Init(uint32_t aXt9LID)
   Validate_HPD_eStatus = ET9KDB_Validate(&sIME.sKdbInfo, ENGLISH_HPD, ET9KDBLoad);
 
   if (Validate_HPD_eStatus) {
-    XT9_LOGE("Init::Validate_HPD_eStatus: [0x%x] [%d]", ENGLISH_HPD, Validate_HPD_eStatus);
+    XT9_LOGE("Init::Validate_HPD_eStatus: [0x%lx] [%d]", ENGLISH_HPD, Validate_HPD_eStatus);
     return NS_ERROR_FAILURE;
   }
 
   Validate_HPD_eStatus = ET9KDB_Validate(&sIME.sKdbInfo, FRENCH_HPD, ET9KDBLoad);
 
   if (Validate_HPD_eStatus) {
-    XT9_LOGE("Init::Validate_HPD_eStatus: [0x%x] [%d]", FRENCH_HPD, Validate_HPD_eStatus);
+    XT9_LOGE("Init::Validate_HPD_eStatus: [0x%lx] [%d]", FRENCH_HPD, Validate_HPD_eStatus);
     return NS_ERROR_FAILURE;
   }
 
   Validate_HPD_eStatus = ET9KDB_Validate(&sIME.sKdbInfo, SPANISH_HPD, ET9KDBLoad);
 
   if (Validate_HPD_eStatus) {
-    XT9_LOGE("Init::Validate_HPD_eStatus: [0x%x] [%d]", SPANISH_HPD, Validate_HPD_eStatus);
+    XT9_LOGE("Init::Validate_HPD_eStatus: [0x%lx] [%d]", SPANISH_HPD, Validate_HPD_eStatus);
     return NS_ERROR_FAILURE;
   }
 
@@ -1051,9 +1054,10 @@ Xt9Connect::SetLanguage(const uint32_t et9_lid)
 }
 
 JSObject*
-Xt9Connect::WrapObject(JSContext* aCx)
+Xt9Connect::WrapObject(JSContext* aCx,
+                               JS::Handle<JSObject*> aGivenProto)
 {
-  return mozilla::dom::Xt9ConnectBinding::Wrap(aCx, this);
+  return mozilla::dom::Xt9ConnectBinding::Wrap(aCx, this, aGivenProto);
 }
 
 Xt9Connect::~Xt9Connect()

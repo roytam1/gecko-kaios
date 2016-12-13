@@ -216,6 +216,7 @@ def old_configure_options(*options):
     '--enable-negotiateauth',
     '--enable-nfc',
     '--enable-nspr-build',
+    '--enable-nuance-xt9',
     '--enable-official-branding',
     '--enable-omx-plugin',
     '--enable-oom-breakpoint',

@@ -135,7 +135,7 @@ void EditorInitEmptyWord(demoIMEInfo *pIME, bool& initEmptyWord);
 
 void EditorInitWord(demoIMEInfo *pIME, nsCString& initWord);
 
-void EditorSetCursor(demoIMEInfo * const pIME, const uint32_t& initCursor, bool& enabledCursor);
+void EditorSetCursor(demoIMEInfo * const pIME, const int32_t& initCursor, bool& enabledCursor);
 
 void EditorInsertWord(demoIMEInfo * const pIME, ET9AWWordInfo *pWord, ET9BOOL bSupressSubstitutions);
 
@@ -179,7 +179,7 @@ void PrintEditorBuffer(demoEditorInfo *pEditor);
 
 void PrintScreen(demoIMEInfo *pIME);
 
-class Xt9Connect MOZ_FINAL : public nsISupports, public nsWrapperCache
+class Xt9Connect final : public nsISupports, public nsWrapperCache
 {
 public:
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
@@ -241,17 +241,18 @@ public:
     return mCurrentEt9LID;
   }
 
-  virtual JSObject* WrapObject(JSContext* aCx) MOZ_OVERRIDE;
+  virtual JSObject* WrapObject(JSContext* aCx,
+                               JS::Handle<JSObject*> aGivenProto) override;
 
-  nsCOMPtr<nsPIDOMWindow> mWindow;
-  nsPIDOMWindow* GetOwner() const { return mWindow; }
+  nsCOMPtr<nsPIDOMWindowInner> mWindow;
+  nsPIDOMWindowInner* GetOwner() const { return mWindow; }
 
-  nsPIDOMWindow* GetParentObject()
+  nsPIDOMWindowInner* GetParentObject()
   {
     return GetOwner();
   }
 
-  explicit Xt9Connect(nsPIDOMWindow* aWindow);
+  explicit Xt9Connect(nsPIDOMWindowInner* aWindow);
 
   nsresult Init(uint32_t aXt9LID);
 
