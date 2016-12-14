@@ -1949,12 +1949,14 @@ BluetoothMapSmsManager::SendMasObexData(uint8_t* aData, uint8_t aOpcode,
   return true;
 }
 
-void
+bool
 BluetoothMapSmsManager::SendMasObexData(UniquePtr<uint8_t[]> aData,
                                         uint8_t aOpcode, int aSize)
 {
   SetObexPacketInfo(aData.get(), aOpcode, aSize);
   mMasSocket->SendSocketData(new UnixSocketRawData(Move(aData), aSize));
+
+  return true;
 }
 
 void

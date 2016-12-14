@@ -385,10 +385,11 @@ BluetoothHidManager::IsConnected()
   return mHidConnected;
 }
 
-void
+bool
 BluetoothHidManager::ReplyToConnectionRequest(bool aAccept)
 {
   MOZ_ASSERT(false, "BluetoothHidManager hasn't implemented this function yet.");
+  return false;
 }
 
 void

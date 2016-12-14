@@ -160,7 +160,7 @@ private:
   bool ReplyToGet(uint16_t aPhonebookSize = 0);
   bool ReplyError(uint8_t aError);
   bool SendObexData(uint8_t* aData, uint8_t aOpcode, int aSize);
-  void SendObexData(UniquePtr<uint8_t[]> aData, uint8_t aOpcode, int aSize);
+  bool SendObexData(UniquePtr<uint8_t[]> aData, uint8_t aOpcode, int aSize);
 
   ObexResponseCode SetPhoneBookPath(const ObexHeaderSet& aHeader,
                                     uint8_t flags);
@@ -205,7 +205,7 @@ private:
    * OBEX session status. Set when OBEX session is established
    */
   bool mConnected;
-  
+
   /**
    * Whether user input password request is required to reply to authentication
    * challenge

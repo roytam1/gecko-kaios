@@ -1284,12 +1284,14 @@ BluetoothPbapManager::SendObexData(uint8_t* aData, uint8_t aOpcode, int aSize)
   return true;
 }
 
-void
+bool
 BluetoothPbapManager::SendObexData(UniquePtr<uint8_t[]> aData, uint8_t aOpcode,
                                    int aSize)
 {
   SetObexPacketInfo(aData.get(), aOpcode, aSize);
   mSocket->SendSocketData(new UnixSocketRawData(Move(aData), aSize));
+
+  return true;
 }
 
 void

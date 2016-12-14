@@ -265,7 +265,7 @@ private:
     InfallibleTArray<BluetoothNamedValue>& aValues,
     const Map::AppParametersTagId aTagId);
   bool SendMasObexData(uint8_t* aData, uint8_t aOpcode, int aSize);
-  void SendMasObexData(UniquePtr<uint8_t[]> aData, uint8_t aOpcode, int aSize);
+  bool SendMasObexData(UniquePtr<uint8_t[]> aData, uint8_t aOpcode, int aSize);
   void SendMnsObexData(uint8_t* aData, uint8_t aOpcode, int aSize);
   bool StatusResponse(bool aStatus);
 
