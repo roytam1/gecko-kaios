@@ -549,7 +549,7 @@ BluetoothMapSmsManager::ComposePacket(uint8_t aOpCode,
     mPutPacketLength = ((static_cast<int>(data[1]) << 8) | data[2]) -
                        frameHeaderLength;
 
-    mPutReceivedDataBuffer = new uint8_t[mPutPacketLength];
+    mPutReceivedDataBuffer = MakeUnique<uint8_t[]>(mPutPacketLength);
     mPutFinalFlag = (aOpCode == ObexRequestCode::PutFinal);
   }
 

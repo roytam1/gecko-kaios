@@ -354,7 +354,7 @@ private:
   bool mPutFinalFlag;
   int mPutPacketLength;
   int mPutReceivedPacketLength;
-  nsAutoArrayPtr<uint8_t> mPutReceivedDataBuffer;
+  UniquePtr<uint8_t[]> mPutReceivedDataBuffer;
 };
 
 END_BLUETOOTH_NAMESPACE
