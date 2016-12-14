@@ -1261,7 +1261,7 @@ BluetoothMapSmsManager::HandleSmsMmsFolderListing(const ObexHeaderSet& aHeader)
                      (uint8_t)Map::AppParametersTagId::FolderListingSize,
                      folderListingSizeValue, sizeof(folderListingSizeValue));
 
-  nsAutoArrayPtr<uint8_t> resp(new uint8_t[mRemoteMaxPacketLength]);
+  auto resp = MakeUnique<uint8_t[]>(mRemoteMaxPacketLength);
   int index = 3;
   index += AppendHeaderAppParameters(&resp[index], 255, appParameter,
                                      sizeof(appParameter));
@@ -1292,11 +1292,11 @@ BluetoothMapSmsManager::HandleSmsMmsFolderListing(const ObexHeaderSet& aHeader)
       return;
     }
 
-    if (!ReplyToGetWithHeaderBody(resp, index)) {
+    if (!ReplyToGetWithHeaderBody(Move(resp), index)) {
       SendReply(ObexResponseCode::InternalServerError);
     }
   } else {
-    SendMasObexData(resp, ObexResponseCode::Success, index);
+    SendMasObexData(Move(resp), ObexResponseCode::Success, index);
   }
 }
 
