@@ -811,7 +811,8 @@ BluetoothMapSmsManager::SendPutFinalRequest()
    */
   // [opcode:1][length:2]
   int index = 3;
-  nsAutoArrayPtr<uint8_t> req(new uint8_t[mRemoteMaxPacketLength]);
+  auto req = MakeUnique<uint8_t[]>(mRemoteMaxPacketLength);
+
   index += AppendHeaderEndOfBody(&req[index]);
 
   SendMnsObexData(req.get(), ObexRequestCode::PutFinal, index);
@@ -841,7 +842,8 @@ BluetoothMapSmsManager::SendMessageEvent(uint8_t aMasId, Blob* aBlob)
 
   // [opcode:1][length:2][connectionId:1][type:21][appParameter:3]
   // [Body/EndofBody:var]
-  nsAutoArrayPtr<uint8_t> req(new uint8_t[mRemoteMaxPacketLength]);
+  auto req = MakeUnique<uint8_t[]>(mRemoteMaxPacketLength);
+
   int index = kObexRespHeaderSize;
   uint8_t appParameter[3];
 
@@ -866,8 +868,8 @@ BluetoothMapSmsManager::SendMessageEvent(uint8_t aMasId, Blob* aBlob)
 
   // Read messages-event-report object data from input stream
   uint32_t numRead = 0;
-  nsAutoArrayPtr<char> buf(new char[remainingPacketSize]);
-  nsresult rv = mMnsDataStream->Read(buf, remainingPacketSize, &numRead);
+  auto buf = MakeUnique<char[]>(remainingPacketSize);
+  nsresult rv = mMnsDataStream->Read(buf.get(), remainingPacketSize, &numRead);
 
   if (NS_FAILED(rv)) {
     BT_LOGR("Failed to read from input stream. rv=0x%x",
@@ -917,8 +919,8 @@ BluetoothMapSmsManager::MnsPutMultiRequest()
 
     // Read blob data from input stream
     uint32_t numRead = 0;
-    nsAutoArrayPtr<char> buf(new char[remainingPacketSize]);
-    rv = mMnsDataStream->Read(buf, remainingPacketSize, &numRead);
+    auto buf = MakeUnique<char[]>(remainingPacketSize);
+    rv = mMnsDataStream->Read(buf.get(), remainingPacketSize, &numRead);
     if (NS_FAILED(rv)) {
       BT_LOGR("Failed to read from input stream. rv=0x%x",
               static_cast<uint32_t>(rv));
