@@ -297,13 +297,13 @@ BluetoothServiceBluedroid::StopInternal(BluetoothReplyRunnable* aRunnable)
 
   // Disconnect all connected profiles
   for (uint8_t i = 0; i < MOZ_ARRAY_LENGTH(sProfiles); i++) {
-    nsCString profileName;
-    sProfiles[i]->GetName(profileName);
-
     if (NS_WARN_IF(!sProfiles[i])) {
-      BT_LOGR("Profile manager [%s] is null", profileName.get());
+      BT_LOGR("Profile manager sProfiles[%d] is null", i);
       return NS_ERROR_FAILURE;
     }
+
+    nsCString profileName;
+    sProfiles[i]->GetName(profileName);
 
     if (sProfiles[i]->IsConnected()) {
       sProfiles[i]->Disconnect(nullptr);
