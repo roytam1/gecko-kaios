@@ -882,7 +882,8 @@ TelephonyService.prototype = {
       aCallback.notifyDialMMI(MMI_KS_SC_CALL);
       this._conferenceCallGsm(aClientId, mmiCallback);
     } else if (aNumber === "4") {
-      this._sendToRilWorker(aClientId, "explicitCallTransfer", null, mmiCallback);
+      aCallback.notifyDialMMI(MMI_KS_SC_CALL);
+      this._explicitCallTransfer(aClientId, mmiCallback);
     } else {
       this._dialCall(aClientId, aNumber, undefined, aCallback);
     }
@@ -2074,6 +2075,11 @@ TelephonyService.prototype = {
     }
 
     this._sendToRilWorker(aClientId, "cdmaFlash", null,
+                          this._defaultCallbackHandler.bind(this, aCallback));
+  },
+
+  _explicitCallTransfer: function(aClientId, aCallback) {
+    this._sendToRilWorker(aClientId, "explicitCallTransfer", null,
                           this._defaultCallbackHandler.bind(this, aCallback));
   },
 

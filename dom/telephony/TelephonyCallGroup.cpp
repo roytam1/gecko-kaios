@@ -93,17 +93,22 @@ void
 TelephonyCallGroup::ChangeState()
 {
   MOZ_ASSERT(mCalls.Length() != 1);
-  if (mCalls.Length() == 0) {
+  if (!mConferenceParentCall && mCalls.Length() == 0) {
     ChangeStateInternal(TelephonyCallGroupState::_empty);
     return;
   }
 
-  TelephonyCallState state = mCalls[0]->State();
-  for (uint32_t i = 1; i < mCalls.Length(); i++) {
-    if (mCalls[i]->State() != state) {
-      MOZ_ASSERT(false, "Various call states are found in a call group!");
-      ChangeStateInternal(TelephonyCallGroupState::_empty);
-      return;
+  TelephonyCallState state = TelephonyCallState::Disconnected;
+  if (mConferenceParentCall) {
+    state = mConferenceParentCall->State();
+  } else {
+    state = mCalls[0]->State();
+    for (uint32_t i = 1; i < mCalls.Length(); i++) {
+      if (mCalls[i]->State() != state) {
+        MOZ_ASSERT(false, "Various call states are found in a call group!");
+        ChangeStateInternal(TelephonyCallGroupState::_empty);
+        return;
+      }
     }
   }
 

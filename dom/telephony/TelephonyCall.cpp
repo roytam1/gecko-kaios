@@ -46,7 +46,7 @@ using mozilla::ErrorResult;
 
 // static
 TelephonyCallState
-TelephonyCall::ConvertToTelephonyCallState(uint32_t aCallState)
+TelephonyCall::ConvertToTelephonyCallState(uint16_t aCallState)
 {
   switch (aCallState) {
     case nsITelephonyService::CALL_STATE_DIALING:
@@ -77,7 +77,7 @@ TelephonyCall::ConvertToTelephonyCallVoiceQuality(uint16_t aQuality)
     return TelephonyCallVoiceQuality::Normal;
  }
 
-  NS_NOTREACHED("Unknown state!");
+  NS_NOTREACHED("Unknown quality!");
   return TelephonyCallVoiceQuality::Normal;
 }
 

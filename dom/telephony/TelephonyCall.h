@@ -139,7 +139,7 @@ public:
   IMPL_EVENT_HANDLER(groupchange)
 
   static TelephonyCallState
-  ConvertToTelephonyCallState(uint32_t aCallState);
+  ConvertToTelephonyCallState(uint16_t aCallState);
 
   static TelephonyCallVoiceQuality
   ConvertToTelephonyCallVoiceQuality(uint16_t aQuality);
