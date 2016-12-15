@@ -331,8 +331,11 @@ BluetoothProfileController::NotifyCompletion(const nsAString& aErrorStr)
   MOZ_ASSERT(mTimer);
   MOZ_ASSERT(mProfiles.Length() > 0);
 
-  BT_LOGR_PROFILE(mProfiles[mProfilesIndex], "<%s>",
-                  NS_ConvertUTF16toUTF8(aErrorStr).get());
+  // Add a sanity check in case BT stack abnormally report connection result.
+  if (mProfilesIndex < (int)mProfiles.Length()) {
+    BT_LOGR_PROFILE(mProfiles[mProfilesIndex], "<%s>",
+                    NS_ConvertUTF16toUTF8(aErrorStr).get());
+  }
 
   mCurrentProfileFinished = true;
 
