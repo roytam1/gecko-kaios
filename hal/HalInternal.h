@@ -35,14 +35,14 @@ void EnableBatteryNotifications();
 void DisableBatteryNotifications();
 
 /**
- * Enables usb notifications from the backend.
+ * Enables powersupply notifications from the backend.
  */
-void EnableUsbNotifications();
+void EnablePowerSupplyNotifications();
 
 /**
- * Disables usb notifications from the backend.
+ * Disables powersupply notifications from the backend.
  */
-void DisableUsbNotifications();
+void DisablePowerSupplyNotifications();
 
 /**
  * Enables network notifications from the backend.

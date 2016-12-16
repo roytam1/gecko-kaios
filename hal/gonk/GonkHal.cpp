@@ -16,6 +16,7 @@
  */
 
 #include <ctype.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/android_alarm.h>
@@ -110,6 +111,12 @@
 #ifndef BATTERY_FULL_ARGB
 #define BATTERY_FULL_ARGB 0x0000FF00
 #endif
+
+#define POWER_SUPPLY_SUBSYSTEM "power_supply"
+#define POWER_SUPPLY_SYSFS_PATH "/sys/class/" POWER_SUPPLY_SUBSYSTEM
+#define POWER_SUPPLY_TYPE_AC       0x01
+#define POWER_SUPPLY_TYPE_USB      0x02
+#define POWER_SUPPLY_TYPE_WIRELESS 0x04
 
 using namespace mozilla;
 using namespace mozilla::hal;
@@ -719,25 +726,25 @@ GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo)
 
 namespace {
 
-class UsbUpdater : public nsRunnable {
+class PowerSupplyUpdater : public nsRunnable {
 public:
   NS_IMETHOD Run()
   {
-    hal::UsbStatus info;
-    hal_impl::GetCurrentUsbStatus(&info);
+    hal::PowerSupplyStatus info;
+    hal_impl::GetCurrentPowerSupplyStatus(&info);
 
-    hal::NotifyUsbStatus(info);
+    hal::NotifyPowerSupplyStatus(info);
 
     {
       nsCOMPtr<nsIObserverService> obsService = mozilla::services::GetObserverService();
       nsCOMPtr<nsIWritablePropertyBag2> propbag =
         do_CreateInstance("@mozilla.org/hash-property-bag;1");
       if (obsService && propbag) {
-        propbag->SetPropertyAsBool(NS_LITERAL_STRING("deviceAttached"),
-                                   info.deviceAttached());
-        propbag->SetPropertyAsBool(NS_LITERAL_STRING("deviceConfigured"),
-                                   info.deviceConfigured());
-        obsService->NotifyObservers(propbag, "gonkhal-usb-notifier", nullptr);
+        propbag->SetPropertyAsBool(NS_LITERAL_STRING("powerSupplyOnline"),
+                                   info.powerSupplyOnline());
+        propbag->SetPropertyAsACString(NS_LITERAL_STRING("powerSupplyType"),
+                                       info.powerSupplyType());
+        obsService->NotifyObservers(propbag, "gonkhal-powersupply-notifier", nullptr);
       }
     }
     return NS_OK;
@@ -746,13 +753,13 @@ public:
 
 } // anonymous namespace
 
-class UsbObserver final : public IUeventObserver
+class PowerSupplyObserver : public IUeventObserver
 {
 public:
-  NS_INLINE_DECL_REFCOUNTING(UsbObserver)
+  NS_INLINE_DECL_REFCOUNTING(PowerSupplyObserver)
 
-  UsbObserver()
-    :mUpdater(new UsbUpdater())
+  PowerSupplyObserver()
+    : mUpdater(new PowerSupplyUpdater())
   {
   }
 
@@ -761,84 +768,138 @@ public:
     // this will run on IO thread
     NetlinkEvent *event = const_cast<NetlinkEvent*>(&aEvent);
     const char *subsystem = event->getSubsystem();
-    // e.g. DEVPATH=/devices/virtual/android_usb/android0
-    const char *devpath = event->findParam("DEVPATH");
-    if (strcmp(subsystem, "android_usb") == 0 &&
-        strstr(devpath, "android_usb")) {
+    // e.g. DEVPATH=/devices/soc.0/78d9000.usb/power_supply/usb
+    if (strcmp(subsystem, "power_supply") == 0) {
       // aEvent will be valid only in this method.
       NS_DispatchToMainThread(mUpdater);
     }
   }
 
 protected:
-  ~UsbObserver() {}
+  ~PowerSupplyObserver() {}
 
 private:
-  RefPtr<UsbUpdater> mUpdater;
+  RefPtr<PowerSupplyUpdater> mUpdater;
 };
 
-// sUsbObserver is owned by the IO thread. Only the IO thread may
+// sPowerSupplyObserver is owned by the IO thread. Only the IO thread may
 // create or destroy it.
-static StaticRefPtr<UsbObserver> sUsbObserver;
+static StaticRefPtr<PowerSupplyObserver> sPowerSupplyObserver;
 
 static void
-RegisterUsbObserverIOThread()
+RegisterPowerSupplyObserverIOThread()
 {
   MOZ_ASSERT(MessageLoop::current() == XRE_GetIOMessageLoop());
-  MOZ_ASSERT(!sUsbObserver);
+  MOZ_ASSERT(!sPowerSupplyObserver);
 
-  sUsbObserver = new UsbObserver();
-  RegisterUeventListener(sUsbObserver);
+  sPowerSupplyObserver = new PowerSupplyObserver();
+  RegisterUeventListener(sPowerSupplyObserver);
 }
 
 void
-EnableUsbNotifications()
+EnablePowerSupplyNotifications()
 {
   XRE_GetIOMessageLoop()->PostTask(
       FROM_HERE,
-      NewRunnableFunction(RegisterUsbObserverIOThread));
+      NewRunnableFunction(RegisterPowerSupplyObserverIOThread));
 }
 
 static void
-UnregisterUsbObserverIOThread()
+UnregisterPowerSupplyObserverIOThread()
 {
   MOZ_ASSERT(MessageLoop::current() == XRE_GetIOMessageLoop());
-  MOZ_ASSERT(sUsbObserver);
+  MOZ_ASSERT(sPowerSupplyObserver);
 
-  UnregisterUeventListener(sUsbObserver);
-  sUsbObserver = nullptr;
+  UnregisterUeventListener(sPowerSupplyObserver);
+  sPowerSupplyObserver = nullptr;
 }
 
 void
-DisableUsbNotifications()
+DisablePowerSupplyNotifications()
 {
   XRE_GetIOMessageLoop()->PostTask(
       FROM_HERE,
-      NewRunnableFunction(UnregisterUsbObserverIOThread));
+      NewRunnableFunction(UnregisterPowerSupplyObserverIOThread));
 }
 
 void
-GetCurrentUsbStatus(hal::UsbStatus* aUsbStatus)
+UpdatePowerSupplyType(const char* powerType, int& powerSupplyOnline)
+{
+    // Skip Unknown/Battery type because that means no powerSupply attached.
+    if (!strcmp(powerType, "UPS") ||
+        !strcmp(powerType, "Mains") ||
+        !strcmp(powerType, "USB_DCP") ||
+        !strcmp(powerType, "USB_CDP") ||
+        !strcmp(powerType, "USB_ACA") ||
+        !strcmp(powerType, "USB_HVDCP") ||
+        !strcmp(powerType, "USB_HVDCP_3")) {
+      powerSupplyOnline |= (1 << 0);
+    } else if (!strcmp(powerType, "USB")) {
+      powerSupplyOnline |= (1 << 1);
+    } else if (!strcmp(powerType, "Wireless") ||
+               !strcmp(powerType, "Wipower")) {
+      powerSupplyOnline |= (1 << 2);
+    }
+}
+
+const char*
+ConvertPowerSupplyType(int powerSupplyOnline)
+{
+  if ((powerSupplyOnline & POWER_SUPPLY_TYPE_AC) == POWER_SUPPLY_TYPE_AC) {
+    return "AC";
+  } else if ((powerSupplyOnline & POWER_SUPPLY_TYPE_USB) == POWER_SUPPLY_TYPE_USB) {
+    return "USB";
+  } else if ((powerSupplyOnline & POWER_SUPPLY_TYPE_WIRELESS) == POWER_SUPPLY_TYPE_WIRELESS) {
+    return "Wireless";
+  } else {
+    return "Unknown";
+  }
+}
+
+void
+GetCurrentPowerSupplyStatus(hal::PowerSupplyStatus* aPowerSupplyStatus)
 {
    bool success;
-   char usbStateString[16];
-  // see http://androidxref.com/6.0.1_r10/xref/frameworks/base/services/
-  //            usb/java/com/android/server/usb/UsbDeviceManager.java#95
-  success = ReadSysFile("/sys/class/android_usb/android0/state",
-                        usbStateString, sizeof(usbStateString));
-  if (success) {
-    if (strcmp(usbStateString, "CONNECTED") == 0) {
-      aUsbStatus->deviceAttached() = true;
-      aUsbStatus->deviceConfigured() = false;
-    } else if (strcmp(usbStateString, "CONFIGURED") == 0) {
-      aUsbStatus->deviceAttached() = true;
-      aUsbStatus->deviceConfigured() = true;
-    } else if (strcmp(usbStateString, "DISCONNECTED") == 0) {
-      aUsbStatus->deviceAttached() = false;
-      aUsbStatus->deviceConfigured() = false;
-    } else {
-      HAL_ERR("Unexpected usb state : %s ", usbStateString);
+   char powerOnline[16];
+   char powerType[16];
+   // Bit mask for power supply source.
+   int powerSupplyOnline = 0;
+
+  // see http://androidxref.com/6.0.1_r10/xref/system/core/healthd/
+  //            BatteryMonitor.cpp#419
+  DIR* dir = opendir(POWER_SUPPLY_SYSFS_PATH);
+  if (dir == NULL) {
+    HAL_ERR("Could not open %s\n", POWER_SUPPLY_SYSFS_PATH);
+  } else {
+    struct dirent* entry;
+    while ((entry = readdir(dir))) {
+      const char* name = entry->d_name;
+
+      if (!strcmp(name, ".") || !strcmp(name, "..")) {
+        continue;
+      }
+
+      // Look for "type" file in each subdirectory
+      nsPrintfCString type("%s/%s/type", POWER_SUPPLY_SYSFS_PATH, name);
+      success = ReadSysFile(type.get(), powerType, sizeof(powerType));
+      if (!success) {
+        continue;
+      }
+
+      nsPrintfCString online("%s/%s/online", POWER_SUPPLY_SYSFS_PATH, name);
+      success = ReadSysFile(online.get(), powerOnline, sizeof(powerOnline));
+
+      if (!success) {
+        continue;
+      }
+
+      UpdatePowerSupplyType(powerType, powerSupplyOnline);
     }
+
+    closedir(dir);
+
+    aPowerSupplyStatus->powerSupplyOnline() = (powerSupplyOnline > 0 ? true : false);
+    aPowerSupplyStatus->powerSupplyType() = ConvertPowerSupplyType(powerSupplyOnline);
   }
 }
 

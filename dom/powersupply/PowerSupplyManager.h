@@ -11,9 +11,6 @@
 #include "mozilla/Observer.h"
 #include "nsCycleCollectionParticipant.h"
 
-class nsPIDOMWindow;
-class nsIScriptContext;
-
 namespace mozilla {
 
 namespace hal {
@@ -24,26 +21,26 @@ namespace dom {
 namespace powersupply {
 
 class PowerSupplyManager : public DOMEventTargetHelper
-                 , public PowerSupplyObserver
+                         , public PowerSupplyObserver
 {
 public:
-  explicit PowerSupplyManager(nsPIDOMWindow* aWindow);
+  explicit PowerSupplyManager(nsPIDOMWindowInner* aWindow);
 
   void Init();
   void Shutdown();
 
   // For IObserver.
-  void Notify(const hal::PowerSupplyStatus& aPowerSupplyStatus) MOZ_OVERRIDE;
+  void Notify(const hal::PowerSupplyStatus& aPowerSupplyStatus) override;
 
   /**
    * WebIDL Interface
    */
-  nsPIDOMWindow* GetParentObject() const
+  nsPIDOMWindowInner* GetParentObject() const
   {
      return GetOwner();
   }
 
-  virtual JSObject* WrapObject(JSContext* aCx) MOZ_OVERRIDE;
+  virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
   bool PowerSupplyOnline() const;
 

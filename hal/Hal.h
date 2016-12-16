@@ -15,7 +15,7 @@
 #include "mozilla/dom/MozPowerManagerBinding.h"
 #include "mozilla/dom/network/Types.h"
 #include "mozilla/dom/power/Types.h"
-#include "mozilla/dom/usb/Types.h"
+#include "mozilla/dom/powersupply/Types.h"
 #include "mozilla/dom/ScreenOrientation.h"
 #include "mozilla/hal_sandbox/PHal.h"
 #include "mozilla/HalScreenConfiguration.h"
@@ -114,27 +114,27 @@ void GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo);
 void NotifyBatteryChange(const hal::BatteryInformation& aBatteryInfo);
 
 /**
- * Inform the usb backend there is a new usb observer.
- * @param aUsbObserver The observer that should be added.
+ * Inform the powersupply backend there is a new powersupply observer.
+ * @param aPowerSupplyObserver The observer that should be added.
  */
-void RegisterUsbObserver(UsbObserver* aUsbObserver);
+void RegisterPowerSupplyObserver(PowerSupplyObserver* aPowerSupplyObserver);
 
 /**
- * Inform the usb backend a usb observer unregistered.
- * @param aUsbObserver The observer that should be removed.
+ * Inform the powersupply backend a powersupply observer unregistered.
+ * @param aPowerSupplyObserver The observer that should be removed.
  */
-void UnregisterUsbObserver(UsbObserver* aUsbObserver);
+void UnregisterPowerSupplyObserver(PowerSupplyObserver* aPowerSupplyObserver);
 
 /**
- * Returns the current usb status.
+ * Returns the current power supply status.
  */
-void GetCurrentUsbStatus(hal::UsbStatus* aUsbStatus);
+void GetCurrentPowerSupplyStatus(hal::PowerSupplyStatus* aPowerSupplyStatus);
 
 /**
- * Notify of a change in the usb status.
- * @param aUsbStatus The new usb status.
+ * Notify of a change in the power supply status.
+ * @param aPowerSupplyStatus The new power supply status.
  */
-void NotifyUsbStatus(const hal::UsbStatus& aUsbStatus);
+void NotifyPowerSupplyStatus(const hal::PowerSupplyStatus& aPowerSupplyStatus);
 
 /**
  * Inform the flipmanager backend there is a new flip observer.

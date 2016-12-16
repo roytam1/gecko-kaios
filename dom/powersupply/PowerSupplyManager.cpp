@@ -5,7 +5,6 @@
 
 #include <limits>
 #include "PowerSupplyManager.h"
-#include "Constants.h"
 #include "mozilla/DOMEventTargetHelper.h"
 #include "mozilla/Hal.h"
 #include "mozilla/dom/PowerSupplyEvent.h"
@@ -22,7 +21,7 @@ namespace mozilla {
 namespace dom {
 namespace powersupply {
 
-PowerSupplyManager::PowerSupplyManager(nsPIDOMWindow* aWindow)
+PowerSupplyManager::PowerSupplyManager(nsPIDOMWindowInner* aWindow)
   : DOMEventTargetHelper(aWindow)
   , mPowerSupplyOnline(false)
   , mPowerSupplyType(NS_LITERAL_STRING("Unknown"))
@@ -47,9 +46,9 @@ PowerSupplyManager::Shutdown()
 }
 
 JSObject*
-PowerSupplyManager::WrapObject(JSContext* aCx)
+PowerSupplyManager::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 {
-  return PowerSupplyManagerBinding::Wrap(aCx, this);
+  return PowerSupplyManagerBinding::Wrap(aCx, this, aGivenProto);
 }
 
 bool
@@ -82,9 +81,9 @@ PowerSupplyManager::Notify(const hal::PowerSupplyStatus& aPowerSupplyStatus)
     PowerSupplyEventInit init;
     init.mPowerSupplyOnline = mPowerSupplyOnline;
     init.mPowerSupplyType = mPowerSupplyType;
-    nsRefPtr<PowerSupplyEvent> event = PowerSupplyEvent::Constructor(this,
-                                                         POWERSUPPLY_STATUS_CHANGE_NAME,
-                                                         init);
+    RefPtr<PowerSupplyEvent> event = PowerSupplyEvent::Constructor(this,
+                                                       POWERSUPPLY_STATUS_CHANGE_NAME,
+                                                       init);
     DispatchTrustedEvent(event);
   }
 }

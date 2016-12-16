@@ -31,9 +31,9 @@ struct BatteryInformation {
   double remainingTime;
 };
 
-struct UsbStatus {
-  bool deviceAttached;
-  bool deviceConfigured;
+struct PowerSupplyStatus {
+  bool powerSupplyOnline;
+  nsCString powerSupplyType;
 };
 
 struct SensorData {
@@ -106,7 +106,7 @@ prio(normal upto urgent) sync protocol PHal {
 
 child:
     async NotifyBatteryChange(BatteryInformation aBatteryInfo);
-    async NotifyUsbStatus(UsbStatus aUsbStatus);
+    async NotifyPowerSupplyStatus(PowerSupplyStatus aPowerSupplyStatus);
     async NotifyNetworkChange(NetworkInformation aNetworkInfo);
     async NotifyWakeLockChange(WakeLockInformation aWakeLockInfo);
     async NotifyScreenConfigurationChange(ScreenConfiguration aScreenOrientation);
@@ -129,10 +129,10 @@ parent:
     sync GetCurrentBatteryInformation()
       returns (BatteryInformation aBatteryInfo);
 
-    async EnableUsbNotifications();
-    async DisableUsbNotifications();
-    sync GetCurrentUsbStatus()
-      returns (UsbStatus aUsbStatus);
+    async EnablePowerSupplyNotifications();
+    async DisablePowerSupplyNotifications();
+    sync GetCurrentPowerSupplyStatus()
+      returns (PowerSupplyStatus aPowerSupplyStatus);
 
     async EnableNetworkNotifications();
     async DisableNetworkNotifications();

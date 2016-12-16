@@ -86,21 +86,21 @@ GetCurrentBatteryInformation(BatteryInformation* aBatteryInfo)
 }
 
 void
-EnableUsbNotifications()
+EnablePowerSupplyNotifications()
 {
-  Hal()->SendEnableUsbNotifications();
+  Hal()->SendEnablePowerSupplyNotifications();
 }
 
 void
-DisableUsbNotifications()
+DisablePowerSupplyNotifications()
 {
-  Hal()->SendDisableUsbNotifications();
+  Hal()->SendDisablePowerSupplyNotifications();
 }
 
 void
-GetCurrentUsbStatus(UsbStatus* aUsbStatus)
+GetCurrentPowerSupplyStatus(PowerSupplyStatus* aPowerSupplyStatus)
 {
-  Hal()->SendGetCurrentUsbStatus(aUsbStatus);
+  Hal()->SendGetCurrentPowerSupplyStatus(aPowerSupplyStatus);
 }
 
 void
@@ -552,7 +552,7 @@ bool SystemServiceIsRunning(const char* aSvcName)
 
 class HalParent : public PHalParent
                 , public BatteryObserver
-                , public UsbObserver
+                , public PowerSupplyObserver
                 , public NetworkObserver
                 , public ISensorObserver
                 , public WakeLockObserver
@@ -667,27 +667,27 @@ public:
   }
 
   virtual bool
-  RecvEnableUsbNotifications() override {
-    // We give all content usb-status permission.
-    hal::RegisterUsbObserver(this);
+  RecvEnablePowerSupplyNotifications() override {
+    // We give all content powersupply-status permission.
+    hal::RegisterPowerSupplyObserver(this);
     return true;
   }
 
   virtual bool
-  RecvDisableUsbNotifications() override {
-    hal::UnregisterUsbObserver(this);
+  RecvDisablePowerSupplyNotifications() override {
+    hal::UnregisterPowerSupplyObserver(this);
     return true;
   }
 
   virtual bool
-  RecvGetCurrentUsbStatus(UsbStatus* aUsbStatus) override {
-    // We give all content usb-status permission.
-    hal::GetCurrentUsbStatus(aUsbStatus);
+  RecvGetCurrentPowerSupplyStatus(PowerSupplyStatus* aPowerSupplyStatus) override {
+    // We give all content powersupply-status permission.
+    hal::GetCurrentPowerSupplyStatus(aPowerSupplyStatus);
     return true;
   }
 
-  void Notify(const UsbStatus& aUsbStatus) override {
-    Unused << SendNotifyUsbStatus(aUsbStatus);
+  void Notify(const PowerSupplyStatus& aPowerSupplyStatus) override {
+    Unused << SendNotifyPowerSupplyStatus(aPowerSupplyStatus);
   }
 
   virtual bool
@@ -1050,8 +1050,8 @@ public:
   }
 
   virtual bool
-  RecvNotifyUsbStatus(const UsbStatus& aUsbStatus) override {
-    hal::NotifyUsbStatus(aUsbStatus);
+  RecvNotifyPowerSupplyStatus(const PowerSupplyStatus& aPowerSupplyStatus) override {
+    hal::NotifyPowerSupplyStatus(aPowerSupplyStatus);
     return true;
   }
 

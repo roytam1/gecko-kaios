@@ -117,7 +117,7 @@ DIRS += [
     'newapps',
     'u2f',
     'datacall',
-    'usb',
+    'powersupply',
 ]
 
 if CONFIG['OS_ARCH'] == 'WINNT':

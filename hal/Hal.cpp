@@ -308,23 +308,23 @@ BatteryObservers()
   return sBatteryObservers;
 }
 
-class UsbObserversManager : public CachingObserversManager<UsbStatus>
+class PowerSupplyObserversManager : public CachingObserversManager<PowerSupplyStatus>
 {
 protected:
   void EnableNotifications() {
-    PROXY_IF_SANDBOXED(EnableUsbNotifications());
+    PROXY_IF_SANDBOXED(EnablePowerSupplyNotifications());
   }
 
   void DisableNotifications() {
-    PROXY_IF_SANDBOXED(DisableUsbNotifications());
+    PROXY_IF_SANDBOXED(DisablePowerSupplyNotifications());
   }
 
-  void GetCurrentInformationInternal(UsbStatus* aStatus) {
-    PROXY_IF_SANDBOXED(GetCurrentUsbStatus(aStatus));
+  void GetCurrentInformationInternal(PowerSupplyStatus* aStatus) {
+    PROXY_IF_SANDBOXED(GetCurrentPowerSupplyStatus(aStatus));
   }
 };
 
-static UsbObserversManager sUsbObservers;
+static PowerSupplyObserversManager sPowerSupplyObservers;
 
 class NetworkObserversManager : public CachingObserversManager<NetworkInformation>
 {
@@ -473,32 +473,32 @@ RequestCurrentFlipState()
 }
 
 void
-RegisterUsbObserver(UsbObserver* aUsbObserver)
+RegisterPowerSupplyObserver(PowerSupplyObserver* aPowerSupplyObserver)
 {
   AssertMainThread();
-  sUsbObservers.AddObserver(aUsbObserver);
+  sPowerSupplyObservers.AddObserver(aPowerSupplyObserver);
 }
 
 void
-UnregisterUsbObserver(UsbObserver* aUsbObserver)
+UnregisterPowerSupplyObserver(PowerSupplyObserver* aPowerSupplyObserver)
 {
   AssertMainThread();
-  sUsbObservers.RemoveObserver(aUsbObserver);
+  sPowerSupplyObservers.RemoveObserver(aPowerSupplyObserver);
 }
 
 void
-GetCurrentUsbStatus(UsbStatus* aUsbStatus)
+GetCurrentPowerSupplyStatus(PowerSupplyStatus* aPowerSupplyStatus)
 {
   AssertMainThread();
-  *aUsbStatus = sUsbObservers.GetCurrentInformation();
+  *aPowerSupplyStatus = sPowerSupplyObservers.GetCurrentInformation();
 }
 
 void
-NotifyUsbStatus(const UsbStatus& aUsbStatus)
+NotifyPowerSupplyStatus(const PowerSupplyStatus& aPowerSupplyStatus)
 {
   AssertMainThread();
-  sUsbObservers.CacheInformation(aUsbStatus);
-  sUsbObservers.BroadcastCachedInformation();
+  sPowerSupplyObservers.CacheInformation(aPowerSupplyStatus);
+  sPowerSupplyObservers.BroadcastCachedInformation();
 }
 
 bool GetScreenEnabled()

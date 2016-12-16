@@ -145,11 +145,11 @@ partial interface Navigator {
 };
 
 [NoInterfaceObject]
-interface NavigatorUsb {
-    [Throws, Pref="dom.usb.enabled"]
-    readonly attribute UsbManager? usb;
+interface NavigatorPowerSupply {
+    [Throws, Pref="dom.powersupply.enabled"]
+    readonly attribute PowerSupplyManager? powersupply;
 };
-Navigator implements NavigatorUsb;
+Navigator implements NavigatorPowerSupply;
 
 // https://wiki.mozilla.org/WebAPI/DataStore
 [NoInterfaceObject,
