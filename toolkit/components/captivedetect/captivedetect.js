@@ -383,7 +383,7 @@ CaptivePortalDetector.prototype = {
 
   validateContent: function validateContent(content) {
     debug('received content: ' + content);
-    return (content === this._canonicalSiteExpectedContent);
+    return (content.trim() === this._canonicalSiteExpectedContent);
   },
 
   _allocateRequestId: function _allocateRequestId() {
