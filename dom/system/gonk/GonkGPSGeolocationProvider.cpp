@@ -395,17 +395,18 @@ GonkGPSGeolocationProvider::GPSNiNotifyCallback(GpsNiNotification *notification)
       GpsNiNotifyFlags flags = mNotification->notify_flags;
 
       if (gDebug_isLoggingEnabled) {
-        nsContentUtils::LogMessageToConsole(
+        nsContentUtils::LogMessageToConsole(nsPrintfCString(
           "GPSNiNotifyCallback id:%d, flag:%x, timeout:%d, default response:%d\n",
-           id, flags, mNotification->timeout, mNotification->default_response);
+           id, flags, mNotification->timeout, mNotification->default_response).get());
       }
 
       RefPtr<GonkGPSGeolocationProvider> provider =
         GonkGPSGeolocationProvider::GetSingleton();
 
       if(!provider->SendChromeEvent(id, flags)) {
-        nsContentUtils::LogMessageToConsole(
-          "SendChromeEvent Failed(id:%d, flags:%x)", id, flags);
+        nsContentUtils::LogMessageToConsole(nsPrintfCString(
+          "SendChromeEvent Failed(id:%d, flags:%x)", id, flags).get());
+
         return NS_OK;
       }
 
@@ -424,8 +425,8 @@ GonkGPSGeolocationProvider::GPSNiNotifyCallback(GpsNiNotification *notification)
             RefPtr<GonkGPSGeolocationProvider> provider =
               GonkGPSGeolocationProvider::GetSingleton();
             if (!provider->SendChromeEvent(mId, GPS_NI_NEED_TIMEOUT)) {
-              nsContentUtils::LogMessageToConsole(
-                "SendChromeEvent Failed(id:%d, flags:%x", mId, GPS_NI_NEED_TIMEOUT);
+              nsContentUtils::LogMessageToConsole(nsPrintfCString(
+                "SendChromeEvent Failed(id:%d, flags:%x", mId, GPS_NI_NEED_TIMEOUT).get());
             }
             provider->SetNiResponse(mId, mDefaultResp);
             return;
