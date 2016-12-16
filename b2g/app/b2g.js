@@ -200,7 +200,16 @@ pref("privacy.item.syncAccount", true);
 // base url for the wifi geolocation network provider
 pref("geo.provider.use_mls", false);
 pref("geo.cell.scan", true);
-pref("geo.wifi.uri", "https://location.services.mozilla.com/v1/geolocate?key=%MOZILLA_API_KEY%");
+
+// URL for geolocating service, the original URL of B2G OS is
+// "https://location.services.mozilla.com/v1/geolocate?key=%MOZILLA_API_KEY%"
+pref("geo.wifi.uri", "http://api.empowerthings.com:8080/v2.0/lbs/locate");
+
+// whether the network geolocation provider need authorization header or not
+pref("geo.provider.need_authorization", true);
+
+// the secret JSON Web Token of TCL location service
+pref("geo.authorization.jwt", "%TCL_GEO_API_KEY%");
 
 // base url for the stumbler
 pref("geo.stumbler.url", "https://location.services.mozilla.com/v1/geosubmit?key=%MOZILLA_API_KEY%");

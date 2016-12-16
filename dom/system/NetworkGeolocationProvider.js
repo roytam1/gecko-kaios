@@ -503,6 +503,17 @@ WifiGeoPositionProvider.prototype = {
       return;
     }
     xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+
+    // Append authorization header if it's required
+    let needAuthorization =
+      Services.prefs.getBoolPref("geo.provider.need_authorization");
+    if (needAuthorization) {
+      let authorizationKey =
+        Services.urlFormatter.formatURLPref("geo.authorization.jwt");
+
+      xhr.setRequestHeader("Authorization", "Bearer " + authorizationKey);
+    }
+
     xhr.responseType = "json";
     xhr.mozBackgroundRequest = true;
     xhr.channel.loadFlags = Ci.nsIChannel.LOAD_ANONYMOUS;

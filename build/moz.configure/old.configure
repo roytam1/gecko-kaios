@@ -331,6 +331,7 @@ def old_configure_options(*options):
     '--with-system-nss',
     '--with-system-png',
     '--with-system-zlib',
+    '--with-tcl-api-keyfile',
     '--with-thumb',
     '--with-thumb-interwork',
     '--with-unify-dist',
