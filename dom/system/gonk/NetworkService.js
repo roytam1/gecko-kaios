@@ -675,9 +675,10 @@ NetworkService.prototype = {
     });
   },
 
-  updateUpStream: function(aPrevious, aCurrent, aCallback) {
+  updateUpStream: function(type, aPrevious, aCurrent, aCallback) {
     let params = {
       cmd: "updateUpStream",
+      type: type,
       preInternalIfname: aPrevious.internalIfname,
       preExternalIfname: aPrevious.externalIfname,
       curInternalIfname: aCurrent.internalIfname,
@@ -688,7 +689,7 @@ NetworkService.prototype = {
       let code = aData.resultCode;
       let reason = aData.resultReason;
       debug("updateUpStream result: Code " + code + " reason " + reason);
-      aCallback.updateUpStreamResult(!isError(code), aData.curExternalIfname);
+      aCallback.updateUpStreamResult(type, !isError(code), aData.curExternalIfname);
     });
   },
 

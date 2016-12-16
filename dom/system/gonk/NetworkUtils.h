@@ -134,6 +134,7 @@ public:
     COPY_OPT_STRING_FIELD(mEndIp, EmptyString())
     COPY_OPT_STRING_FIELD(mServerIp, EmptyString())
     COPY_OPT_STRING_FIELD(mMaskLength, EmptyString())
+    COPY_OPT_STRING_FIELD(mType, EmptyString())
     COPY_OPT_STRING_FIELD(mPreInternalIfname, EmptyString())
     COPY_OPT_STRING_FIELD(mPreExternalIfname, EmptyString())
     COPY_OPT_STRING_FIELD(mCurInternalIfname, EmptyString())
@@ -187,6 +188,7 @@ public:
   nsString mEndIp;
   nsString mServerIp;
   nsString mMaskLength;
+  nsString mType;
   nsString mPreInternalIfname;
   nsString mPreExternalIfname;
   nsString mCurInternalIfname;
@@ -362,6 +364,8 @@ private:
   static void setAccessPoint(PARAMS);
   static void cleanUpStream(PARAMS);
   static void createUpStream(PARAMS);
+  static void cleanUpStreamInterfaceForwarding(PARAMS);
+  static void createUpStreamInterfaceForwarding(PARAMS);
   static void startSoftAP(PARAMS);
   static void stopSoftAP(PARAMS);
   static void clearWifiTetherParms(PARAMS);

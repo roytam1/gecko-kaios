@@ -235,8 +235,11 @@ const CommandFunc NetworkUtils::sUSBFailChain[] = {
 
 const CommandFunc NetworkUtils::sUpdateUpStreamChain[] = {
   NetworkUtils::cleanUpStream,
+  NetworkUtils::cleanUpStreamInterfaceForwarding,
   NetworkUtils::removeUpstreamInterface,
   NetworkUtils::createUpStream,
+  NetworkUtils::createUpStreamInterfaceForwarding,
+  NetworkUtils::setDnsForwarders,
   NetworkUtils::addUpstreamInterface,
   NetworkUtils::updateUpStreamSuccess
 };
@@ -690,6 +693,30 @@ void NetworkUtils::createUpStream(CommandChain* aChain,
 {
   char command[MAX_COMMAND_SIZE];
   snprintf(command, MAX_COMMAND_SIZE - 1, "nat enable %s %s 0", GET_CHAR(mCurInternalIfname), GET_CHAR(mCurExternalIfname));
+
+  doCommand(command, aChain, aCallback);
+}
+
+void NetworkUtils::cleanUpStreamInterfaceForwarding(CommandChain* aChain,
+                                                    CommandCallback aCallback,
+                                                    NetworkResultOptions& aResult)
+{
+  char command[MAX_COMMAND_SIZE];
+  NU_DBG("cleanUpStreamInterfaceForwarding: internal = %s, external = %s", GET_CHAR(mPreInternalIfname), GET_CHAR(mPreExternalIfname));
+  snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd remove %s %s",
+    GET_CHAR(mPreInternalIfname), GET_CHAR(mPreExternalIfname));
+
+  doCommand(command, aChain, aCallback);
+}
+
+void NetworkUtils::createUpStreamInterfaceForwarding(CommandChain* aChain,
+                                                     CommandCallback aCallback,
+                                                     NetworkResultOptions& aResult)
+{
+  char command[MAX_COMMAND_SIZE];
+  NU_DBG("createUpStreamInterfaceForwarding: internal = %s, external = %s", GET_CHAR(mCurInternalIfname), GET_CHAR(mCurExternalIfname));
+  snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd add %s %s",
+    GET_CHAR(mCurInternalIfname), GET_CHAR(mCurExternalIfname));
 
   doCommand(command, aChain, aCallback);
 }
@@ -2758,6 +2785,33 @@ CommandResult NetworkUtils::enableUsbRndis(NetworkParams& aOptions)
  */
 CommandResult NetworkUtils::updateUpStream(NetworkParams& aOptions)
 {
+  IFProperties interfaceProperties;
+  getIFProperties(GET_CHAR(mCurExternalIfname), interfaceProperties);
+
+  if (strcmp(interfaceProperties.dns1, "")) {
+    int type = getIpType(interfaceProperties.dns1);
+    if (type != AF_INET6) {
+      aOptions.mDns1 = NS_ConvertUTF8toUTF16(interfaceProperties.dns1);
+    }
+  }
+
+  if (strcmp(interfaceProperties.dns2, "")) {
+    int type = getIpType(interfaceProperties.dns2);
+    if (type != AF_INET6) {
+      aOptions.mDns2 = NS_ConvertUTF8toUTF16(interfaceProperties.dns2);
+    }
+  }
+
+  if (SDK_VERSION >= 20) {
+    NetIdManager::NetIdInfo netIdInfo;
+    if (!mNetIdManager.lookup(aOptions.mCurExternalIfname, &netIdInfo)) {
+      ERROR("No such interface: %s", GET_CHAR(mCurExternalIfname));
+      return -1;
+    }
+    aOptions.mNetId = netIdInfo.mNetId;
+  }
+  dumpParams(aOptions, GET_CHAR(mType));
+
   runChain(aOptions, sUpdateUpStreamChain, updateUpStreamFail);
   return CommandResult::Pending();
 }
@@ -2965,6 +3019,10 @@ void NetworkUtils::dumpParams(NetworkParams& aOptions, const char* aType)
     NU_DBG("     security: %s", GET_CHAR(mSecurity));
     NU_DBG("     key: %s", GET_CHAR(mKey));
   }
+  NU_DBG("     preInternalIfname: %s", GET_CHAR(mPreInternalIfname));
+  NU_DBG("     preExternalIfname: %s", GET_CHAR(mPreExternalIfname));
+  NU_DBG("     curInternalIfname: %s", GET_CHAR(mCurInternalIfname));
+  NU_DBG("     curExternalIfname: %s", GET_CHAR(mCurExternalIfname));
 #endif
 }
 

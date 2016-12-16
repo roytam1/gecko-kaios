@@ -44,6 +44,7 @@ dictionary NetworkCommandOptions
   DOMString endIp;                    // for "setDhcpServer".
   DOMString serverIp;                 // for "setDhcpServer".
   DOMString maskLength;               // for "setDhcpServer".
+  DOMString type;                     // for "updateUpStream".
   DOMString preInternalIfname;        // for "updateUpStream".
   DOMString preExternalIfname;        // for "updateUpStream".
   DOMString curInternalIfname;        // for "updateUpStream".

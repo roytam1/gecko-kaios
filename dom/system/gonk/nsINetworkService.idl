@@ -85,18 +85,20 @@ interface nsIEnableUsbRndisCallback : nsISupports
   void enableUsbRndisResult(in boolean success, in boolean enable);
 };
 
-[scriptable, function, uuid(4f08cc30-46ad-11e3-8f96-0800200c9a66)]
+[scriptable, function, uuid(4f07ca30-46ad-31e3-8f96-0730210c9ac6)]
 interface nsIUpdateUpStreamCallback : nsISupports
 {
   /**
    * Callback function used to report the result of updating upstream.
    *
+   * @param type
+   *        The tethering type.
    * @param success
    *        Boolean to indicate the operation is successful or not.
    * @param externalIfname
    *        The external interface name.
    */
-  void updateUpStreamResult(in boolean success, in DOMString externalIfname);
+  void updateUpStreamResult(in DOMString type, in boolean success, in DOMString externalIfname);
 };
 
 [scriptable, function, uuid(eedca6c0-1310-11e4-9191-0800200c9a66)]
@@ -199,7 +201,7 @@ interface nsISetInterfaceConfigCallback : nsISupports
 /**
  * Provide network services.
  */
-[scriptable, uuid(e16fe98f-9f63-48fe-82ba-8d1a1b7c6a57)]
+[scriptable, uuid(341bd946-cb04-4dc7-cc4b-6a827a9c9cb8)]
 interface nsINetworkService : nsISupports
 {
   const long MODIFY_ROUTE_ADD    = 0;
@@ -445,6 +447,8 @@ interface nsINetworkService : nsISupports
   /**
    * Update upstream.
    *
+   * @param type
+   *        The tethering type.
    * @param previous
    *        The previous internal and external interface.
    * @param current
@@ -452,7 +456,8 @@ interface nsINetworkService : nsISupports
    * @param callback
    *        Callback function to report the result.
    */
-  void updateUpStream(in jsval previous,
+  void updateUpStream(in jsval type,
+                      in jsval previous,
                       in jsval current,
                       in nsIUpdateUpStreamCallback callback);
 

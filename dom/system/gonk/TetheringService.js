@@ -81,6 +81,7 @@ const SETTINGS_USB_DNS1                = "tethering.usb.dns1";
 const SETTINGS_USB_DNS2                = "tethering.usb.dns2";
 
 // Settings DB path for WIFI tethering.
+const SETTINGS_WIFI_TETHERING_ENABLED  = "tethering.wifi.enabled";
 const SETTINGS_WIFI_DHCPSERVER_STARTIP = "tethering.wifi.dhcpserver.startip";
 const SETTINGS_WIFI_DHCPSERVER_ENDIP   = "tethering.wifi.dhcpserver.endip";
 
@@ -168,6 +169,7 @@ function TetheringService() {
   settingsLock.get(SETTINGS_USB_ENABLED, this);
 
   // Read wifi tethering data from settings DB.
+  settingsLock.get(SETTINGS_WIFI_TETHERING_ENABLED, this);
   settingsLock.get(SETTINGS_WIFI_DHCPSERVER_STARTIP, this);
   settingsLock.get(SETTINGS_WIFI_DHCPSERVER_ENDIP, this);
 
@@ -266,7 +268,7 @@ TetheringService.prototype = {
         network = aSubject.QueryInterface(Ci.nsINetworkInfo);
         debug("Network " + network.type + "/" + network.name +
               " changed state to " + network.state);
-        this.onConnectionChanged(network);
+        this.onExternalConnectionChanged(network);
         break;
       case TOPIC_XPCOM_SHUTDOWN:
         Services.obs.removeObserver(this, TOPIC_XPCOM_SHUTDOWN);
@@ -297,6 +299,12 @@ TetheringService.prototype = {
         this._dataDefaultServiceId = aResult || 0;
         debug("'_dataDefaultServiceId' is now " + this._dataDefaultServiceId);
         break;
+      case SETTINGS_WIFI_TETHERING_ENABLED:
+        if (aResult !== null) {
+          this.tetheringSettings[aName] = aResult;
+        }
+        debug("'" + aName + "'" + " is now " + this.tetheringSettings[aName]);
+        return;
       case SETTINGS_USB_ENABLED:
         this._oldUsbTetheringEnabledState = this.tetheringSettings[SETTINGS_USB_ENABLED];
       case SETTINGS_USB_IP:
@@ -355,6 +363,7 @@ TetheringService.prototype = {
     this.tetheringSettings[SETTINGS_USB_DNS1] = DEFAULT_DNS1;
     this.tetheringSettings[SETTINGS_USB_DNS2] = DEFAULT_DNS2;
 
+    this.tetheringSettings[SETTINGS_WIFI_TETHERING_ENABLED] = false;
     this.tetheringSettings[SETTINGS_WIFI_DHCPSERVER_STARTIP] = DEFAULT_WIFI_DHCPSERVER_STARTIP;
     this.tetheringSettings[SETTINGS_WIFI_DHCPSERVER_ENDIP]   = DEFAULT_WIFI_DHCPSERVER_ENDIP;
 
@@ -800,6 +809,7 @@ TetheringService.prototype = {
     }
   },
 
+  // Deprecated, replace by onExternalConnectionChangedReport.
   onConnectionChangedReport: function(aSuccess, aExternalIfname) {
     debug("onConnectionChangedReport result: success " + aSuccess);
 
@@ -811,6 +821,101 @@ TetheringService.prototype = {
     }
   },
 
+  onExternalConnectionChangedReport: function(type, aSuccess, aExternalIfname) {
+    debug("onExternalConnectionChangedReport result: success= " + aSuccess + " ,type= " + type);
+
+    if (aSuccess) {
+      // Update the external interface.
+      this._tetheringInterface[type].externalInterface = aExternalIfname;
+      debug("Change the interface name to " + aExternalIfname);
+    }
+  },
+
+  // Re-design the external connection state change flow for tethering function.
+  onExternalConnectionChanged: function(aNetworkInfo) {
+    // Check if the aNetworkInfo change is the external connection.
+    // SETTINGS_DUN_REQUIRED
+    // true: dun as external interface
+    // false: default as external interface
+    if ((this.tetheringSettings[SETTINGS_DUN_REQUIRED] &&
+         aNetworkInfo.type === Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_DUN)||
+        (!this.tetheringSettings[SETTINGS_DUN_REQUIRED] &&
+         (aNetworkInfo.type === Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE ||
+          aNetworkInfo.type === Ci.nsINetworkInfo.NETWORK_TYPE_WIFI))) {
+      debug("onExternalConnectionChanged. aNetworkInfo.type = " + aNetworkInfo.type
+        + " , aNetworkInfo.state = " + aNetworkInfo.state + " , dun_required = " + this.tetheringSettings[SETTINGS_DUN_REQUIRED]);
+
+      if (aNetworkInfo.state == Ci.nsINetworkInfo.NETWORK_STATE_CONNECTED) {
+        let tetheringType = null;
+        // Handle USB tethering case.
+        if (this.tetheringSettings[SETTINGS_USB_ENABLED]) {
+          tetheringType = TETHERING_TYPE_USB;
+        }
+        // Handle WIFI tethering case.
+        else if (this.tetheringSettings[SETTINGS_WIFI_TETHERING_ENABLED]) {
+          tetheringType = TETHERING_TYPE_WIFI;
+        } else {
+          debug("onExternalConnectionChanged. Tethering is not enabled, return.");
+          return;
+        }
+        debug("onExternalConnectionChanged. tetheringType = " + tetheringType);
+
+        // Handle the dun as external interface case.
+        if (this.tetheringSettings[SETTINGS_DUN_REQUIRED] &&
+            aNetworkInfo.type === Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_DUN) {
+          this.dunConnectTimer.cancel();
+          // Handle the request change case.
+          if(this._pendingTetheringRequests.length > 0) {
+            debug("DUN data call connected, process callbacks.");
+            while (this._pendingTetheringRequests.length > 0) {
+              let callback = this._pendingTetheringRequests.shift();
+              if (typeof callback === 'function') {
+                callback(aNetworkInfo);
+              }
+            }
+            return;
+          } else {
+            // Handle the aNetworkInfo side change case. Run the updateUpStream flow.
+            debug("DUN data call connected, process updateUpStream.");
+          }
+        }
+
+        // Re-config the NETD.
+        let previous = {
+          internalIfname: this._tetheringInterface[tetheringType].internalInterface,
+          externalIfname: this._tetheringInterface[tetheringType].externalInterface
+        };
+
+        let current = {
+          internalIfname: this._tetheringInterface[tetheringType].internalInterface,
+          externalIfname: aNetworkInfo.name
+        };
+
+        let callback = (function() {
+          // Update external aNetworkInfo interface.
+          debug("Update upstream interface to " + aNetworkInfo.name);
+          gNetworkService.updateUpStream(tetheringType, previous, current, this.onExternalConnectionChangedReport.bind(this));
+        }).bind(this);
+
+        if (this._usbTetheringAction === TETHERING_STATE_ONGOING) {
+          debug("Postpone the event and handle it when state is idle.");
+          this.wantConnectionEvent = callback;
+          return;
+        }
+        this.wantConnectionEvent = null;
+
+        callback.call(this);
+      }
+    } else {
+      if(this.tetheringSettings[SETTINGS_DUN_REQUIRED]) {
+        debug("onExternalConnectionChanged. Not dun type state change, return.");
+      } else {
+        debug("onExternalConnectionChanged. Not default type state change, return.");
+      }
+    }
+  },
+
+  // Deprecated, replace by onConnectionChanged.
   onConnectionChanged: function(aNetworkInfo) {
     if (aNetworkInfo.state != Ci.nsINetworkInfo.NETWORK_STATE_CONNECTED) {
       debug("We are only interested in CONNECTED event");
