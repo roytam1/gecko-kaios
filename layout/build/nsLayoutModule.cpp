@@ -256,8 +256,11 @@ static void Shutdown();
 #include "InputPortServiceFactory.h"
 #include "nsIInputPortService.h"
 
-#ifdef MOZ_WIDGET_GONK
+#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
 #include "GonkGPSGeolocationProvider.h"
+#endif
+#ifdef KAI_GEOLOC
+#include "KaiGeolocationProvider.h"
 #endif
 #include "MediaManager.h"
 
@@ -381,10 +384,16 @@ NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(GamepadServiceTest,
 #endif
 
 #ifdef MOZ_WIDGET_GONK
-#ifndef DISABLE_MOZ_RIL_GEOLOC
+#if !defined(DISABLE_MOZ_RIL_GEOLOC) && !defined(KAI_GEOLOC)
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsIGeolocationProvider,
                                          GonkGPSGeolocationProvider::GetSingleton)
 #endif
+
+#ifdef KAI_GEOLOC
+NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsIGeolocationProvider,
+                                         KaiGeolocationProvider::GetSingleton)
+#endif
+
 // Since the nsVolumeService constructor calls into nsIPowerManagerService,
 // we need it to be constructed sometime after nsIPowerManagerService.
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsVolumeService,
@@ -830,11 +839,16 @@ NS_DEFINE_NAMED_CID(NS_DEVICE_SENSORS_CID);
 NS_DEFINE_NAMED_CID(NS_HAPTICFEEDBACK_CID);
 #endif
 #endif
-#ifndef DISABLE_MOZ_RIL_GEOLOC
+#if !defined(DISABLE_MOZ_RIL_GEOLOC) && !defined(KAI_GEOLOC)
 #ifdef MOZ_WIDGET_GONK
 NS_DEFINE_NAMED_CID(GONK_GPS_GEOLOCATION_PROVIDER_CID);
 #endif
 #endif
+
+#ifdef KAI_GEOLOC
+NS_DEFINE_NAMED_CID(KAI_GEOLOCATION_PROVIDER_CID);
+#endif
+
 NS_DEFINE_NAMED_CID(CELLBROADCAST_SERVICE_CID);
 NS_DEFINE_NAMED_CID(IMS_REG_SERVICE_CID);
 NS_DEFINE_NAMED_CID(TELEPHONY_SERVICE_CID);
@@ -1163,8 +1177,11 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
   { &kGECKO_MEDIA_PLUGIN_SERVICE_CID, true, nullptr, GeckoMediaPluginServiceConstructor },
   { &kNS_TIMESERVICE_CID, false, nullptr, nsITimeServiceConstructor },
   { &kNS_MEDIASTREAMCONTROLLERSERVICE_CID, false, nullptr, nsIStreamingProtocolControllerServiceConstructor },
-#if defined(MOZ_WIDGET_GONK) && !defined(DISABLE_MOZ_RIL_GEOLOC)
+#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC) && !defined(DISABLE_MOZ_RIL_GEOLOC)
   { &kGONK_GPS_GEOLOCATION_PROVIDER_CID, false, nullptr, nsIGeolocationProviderConstructor },
+#endif
+#ifdef KAI_GEOLOC
+  { &kKAI_GEOLOCATION_PROVIDER_CID, false, nullptr, nsIGeolocationProviderConstructor },
 #endif
   { &kNS_MEDIAMANAGERSERVICE_CID, false, nullptr, nsIMediaManagerServiceConstructor },
 #ifdef MOZ_GAMEPAD
@@ -1333,8 +1350,11 @@ static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
   { "@mozilla.org/udp-socket-child;1", &kUDPSOCKETCHILD_CID },
   { TIMESERVICE_CONTRACTID, &kNS_TIMESERVICE_CID },
   { MEDIASTREAMCONTROLLERSERVICE_CONTRACTID, &kNS_MEDIASTREAMCONTROLLERSERVICE_CID },
-#if defined(MOZ_WIDGET_GONK) && !defined(DISABLE_MOZ_RIL_GEOLOC)
+#if defined(MOZ_WIDGET_GONK) && !defined(DISABLE_MOZ_RIL_GEOLOC) && !defined(KAI_GEOLOC)
   { GONK_GPS_GEOLOCATION_PROVIDER_CONTRACTID, &kGONK_GPS_GEOLOCATION_PROVIDER_CID },
+#endif
+#ifdef KAI_GEOLOC
+  { KAI_GEOLOCATION_PROVIDER_CONTRACTID, &kKAI_GEOLOCATION_PROVIDER_CID },
 #endif
 #ifdef MOZ_GAMEPAD
   { NS_GAMEPAD_TEST_CONTRACTID, &kNS_GAMEPAD_TEST_CID },

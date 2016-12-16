@@ -6057,6 +6057,18 @@ fi
 AC_SUBST(DISABLE_MOZ_RIL_GEOLOC)
 
 dnl ========================================================
+dnl = Use KaiOS Geolocation Provider
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(kai-geoloc,
+[  --enable-kai-geoloc         Enable KaiOS's geolocation],
+    KAI_GEOLOC=1,
+    KAI_GEOLOC= )
+if test -n "$KAI_GEOLOC"; then
+   AC_DEFINE(KAI_GEOLOC)
+fi
+AC_SUBST(KAI_GEOLOC)
+
+dnl ========================================================
 dnl = Disable camera HDR feature
 dnl ========================================================
 MOZ_ARG_DISABLE_BOOL(camera-hdr,

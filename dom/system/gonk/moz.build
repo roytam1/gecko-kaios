@@ -35,6 +35,7 @@ XPIDL_MODULE = 'dom_system_gonk'
 EXPORTS += [
     'GeolocationUtil.h',
     'GonkGPSGeolocationProvider.h',
+    'KaiGeolocationProvider.h',
     'nsVolume.h',
     'nsVolumeService.h',
     'SystemProperty.h',
@@ -46,6 +47,7 @@ UNIFIED_SOURCES += [
     'AutoMounterSetting.cpp',
     'GeolocationUtil.cpp',
     'GonkGPSGeolocationProvider.cpp',
+    'KaiGeolocationProvider.cpp',
     'MozMtpDatabase.cpp',
     'MozMtpServer.cpp',
     'MozMtpStorage.cpp',

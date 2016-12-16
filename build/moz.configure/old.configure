@@ -200,6 +200,7 @@ def old_configure_options(*options):
     '--enable-ios-target',
     '--enable-ipdl-tests',
     '--enable-jitspew',
+    '--enable-kai-geoloc',
     '--enable-libjpeg-turbo',
     '--enable-libproxy',
     '--enable-llvm-hacks',
