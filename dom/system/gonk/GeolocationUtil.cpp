@@ -144,8 +144,8 @@ DecodeNIString(const char* aMessage, GpsNiEncodingType aEncodingType)
   int hexstring_length = strlen(aMessage);
   // Note: hexstring_length cannot be an odd number.
   if ((hexstring_length == 0) || (hexstring_length % 2 != 0)) {
-    nsContentUtils::LogMessageToConsole(
-      "DecodeNIString - Failed to decode string(length %d)", hexstring_length);
+    nsContentUtils::LogMessageToConsole(nsPrintfCString(
+      "DecodeNIString - Failed to decode string(length %d)", hexstring_length).get());
     wide_str.AssignLiteral("Failed to decode string.");
     return wide_str;
   }
@@ -199,11 +199,13 @@ DecodeNIString(const char* aMessage, GpsNiEncodingType aEncodingType)
     wide_str.Append((const char16_t*)byteArray.get());
   } else if (aEncodingType == GPS_ENC_SUPL_GSM_DEFAULT) {
     if (!DecodeGsmDefaultToString(byteArray, wide_str)) {
-      nsContentUtils::LogMessageToConsole("DecodeNIString - Decode Failed!");
+      nsContentUtils::LogMessageToConsole(nsPrintfCString(
+        "DecodeNIString - Decode Failed!").get());
       wide_str.AssignLiteral("Failed to decode string");
     }
   } else {
-    nsContentUtils::LogMessageToConsole("DecodeNIString - UnknownEncoding.");
+    nsContentUtils::LogMessageToConsole(nsPrintfCString(
+      "DecodeNIString - UnknownEncoding.").get());
     wide_str.AssignLiteral("Failed to decode string");
   }
 

@@ -367,8 +367,8 @@ GonkGPSGeolocationProvider::SendChromeEvent(int id, GpsNiNotifyFlags flags, nsSt
       RefPtr<GonkGPSGeolocationProvider> provider = GonkGPSGeolocationProvider::GetSingleton();
       provider->SetNiResponse(id, GPS_NI_RESPONSE_NORESP);
     }
-    nsContentUtils::LogMessageToConsole(
-      "geo: SendChromeEvent Failed(id:%d, flags:%x)", id, flags);
+    nsContentUtils::LogMessageToConsole(nsPrintfCString(
+      "geo: SendChromeEvent Failed(id:%d, flags:%x)", id, flags).get());
     return false;
   }
 
@@ -438,8 +438,8 @@ GonkGPSGeolocationProvider::GPSNiNotifyCallback(GpsNiNotification *notification)
           encodingType == GPS_ENC_SUPL_GSM_DEFAULT) {
         message.Append(DecodeNIString(mNotification->text, encodingType));
       } else {
-         nsContentUtils::LogMessageToConsole(
-          "geo: GPSNiNotifyCallback text in unsupport decodeing format(%d)\n", encodingType);
+         nsContentUtils::LogMessageToConsole(nsPrintfCString(
+          "geo: GPSNiNotifyCallback text in unsupport decodeing format(%d)\n", encodingType).get());
       }
       message.AppendLiteral(",");
       encodingType = mNotification->requestor_id_encoding;
@@ -448,8 +448,8 @@ GonkGPSGeolocationProvider::GPSNiNotifyCallback(GpsNiNotification *notification)
           encodingType == GPS_ENC_SUPL_GSM_DEFAULT) {
         message.Append(DecodeNIString(mNotification->requestor_id, encodingType));
       } else {
-         nsContentUtils::LogMessageToConsole(
-          "geo: GPSNiNotifyCallback requestor_id in unsupport decodeing format(%d)\n", encodingType);
+         nsContentUtils::LogMessageToConsole(nsPrintfCString(
+          "geo: GPSNiNotifyCallback requestor_id in unsupport decodeing format(%d)\n", encodingType).get());
       }
       provider->SendChromeEvent(id, flags, message);
 
@@ -1363,7 +1363,8 @@ GonkGPSGeolocationProvider::Observe(nsISupports* aSubject,
         setting.mValue.isBoolean() ? setting.mValue.toBoolean() : false;
       return NS_OK;
     } else if (setting.mKey.EqualsASCII(kSettingSuplVerificationChoice)) {
-      nsContentUtils::LogMessageToConsole("geo: received the choice of supl ni verification\n");
+      nsContentUtils::LogMessageToConsole(nsPrintfCString(
+        "geo: received the choice of supl ni verification\n").get());
       int id = setting.mValue.toNumber();
       RefPtr<GonkGPSGeolocationProvider> provider =
         GonkGPSGeolocationProvider::GetSingleton();
