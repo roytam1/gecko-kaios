@@ -583,7 +583,7 @@ WifiGeoPositionProvider.prototype = {
         LOG("get access token returned status: " + xhr.status);
         // only accept status code 200 and 201.
         let isStatusInvalid = xhr.channel instanceof Ci.nsIHttpChannel &&
-          (xhr.status != HTTP_CODE_OK || xhr.status != HTTP_CODE_CREATED);
+          (xhr.status != HTTP_CODE_OK && xhr.status != HTTP_CODE_CREATED);
         if (isStatusInvalid || !xhr.response || !xhr.response.access_token) {
           deferred.reject(xhr.status);
         } else {
