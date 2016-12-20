@@ -2135,6 +2135,9 @@ void KeyboardInputMapper::processKey(nsecs_t when, bool down, int32_t keyCode,
             // key up, be sure to use same keycode as before in case of rotation
             keyCode = mKeyDowns.itemAt(keyDownIndex).keyCode;
             mKeyDowns.removeAt(size_t(keyDownIndex));
+        } else if (keyCode == AKEYCODE_FLIP) {
+            // flip key present the state of flip, be sure we don't drop any of
+            // flip state changes
         } else {
             // key was not actually down
             ALOGI("Dropping key up from device %s because the key was not down.  "
