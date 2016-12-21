@@ -355,6 +355,10 @@ private:
                                              nsIntRegion& aScreenRegion,
                                              nsIntRegion& aLowPrecisionScreenRegion,
                                              const gfx::Matrix4x4& aTransform);
+  /**
+   * Recursive helper method for cleaning damaged flag for current Layer tree.
+   */
+  static void CleanLayerCompositeDamaged(Layer* aLayer);
 
   /**
    * Update the invalid region and render it.
@@ -392,6 +396,8 @@ private:
                                float aContrastEffect);
 
   void ChangeCompositorInternal(Compositor* aNewCompositor);
+
+  void Mutated(Layer* aLayer) override;
 
   float mWarningLevel;
   mozilla::TimeStamp mWarnTime;
@@ -540,6 +546,17 @@ public:
     mClearRect = aRect;
   }
 
+  // Used to notify compositor/HWC this layer is damaged.
+  void SetDamaged(bool damaged)
+  {
+    mDamaged = damaged;
+  }
+
+  bool Damaged()
+  {
+    return mDamaged;
+  }
+
   // These getters can be used anytime.
   float GetShadowOpacity() { return mShadowOpacity; }
   const Maybe<ParentLayerIntRect>& GetShadowClipRect() { return mShadowClipRect; }
@@ -569,6 +586,7 @@ protected:
   bool mShadowTransformSetByAnimation;
   bool mDestroyed;
   bool mLayerComposited;
+  bool mDamaged;
   gfx::IntRect mClearRect;
 };
 

@@ -501,6 +501,25 @@ HwcComposer2D::PrepareLayerList(Layer* aLayer,
     hwcLayer.releaseFenceFd = -1;
 #if ANDROID_VERSION >= 18
     hwcLayer.planeAlpha = opacity;
+
+#if ANDROID_VERSION >=23
+    LayerComposite* layerComposite = static_cast<LayerComposite*>(aLayer->ImplData());
+    if (layerComposite && layerComposite->Damaged()) {
+        hwcLayer.surfaceDamage.numRects = 0;
+        hwcLayer.surfaceDamage.rects = nullptr;
+        // Because some hwc implementation's ROI checking skips video frames,
+        // hwc might drop video frame in such device. To workaround this, we
+        // force HWC_GEOMETRY_CHANGED to avoid ROI checking for those devices.
+        if (aLayer->GetType() != Layer::TYPE_IMAGE) {
+          mList->flags = HWC_GEOMETRY_CHANGED;
+        }
+    } else {
+        static hwc_rect_t empty = {0, 0, 0, 0};
+        hwcLayer.surfaceDamage.numRects = 1;
+        hwcLayer.surfaceDamage.rects = &empty;
+    }
+#endif
+
 #endif
 #else
     hwcLayer.compositionType = HwcUtils::HWC_USE_COPYBIT;

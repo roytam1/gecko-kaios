@@ -829,6 +829,15 @@ ClearLayerFlags(Layer* aLayer) {
 }
 
 void
+LayerManagerComposite::Mutated(Layer* aLayer)
+{
+  LayerComposite* mutated = ToLayerComposite(aLayer);
+  if (mutated) {
+    mutated->SetDamaged(true);
+  }
+}
+
+void
 LayerManagerComposite::Render(const nsIntRegion& aInvalidRegion, const nsIntRegion& aOpaqueRegion)
 {
   PROFILER_LABEL("LayerManagerComposite", "Render",
@@ -894,6 +903,7 @@ LayerManagerComposite::Render(const nsIntRegion& aInvalidRegion, const nsIntRegi
       }
     }
     mCompositor->EndFrameForExternalComposition(Matrix());
+    CleanLayerCompositeDamaged(mRoot);
     mLastFrameMissedHWC = false;
     return;
   } else if (!mTarget && !haveLayerEffects) {
@@ -985,6 +995,8 @@ LayerManagerComposite::Render(const nsIntRegion& aInvalidRegion, const nsIntRegi
   }
 
   mCompositor->GetWidget()->PostRender(this);
+
+  CleanLayerCompositeDamaged(mRoot);
 
   RecordFrame();
 }
@@ -1296,6 +1308,21 @@ LayerManagerComposite::ComputeRenderIntegrityInternal(Layer* aLayer,
   }
 }
 
+/* static */ void 
+LayerManagerComposite::CleanLayerCompositeDamaged(Layer* aLayer)
+{
+  if (LayerComposite* mutated = ToLayerComposite(aLayer)) {
+    mutated->SetDamaged(false);
+  }
+
+  if (ContainerLayer* container = aLayer->AsContainerLayer()) {
+    for (Layer* child = container->GetFirstChild();
+         child; child = child->GetNextSibling()) {
+      CleanLayerCompositeDamaged(child);
+    }
+  }
+}
+
 #ifdef MOZ_WIDGET_ANDROID
 static float
 GetDisplayportCoverage(const CSSRect& aDisplayPort,
@@ -1528,6 +1555,7 @@ LayerComposite::LayerComposite(LayerManagerComposite *aManager)
   , mShadowTransformSetByAnimation(false)
   , mDestroyed(false)
   , mLayerComposited(false)
+  , mDamaged(false)
 { }
 
 LayerComposite::~LayerComposite()
