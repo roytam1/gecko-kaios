@@ -4125,6 +4125,16 @@ this.DOMApplicationRegistry = {
     if (!aOldApp.downloadAvailable && aOldApp.staged) {
       delete aOldApp.staged;
     }
+    var removeApp = false;
+    if (this.webapps[aId] &&
+        aOldApp.installState != "installed") {
+      let dir = this._getAppDir(aId);
+      try {
+        dir.remove(true);
+      } catch (e) {}
+      removeApp = true;
+      delete this.webapps[aId];
+    }
 
     this._saveApps().then(() => {
       MessageBroadcaster.broadcastMessage("Webapps:UpdateState", {
@@ -4136,6 +4146,10 @@ this.DOMApplicationRegistry = {
         eventType: "downloaderror",
         manifestURL:  aNewApp.manifestURL
       });
+      if (removeApp) {
+        this.broadcastMessage("Webapps:Uninstall:Broadcast:Return:OK", aOldApp);
+        this.broadcastMessage("Webapps:RemoveApp", { id: aId });
+      }
     });
     AppDownloadManager.remove(aNewApp.manifestURL);
   },
