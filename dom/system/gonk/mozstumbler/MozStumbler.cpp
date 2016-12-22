@@ -245,7 +245,7 @@ PrintCellDesc(nsDataHashtable<nsCStringHashKey, int32_t>& info, nsACString& aCel
     const nsACString& key = it.Key();
     value = it.UserData();
     if (value != nsICellInfo::UNKNOWN_VALUE) {
-      aCellDesc += nsPrintfCString("\"%s\":%d,", key.BeginReading(), value);
+      aCellDesc += nsPrintfCString(",\"%s\":%d", key.BeginReading(), value);
     }
   }
 }
