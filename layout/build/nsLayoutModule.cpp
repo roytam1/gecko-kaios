@@ -97,6 +97,9 @@
 #ifdef MOZ_WEBSPEECH_POCKETSPHINX
 #include "mozilla/dom/PocketSphinxSpeechRecognitionService.h"
 #endif
+#ifdef KAIOS_WEBSPEECH_ADAPTOR
+#include "mozilla/dom/SpeechRecognitionAdaptorService.h"
+#endif
 #ifdef MOZ_WEBSPEECH
 #include "mozilla/dom/nsSynthVoiceRegistry.h"
 #endif
@@ -674,6 +677,9 @@ NS_GENERIC_FACTORY_CONSTRUCTOR(FakeSpeechRecognitionService)
 #ifdef MOZ_WEBSPEECH_POCKETSPHINX
 NS_GENERIC_FACTORY_CONSTRUCTOR(PocketSphinxSpeechRecognitionService)
 #endif
+#ifdef KAIOS_WEBSPEECH_ADAPTOR
+NS_GENERIC_FACTORY_CONSTRUCTOR(SpeechRecognitionAdaptorService)
+#endif
 
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsContentSecurityManager)
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsCSPContext)
@@ -875,6 +881,9 @@ NS_DEFINE_NAMED_CID(NS_FAKE_SPEECH_RECOGNITION_SERVICE_CID);
 #endif
 #ifdef MOZ_WEBSPEECH_POCKETSPHINX
 NS_DEFINE_NAMED_CID(NS_POCKETSPHINX_SPEECH_RECOGNITION_SERVICE_CID);
+#endif
+#ifdef KAIOS_WEBSPEECH_ADAPTOR
+NS_DEFINE_NAMED_CID(NS_SPEECH_RECOGNITION_ADAPTOR_SERVICE_CID);
 #endif
 #ifdef MOZ_WEBSPEECH
 NS_DEFINE_NAMED_CID(NS_SYNTHVOICEREGISTRY_CID);
@@ -1139,6 +1148,9 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
 #ifdef MOZ_WEBSPEECH_POCKETSPHINX
   { &kNS_POCKETSPHINX_SPEECH_RECOGNITION_SERVICE_CID, false, nullptr, PocketSphinxSpeechRecognitionServiceConstructor },
 #endif
+#ifdef KAIOS_WEBSPEECH_ADAPTOR
+  { &kNS_SPEECH_RECOGNITION_ADAPTOR_SERVICE_CID, false, nullptr, SpeechRecognitionAdaptorServiceConstructor },
+#endif
 #ifdef MOZ_WEBSPEECH
   { &kNS_SYNTHVOICEREGISTRY_CID, true, nullptr, nsSynthVoiceRegistryConstructor },
 #endif
@@ -1311,6 +1323,9 @@ static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
 #endif
 #ifdef MOZ_WEBSPEECH_POCKETSPHINX
   { NS_SPEECH_RECOGNITION_SERVICE_CONTRACTID_PREFIX "pocketsphinx-en-US", &kNS_POCKETSPHINX_SPEECH_RECOGNITION_SERVICE_CID },
+#endif
+#ifdef KAIOS_WEBSPEECH_ADAPTOR
+  { NS_SPEECH_RECOGNITION_SERVICE_CONTRACTID_PREFIX "adaptor", &kNS_SPEECH_RECOGNITION_ADAPTOR_SERVICE_CID },
 #endif
 #ifdef MOZ_WEBSPEECH
   { NS_SYNTHVOICEREGISTRY_CONTRACTID, &kNS_SYNTHVOICEREGISTRY_CID },

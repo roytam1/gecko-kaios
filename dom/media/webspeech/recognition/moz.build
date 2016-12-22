@@ -31,6 +31,11 @@ if CONFIG['MOZ_WEBSPEECH_POCKETSPHINX']:
         'PocketSphinxSpeechRecognitionService.h',
     ]
 
+if CONFIG['KAIOS_WEBSPEECH_ADAPTOR']:
+    EXPORTS.mozilla.dom += [
+        'SpeechRecognitionAdaptorService.h',
+    ]
+
 UNIFIED_SOURCES += [
     'endpointer.cc',
     'energy_endpointer.cc',
@@ -52,6 +57,11 @@ if CONFIG['MOZ_WEBSPEECH_TEST_BACKEND']:
 if CONFIG['MOZ_WEBSPEECH_POCKETSPHINX']:
     UNIFIED_SOURCES += [
         'PocketSphinxSpeechRecognitionService.cpp',
+    ]
+
+if CONFIG['KAIOS_WEBSPEECH_ADAPTOR']:
+    UNIFIED_SOURCES += [
+        'SpeechRecognitionAdaptorService.cpp',
     ]
 
 LOCAL_INCLUDES += [
