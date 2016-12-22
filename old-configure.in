@@ -2765,6 +2765,7 @@ MOZ_WEBSPEECH=1
 MOZ_WEBSPEECH_MODELS=
 MOZ_WEBSPEECH_POCKETSPHINX=
 MOZ_WEBSPEECH_TEST_BACKEND=1
+KAIOS_WEBSPEECH_ADAPTOR=
 VPX_USE_YASM=
 VPX_ASFLAGS=
 VPX_AS_CONVERSION=
@@ -3791,6 +3792,18 @@ if test -n "$MOZ_WEBSPEECH_POCKETSPHINX"; then
 fi
 
 AC_SUBST(MOZ_WEBSPEECH_POCKETSPHINX)
+
+dnl ========================================================
+dnl = Enable third party Speech API backend
+dnl ========================================================
+if test -n "$KAIOS_WEBSPEECH_ADAPTOR"; then
+    AC_DEFINE(KAIOS_WEBSPEECH_ADAPTOR)
+    if test -n %gonkdir; then
+        CPPFLAGS="$CPPFLAGS -I$gonkdir/external/libvoiceEngineAdaptor"
+    fi
+fi
+
+AC_SUBST(KAIOS_WEBSPEECH_ADAPTOR)
 
 dnl ========================================================
 dnl = Disable Speech API code
