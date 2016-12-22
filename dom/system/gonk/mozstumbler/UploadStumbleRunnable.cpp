@@ -7,12 +7,17 @@
 #include "UploadStumbleRunnable.h"
 #include "StumblerLogging.h"
 #include "mozilla/dom/Event.h"
+#include "nsContentUtils.h"
 #include "nsIInputStream.h"
 #include "nsIScriptSecurityManager.h"
 #include "nsIURLFormatter.h"
 #include "nsIXMLHttpRequest.h"
+#include "nsJSUtils.h"
 #include "nsNetUtil.h"
 #include "nsVariant.h"
+
+// The cache of access token for using location HTTP API
+static nsCString sAccessToken;
 
 UploadStumbleRunnable::UploadStumbleRunnable(nsIInputStream* aUploadData)
 : mUploadInputStream(aUploadData)
@@ -23,9 +28,15 @@ NS_IMETHODIMP
 UploadStumbleRunnable::Run()
 {
   MOZ_ASSERT(NS_IsMainThread());
-  nsresult rv = Upload();
-  if (NS_FAILED(rv)) {
-    WriteStumbleOnThread::UploadEnded(false);
+
+  if (sAccessToken.IsEmpty()) {
+    // Upload() will be called once we get the token from setting callback.
+    RequestSettingValue("geolocation.kaios.accessToken");
+  } else {
+    nsresult rv = Upload();
+    if (NS_FAILED(rv)) {
+      WriteStumbleOnThread::UploadEnded(false);
+    }
   }
   return NS_OK;
 }
@@ -64,6 +75,7 @@ UploadStumbleRunnable::Upload()
   NS_ENSURE_SUCCESS(rv, rv);
 
   xhr->SetRequestHeader(NS_LITERAL_CSTRING("Content-Type"), NS_LITERAL_CSTRING("gzip"));
+  xhr->SetRequestHeader(NS_LITERAL_CSTRING("Authorization"), NS_LITERAL_CSTRING("Bearer ") + sAccessToken);
   xhr->SetMozBackgroundRequest(true);
   // 60s timeout
   xhr->SetTimeout(60 * 1000);
@@ -148,4 +160,74 @@ UploadEventListener::HandleEvent(nsIDOMEvent* aEvent)
 
   mXHR = nullptr;
   return NS_OK;
+}
+
+NS_IMPL_ISUPPORTS(UploadStumbleRunnable,
+                  nsISettingsServiceCallback)
+
+/** nsISettingsServiceCallback **/
+
+NS_IMETHODIMP
+UploadStumbleRunnable::Handle(const nsAString& aName,
+                              JS::Handle<JS::Value> aResult)
+{
+  if (aName.EqualsLiteral("geolocation.kaios.accessToken")) {
+    if (aResult.isString()) {
+      JSContext *cx = nsContentUtils::GetCurrentJSContext();
+      NS_ENSURE_TRUE(cx, NS_OK);
+
+      nsAutoJSString token;
+      if (!token.init(cx, aResult.toString())) {
+        WriteStumbleOnThread::UploadEnded(false);
+        return NS_ERROR_FAILURE;
+      }
+      if (!token.IsEmpty()) {
+        // Get token from settings value.
+        sAccessToken = NS_ConvertUTF16toUTF8(token);;
+
+        // Upload the StumblerInfo with the access token.
+        nsresult rv = Upload();
+        if (NS_FAILED(rv)) {
+          WriteStumbleOnThread::UploadEnded(false);
+        }
+      } else {
+        WriteStumbleOnThread::UploadEnded(false);
+      }
+    }
+  }
+
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+UploadStumbleRunnable::HandleError(const nsAString& aErrorMessage)
+{
+  WriteStumbleOnThread::UploadEnded(false);
+  return NS_OK;
+}
+
+void
+UploadStumbleRunnable::RequestSettingValue(const char* aKey)
+{
+  MOZ_ASSERT(aKey);
+  nsCOMPtr<nsISettingsService> ss = do_GetService("@mozilla.org/settingsService;1");
+  if (!ss) {
+    MOZ_ASSERT(ss);
+    return;
+  }
+
+  nsCOMPtr<nsISettingsServiceLock> lock;
+  nsresult rv = ss->CreateLock(nullptr, getter_AddRefs(lock));
+  if (NS_FAILED(rv)) {
+    nsContentUtils::LogMessageToConsole(nsPrintfCString(
+      "geo: error while createLock setting '%s': %d\n", aKey, rv).get());
+    return;
+  }
+
+  rv = lock->Get(aKey, this);
+  if (NS_FAILED(rv)) {
+    nsContentUtils::LogMessageToConsole(nsPrintfCString(
+      "geo: error while get setting '%s': %d\n", aKey, rv).get());
+    return;
+  }
 }

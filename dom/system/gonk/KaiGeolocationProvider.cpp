@@ -16,7 +16,9 @@
 
 #include "KaiGeolocationProvider.h"
 
+#include "mozstumbler/MozStumbler.h"
 #include "nsContentUtils.h"
+#include "nsGeoPosition.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -187,6 +189,36 @@ KaiGeolocationProvider::FindProperNetworkPos()
   return qc_acc < network_acc ? mLastQcPosition : mLastNetworkPosition;
 }
 
+class RequestWiFiAndCellInfoEvent : public nsRunnable {
+  public:
+    RequestWiFiAndCellInfoEvent(StumblerInfo *callback)
+      : mRequestCallback(callback)
+      {}
+
+    NS_IMETHOD Run() {
+      MOZ_ASSERT(NS_IsMainThread());
+
+      // TODO: Request for neighboring cells information here.
+      //       See Bug 6369 for the details.
+
+      // Set the expected count to 0 since nsIMobileConnection.GetCellInfoList()
+      // isn't supported by HAL
+      mRequestCallback->SetCellInfoResponsesExpected(0);
+
+      // Get Wifi AP Info
+      nsCOMPtr<nsIInterfaceRequestor> ir = do_GetService("@mozilla.org/telephony/system-worker-manager;1");
+      nsCOMPtr<nsIWifi> wifi = do_GetInterface(ir);
+      if (!wifi) {
+        mRequestCallback->SetWifiInfoResponseReceived();
+        nsContentUtils::LogMessageToConsole("Stumbler: can not get nsIWifi interface\n");
+        return NS_OK;
+      }
+      wifi->GetWifiScanResults(mRequestCallback);
+      return NS_OK;
+    }
+  private:
+    RefPtr<StumblerInfo> mRequestCallback;
+};
 
 NS_IMPL_ISUPPORTS(KaiGeolocationProvider::NetworkLocationUpdate,
                   nsIGeolocationUpdate)
@@ -328,6 +360,43 @@ KaiGeolocationProvider::GpsLocationUpdate::Update(nsIDOMGeoPosition *position)
 
     if (provider->mLocationCallback) {
       provider->mLocationCallback->Update(provider->FindProperNetworkPos());
+    }
+  }
+
+  // Note above: Can't use location->timestamp as the time from the satellite is a
+  // minimum of 16 secs old (see http://leapsecond.com/java/gpsclock.htm).
+  // All code from this point on expects the gps location to be timestamped with the
+  // current time, most notably: the geolocation service which respects maximumAge
+  // set in the DOM JS.
+  RefPtr<nsGeoPosition> somewhere = new nsGeoPosition(coords, PR_Now() / PR_USEC_PER_MSEC);
+
+  const double kMinChangeInMeters = 30.0;
+  static int64_t lastTime_ms = 0;
+  static double sLastLat = 0.0;
+  static double sLastLon = 0.0;
+  double delta = -1.0;
+  int64_t timediff = (PR_Now() / PR_USEC_PER_MSEC) - lastTime_ms;
+
+  if (0 != sLastLon || 0 != sLastLat) {
+    delta = CalculateDeltaInMeter(lat, lon, sLastLat, sLastLon);
+  }
+  if (gDebug_isLoggingEnabled) {
+    nsContentUtils::LogMessageToConsole(nsPrintfCString(
+      "Stumbler: Location. [%f , %f] time_diff:%lld, delta : %f\n", lon, lat, timediff, delta).get());
+  }
+
+  // Consecutive GPS locations must be 30 meters and 3 seconds apart
+  if (lastTime_ms == 0 || ((timediff >= STUMBLE_INTERVAL_MS) && (delta > kMinChangeInMeters))) {
+    lastTime_ms = (PR_Now() / PR_USEC_PER_MSEC);
+    sLastLat = lat;
+    sLastLon = lon;
+    RefPtr<StumblerInfo> requestCallback = new StumblerInfo(somewhere);
+    RefPtr<RequestWiFiAndCellInfoEvent> runnable = new RequestWiFiAndCellInfoEvent(requestCallback);
+    NS_DispatchToMainThread(runnable);
+  } else {
+    if (gDebug_isLoggingEnabled) {
+      nsContentUtils::LogMessageToConsole(
+        "Stumbler: GPS locations less than 30 meters and 3 seconds. Ignore!\n");
     }
   }
 

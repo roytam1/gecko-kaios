@@ -236,7 +236,7 @@ WriteStumbleOnThread::GetUploadFileStatus()
   nsCOMPtr<nsIFile> tmpFile;
   nsresult rv = nsDumpUtils::OpenTempFile(FILENAME_COMPLETED, getter_AddRefs(tmpFile),
                                           OUTPUT_DIR, nsDumpUtils::CREATE);
-  int64_t fileSize;
+  int64_t fileSize = 0;
   rv = tmpFile->GetFileSize(&fileSize);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     STUMBLER_ERR("GetFileSize failed");

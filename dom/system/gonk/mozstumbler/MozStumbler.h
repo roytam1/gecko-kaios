@@ -39,6 +39,7 @@ private:
   void DumpStumblerInfo();
   nsresult LocationInfoToString(nsACString& aLocDesc);
   void CellNetworkInfoToString(nsACString& aCellDesc);
+  void MobileCellInfoToString(nsACString& aCellDesc);
   nsTArray<RefPtr<nsICellInfo>> mCellInfo;
   nsCString mWifiDesc;
   RefPtr<nsGeoPosition> mPosition;

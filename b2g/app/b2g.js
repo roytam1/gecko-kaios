@@ -216,8 +216,10 @@ pref("geo.provider.need_authorization", true);
 // the secret JSON Web Token of TCL location service
 pref("geo.authorization.jwt", "%TCL_GEO_API_KEY%");
 
-// base url for the stumbler
-pref("geo.stumbler.url", "https://location.services.mozilla.com/v1/geosubmit?key=%MOZILLA_API_KEY%");
+// URL for geolocation crowdsourcing, the original URL of B2G OS is
+// "https://location.services.mozilla.com/v1/geosubmit?key=%MOZILLA_API_KEY%"
+// TODO: Bug 5681 - Use HTTPS instead of HTTP for the communication of KaiOS location service.
+pref("geo.stumbler.url", "http://lbs.kaiostech.com:8080/v2.0/lbs/submit");
 
 // enable geo
 pref("geo.enabled", true);
