@@ -1126,10 +1126,6 @@ SetScreenBrightness(double brightness)
   config.flashOnMS = config.flashOffMS = 0;
   config.color = color;
   SetLight(eHalLightID_Backlight, config);
-  if (GetKeyLightEnabled()) {
-    SetLight(eHalLightID_Buttons, config);
-    SetLight(eHalLightID_Keyboard, config);
-  }
 }
 
 static StaticMutex sInternalLockCpuMutex;
