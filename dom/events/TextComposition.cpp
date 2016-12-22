@@ -692,6 +692,9 @@ TextCompositionArray::IndexOf(const NativeIMEContext& aNativeIMEContext)
 TextCompositionArray::index_type
 TextCompositionArray::IndexOf(nsIWidget* aWidget)
 {
+  if (!aWidget) {
+    return NoIndex;
+  }
   return IndexOf(aWidget->GetNativeIMEContext());
 }
 
