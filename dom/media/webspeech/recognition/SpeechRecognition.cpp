@@ -73,14 +73,16 @@ GetSpeechRecognitionService(const nsAString& aLang)
   Preferences::GetCString(PREFERENCE_DEFAULT_RECOGNITION_SERVICE);
   nsAutoCString speechRecognitionService;
 
-  if (!aLang.IsEmpty()) {
-    speechRecognitionService =
-      NS_LITERAL_CSTRING(DEFAULT_RECOGNITION_SERVICE_PREFIX) +
-      NS_ConvertUTF16toUTF8(aLang);
-  } else if (!prefValue.IsEmpty()) {
+  if (!prefValue.IsEmpty()) {
     speechRecognitionService = prefValue;
   } else {
-    speechRecognitionService = DEFAULT_RECOGNITION_SERVICE;
+    if (!aLang.IsEmpty()) {
+      speechRecognitionService =
+        NS_LITERAL_CSTRING(DEFAULT_RECOGNITION_SERVICE_PREFIX) +
+        NS_ConvertUTF16toUTF8(aLang);
+    } else {
+      speechRecognitionService = DEFAULT_RECOGNITION_SERVICE;
+    }
   }
 
   if (SpeechRecognition::mTestConfig.mFakeRecognitionService) {
