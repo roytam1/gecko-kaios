@@ -33,7 +33,10 @@ nsMediaSnifferEntry nsMediaSniffer::sSnifferEntries[] = {
   // The string RIFF, followed by four bytes, followed by the string WAVE
   PATTERN_ENTRY("\xFF\xFF\xFF\xFF\x00\x00\x00\x00\xFF\xFF\xFF\xFF", "RIFF\x00\x00\x00\x00WAVE", AUDIO_WAV),
   // mp3 with ID3 tags, the string "ID3".
-  PATTERN_ENTRY("\xFF\xFF\xFF", "ID3", AUDIO_MP3)
+  PATTERN_ENTRY("\xFF\xFF\xFF", "ID3", AUDIO_MP3),
+  //The string "MThd" followed by four bytes representing the number 6 in 32 bits (big-endian), the MIDI signature.
+  //https://mimesniff.spec.whatwg.org/#matching-an-audio-or-video-type-pattern
+  PATTERN_ENTRY("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", "MThd\x00\x00\x00\x06", AUDIO_MIDI) 
 };
 
 // For a complete list of file types, see http://www.ftyps.com/index.html
