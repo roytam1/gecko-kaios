@@ -22,8 +22,9 @@ static const unsigned MP4_MIN_BYTES_COUNT = 12;
 static const uint32_t MAX_BYTES_SNIFFED = 512;
 // The maximum number of bytes to consider when attempting to sniff for a mp3
 // bitstream.
-// This is 320kbps * 144 / 32kHz + 1 padding byte + 4 bytes of capture pattern.
-static const uint32_t MAX_BYTES_SNIFFED_MP3 = 320 * 144 / 32 + 1 + 4;
+// This was 320kbps * 144 / 32kHz + 1 padding byte + 4 bytes of capture pattern, 
+// but still too small for some mp3 files, enlarge to 5KB
+static const uint32_t MAX_BYTES_SNIFFED_MP3 = 5 * 1024;
 
 NS_IMPL_ISUPPORTS(nsMediaSniffer, nsIContentSniffer)
 

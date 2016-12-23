@@ -147,8 +147,9 @@ int mp3_sniff(const uint8_t *buf, long length)
         return 0;
       }
     } else {
-      /* No id3 tag or mp3 header. Not mp3. */
-      return 0;
+      /* No id3 tag or mp3 header. Search from next byte*/
+      p += 1;
+      avail -= 1;
     }
   }
 
