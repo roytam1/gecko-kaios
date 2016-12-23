@@ -36,7 +36,11 @@ nsMediaSnifferEntry nsMediaSniffer::sSnifferEntries[] = {
   PATTERN_ENTRY("\xFF\xFF\xFF", "ID3", AUDIO_MP3),
   //The string "MThd" followed by four bytes representing the number 6 in 32 bits (big-endian), the MIDI signature.
   //https://mimesniff.spec.whatwg.org/#matching-an-audio-or-video-type-pattern
-  PATTERN_ENTRY("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", "MThd\x00\x00\x00\x06", AUDIO_MIDI) 
+  PATTERN_ENTRY("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", "MThd\x00\x00\x00\x06", AUDIO_MIDI),
+  //The string "#!AMR-WB" followed by the null byte, the AMR-WB signature.
+  PATTERN_ENTRY("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", "#!AMR-WB", AUDIO_AMR),
+  //The string "#!AMR." followed by the null byte, the AMR-NB signature.
+  PATTERN_ENTRY("\xFF\xFF\xFF\xFF\xFF\xFF", "#!AMR\x0A", AUDIO_AMR)
 };
 
 // For a complete list of file types, see http://www.ftyps.com/index.html
