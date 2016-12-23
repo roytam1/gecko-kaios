@@ -1523,6 +1523,13 @@ void NetworkUtils::setIpv6Enabled(CommandChain* aChain,
                                   NetworkResultOptions& aResult,
                                   bool aEnabled)
 {
+  // rmnetxxxx (ex: rmnet_data0) interface should be handled by RIL, not here.
+  if (!strncmp(GET_CHAR(mIfname), "rmnet", 5)) {
+    NU_DBG("%s : ignore interface - %s", __FUNCTION__, GET_CHAR(mIfname));
+    next(aChain, false, aResult);
+    return;
+  }
+
   char command[MAX_COMMAND_SIZE];
   snprintf(command, MAX_COMMAND_SIZE - 1, "interface ipv6 %s %s",
            GET_CHAR(mIfname), aEnabled ? "enable" : "disable");
