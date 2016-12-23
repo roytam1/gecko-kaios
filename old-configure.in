@@ -2847,15 +2847,15 @@ fi
 AC_SUBST(MOZ_BING_API_CLIENTID)
 AC_SUBST(MOZ_BING_API_KEY)
 
-# Allow to specify a TCL API key (JWT) file that contains the secret key to be
-# used for TCL location API requests.
-MOZ_ARG_WITH_STRING(tcl-api-keyfile,
-[  --with-tcl-api-keyfile=file   Use the secret key contained in the given keyfile for TCL location API requests],
-  KAI_TCL_GEO_API_KEY=`cat $withval`)
-if test -z "$KAI_TCL_GEO_API_KEY"; then
-    KAI_TCL_GEO_API_KEY=no-tcl-geo-api-key
+# Allow to specify a KaiOS API key file that contains the secret key to be
+# used for KaiOS location API requests.
+MOZ_ARG_WITH_STRING(kaios-api-keyfile,
+[  --with-kaios-api-keyfile=file   Use the secret key contained in the given keyfile for KaiOS location API requests],
+  KAI_KAIOS_GEO_API_KEY=`cat $withval`)
+if test -z "$KAI_KAIOS_GEO_API_KEY"; then
+    KAI_KAIOS_GEO_API_KEY=no-kaios-geo-api-key
 fi
-AC_SUBST(KAI_TCL_GEO_API_KEY)
+AC_SUBST(KAI_KAIOS_GEO_API_KEY)
 
 # Allow specifying an Adjust SDK key file that contains the app token used for
 # Adjust SDK requests.

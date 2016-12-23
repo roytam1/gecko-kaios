@@ -213,8 +213,8 @@ pref("geo.token.uri", "http://lbs.kaiostech.com:8080/v2.0/applications/ZL5uJA6yI
 // whether the network geolocation provider need authorization header or not
 pref("geo.provider.need_authorization", true);
 
-// the secret JSON Web Token of TCL location service
-pref("geo.authorization.jwt", "%TCL_GEO_API_KEY%");
+// the secret API key of KaiOS location service
+pref("geo.authorization.key", "%KAIOS_GEO_API_KEY%");
 
 // URL for geolocation crowdsourcing, the original URL of B2G OS is
 // "https://location.services.mozilla.com/v1/geosubmit?key=%MOZILLA_API_KEY%"

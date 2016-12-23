@@ -514,7 +514,7 @@ WifiGeoPositionProvider.prototype = {
       xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
 
       let authorizationKey =
-        Services.urlFormatter.formatURLPref("geo.authorization.jwt");
+        Services.urlFormatter.formatURLPref("geo.authorization.key");
 
       xhr.setRequestHeader("Authorization", "Key " + authorizationKey);
 

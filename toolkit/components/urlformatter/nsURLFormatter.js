@@ -119,7 +119,7 @@ nsURLFormatterService.prototype = {
     GOOGLE_OAUTH_API_KEY:     () => "@MOZ_GOOGLE_OAUTH_API_KEY@",
     BING_API_CLIENTID:() => "@MOZ_BING_API_CLIENTID@",
     BING_API_KEY:     () => "@MOZ_BING_API_KEY@",
-    TCL_GEO_API_KEY:  () => "@KAI_TCL_GEO_API_KEY@",
+    KAIOS_GEO_API_KEY:  () => "@KAI_KAIOS_GEO_API_KEY@",
     DISTRIBUTION:     function() { return this.distribution.id; },
     DISTRIBUTION_VERSION: function() { return this.distribution.version; }
   },
