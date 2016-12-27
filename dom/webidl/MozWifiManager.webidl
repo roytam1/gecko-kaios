@@ -17,7 +17,9 @@ enum ConnectionStatus {
   "wps-timedout",
   "wps-failed",
   "wps-overlapped",
-  "connectingfailed"
+  "dhcpfailed",
+  "authenticationfailed",
+  "associationreject"
 };
 
 dictionary WifiWPSInfo {

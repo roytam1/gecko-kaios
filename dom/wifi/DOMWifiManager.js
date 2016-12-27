@@ -119,7 +119,8 @@ DOMWifiManager.prototype = {
                       "WifiManager:onconnect", "WifiManager:ondisconnect",
                       "WifiManager:onwpstimeout", "WifiManager:onwpsfail",
                       "WifiManager:onwpsoverlap", "WifiManager:connectioninfoupdate",
-                      "WifiManager:onauthenticating", "WifiManager:onconnectingfailed",
+                      "WifiManager:onauthenticating", "WifiManager:ondhcpfailed",
+                      "WifiManager:onauthenticationfailed", "WifiManager:onassociationreject",
                       "WifiManager:stationinfoupdate"];
     this.initDOMRequestHelper(aWindow, messages);
     this._mm = Cc["@mozilla.org/childprocessmessagemanager;1"].getService(Ci.nsISyncMessageSender);
@@ -360,9 +361,21 @@ DOMWifiManager.prototype = {
         this._lastConnectionInfo = this._convertConnectionInfo(msg);
         this._fireConnectionInfoUpdate(msg);
         break;
-      case "WifiManager:onconnectingfailed":
+      case "WifiManager:ondhcpfailed":
         this._currentNetwork = null;
-        this._connectionStatus = "connectingfailed";
+        this._connectionStatus = "dhcpfailed";
+        this._lastConnectionInfo = null;
+        this._fireStatusChangeEvent(msg.network);
+        break;
+      case "WifiManager:onauthenticationfailed":
+        this._currentNetwork = null;
+        this._connectionStatus = "authenticationfailed";
+        this._lastConnectionInfo = null;
+        this._fireStatusChangeEvent(msg.network);
+        break;
+      case "WifiManager:onassociationreject":
+        this._currentNetwork = null;
+        this._connectionStatus = "associationreject";
         this._lastConnectionInfo = null;
         this._fireStatusChangeEvent(msg.network);
         break;

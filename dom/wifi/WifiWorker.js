@@ -27,10 +27,10 @@ const WIFIWORKER_WORKER     = "resource://gre/modules/wifi_worker.js";
 const kMozSettingsChangedObserverTopic   = "mozsettings-changed";
 const kScreenStateChangedTopic           = "screen-state-changed";
 
-const MAX_RETRIES_ON_AUTHENTICATION_FAILURE = 3;
+const MAX_RETRIES_ON_AUTHENTICATION_FAILURE = 2;
 const MAX_SUPPLICANT_LOOP_ITERATIONS = 4;
 const MAX_RETRIES_ON_DHCP_FAILURE = 2;
-const MAX_RETRIES_ON_ASSOCIATION_REJECT = 16;
+const MAX_RETRIES_ON_ASSOCIATION_REJECT = 2;
 
 // Settings DB path for wifi
 const SETTINGS_WIFI_ENABLED            = "wifi.enabled";
@@ -288,11 +288,7 @@ var WifiManager = (function() {
     } else {
       setSuspendOptimizationsMode(POWER_MODE_SCREEN_STATE, true,
         function(ok) {});
-      if (manager.state === "ASSOCIATING" ||
-          manager.state === "ASSOCIATED" ||
-          manager.state === "FOUR_WAY_HANDSHAKE" ||
-          manager.state === "GROUP_HANDSHAKE" ||
-          manager.state === "COMPLETED") {
+      if (manager.isConnectState(manager.state)) {
         enableBackgroundScan(false);
       } else {
         enableBackgroundScan(true);
@@ -510,18 +506,10 @@ var WifiManager = (function() {
     // Enable background scan when device disconnected and screen off.
     // Disable background scan when device connecting and screen off.
     if(!screenOn) {
-      if ((manager.state === "ASSOCIATING" ||
-           manager.state === "ASSOCIATED" ||
-           manager.state === "FOUR_WAY_HANDSHAKE" ||
-           manager.state === "GROUP_HANDSHAKE" ||
-           manager.state === "COMPLETED") &&
-           fields.state === "DISCONNECTED") {
+      if (manager.isConnectState(manager.state) &&
+          fields.state === "DISCONNECTED") {
         enableBackgroundScan(true);
-      } else if (fields.state === "ASSOCIATING" ||
-                 fields.state === "ASSOCIATED" ||
-                 fields.state === "FOUR_WAY_HANDSHAKE" ||
-                 fields.state === "GROUP_HANDSHAKE" ||
-                 fields.state === "COMPLETED") {
+      } else if (manager.isConnectState(fields.state)) {
         enableBackgroundScan(false);
       }
     }
@@ -679,21 +667,11 @@ var WifiManager = (function() {
             debug('Do not bother younger DHCP request.');
             return;
           }
-          if (++manager.dhcpFailuresCount >= MAX_RETRIES_ON_DHCP_FAILURE) {
-            manager.dhcpFailuresCount = 0;
-            notify("disconnected", {connectionInfo: manager.connectionInfo});
-            return;
-          }
-          // NB: We have to call disconnect first. Otherwise, we only reauth with
-          // the existing AP and don't retrigger DHCP.
-          manager.disconnect(function() {
-            manager.reassociate(function(){});
-          });
-          return;
+          notify("networkdisable", {reason: "DISABLED_DHCP_FAILURE"});
+        } else {
+          manager.dhcpFailuresCount = 0;
+          notify("networkconnected", data);
         }
-
-        manager.dhcpFailuresCount = 0;
-        notify("networkconnected", data);
       });
     });
   }
@@ -757,54 +735,60 @@ var WifiManager = (function() {
     });
   }
 
+  manager.isWepNetwork = function (ssid, callback) {
+    wifiCommand.listNetworks(function (reply) {
+      var lines = reply ? reply.split("\n") : [];
+      if (lines.length <= 1) {
+        // We need to make sure we call the callback even if there are no
+        // configured networks.
+        debug("Can't find configured networks");
+        callback(false);
+        return;
+      }
+
+      for (var n = 1; n < lines.length; ++n) {
+        if (lines[n].indexOf(ssid)) {
+          var result = lines[n].split("\t");
+          var netId = parseInt(result[0], 10);
+          break;
+        } else {
+          continue;
+        }
+      }
+      wifiCommand.getNetworkVariable(netId, "auth_alg", function(auth_alg) {
+        if (auth_alg === "OPEN SHARED") {
+          callback(true);
+        } else {
+          callback(false);
+        }
+      });
+    });
+  }
+
+  manager.clearDisableReasonCounter = function (callback) {
+    manager.authenticationFailuresCount = 0;
+    manager.associationRejectCount = 0;
+    manager.loopDetectionCount = 0;
+    manager.dhcpFailuresCount = 0;
+    callback(true);
+  }
+
   function handleWpaEapEvents(event) {
     if (event.indexOf("CTRL-EVENT-EAP-FAILURE") !== -1) {
       if (event.indexOf("EAP authentication failed") !== -1 &&
           !manager.wpsStarted) {
-        notify("passwordmaybeincorrect");
-        if (++manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
-          manager.authenticationFailuresCount = 0;
-          notify("disconnected", {connectionInfo: manager.connectionInfo});
-        }
+        notify("networkdisable", {reason: "DISABLED_AUTHENTICATION_FAILURE"});
       }
       return true;
     }
     if (event.indexOf("CTRL-EVENT-EAP-TLS-CERT-ERROR") !== -1) {
       // Cert Error
-      notify("passwordmaybeincorrect");
-      if (++manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
-        manager.authenticationFailuresCount = 0;
-        notify("disconnected", {connectionInfo: manager.connectionInfo});
-      }
+      notify("networkdisable", {reason: "DISABLED_AUTHENTICATION_FAILURE"});
       return true;
     }
     if (event.indexOf("CTRL-EVENT-EAP-STARTED") !== -1) {
       notifyStateChange({ state: "AUTHENTICATING" });
       return true;
-    }
-    if (event.indexOf("CTRL-EVENT-EAP-STATUS") !== -1) {
-      var space = event.indexOf(" ");
-      var fields = {};
-      var tokens = event.substr(space + 1).split(" ");
-      for (var n = 0; n < tokens.length; ++n) {
-        var kv = tokens[n].split("=");
-        if (kv.length === 2)
-          fields[kv[0]] = kv[1];
-      }
-
-      if ("status" in fields && fields.status.indexOf('completion') === -1) {
-        return true;
-      }
-
-      if ("parameter" in fields &&
-          fields.parameter.indexOf('failure') !== -1 &&
-          !manager.wpsStarted)  {
-        notify("passwordmaybeincorrect");
-        if (++manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
-          manager.authenticationFailuresCount = 0;
-          notify("disconnected", {connectionInfo: manager.connectionInfo});
-        }
-      }
     }
     return true;
   }
@@ -813,30 +797,24 @@ var WifiManager = (function() {
   function handleEvent(event) {
     debug("Event coming in: " + event);
     if (event.indexOf("CTRL-EVENT-") !== 0 && event.indexOf("WPS") !== 0) {
-      // Handle connection fail exception on WEP-128, while password length
-      // is not 5 nor 13 bytes.
-      if (event.indexOf("Association request to the driver failed") !== -1) {
-        notify("passwordmaybeincorrect");
-        if (++manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
-          manager.authenticationFailuresCount = 0;
-          notify("disconnected", {connectionInfo: manager.connectionInfo});
-        }
-        return true;
-      }
-
-      if (event.indexOf("WPA:") == 0 &&
-          event.indexOf("pre-shared key may be incorrect") != -1) {
-        notify("passwordmaybeincorrect");
-        if (++manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
-          manager.authenticationFailuresCount = 0;
-          notify("disconnected", {connectionInfo: manager.connectionInfo});
-        }
-      }
-
       if (event.indexOf("Authentication with") == 0 &&
           event.indexOf("timed out") != -1 &&
           !manager.wpsStarted) {
-        notify("authenticationtimeout");
+        notify("networkdisable", {reason: "DISABLED_AUTHENTICATION_FAILURE"});
+        return true;
+      }
+
+      if (event.indexOf("CTRL-REQ-") == 0) {
+        const REQUEST_PREFIX_STR = "CTRL-REQ-";
+        let requestName = event.substring(REQUEST_PREFIX_STR.length);
+        if (!requestName) return false;
+
+        if (requestName.startsWith("PASSWORD")) {
+          notify("networkdisable", {reason: "DISABLED_AUTHENTICATION_FAILURE"});
+          return true;
+        }
+        debug("couldn't identify request type - " + event);
+        return true;
       }
 
       // This is ugly, but we need to grab the SSID here. BSSID is not guaranteed
@@ -870,13 +848,8 @@ var WifiManager = (function() {
       // states, except when we "reauth", except this seems to depend on the
       // driver, so simply check to make sure that we don't have a null BSSID.
       if (manager.connectionInfo.bssid != fields.BSSID) {
-        if ((fields.state === "AUTHENTICATING" ||
-             fields.state === "ASSOCIATING" ||
-             fields.state === "ASSOCIATED" ||
-             fields.state === "FOUR_WAY_HANDSHAKE" ||
-             fields.state === "GROUP_HANDSHAKE" ||
-             fields.state === "COMPLETED") &&
-             fields.BSSID !== "00:00:00:00:00:00") {
+        if (manager.isConnectState(fields.state) &&
+            fields.BSSID !== "00:00:00:00:00:00") {
           manager.connectionInfo.bssid = fields.BSSID;
         } else {
           manager.connectionInfo.bssid = null;
@@ -925,13 +898,13 @@ var WifiManager = (function() {
       }
       return false;
     }
+    if(eventData.indexOf("CTRL-EVENT-SSID-TEMP-DISABLED") === 0) {
+      notify("networkdisable", {reason: "DISABLED_AUTHENTICATION_FAILURE"});
+      return true;
+    }
     if (eventData.indexOf("CTRL-EVENT-DISCONNECTED") === 0) {
       var token = event.split(" ")[1];
       var bssid = token.split("=")[1];
-      if (manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
-        manager.authenticationFailuresCount = 0;
-        notify("disconnected", {connectionInfo: manager.connectionInfo});
-      }
       manager.connectionInfo.bssid = null;
       manager.connectionInfo.ssid = null;
       manager.connectionInfo.id = -1;
@@ -965,13 +938,7 @@ var WifiManager = (function() {
     }
     if (eventData.indexOf("CTRL-EVENT-ASSOC-REJECT") === 0 &&
         !manager.wpsStarted) {
-      debug("CTRL-EVENT-ASSOC-REJECT: network error");
-      notify("passwordmaybeincorrect");
-      if (++manager.associationRejectCount > MAX_RETRIES_ON_ASSOCIATION_REJECT) {
-        manager.associationRejectCount = 0;
-        debug("CTRL-EVENT-ASSOC-REJECT: disconnect network");
-        notify("disconnected", {connectionInfo: manager.connectionInfo});
-      }
+      notify("networkdisable", {reason: "DISABLED_ASSOCIATION_REJECTION"});
       return true;
     }
     if (eventData.indexOf("WPS-TIMEOUT") === 0) {
@@ -1029,6 +996,7 @@ var WifiManager = (function() {
     manager.setPowerMode("AUTO", function(ok) {});
     manager.setSuspendOptimizations(requestOptimizationMode === 0,
       function(ok) {});
+
     if (p2pSupported) {
       manager.enableP2p(function(success) {});
     }
@@ -1069,11 +1037,8 @@ var WifiManager = (function() {
   manager.supplicantStarted = false;
   manager.wpsStarted = false;
   manager.connectionInfo = { ssid: null, bssid: null, id: -1 };
-  manager.authenticationFailuresCount = 0;
-  manager.associationRejectCount = 0;
-  manager.loopDetectionCount = 0;
-  manager.dhcpFailuresCount = 0;
   manager.stopSupplicantCallback = null;
+  manager.clearDisableReasonCounter(function(){});
 
   manager.__defineGetter__("enabled", function() {
     switch (manager.state) {
@@ -1575,6 +1540,28 @@ var WifiManager = (function() {
     }
   }
 
+  manager.isConnectState = function(state) {
+    switch (state) {
+      case "AUTHENTICATING":
+      case "ASSOCIATING":
+      case "ASSOCIATED":
+      case "FOUR_WAY_HANDSHAKE":
+      case "GROUP_HANDSHAKE":
+      case "CONNECTED":
+      case "COMPLETED":
+        return true;
+      case "DORMANT":
+      case "DISCONNECTED":
+      case "INTERFACE_DISABLED":
+      case "INACTIVE":
+      case "SCANNING":
+      case "UNINITIALIZED":
+      case "INVALID":
+      default:
+        return false;
+    }
+  }
+
   manager.isWifiEnabled = function(state) {
     switch (state) {
       case "UNINITIALIZED":
@@ -1609,7 +1596,7 @@ var WifiManager = (function() {
           manager.loopDetectionCount++;
         }
         if (manager.loopDetectionCount > MAX_SUPPLICANT_LOOP_ITERATIONS) {
-          notify("disconnected", {connectionInfo: manager.connectionInfo});
+          notify("networkdisable", {reason: "DISABLED_AUTHENTICATION_FAILURE"});
           manager.loopDetectionCount = 0;
         }
       }
@@ -2006,7 +1993,6 @@ function WifiWorker() {
 
   this.wantScanResults = [];
 
-  this._needToEnableNetworks = false;
   this._highestPriority = -1;
 
   // Networks is a map from SSID -> a scan result.
@@ -2241,48 +2227,56 @@ function WifiWorker() {
     self.requestDone();
   };
 
-  WifiManager.onpasswordmaybeincorrect = function() {
-    WifiManager.authenticationFailuresCount++;
-  };
-
-  WifiManager.onauthenticationtimeout = function() {
-    // This is a workaround for EAP-XXX authentication timeout.
-    // The timeout for authtication failed is about 60 seconds,
-    // reduce the retry count to have a better user experience.
-    if (!WifiManager.authenticationFailuresCount)
-      WifiManager.authenticationFailuresCount = 1;
-    WifiManager.authenticationFailuresCount++;
-  };
-
-  WifiManager.ondisconnected = function() {
-    // We may fail to establish the connection, re-enable the
-    // rest of our networks.
-    if (self._needToEnableNetworks) {
-      self._enableAllNetworks(function(){});
-      self._needToEnableNetworks = false;
+  WifiManager.onnetworkdisable = function() {
+    let configNetwork = self.currentNetwork;
+    switch (this.reason) {
+      case "DISABLED_DHCP_FAILURE":
+        WifiManager.dhcpFailuresCount++;
+        if (WifiManager.dhcpFailuresCount >= MAX_RETRIES_ON_DHCP_FAILURE) {
+          WifiManager.clearDisableReasonCounter(function(){});
+          WifiManager.isWepNetwork(WifiManager.connectionInfo.ssid, function(ok) {
+            self.handleNetworkConnectionFailure(WifiManager.connectionInfo.ssid);
+            if (ok) {
+              self._fireEvent("onauthenticationfailed",
+                {network: netToDOM(self.currentNetwork)});
+            } else {
+              self._fireEvent("ondhcpfailed",
+                {network: netToDOM(self.currentNetwork)});
+            }
+          });
+        } else {
+          WifiManager.disconnect(function() {
+            WifiManager.reassociate(function(){});
+          });
+        }
+        break;
+      case "DISABLED_AUTHENTICATION_FAILURE":
+        WifiManager.authenticationFailuresCount++;
+        if (WifiManager.authenticationFailuresCount >= MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
+          WifiManager.clearDisableReasonCounter(function(){});
+          self.handleNetworkConnectionFailure(WifiManager.connectionInfo.ssid);
+          self._fireEvent("onauthenticationfailed",
+            {network: netToDOM(configNetwork)});
+        }
+        break;
+      case "DISABLED_ASSOCIATION_REJECTION":
+        WifiManager.associationRejectCount++;
+        if (WifiManager.associationRejectCount >= MAX_RETRIES_ON_ASSOCIATION_REJECT) {
+          WifiManager.clearDisableReasonCounter(function(){});
+          WifiManager.isWepNetwork(WifiManager.connectionInfo.ssid, function(ok) {
+            self.handleNetworkConnectionFailure(WifiManager.connectionInfo.ssid);
+            if (ok) {
+              self._fireEvent("onauthenticationfailed",
+                {network: netToDOM(self.currentNetwork)});
+            } else {
+              self._fireEvent("onassociationreject",
+                {network: netToDOM(self.currentNetwork)});
+            }
+          });
+        }
+        break;
     }
-
-    let connectionInfo = this.connectionInfo;
-    let ssid = connectionInfo.ssid;
-    if (!ssid) {
-      ssid = dequote(self.currentNetwork.ssid);
-    }
-    WifiManager.getNetworkId(ssid, function(netId) {
-      // Trying to get netId from current network.
-      if (!netId &&
-          self.currentNetwork && self.currentNetwork.ssid &&
-          dequote(self.currentNetwork.ssid) == connectionInfo.ssid &&
-          typeof self.currentNetwork.netId !== "undefined") {
-        netId = self.currentNetwork.netId;
-      }
-      if (netId >= 0) {
-        WifiManager.disableNetwork(netId, function() {
-          debug("disable network - ssid: " + ssid + " id: " + netId)
-        });
-      }
-    });
-    self._fireEvent("onconnectingfailed", {network: netToDOM(self.currentNetwork)});
-  }
+  };
 
   WifiManager.onstatechange = function() {
     debug("State change: " + this.prevState + " -> " + this.state);
@@ -2689,6 +2683,7 @@ WifiWorker.prototype = {
   _airplaneMode: false,
   _airplaneMode_status: null,
 
+  _needToEnableNetworks: false,
   tetheringSettings: {},
 
   initTetheringSettings: function initTetheringSettings() {
@@ -2715,6 +2710,41 @@ WifiWorker.prototype = {
       airplaneMode = true;
     }
     return airplaneMode;
+  },
+
+  handleNetworkConnectionFailure: function(ssid) {
+    let self = this;
+    // We may fail to establish the connection, re-enable the
+    // rest of our networks.
+    if (this._needToEnableNetworks) {
+      this._enableAllNetworks(function(){});
+      this._needToEnableNetworks = false;
+    }
+
+    if (!ssid && self.currentNetwork && self.currentNetwork.ssid) {
+      ssid = dequote(self.currentNetwork.ssid);
+    }
+
+    WifiManager.getNetworkId(ssid, function(netId) {
+      // Trying to get netId from current network.
+      if (!netId &&
+          self.currentNetwork && self.currentNetwork.ssid &&
+          dequote(self.currentNetwork.ssid) == ssid &&
+          typeof self.currentNetwork.netId !== "undefined") {
+        netId = self.currentNetwork.netId;
+      }
+      if (netId >= 0) {
+        WifiManager.disableNetwork(netId, function() {
+          debug("disable network - ssid: " + ssid + " id: " + netId);
+          WifiManager.removeNetwork(netId, function() {
+            debug("remove network - ssid: " + ssid + " id: " + netId);
+            WifiManager.saveConfig(function() {
+                self._reloadConfiguredNetworks(function() {});
+            });
+          });
+        });
+      }
+    });
   },
 
   // Internal methods.
@@ -3428,17 +3458,20 @@ WifiWorker.prototype = {
     function networkReady() {
       // saveConfig now before we disable most of the other networks.
       function selectAndConnect() {
-        WifiManager.enableNetwork(privnet.netId, true, function (ok) {
-          if (ok)
-            self._needToEnableNetworks = true;
-          if (WifiManager.state === "DISCONNECTED" ||
-              WifiManager.state === "SCANNING") {
-            WifiManager.reconnect(function (ok) {
+        WifiManager.clearDisableReasonCounter(function (ok) {
+          WifiManager.enableNetwork(privnet.netId, true, function (ok) {
+            if (ok) {
+              self._needToEnableNetworks = true;
+            }
+            if (WifiManager.state === "DISCONNECTED" ||
+                WifiManager.state === "SCANNING") {
+              WifiManager.reconnect(function (ok) {
+                self._sendMessage(message, ok, ok, msg);
+              });
+            } else {
               self._sendMessage(message, ok, ok, msg);
-            });
-          } else {
-            self._sendMessage(message, ok, ok, msg);
-          }
+            }
+          });
         });
       }
 
