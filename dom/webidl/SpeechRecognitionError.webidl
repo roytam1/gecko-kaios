@@ -12,7 +12,8 @@ enum SpeechRecognitionErrorCode {
   "not-allowed",
   "service-not-allowed",
   "bad-grammar",
-  "language-not-supported"
+  "language-not-supported",
+  "cannot-recognize"
 };
 
 [Pref="media.webspeech.recognition.enable",

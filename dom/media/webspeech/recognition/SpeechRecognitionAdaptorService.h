@@ -91,9 +91,14 @@ public:
 
   // recognition Services
   voiceEngineAdaptor::engineAdaptor mAdaptor;
+  void reset();
+  WeakPtr<dom::SpeechRecognition> getRecognition() {
+    return mRecognition;
+  }
 private:
   virtual ~SpeechRecognitionAdaptorService();
   bool setParamters();
+  bool internalInit();
 
   /** Speex state */
   SpeexResamplerState* mSpeexState;
@@ -103,6 +108,7 @@ private:
 
   /** The associated SpeechRecognition */
   WeakPtr<dom::SpeechRecognition> mRecognition;
+  bool mStarted;
 };
 
 } // namespace mozilla

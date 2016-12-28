@@ -29,11 +29,13 @@ class DecodeResultTask : public nsRunnable
 {
 public:
   DecodeResultTask(const nsString& hypstring,
-                   WeakPtr<dom::SpeechRecognition> recognition,
-                   nsIThread* thread)
+                   SpeechRecognitionAdaptorService* aService,
+                   nsIThread* thread,
+                   int aError)
       : mResult(hypstring),
-        mRecognition(recognition),
-        mWorkerThread(thread)
+        mService(aService),
+        mWorkerThread(thread),
+        mError(aError)
   {
     MOZ_ASSERT(
       !NS_IsMainThread()); // This should be running on the worker thread
@@ -45,24 +47,35 @@ public:
     MOZ_ASSERT(NS_IsMainThread()); // This method is supposed to run on the main
                                    // thread!
 
-    // Declare javascript result events
-    RefPtr<SpeechEvent> event = new SpeechEvent(
-      mRecognition, SpeechRecognition::EVENT_RECOGNITIONSERVICE_FINAL_RESULT);
-    SpeechRecognitionResultList* resultList =
-      new SpeechRecognitionResultList(mRecognition);
-    SpeechRecognitionResult* result = new SpeechRecognitionResult(mRecognition);
-    SpeechRecognitionAlternative* alternative =
-      new SpeechRecognitionAlternative(mRecognition);
+    WeakPtr<dom::SpeechRecognition> recognition = mService->getRecognition();
 
-    alternative->mTranscript = mResult;
-    alternative->mConfidence = 100;
+    if (mError < 0) {
+      recognition->DispatchError(SpeechRecognition::EVENT_RECOGNITIONSERVICE_ERROR,
+          SpeechRecognitionErrorCode::Cannot_recognize,
+          NS_LITERAL_STRING("cannot recognize the audio"));
+    } else {
+      // Declare javascript result events
+      RefPtr<SpeechEvent> event = new SpeechEvent(
+        recognition, SpeechRecognition::EVENT_RECOGNITIONSERVICE_FINAL_RESULT);
+      SpeechRecognitionResultList* resultList =
+        new SpeechRecognitionResultList(recognition);
+      SpeechRecognitionResult* result = new SpeechRecognitionResult(recognition);
+      SpeechRecognitionAlternative* alternative =
+        new SpeechRecognitionAlternative(recognition);
 
-    result->mItems.AppendElement(alternative);
-    resultList->mItems.AppendElement(result);
+      alternative->mTranscript = mResult;
+      alternative->mConfidence = 100;
 
-    event->mRecognitionResultList = resultList;
-    NS_DispatchToMainThread(event);
+      result->mItems.AppendElement(alternative);
+      resultList->mItems.AppendElement(result);
 
+      event->mRecognitionResultList = resultList;
+      NS_DispatchToMainThread(event);
+    }
+
+    // reset the service for making sure the status of recogntion engine in the
+    // next round is clean.
+    mService->reset();
     // If we don't destroy the thread when we're done with it, it will hang
     // around forever... bad!
     // But thread->Shutdown must be called from the main thread, not from the
@@ -72,16 +85,20 @@ public:
 
 private:
   nsString mResult;
-  WeakPtr<dom::SpeechRecognition> mRecognition;
+  //SpeechRecognitionAdaptorService should live longer than the task
+  SpeechRecognitionAdaptorService* mService;
   nsCOMPtr<nsIThread> mWorkerThread;
+  // if mError < 0, error happens.
+  // TODO: define the error codes
+  int mError;
 };
 
 class DecodeTask : public nsRunnable
 {
 public:
-  DecodeTask(WeakPtr<dom::SpeechRecognition> recogntion,
+  DecodeTask(SpeechRecognitionAdaptorService* aService,
              const nsTArray<int16_t>& audiovector, engineAdaptor aAdaptor)
-      : mRecognition(recogntion), mAudiovector(audiovector), mAdaptor(aAdaptor)
+      : mService(aService), mAudiovector(audiovector), mAdaptor(aAdaptor)
   {
     mWorkerThread = do_GetCurrentThread();
   }
@@ -94,12 +111,16 @@ public:
     if (sApi.mReady) {
       recogResult ret = sApi.processAudio(mAdaptor, (char* )&mAudiovector[0],
                                      mAudiovector.Length(), output, bufSize);
+      nsCOMPtr<nsIRunnable> resultrunnable;
       if (ret == eRecogSuccess) {
-        nsCOMPtr<nsIRunnable> resultrunnable =
-          new DecodeResultTask(NS_ConvertUTF8toUTF16(output), mRecognition, mWorkerThread);
-        NS_DispatchToMainThread(resultrunnable);
+        resultrunnable = new DecodeResultTask(NS_ConvertUTF8toUTF16(output),
+                               mService, mWorkerThread, 0);
       } else {
+          resultrunnable = new DecodeResultTask(NS_ConvertUTF8toUTF16(output),
+                                 mService, mWorkerThread, -1);
       }
+
+      NS_DispatchToMainThread(resultrunnable);
     } else {
       MOZ_ASSERT("sApi should be ready here!!!!");
     }
@@ -109,7 +130,8 @@ public:
   }
 
 private:
-  WeakPtr<dom::SpeechRecognition> mRecognition;
+  //SpeechRecognitionAdaptorService should live longer than the task
+  SpeechRecognitionAdaptorService* mService;
   nsTArray<int16_t> mAudiovector;
   engineAdaptor mAdaptor;
   nsCOMPtr<nsIThread> mWorkerThread;
@@ -117,19 +139,30 @@ private:
 
 NS_IMPL_ISUPPORTS(SpeechRecognitionAdaptorService, nsISpeechRecognitionService, nsIObserver)
 
-SpeechRecognitionAdaptorService::SpeechRecognitionAdaptorService() : mSpeexState(nullptr)
+SpeechRecognitionAdaptorService::SpeechRecognitionAdaptorService() :
+  mSpeexState(nullptr),
+  mStarted(false)
 {
   if (!sApi.mReady) {
     sApi.Init();
   }
 
   if (sApi.mReady) {
-    sApi.enableEngine(&mAdaptor, skChannels, skFrequency, skBytesPerSample);
   }
 }
 
 SpeechRecognitionAdaptorService::~SpeechRecognitionAdaptorService()
 {
+  reset();
+}
+
+void
+SpeechRecognitionAdaptorService::reset()
+{
+  if (!mStarted) {
+    return;
+  }
+
   mSpeexState = nullptr;
   if (mAdaptor) {
     if (sApi.mReady) {
@@ -138,14 +171,65 @@ SpeechRecognitionAdaptorService::~SpeechRecognitionAdaptorService()
       MOZ_ASSERT("sApi should be ready here !!!");
     }
   }
+  mStarted = false;
 }
 
+bool
+SpeechRecognitionAdaptorService::internalInit()
+{
+  if (!sApi.mReady) {
+    return false;
+  }
+
+  if (mStarted) {
+    return true;
+  }
+
+  if (eRecogSuccess != sApi.enableEngine(&mAdaptor, skChannels, skFrequency,
+                                         skBytesPerSample)) {
+    return false;
+  }
+
+  nsAdoptingCString prefValue;
+  nsCString value;
+
+  prefValue = Preferences::GetCString("media.webspeech.adaptor.acousticModule");
+  if (prefValue) {
+    value.Assign(prefValue);
+    sApi.addContextFile(mAdaptor, eAcousticFile, (char*)value.get());
+  }
+
+  prefValue = Preferences::GetCString("media.webspeech.adaptor.dialerContextFile");
+  if (prefValue) {
+    value.Assign(prefValue);
+    sApi.addContextFile(mAdaptor, eContextFile, (char*)value.get());
+  }
+
+  prefValue = Preferences::GetCString("media.webspeech.adaptor.launcherContextFile");
+  if (prefValue) {
+    value.Assign(prefValue);
+    sApi.addContextFile(mAdaptor, eContextFile, (char*)value.get());
+  }
+
+  prefValue = Preferences::GetCString("media.webspeech.adaptor.clcFile");
+  if (prefValue) {
+    value.Assign(prefValue);
+    sApi.addContextFile(mAdaptor, eClcFile, (char*)value.get());
+  }
+
+  mStarted = true;
+  return true;
+}
 
 NS_IMETHODIMP
 SpeechRecognitionAdaptorService::Initialize(WeakPtr<SpeechRecognition> aSpeechRecognition)
 {
   if (mAdaptor == nullptr) {
     return NS_ERROR_NOT_INITIALIZED;
+  }
+
+  if (internalInit() == false) {
+    return NS_ERROR_FAILURE;
   }
 
   mRecognition = aSpeechRecognition;
@@ -194,14 +278,31 @@ SpeechRecognitionAdaptorService::SoundEnd()
   }
 
   nsCOMPtr<nsIRunnable> r =
-    new DecodeTask(mRecognition, mAudioVector, mAdaptor);
+    new DecodeTask(this, mAudioVector, mAdaptor);
   decodethread->Dispatch(r, nsIEventTarget::DISPATCH_NORMAL);
   return NS_OK;
 }
 
 NS_IMETHODIMP
-SpeechRecognitionAdaptorService::ValidateAndSetGrammarList(mozilla::dom::SpeechGrammar*, nsISpeechGrammarCompilationCallback*)
+SpeechRecognitionAdaptorService::ValidateAndSetGrammarList(
+  mozilla::dom::SpeechGrammar* aSpeechGrammar,
+  nsISpeechGrammarCompilationCallback*)
 {
+  if (!internalInit()) {
+    return NS_ERROR_FAILURE;
+  }
+
+  if (aSpeechGrammar) {
+    nsAutoString grammar;
+    ErrorResult rv;
+    aSpeechGrammar->GetSrc(grammar, rv);
+
+    if (eRecogSuccess != sApi.setGrammar(mAdaptor,
+        (char*)NS_ConvertUTF16toUTF8(grammar).get(), grammar.Length())) {
+      return NS_ERROR_FAILURE;
+    }
+  }
+
   return NS_OK;
 }
 
