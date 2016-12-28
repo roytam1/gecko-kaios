@@ -13,6 +13,9 @@
 #include <assert.h>
 #include <dlfcn.h>
 
+#if ANDROID_VERSION >= 23
+#include <utils/String16.h>
+#endif
 #include "OpenSLESProvider.h"
 #include "webrtc/modules/audio_device/android/audio_common.h"
 #include "webrtc/modules/audio_device/android/opensles_common.h"
@@ -396,6 +399,9 @@ void OpenSlesInput::SetupVoiceMode() {
   SLAndroidConfigurationItf configItf;
   SLresult res = (*sles_recorder_)->GetInterface(sles_recorder_, SL_IID_ANDROIDCONFIGURATION_,
                                                  (void*)&configItf);
+#if ANDROID_VERSION >= 23
+  static const android::String16 webRTCPackage("WebRTC");
+#endif
   WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "OpenSL GetInterface: %d", res);
 
   if (res == SL_RESULT_SUCCESS) {
@@ -456,7 +462,11 @@ void OpenSlesInput::SetupAECAndNS() {
     if (res == SL_RESULT_SUCCESS && idSize == sizeof(sessionId)) {
       WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "OpenSL sessionId: %d", sessionId);
 
+#if ANDROID_VERSION >= 23
+      aec_ = new android::AudioEffect(FX_IID_AEC, webRTCPackage, NULL, 0, 0, 0, sessionId, 0);
+#else
       aec_ = new android::AudioEffect(FX_IID_AEC, NULL, 0, 0, 0, sessionId, 0);
+#endif
       WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "OpenSL aec: %p", aec_);
 
       if (aec_) {
@@ -470,8 +480,11 @@ void OpenSlesInput::SetupAECAndNS() {
           aec_ = NULL;
         }
       }
-
+#if ANDROID_VERSION >= 23
+      ns_ = new android::AudioEffect(FX_IID_NS, webRTCPackage, NULL, 0, 0, 0, sessionId, 0);
+#else
       ns_ = new android::AudioEffect(FX_IID_NS, NULL, 0, 0, 0, sessionId, 0);
+#endif
       WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "OpenSL ns: %p", ns_);
 
       if (ns_) {
