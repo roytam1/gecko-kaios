@@ -56,24 +56,25 @@ public:
       return false;
     }
 
+    addContextFile = (recogResult (*)(engineAdaptor, fileType, char*))dlsym(mHandle, "addContextFile");
+    if (!addContextFile) {
+      return false;
+    }
+
     mReady = true;
     return true;
   }
 
   recogResult (* enableEngine) (engineAdaptor* aAdaptor, uint16_t aChannels,
                          uint16_t aFrequency, uint16_t aBytePerSample);
-
-
   recogResult (* processAudio) (engineAdaptor aAdaptor, char* aData, uint32_t aSamples,
                          char* aOutput, int32_t aOutputSize);
-
   recogResult (* disableEngine) (engineAdaptor* aAdaptor);
-
   recogResult (* setGrammar) (engineAdaptor aAdaptor, char* aGrammar, uint32_t aGrammarSize);
+  recogResult (* addContextFile) (engineAdaptor, fileType, char*);
 
   void* mHandle;
   bool mReady;
-
 };
 } //voiceEngineAdaptor
 
