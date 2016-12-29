@@ -55,8 +55,8 @@ GonkDisplayJB::GonkDisplayJB()
     , mPowerModule(nullptr)
     , mList(nullptr)
     , mEnabledCallback(nullptr)
-    , mFBEnabled(false)
-    , mExtFBEnabled(false)
+    , mFBEnabled(true)
+    , mExtFBEnabled(true)
 {
     int err = hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &mFBModule);
     ALOGW_IF(err, "%s module not found", GRALLOC_HARDWARE_MODULE_ID);
