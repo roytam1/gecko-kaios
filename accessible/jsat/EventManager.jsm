@@ -308,6 +308,11 @@ this.EventManager.prototype = {
       case Events.TEXT_INSERTED:
       case Events.TEXT_REMOVED:
       {
+        // We don't read the strings in password field.
+        if (aEvent.accessible.role == Ci.nsIAccessibleRole.ROLE_PASSWORD_TEXT) {
+          break;
+        }
+
         let {liveRegion, isPolite} = this._handleLiveRegion(aEvent,
           ['text', 'all']);
         if (aEvent.isFromUserInput || liveRegion) {
