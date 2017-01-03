@@ -509,6 +509,11 @@ this.EventManager.prototype = {
           modifiedText));
       }
     } else {
+      // bug 7239, when removing character from input field, we should read
+      // "clear" rather than the character that is going to be removed.
+      if (aEvent.eventType === Events.TEXT_REMOVED) {
+        modifiedText = 'clear';
+      }
       this.present(Presentation.textChanged(aEvent.accessible, isInserted,
         event.start, event.length, text, modifiedText));
     }
