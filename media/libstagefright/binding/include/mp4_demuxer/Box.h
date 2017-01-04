@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 #include "nsTArray.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "mozilla/Endian.h"
 #include "mp4_demuxer/AtomType.h"
 #include "mp4_demuxer/ByteReader.h"

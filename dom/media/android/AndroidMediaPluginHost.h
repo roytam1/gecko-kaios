@@ -7,7 +7,7 @@
 #define AndroidMediaPluginHost_h_
 
 #include "nsTArray.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "MPAPI.h"
 #include "AndroidMediaResourceServer.h"
 

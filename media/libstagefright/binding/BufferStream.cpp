@@ -4,7 +4,7 @@
 
 #include "mp4_demuxer/BufferStream.h"
 #include "MediaData.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include <algorithm>
 
 using namespace mozilla;

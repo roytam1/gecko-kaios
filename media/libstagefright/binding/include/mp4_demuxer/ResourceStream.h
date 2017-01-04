@@ -5,7 +5,7 @@
 #ifndef RESOURCESTREAM_H_
 #define RESOURCESTREAM_H_
 
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "mp4_demuxer/Stream.h"
 #include "mozilla/RefPtr.h"
 

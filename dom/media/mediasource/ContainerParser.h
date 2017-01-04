@@ -9,7 +9,7 @@
 
 #include "mozilla/RefPtr.h"
 #include "nsString.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 
 namespace mozilla {
 

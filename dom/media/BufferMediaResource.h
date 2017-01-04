@@ -6,7 +6,7 @@
 #if !defined(BufferMediaResource_h_)
 #define BufferMediaResource_h_
 
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "nsISeekableStream.h"
 #include "nsIPrincipal.h"
 #include <algorithm>

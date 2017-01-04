@@ -7,7 +7,7 @@
 #define AndroidMediaReader_h_
 
 #include "mozilla/Attributes.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "MediaDecoderReader.h"
 #include "ImageContainer.h"
 #include "nsAutoPtr.h"

@@ -16,7 +16,7 @@
 #include "nsReadLine.h"
 #include "nsNetCID.h"
 #include "VideoUtils.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "AndroidMediaResourceServer.h"
 
 #if defined(_MSC_VER)

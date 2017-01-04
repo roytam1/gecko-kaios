@@ -5,7 +5,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "MP4Stream.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 
 namespace mozilla {
 

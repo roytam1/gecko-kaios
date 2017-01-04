@@ -7,7 +7,7 @@
 #ifndef MOZILLA_MEDIASOURCERESOURCE_H_
 #define MOZILLA_MEDIASOURCERESOURCE_H_
 
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "mozilla/Monitor.h"
 #include "mozilla/Logging.h"
 

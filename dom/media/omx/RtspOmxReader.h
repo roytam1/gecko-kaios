@@ -6,7 +6,7 @@
 #if !defined(RtspOmxReader_h_)
 #define RtspOmxReader_h_
 
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "MediaDecoderReader.h"
 #include "MediaOmxReader.h"
 

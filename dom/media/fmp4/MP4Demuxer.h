@@ -10,7 +10,7 @@
 #include "mozilla/Maybe.h"
 #include "mozilla/Monitor.h"
 #include "MediaDataDemuxer.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 
 namespace mp4_demuxer {
 class MP4Metadata;

@@ -8,7 +8,7 @@
 #define MOZILLA_SOURCEBUFFERRESOURCE_H_
 
 #include "MediaCache.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "ResourceQueue.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/ReentrantMonitor.h"

@@ -10,7 +10,7 @@
 #include "mozilla/Telemetry.h"
 #include "mozilla/Function.h"
 
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "TimeUnits.h"
 #include "nsMathUtils.h"
 #include "nsSize.h"

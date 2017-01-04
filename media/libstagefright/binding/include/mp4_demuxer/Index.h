@@ -6,7 +6,7 @@
 #define INDEX_H_
 
 #include "MediaData.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "TimeUnits.h"
 #include "mp4_demuxer/MoofParser.h"
 #include "mp4_demuxer/Interval.h"

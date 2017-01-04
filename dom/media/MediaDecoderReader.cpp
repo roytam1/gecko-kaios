@@ -6,7 +6,7 @@
 
 #include "MediaDecoderReader.h"
 #include "AbstractMediaDecoder.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "VideoUtils.h"
 #include "ImageContainer.h"
 

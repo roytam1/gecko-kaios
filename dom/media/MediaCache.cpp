@@ -10,7 +10,7 @@
 #include "prio.h"
 #include "nsContentUtils.h"
 #include "nsThreadUtils.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "mozilla/Logging.h"
 #include "mozilla/Preferences.h"
 #include "FileBlockCache.h"

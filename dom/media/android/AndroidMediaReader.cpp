@@ -6,7 +6,7 @@
 #include "AndroidMediaReader.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/gfx/Point.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "VideoUtils.h"
 #include "AndroidMediaDecoder.h"
 #include "AndroidMediaPluginHost.h"

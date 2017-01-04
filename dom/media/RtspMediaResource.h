@@ -6,7 +6,7 @@
 #if !defined(RtspMediaResource_h_)
 #define RtspMediaResource_h_
 
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "mozilla/Monitor.h"
 #include "nsITimer.h"
 #include "VideoUtils.h"

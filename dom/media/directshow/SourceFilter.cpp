@@ -5,7 +5,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "SourceFilter.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "mozilla/RefPtr.h"
 #include "DirectShowUtils.h"
 #include "MP3FrameParser.h"

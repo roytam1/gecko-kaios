@@ -7,7 +7,7 @@
 #define WaveReader_h_
 
 #include "MediaDecoderReader.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 
 #include "mozilla/dom/HTMLMediaElement.h"
 

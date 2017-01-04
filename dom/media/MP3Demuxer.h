@@ -8,7 +8,7 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/Maybe.h"
 #include "MediaDataDemuxer.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "mp4_demuxer/ByteReader.h"
 #include <vector>
 

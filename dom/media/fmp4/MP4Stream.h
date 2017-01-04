@@ -9,7 +9,7 @@
 
 #include "mp4_demuxer/Stream.h"
 
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 
 #include "mozilla/Maybe.h"
 #include "mozilla/Monitor.h"

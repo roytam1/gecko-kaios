@@ -8,7 +8,7 @@
 
 #include <map>
 #include "nsIServerSocket.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 
 namespace mozilla {
 

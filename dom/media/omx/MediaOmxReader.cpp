@@ -8,7 +8,7 @@
 
 #include "MediaDecoderStateMachine.h"
 #include "mozilla/TimeStamp.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "VideoUtils.h"
 #include "MediaOmxDecoder.h"
 #include "AbstractMediaDecoder.h"

@@ -7,7 +7,7 @@
 #include "nsError.h"
 #include "MediaDecoderStateMachine.h"
 #include "AbstractMediaDecoder.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "WebMDemuxer.h"
 #include "WebMBufferedParser.h"
 #include "gfx2DGlue.h"

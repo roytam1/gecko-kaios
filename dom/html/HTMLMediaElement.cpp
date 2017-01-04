@@ -49,7 +49,7 @@
 #include "MediaError.h"
 #include "MediaDecoder.h"
 #include "nsICategoryManager.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 
 #include "nsIContentPolicy.h"
 #include "nsContentPolicyUtils.h"

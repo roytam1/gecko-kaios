@@ -10,7 +10,7 @@
 #include "mp4_demuxer/SinfParser.h"
 #include "mp4_demuxer/Stream.h"
 #include "mp4_demuxer/Interval.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 
 namespace mp4_demuxer {
 typedef int64_t Microseconds;

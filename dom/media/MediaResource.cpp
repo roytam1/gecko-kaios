@@ -6,8 +6,8 @@
 
 #include "mozilla/DebugOnly.h"
 
-#include "MediaResource.h"
-#include "MediaResourceCallback.h"
+#include "mozilla/MediaResource.h"
+#include "mozilla/MediaResourceCallback.h"
 #include "RtspMediaResource.h"
 
 #include "mozilla/Mutex.h"

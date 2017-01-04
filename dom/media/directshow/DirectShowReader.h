@@ -9,7 +9,7 @@
 
 #include "windows.h" // HRESULT, DWORD
 #include "MediaDecoderReader.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "mozilla/RefPtr.h"
 #include "MP3FrameParser.h"
 

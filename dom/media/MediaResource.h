@@ -17,7 +17,7 @@
 #include "Intervals.h"
 #include "MediaCache.h"
 #include "MediaData.h"
-#include "MediaResourceCallback.h"
+#include "mozilla/MediaResourceCallback.h"
 #include "mozilla/Atomics.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/TimeStamp.h"

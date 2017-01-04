@@ -7,7 +7,7 @@
 #include "BufferDecoder.h"
 
 #include "nsISupports.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 
 namespace mozilla {
 

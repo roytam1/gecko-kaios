@@ -14,7 +14,7 @@
 
 #include "MediaDataDemuxer.h"
 #include "MediaDecoderReader.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "MediaSource.h"
 #include "TrackBuffersManager.h"
 

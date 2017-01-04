@@ -14,7 +14,7 @@
 #include <vorbis/codec.h>
 #endif
 #include "MediaDecoderReader.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "OggCodecState.h"
 #include "VideoUtils.h"
 #include "mozilla/Monitor.h"

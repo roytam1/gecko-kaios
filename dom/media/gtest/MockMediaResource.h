@@ -5,7 +5,7 @@
 #ifndef MOCK_MEDIA_RESOURCE_H_
 #define MOCK_MEDIA_RESOURCE_H_
 
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 #include "nsTArray.h"
 #include "mozilla/Atomics.h"
 

@@ -7,7 +7,7 @@
 
 #include "mp4_demuxer/Stream.h"
 #include "nsTArray.h"
-#include "MediaResource.h"
+#include "mozilla/MediaResource.h"
 
 namespace mozilla {
 class MediaByteBuffer;
