@@ -203,12 +203,10 @@ pref("geo.cell.scan", true);
 
 // URL for geolocating service, the original URL of B2G OS is
 // "https://location.services.mozilla.com/v1/geolocate?key=%MOZILLA_API_KEY%"
-// TODO: Bug 5681 - Use HTTPS instead of HTTP for the communication of KaiOS location service.
-pref("geo.wifi.uri", "http://lbs.kaiostech.com:8080/v2.0/lbs/locate");
+pref("geo.wifi.uri", "https://lbs.kaiostech.com/v2.0/lbs/locate");
 
 // The end point to get a access token for KaiOS location service
-// TODO: Bug 5681 - Use HTTPS instead of HTTP for the communication of KaiOS location service.
-pref("geo.token.uri", "http://lbs.kaiostech.com:8080/v2.0/applications/ZL5uJA6yIVxXU3VyFO0z/tokens");
+pref("geo.token.uri", "https://lbs.kaiostech.com/v2.0/applications/ZL5uJA6yIVxXU3VyFO0z/tokens");
 
 // whether the network geolocation provider need authorization header or not
 pref("geo.provider.need_authorization", true);
@@ -218,8 +216,7 @@ pref("geo.authorization.key", "%KAIOS_GEO_API_KEY%");
 
 // URL for geolocation crowdsourcing, the original URL of B2G OS is
 // "https://location.services.mozilla.com/v1/geosubmit?key=%MOZILLA_API_KEY%"
-// TODO: Bug 5681 - Use HTTPS instead of HTTP for the communication of KaiOS location service.
-pref("geo.stumbler.url", "http://lbs.kaiostech.com:8080/v2.0/lbs/submit");
+pref("geo.stumbler.url", "https://lbs.kaiostech.com/v2.0/lbs/submit");
 
 // enable geo
 pref("geo.enabled", true);
