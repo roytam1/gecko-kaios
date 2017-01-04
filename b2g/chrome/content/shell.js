@@ -21,6 +21,7 @@ Cu.import('resource://gre/modules/RequestSyncService.jsm');
 Cu.import('resource://gre/modules/SystemUpdateService.jsm');
 
 if (isGonk) {
+  Cu.import('resource://gre/modules/MultiscreenHandler.jsm');
   Cu.import('resource://gre/modules/NetworkStatsService.jsm');
   Cu.import('resource://gre/modules/ResourceStatsService.jsm');
 }
