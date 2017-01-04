@@ -38,6 +38,7 @@
 #include "nsISupportsImpl.h"
 #include "ThreadSafeRefcountingWithMainThreadDestruction.h"
 #include "mozilla/VsyncDispatcher.h"
+#include "mozilla/layers/CompositorScheduler.h"
 
 class CancelableTask;
 class MessageLoop;
@@ -102,7 +103,7 @@ private:
  * compositor when it need to paint.
  * Turns vsync notifications into scheduled composites.
  **/
-class CompositorVsyncScheduler
+class CompositorVsyncScheduler final : public CompositorScheduler
 {
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(CompositorVsyncScheduler)
 
@@ -178,13 +179,6 @@ private:
     CompositorVsyncScheduler* mOwner;
   };
 
-  CompositorBridgeParent* mCompositorBridgeParent;
-  TimeStamp mLastCompose;
-
-#ifdef COMPOSITOR_PERFORMANCE_WARNING
-  TimeStamp mExpectedComposeStartTime;
-#endif
-
   bool mAsapScheduling;
   bool mIsObservingVsync;
   uint32_t mNeedsComposite;
@@ -193,7 +187,6 @@ private:
   RefPtr<CompositorVsyncScheduler::Observer> mVsyncObserver;
 
   mozilla::Monitor mCurrentCompositeTaskMonitor;
-  CancelableTask* mCurrentCompositeTask;
 
   mozilla::Monitor mSetNeedsCompositeMonitor;
   CancelableTask* mSetNeedsCompositeTask;
@@ -223,6 +216,7 @@ class CompositorBridgeParent final : public PCompositorBridgeParent,
 {
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING_WITH_MAIN_THREAD_DESTRUCTION(CompositorBridgeParent)
   friend class CompositorVsyncScheduler;
+  friend class CompositorScheduler;
 
 public:
   explicit CompositorBridgeParent(nsIWidget* aWidget,
@@ -591,7 +585,7 @@ protected:
   RefPtr<APZCTreeManager> mApzcTreeManager;
 
   RefPtr<CompositorThreadHolder> mCompositorThreadHolder;
-  RefPtr<CompositorVsyncScheduler> mCompositorScheduler;
+  RefPtr<CompositorScheduler> mCompositorScheduler;
   // This makes sure the compositorParent is not destroyed before receiving
   // confirmation that the channel is closed.
   // mSelfRef is cleared in DeferredDestroy which is scheduled by ActorDestroy.
