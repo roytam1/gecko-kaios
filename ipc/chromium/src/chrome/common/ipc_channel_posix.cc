@@ -497,21 +497,14 @@ bool Channel::ChannelImpl::ProcessIncomingMessages() {
           fds_i += m.header()->num_fds;
         }
 #ifdef IPC_MESSAGE_DEBUG_EXTRA
-        DLOG(INFO) << "received message on channel @" << this <<
-                      " with type " << m.type();
+      DLOG(INFO) << "received message on channel @" << this <<
+        " with type " << m.type();
 #endif
 
-#ifdef MOZ_TASK_TRACER
-        AutoSaveCurTraceInfo saveCurTraceInfo;
-        SetCurTraceInfo(m.header()->source_event_id,
-                        m.header()->parent_task_id,
-                        m.header()->source_event_type);
-#endif
-
-        if (m.routing_id() == MSG_ROUTING_NONE &&
-            m.type() == HELLO_MESSAGE_TYPE) {
-          // The Hello message contains only the process id.
-          listener_->OnChannelConnected(MessageIterator(m).NextInt());
+      if (m.routing_id() == MSG_ROUTING_NONE &&
+          m.type() == HELLO_MESSAGE_TYPE) {
+        // The Hello message contains only the process id.
+        listener_->OnChannelConnected(MessageIterator(m).NextInt());
 #if defined(OS_MACOSX)
         } else if (m.routing_id() == MSG_ROUTING_NONE &&
                    m.type() == RECEIVED_FDS_MESSAGE_TYPE) {
