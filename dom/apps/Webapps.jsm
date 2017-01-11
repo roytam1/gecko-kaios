@@ -1869,7 +1869,12 @@ this.DOMApplicationRegistry = {
       eventType: "downloadsuccess",
       manifestURL: aManifestURL
     });
-    if (app.installState == "pending") {
+
+    let autoUpdate = false;
+    try {
+      autoUpdate = Services.prefs.getBoolPref("dom.mozApps.auto_confirm_update");
+    } catch(e) {}
+    if (autoUpdate || app.installState == "pending") {
       // We restarted a failed download, apply it automatically.
       this.applyDownload(aManifestURL);
     }
@@ -2374,6 +2379,13 @@ this.DOMApplicationRegistry = {
       manifestURL: aApp.manifestURL,
       requestID: aData.requestID
     });
+    let autoUpdate = false;
+    try {
+      autoUpdate = Services.prefs.getBoolPref("dom.mozApps.auto_confirm_update");
+    } catch(e) {}
+    if (autoUpdate) {
+      this.startDownload(aApp.manifestURL);
+    }
   }),
 
   // A hosted app is updated if the app manifest or the appcache needs

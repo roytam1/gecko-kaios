@@ -180,6 +180,7 @@ this.AppsServiceCenter = {
     // apps will be installed/uninstalled with auto confirmed.
     Services.prefs.setBoolPref("dom.mozApps.auto_confirm_install", true);
     Services.prefs.setBoolPref("dom.mozApps.auto_confirm_uninstall", true);
+    Services.prefs.setBoolPref("dom.mozApps.auto_confirm_update", true);
 
     // Check if service center is already enabled.
     try {
