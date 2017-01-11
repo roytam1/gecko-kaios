@@ -153,6 +153,26 @@ this.AccessFu = { // jshint ignore:line
       delete this.readyCallback;
     }
 
+    if (Utils.MozBuildApp !== 'mobile/android') {
+      // When nsAccessibilityService is the initializing, the dom tree needs
+      // some time to construct. So that announce cannot correctly executeed
+      // because of "Utils.AccRetrieval.getAccessibleFor" fails.
+      let self = this;
+      let _announce = function _announce() {
+        if (!Utils.AccRetrieval.getAccessibleFor(Utils.CurrentBrowser)) {
+          Utils.win.setTimeout(_announce, 10);
+        } else {
+          self.announce('screenReaderStarted');
+        }
+      }
+
+      if (!Utils.AccRetrieval.getAccessibleFor(Utils.CurrentBrowser)) {
+        Utils.win.setTimeout(_announce, 10);
+      } else {
+        _announce();
+      }
+    }
+
     Logger.info('AccessFu:Enabled');
   },
 
