@@ -3924,7 +3924,7 @@ this.DOMApplicationRegistry = {
     // we have a real story for handling multiple app stores signing
     // apps.
     let signedAppOriginsStr =
-      Services.prefs.getCharPref("dom.mozApps.signed_apps_installable_from");
+      Services.prefs.getCharPref("apps.serviceCenter.allowedOrigins");
     // If it's a local install and it's signed then we assume
     // the app origin is a valid signer.
     let isSignedAppOrigin = (aIsSigned && aIsLocalFileInstall) ||
