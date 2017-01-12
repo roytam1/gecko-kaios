@@ -450,8 +450,11 @@ ContentPermissionPrompt.prototype = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIContentPermissionPrompt])
 };
 
+//TODO: Re-enable "Not allow audio-capture permission while in call 
+//      after we add incall-capture permission.
+/*
 (function() {
-  // Do not allow GetUserMedia while in call.
+  // Do not allow GetUserMedia "audio-capture" while in call.
   permissionSpecificChecker["audio-capture"] = function(request) {
     let forbid = false;
 
@@ -477,7 +480,7 @@ ContentPermissionPrompt.prototype = {
 
     return forbid;
   };
-})();
+})();*/
 
 //module initialization
 this.NSGetFactory = XPCOMUtils.generateNSGetFactory([ContentPermissionPrompt]);

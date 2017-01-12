@@ -445,6 +445,17 @@ public:
     mDeviceName.Assign(NS_ConvertUTF8toUTF16(name));
     mDeviceUUID.Assign(uuid);
     mListener = new mozilla::WebRTCAudioDataListener(this);
+
+    dom::AudioSourceEnum audioSource = dom::AudioSourceEnum::Mic;
+    if (mDeviceName.EqualsLiteral("mic")) {
+      audioSource = dom::AudioSourceEnum::Mic;
+    } else if (mDeviceName.EqualsLiteral("voicecall")) {
+      audioSource = dom::AudioSourceEnum::Voicecall;
+    }
+
+    mAudioSource.Assign(NS_ConvertUTF8toUTF16(
+        dom::AudioSourceEnumValues::strings[uint32_t(audioSource)].value));
+
     Init();
   }
 
@@ -552,6 +563,7 @@ private:
   webrtc::AgcModes mAGC;
   webrtc::NsModes  mNoiseSuppress;
   int32_t mPlayoutDelay;
+  nsString mAudioSource;
 
   NullTransport *mNullTransport;
 

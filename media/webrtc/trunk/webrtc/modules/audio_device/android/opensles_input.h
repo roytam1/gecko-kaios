@@ -57,7 +57,7 @@ class OpenSlesInput {
   bool Initialized() const { return initialized_; }
 
   // Device enumeration
-  int16_t RecordingDevices() { return 1; }
+  int16_t RecordingDevices() { return kAudioSourceIndexCount; }
   int32_t RecordingDeviceName(uint16_t index,
                               char name[kAdmMaxDeviceNameSize],
                               char guid[kAdmMaxGuidSize]);
@@ -139,6 +139,13 @@ class OpenSlesInput {
     kNum10MsToBuffer = 8,
   };
 
+  typedef enum {
+    kAudioSourceIndexMIC = 0,                       //Local main microphone input.
+    kAudioSourceIndexVoiceCall,                     //Mix result of uplink and downlink in voice call.
+    kAudioSourceIndexCount,                         //Counter of AudioSourceIndex, please keep this in this second last order.
+    kAudioSourceIndexDefault = kAudioSourceIndexMIC //Uses main microphone as default input.
+  } AudioSourceEnum;
+
   int InitSampleRate();
   int buffer_size_samples() const;
   int buffer_size_bytes() const;
@@ -153,6 +160,9 @@ class OpenSlesInput {
   bool CreateAudioRecorder();
   void DestroyAudioRecorder();
   void SetupVoiceMode();
+#if defined(WEBRTC_GONK)
+  bool SetupVoiceCallMode();
+#endif
 #if defined(WEBRTC_GONK) && defined(WEBRTC_HARDWARE_AEC_NS)
   void SetupAECAndNS();
   bool CheckPlatformAEC();
@@ -258,6 +268,9 @@ class OpenSlesInput {
   SLInterfaceID SL_IID_ANDROIDCONFIGURATION_;
   SLInterfaceID SL_IID_ANDROIDSIMPLEBUFFERQUEUE_;
   SLInterfaceID SL_IID_RECORD_;
+
+  //Audio source of this input device.
+  AudioSourceEnum audio_source_;
 };
 
 }  // namespace webrtc

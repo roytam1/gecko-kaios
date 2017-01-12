@@ -690,6 +690,17 @@ nsContentPermissionRequestProxy::Allow(JS::HandleValue aChoices)
   uint32_t len = mPermissionRequests.Length();
   for (uint32_t i = 0; i < len; i++) {
     if (mPermissionRequests[i].type().EqualsLiteral("audio-capture")) {
+      //If user indicates "voicecall" in options, set android.permission.CAPTURE_AUDIO_OUTPUT.
+      nsTArray<nsString>& options = mPermissionRequests[i].options();
+      for (uint32_t j = 0; j < options.Length(); j++) {
+        if (options[j].EqualsASCII("voicecall")) {
+          GonkPermissionService::GetInstance()->addGrantInfo(
+            "android.permission.CAPTURE_AUDIO_OUTPUT",
+            static_cast<ContentParent*>(mParent->Manager())->Pid());
+          break;
+        }
+      }
+
       GonkPermissionService::GetInstance()->addGrantInfo(
         "android.permission.RECORD_AUDIO",
         static_cast<ContentParent*>(mParent->Manager())->Pid());

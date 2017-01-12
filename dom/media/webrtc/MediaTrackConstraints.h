@@ -218,6 +218,13 @@ public:
           return "facingMode";
         }
       }
+      if (c.mAudioSource.IsConstrainDOMStringParameters()) {
+        dom::MediaTrackConstraints fresh;
+        fresh.mAudioSource = c.mAudioSource;
+        if (!SomeSettingsFit(fresh, unsatisfactory)) {
+          return "audioSource";
+        }
+      }
       return "";
     }
 

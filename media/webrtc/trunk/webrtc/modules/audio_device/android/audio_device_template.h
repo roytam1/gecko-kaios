@@ -69,7 +69,7 @@ class AudioDeviceTemplate : public AudioDeviceGeneric {
   }
 
   int16_t RecordingDevices() override {
-    return 1;
+    return input_.RecordingDevices();
   }
 
   int32_t PlayoutDeviceName(
@@ -100,9 +100,7 @@ class AudioDeviceTemplate : public AudioDeviceGeneric {
   }
 
   int32_t SetRecordingDevice(uint16_t index) override {
-    // OK to use but it has no effect currently since device selection is
-    // done using Andoid APIs instead.
-    return 0;
+    return input_.SetRecordingDevice(index);
   }
 
   int32_t SetRecordingDevice(

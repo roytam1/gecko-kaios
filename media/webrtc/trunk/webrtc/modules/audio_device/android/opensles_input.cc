@@ -77,7 +77,8 @@ OpenSlesInput::OpenSlesInput(
       ns_(NULL),
 #endif
       recording_delay_(0),
-      opensles_lib_(NULL) {
+      opensles_lib_(NULL),
+      audio_source_(kAudioSourceIndexDefault) {
 }
 
 OpenSlesInput::~OpenSlesInput() {
@@ -172,15 +173,25 @@ int32_t OpenSlesInput::Terminate() {
 int32_t OpenSlesInput::RecordingDeviceName(uint16_t index,
                                            char name[kAdmMaxDeviceNameSize],
                                            char guid[kAdmMaxGuidSize]) {
-  assert(index == 0);
+  if (index == kAudioSourceIndexMIC) {
+    strcpy (name, "mic");
+  } else if (index == kAudioSourceIndexVoiceCall) {
+    strcpy (name, "voicecall");
+  } else {
+    assert(false);
+  }
+
   // Empty strings.
-  name[0] = '\0';
   guid[0] = '\0';
   return 0;
 }
 
 int32_t OpenSlesInput::SetRecordingDevice(uint16_t index) {
-  assert(index == 0);
+  if (index == 0) {
+    audio_source_ = kAudioSourceIndexMIC;
+  } else if (index == 1) {
+    audio_source_ = kAudioSourceIndexVoiceCall;
+  }
   return 0;
 }
 
@@ -415,6 +426,36 @@ void OpenSlesInput::SetupVoiceMode() {
   }
 }
 
+#if defined(WEBRTC_GONK)
+bool OpenSlesInput::SetupVoiceCallMode() {
+  SLAndroidConfigurationItf configItf;
+  SLresult res = (*sles_recorder_)->GetInterface(sles_recorder_, SL_IID_ANDROIDCONFIGURATION_,
+                                                 (void*)&configItf);
+  WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "OpenSL GetInterface: %d", res);
+
+  if (res != SL_RESULT_SUCCESS) {
+    WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, 
+                 "OpenSL Get SL_IID_ANDROIDCONFIGURATION_ Interface error, res: %d", res);
+    return false;
+  } else {
+    SLuint32 voiceMode = SL_ANDROID_RECORDING_PRESET_VOICE_CALL;
+    SLuint32 voiceSize = sizeof(voiceMode);
+
+    res = (*configItf)->SetConfiguration(configItf,
+                                         SL_ANDROID_KEY_RECORDING_PRESET,
+                                         &voiceMode, voiceSize);
+    if (res != SL_RESULT_SUCCESS) {
+      WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, 
+                   "OpenSL Set SL_ANDROID_KEY_RECORDING_PRESET Configuration error, res: %d", res);
+      return false;
+    }
+  }
+
+  WEBRTC_TRACE(kTraceDefault, kTraceAudioDevice, 0, "OpenSL Set In Call mode res: %d", res);
+  return true;
+}
+#endif
+
 #if defined(WEBRTC_GONK) && defined(WEBRTC_HARDWARE_AEC_NS)
 bool OpenSlesInput::CheckPlatformAEC() {
   effect_descriptor_t fxDesc;
@@ -545,7 +586,17 @@ bool OpenSlesInput::CreateAudioRecorder() {
                                       &recorder_config),
       false);
 
-  SetupVoiceMode();
+  if (audio_source_ == kAudioSourceIndexMIC) {
+    SetupVoiceMode();
+  }
+
+#if defined(WEBRTC_GONK)
+  if (audio_source_ == kAudioSourceIndexVoiceCall) {
+    if(!SetupVoiceCallMode()) {
+      return false;
+    }
+  }
+#endif
 
   // Realize the recorder in synchronous mode.
   OPENSL_RETURN_ON_FAILURE((*sles_recorder_)->Realize(sles_recorder_,

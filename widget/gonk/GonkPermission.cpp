@@ -145,7 +145,8 @@ GonkPermissionService::checkPermission(const String16& permission, int32_t pid,
 
   // Only these permissions can be granted to apps through this service.
   if (perm8 != "android.permission.CAMERA" &&
-    perm8 != "android.permission.RECORD_AUDIO") {
+    perm8 != "android.permission.RECORD_AUDIO" &&
+    perm8 != "android.permission.CAPTURE_AUDIO_OUTPUT") {
     ALOGE("%s for pid=%d,uid=%d denied: unsupported permission",
       String8(permission).string(), pid, uid);
     return false;

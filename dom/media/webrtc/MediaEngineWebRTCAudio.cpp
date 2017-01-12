@@ -208,13 +208,26 @@ uint32_t MediaEngineWebRTCMicrophoneSource::GetBestFitnessDistance(
     const nsTArray<const dom::MediaTrackConstraintSet*>& aConstraintSets,
     const nsString& aDeviceId)
 {
-  uint32_t distance = 0;
+  uint64_t distance = 0;
 
   for (const MediaTrackConstraintSet* cs : aConstraintSets) {
-    distance = GetMinimumFitnessDistance(*cs, false, aDeviceId);
+    nsString voiceCallAudioSource(NS_ConvertUTF8toUTF16(
+      dom::AudioSourceEnumValues::strings[uint32_t(dom::AudioSourceEnum::Voicecall)].value));
+
+    //For MicrophoneSource, 
+    //if user didn't provide voicecall audiosource option, 
+    //force remove voicecall device if any.
+    if (mAudioSource == voiceCallAudioSource) {
+        if (!cs->mAudioSource.IsString() || 
+        cs->mAudioSource.GetAsString() != voiceCallAudioSource) {
+        return UINT32_MAX;
+      }
+    }
+    distance = uint64_t(GetMinimumFitnessDistance(*cs, false, aDeviceId)) + 
+               uint64_t(FitnessDistance(mAudioSource, cs->mAudioSource, true));
     break; // distance is read from first entry only
   }
-  return distance;
+  return uint32_t(std::min(distance, uint64_t(UINT32_MAX)));
 }
 
 nsresult

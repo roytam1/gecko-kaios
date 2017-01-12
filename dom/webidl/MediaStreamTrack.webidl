@@ -21,6 +21,11 @@ enum VideoFacingModeEnum {
     "right"
 };
 
+enum AudioSourceEnum {
+    "mic",
+    "voicecall"
+};
+
 enum MediaSourceEnum {
     "camera",
     "screen",
@@ -46,6 +51,7 @@ dictionary MediaTrackConstraintSet {
     ConstrainLong height;
     ConstrainDouble frameRate;
     ConstrainDOMString facingMode;
+    ConstrainDOMString audioSource;
     DOMString mediaSource = "camera";
     long long browserWindow;
     boolean scrollWithPage;
