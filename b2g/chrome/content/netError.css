@@ -39,7 +39,7 @@ li {
 }
 
 #errorPage.certerror {
-  background-color: #EFD400;
+  background-color: #F0F0F0;
 }
 
 #errorPage.blockedsite {
@@ -60,18 +60,19 @@ li {
 }
 
 #errorPage.certerror #errorTitle {
-  background-image: url("chrome://b2g/content/images/errorpage-larry-black.png");
+  background-image: url("chrome://b2g/content/images/errorpage-generic-orange.png");
 }
 
 #errorPage.blockedsite #errorTitle {
-  background-image: url("chrome://b2g/content/images/errorpage-larry-white.png");
+  background-image: url("chrome://b2g/content/images/errorpage-generic-white.png");
   color: white;
 }
 
 .errorTitleText {
   padding: 0px 0px 0px 50px;
   display: inline-block;
-  vertical-align: middle
+  vertical-align: middle;
+  color: #FF5A00;
 }
 
 #errorPageContainer {
