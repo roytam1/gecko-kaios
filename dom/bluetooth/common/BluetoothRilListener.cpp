@@ -264,8 +264,8 @@ NS_IMETHODIMP
 TelephonyListener::NotifyConferenceError(const nsAString& aName,
                                          const nsAString& aMessage)
 {
-  BT_WARNING(NS_ConvertUTF16toUTF8(aName).get());
-  BT_WARNING(NS_ConvertUTF16toUTF8(aMessage).get());
+  BT_WARNING("%s", NS_ConvertUTF16toUTF8(aName).get());
+  BT_WARNING("%s", NS_ConvertUTF16toUTF8(aMessage).get());
 
   return NS_OK;
 }

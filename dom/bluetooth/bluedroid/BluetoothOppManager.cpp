@@ -1135,7 +1135,7 @@ BluetoothOppManager::ClientDataHandler(UnixSocketBuffer* aMessage)
     str += "[OPP] 0x";
     str.AppendInt(mLastCommand, 16);
     str += " failed";
-    BT_WARNING(str.get());
+    BT_WARNING("%s", str.get());
     FileTransferComplete();
     return;
   }

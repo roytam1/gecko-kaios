@@ -25,29 +25,36 @@ extern bool gBluetoothDebugFlag;
 #include <android/log.h>
 
 /**
- * Prints 'D'EBUG build logs, which show in DEBUG build only when
- * developer setting 'Bluetooth output in adb' is enabled.
+ * Prints 'D'EBUG logs, which shows only when developer setting
+ * 'Bluetooth output in adb' is enabled.
  */
 #define BT_LOGD(msg, ...)                                            \
   do {                                                               \
     if (gBluetoothDebugFlag) {                                       \
-      __android_log_print(ANDROID_LOG_INFO, "GeckoBluetooth",        \
+      __android_log_print(ANDROID_LOG_DEBUG, "GeckoBluetooth",        \
                           "%s: " msg, __FUNCTION__, ##__VA_ARGS__);  \
     }                                                                \
   } while(0)
 
 /**
- * Prints 'R'ELEASE build logs, which show in both RELEASE and DEBUG builds.
+ * Prints 'I'NFO logs, which show even when developer setting
+ * 'Bluetooth output in adb' is disabled.
  */
-#define BT_LOGR(msg, ...)                                            \
-  __android_log_print(ANDROID_LOG_INFO, "GeckoBluetooth",            \
-                      "%s: " msg, __FUNCTION__, ##__VA_ARGS__)
+#define BT_LOGR(msg, ...)                                          \
+  __android_log_print(ANDROID_LOG_INFO, "GeckoBluetooth",          \
+                      "%s: " msg, __FUNCTION__, ##__VA_ARGS__)     \
 
 /**
- * Prints DEBUG build warnings, which show in DEBUG build only.
+ * Prints 'W'ARN logs, which show only when developer setting
+ * 'Bluetooth output in adb' is enabled.
  */
-#define BT_WARNING(args...)                                          \
-  NS_WARNING(nsPrintfCString(args).get())
+#define BT_WARNING(msg, ...)                                         \
+  do {                                                               \
+    if (gBluetoothDebugFlag) {                                       \
+      __android_log_print(ANDROID_LOG_WARN, "GeckoBluetooth",        \
+                          "%s: " msg, __FUNCTION__, ##__VA_ARGS__);  \
+    }                                                                \
+  } while(0)
 
 #else
 #define BT_LOGD(msg, ...)                                            \
