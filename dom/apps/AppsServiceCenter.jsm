@@ -103,7 +103,7 @@ this.AppsServiceCenter = {
         let app = DOMApplicationRegistry.getAppByManifestURL(manifest);
         if (app) {
           debug("_doCheck - Enable service service center");
-          DOMApplicationRegistry.setEnabled({manifestURL: app.manifestURL, aData: true});
+          DOMApplicationRegistry.setEnabled({manifestURL: app.manifestURL, enabled: true});
         }
       } catch(e) {
         debug("_doCheck - Failed to enable service center, error:" + e);
