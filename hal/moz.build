@@ -102,6 +102,7 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
         'cocoa/CocoaBattery.cpp',
         'fallback/FallbackAlarm.cpp',
         'fallback/FallbackFlip.cpp',
+        'fallback/FallbackFlipManager.cpp',
         'fallback/FallbackMemory.cpp',
         'fallback/FallbackPower.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
