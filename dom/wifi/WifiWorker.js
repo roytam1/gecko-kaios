@@ -278,7 +278,7 @@ var WifiManager = (function() {
     });
   }
 
-  var screenOn = false;
+  var screenOn = true;
   function handleScreenStateChanged(enabled) {
     screenOn = enabled;
     if (screenOn) {
