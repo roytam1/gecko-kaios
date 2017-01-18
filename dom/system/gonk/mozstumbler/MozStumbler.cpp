@@ -400,7 +400,7 @@ StumblerInfo::Onready(uint32_t count, nsIWifiScanResult** results)
     mWifiDesc += "\"macAddress\":\"";
     mWifiDesc += NS_ConvertUTF16toUTF8(bssid);
 
-    uint32_t signal;
+    int32_t signal;
     results[i]->GetSignalStrength(&signal);
     mWifiDesc += "\",\"signalStrength\":";
     mWifiDesc.AppendInt(signal);

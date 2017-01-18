@@ -139,7 +139,7 @@ nsWifiMonitor::Onready(uint32_t count, nsIWifiScanResult **results)
     nsCString ssid;
     ssid.AssignWithConversion(temp);
 
-    uint32_t signal;
+    int32_t signal;
     results[i]->GetSignalStrength(&signal);
 
     ap->setSignal(signal);

@@ -21,7 +21,7 @@ interface nsIWifiScanResult : nsISupports {
     /**
      * Strength of the signal to network.
      */
-    readonly attribute uint32_t signalStrength;
+    readonly attribute int32_t signalStrength;
 
     readonly attribute uint32_t relSignalStrength;
     readonly attribute boolean connected;
