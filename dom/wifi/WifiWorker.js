@@ -26,9 +26,10 @@ const WIFIWORKER_WORKER     = "resource://gre/modules/wifi_worker.js";
 
 const kMozSettingsChangedObserverTopic   = "mozsettings-changed";
 
-const MAX_RETRIES_ON_AUTHENTICATION_FAILURE = 0;
+const MAX_RETRIES_ON_AUTHENTICATION_FAILURE = 3;
 const MAX_SUPPLICANT_LOOP_ITERATIONS = 4;
 const MAX_RETRIES_ON_DHCP_FAILURE = 2;
+const MAX_RETRIES_ON_ASSOCIATION_REJECT = 16;
 
 // Settings DB path for wifi
 const SETTINGS_WIFI_ENABLED            = "wifi.enabled";
@@ -296,26 +297,7 @@ var WifiManager = (function() {
     wifiCommand.setBackgroundScan(manager.backgroundScanEnabled, callback);
   }
 
-  var scanModeActive = false;
-
   function scan(forceActive, callback) {
-    if (forceActive && !scanModeActive) {
-      // Note: we ignore errors from doSetScanMode.
-      wifiCommand.doSetScanMode(true, function(ignore) {
-        setBackgroundScan("OFF", function(turned, ignore) {
-          reEnableBackgroundScan = turned;
-          manager.handlePreWifiScan();
-          wifiCommand.scan(function(ok) {
-            wifiCommand.doSetScanMode(false, function(ignore) {
-              // The result of scanCommand is the result of the actual SCAN
-              // request.
-              callback(ok);
-            });
-          });
-        });
-      });
-      return;
-    }
     manager.handlePreWifiScan();
     wifiCommand.scan(callback);
   }
@@ -356,11 +338,6 @@ var WifiManager = (function() {
       // If we're here, we didn't get the current level.
       callback(false);
     });
-  }
-
-  function setScanMode(setActive, callback) {
-    scanModeActive = setActive;
-    wifiCommand.doSetScanMode(setActive, callback);
   }
 
   var httpProxyConfig = Object.create(null);
@@ -746,9 +723,10 @@ var WifiManager = (function() {
 
   function handleWpaEapEvents(event) {
     if (event.indexOf("CTRL-EVENT-EAP-FAILURE") !== -1) {
-      if (event.indexOf("EAP authentication failed") !== -1) {
+      if (event.indexOf("EAP authentication failed") !== -1 &&
+          !manager.wpsStarted) {
         notify("passwordmaybeincorrect");
-        if (manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
+        if (++manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
           manager.authenticationFailuresCount = 0;
           notify("disconnected", {connectionInfo: manager.connectionInfo});
         }
@@ -758,7 +736,7 @@ var WifiManager = (function() {
     if (event.indexOf("CTRL-EVENT-EAP-TLS-CERT-ERROR") !== -1) {
       // Cert Error
       notify("passwordmaybeincorrect");
-      if (manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
+      if (++manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
         manager.authenticationFailuresCount = 0;
         notify("disconnected", {connectionInfo: manager.connectionInfo});
       }
@@ -782,9 +760,11 @@ var WifiManager = (function() {
         return true;
       }
 
-      if ("parameter" in fields && fields.parameter.indexOf('failure') !== -1)  {
+      if ("parameter" in fields &&
+          fields.parameter.indexOf('failure') !== -1 &&
+          !manager.wpsStarted)  {
         notify("passwordmaybeincorrect");
-        if (manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
+        if (++manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
           manager.authenticationFailuresCount = 0;
           notify("disconnected", {connectionInfo: manager.connectionInfo});
         }
@@ -801,7 +781,7 @@ var WifiManager = (function() {
       // is not 5 nor 13 bytes.
       if (event.indexOf("Association request to the driver failed") !== -1) {
         notify("passwordmaybeincorrect");
-        if (manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
+        if (++manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
           manager.authenticationFailuresCount = 0;
           notify("disconnected", {connectionInfo: manager.connectionInfo});
         }
@@ -811,14 +791,15 @@ var WifiManager = (function() {
       if (event.indexOf("WPA:") == 0 &&
           event.indexOf("pre-shared key may be incorrect") != -1) {
         notify("passwordmaybeincorrect");
-        if (manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
+        if (++manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
           manager.authenticationFailuresCount = 0;
           notify("disconnected", {connectionInfo: manager.connectionInfo});
         }
       }
 
       if (event.indexOf("Authentication with") == 0 &&
-          event.indexOf("timed out") != -1) {
+          event.indexOf("timed out") != -1 &&
+          !manager.wpsStarted) {
         notify("authenticationtimeout");
       }
 
@@ -834,7 +815,8 @@ var WifiManager = (function() {
 
     var space = event.indexOf(" ");
     var eventData = event.substr(0, space + 1);
-    if (eventData.indexOf("CTRL-EVENT-STATE-CHANGE") === 0) {
+    if (eventData.indexOf("CTRL-EVENT-STATE-CHANGE") === 0 &&
+        (!manager.wpsStarted || manager.state === "COMPLETED")) {
       // Parse the event data.
       var fields = {};
       var tokens = event.substr(space + 1).split(" ");
@@ -916,6 +898,9 @@ var WifiManager = (function() {
       // Read current BSSID here, it will always being provided.
       manager.connectionInfo.id = id;
       manager.connectionInfo.bssid = bssid;
+      if (manager.wpsStarted) {
+        manager.wpsStarted = false;
+      }
       return true;
     }
     if (eventData.indexOf("CTRL-EVENT-SCAN-RESULTS") === 0) {
@@ -931,25 +916,29 @@ var WifiManager = (function() {
     if (eventData.indexOf("CTRL-EVENT-EAP") === 0) {
       return handleWpaEapEvents(event);
     }
-    if (eventData.indexOf("CTRL-EVENT-ASSOC-REJECT") === 0) {
+    if (eventData.indexOf("CTRL-EVENT-ASSOC-REJECT") === 0 &&
+        !manager.wpsStarted) {
       debug("CTRL-EVENT-ASSOC-REJECT: network error");
       notify("passwordmaybeincorrect");
-      if (manager.authenticationFailuresCount > MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
-        manager.authenticationFailuresCount = 0;
+      if (++manager.associationRejectCount > MAX_RETRIES_ON_ASSOCIATION_REJECT) {
+        manager.associationRejectCount = 0;
         debug("CTRL-EVENT-ASSOC-REJECT: disconnect network");
         notify("disconnected", {connectionInfo: manager.connectionInfo});
       }
       return true;
     }
     if (eventData.indexOf("WPS-TIMEOUT") === 0) {
+      manager.wpsStarted = false;
       notifyStateChange({ state: "WPS_TIMEOUT", BSSID: null, id: -1 });
       return true;
     }
     if (eventData.indexOf("WPS-FAIL") === 0) {
+      manager.wpsStarted = false;
       notifyStateChange({ state: "WPS_FAIL", BSSID: null, id: -1 });
       return true;
     }
     if (eventData.indexOf("WPS-OVERLAP-DETECTED") === 0) {
+      manager.wpsStarted = false;
       notifyStateChange({ state: "WPS_OVERLAP_DETECTED", BSSID: null, id: -1 });
       return true;
     }
@@ -1018,8 +1007,10 @@ var WifiManager = (function() {
   manager.state = "UNINITIALIZED";
   manager.tetheringState = "UNINITIALIZED";
   manager.supplicantStarted = false;
+  manager.wpsStarted = false;
   manager.connectionInfo = { ssid: null, bssid: null, id: -1 };
   manager.authenticationFailuresCount = 0;
+  manager.associationRejectCount = 0;
   manager.loopDetectionCount = 0;
   manager.dhcpFailuresCount = 0;
   manager.stopSupplicantCallback = null;
@@ -1468,9 +1459,6 @@ var WifiManager = (function() {
   }
   manager.getMacAddress = wifiCommand.getMacAddress;
   manager.getScanResults = wifiCommand.scanResults;
-  manager.setScanMode = function(mode, callback) {
-    setScanMode(mode === "active", callback); // Use our own version.
-  }
   manager.setBackgroundScan = setBackgroundScan; // Use our own version.
   manager.scan = scan; // Use our own version.
   manager.wpsPbc = wifiCommand.wpsPbc;
@@ -2489,7 +2477,6 @@ function WifiWorker() {
 
       // Now that we have scan results, there's no more need to continue
       // scanning. Ignore any errors from this command.
-      WifiManager.setScanMode("inactive", function() {});
       let lines = r.split("\n");
       // NB: Skip the header line.
       self.networksArray = [];
@@ -3574,24 +3561,32 @@ WifiWorker.prototype = {
 
     if (detail.method === "pbc") {
       WifiManager.wpsPbc(function(ok) {
-        if (ok)
+        if (ok) {
+          WifiManager.wpsStarted = true;
           self._sendMessage(message, true, true, msg);
-        else
+        } else {
+          WifiManager.wpsStarted = false;
           self._sendMessage(message, false, "WPS PBC failed", msg);
+        }
       });
     } else if (detail.method === "pin") {
       WifiManager.wpsPin(detail, function(pin) {
-        if (pin)
+        if (pin) {
+          WifiManager.wpsStarted = true;
           self._sendMessage(message, true, pin, msg);
-        else
+        } else {
+          WifiManager.wpsStarted = false;
           self._sendMessage(message, false, "WPS PIN failed", msg);
+        }
       });
     } else if (detail.method === "cancel") {
       WifiManager.wpsCancel(function(ok) {
-        if (ok)
+        if (ok) {
+          WifiManager.wpsStarted = false;
           self._sendMessage(message, true, true, msg);
-        else
+        } else {
           self._sendMessage(message, false, "WPS Cancel failed", msg);
+        }
       });
     } else {
       self._sendMessage(message, false, "Invalid WPS method=" + detail.method,
