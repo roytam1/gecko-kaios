@@ -285,6 +285,8 @@ private:
   // Disable surface sharing due to issues with compatible FBConfigs on
   // NVIDIA drivers as described in bug 1193015.
   DECL_GFX_PREF(Live, "gfx.use-glx-texture-from-pixmap",       UseGLXTextureFromPixmap, bool, false);
+  // GLCursor draws a cursor image if widget receives eMouseMove event. It is
+  // usually enabled with SpatialNavigation.
   DECL_GFX_PREF(Live, "gfx.glcursor.enabled",                  GLCursorEnabled, bool, false);
 
   // These times should be in milliseconds

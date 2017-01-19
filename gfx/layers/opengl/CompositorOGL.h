@@ -340,6 +340,10 @@ public:
     return mRenderOffset;
   }
 
+  /**
+   * GLCursor draws a cursor image if widget receives eMouseMove event. It is
+   * usually enabled with SpatialNavigation.
+   */
   void DrawGLCursor(LayoutDeviceIntRect aRect, LayoutDeviceIntPoint aCursorPos,
                     RefPtr<gfx::DataSourceSurface> aSource,
                     nsIntSize aCursorSize, nsIntPoint aHotspot);
