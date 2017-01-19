@@ -199,6 +199,7 @@ this.DOMApplicationRegistry = {
   _updateHandlers: [ ],
   _pendingUninstalls: {},
   _contentActions: new Map(),
+  _updatedatamode: "all",
   dirKey: DIRECTORY_NAME,
 
   init: function() {
@@ -228,6 +229,7 @@ this.DOMApplicationRegistry = {
                      "Webapps:GetIcon",
                      "Webapps:ExtractManifest",
                      "Webapps:SetEnabled",
+                     "Webapps:UpdateDataMode",
                      "child-process-shutdown"];
 
     this.frameMessages = ["Webapps:ClearBrowserData"];
@@ -1303,6 +1305,7 @@ this.DOMApplicationRegistry = {
       case "Webapps:Import":
       case "Webapps:ExtractManifest":
       case "Webapps:SetEnabled":
+      case "Webapps:UpdateDataMode":
         allowed = checkPermission("webapps-manage");
         break;
 
@@ -1444,6 +1447,9 @@ this.DOMApplicationRegistry = {
           break;
         case "Webapps:SetEnabled":
           this.setEnabled(msg);
+          break;
+        case "Webapps:UpdateDataMode":
+          this._updatedatamode = msg.data;
           break;
       }
     });
@@ -2379,10 +2385,18 @@ this.DOMApplicationRegistry = {
       manifestURL: aApp.manifestURL,
       requestID: aData.requestID
     });
+
     let autoUpdate = false;
-    try {
-      autoUpdate = Services.prefs.getBoolPref("dom.mozApps.auto_confirm_update");
-    } catch(e) {}
+    let nm = Cc["@mozilla.org/network/manager;1"].getService(Ci.nsINetworkManager);
+    if (this._updatedatamode == "all" ||
+       (this._updatedatamode == "wifiOnly" && nm.active &&
+        nm.active.type == Ci.nsINetworkInterface.NETWORK_TYPE_WIFI)) {
+      // Check if auto update is enabled to start download
+      // only when active data connection type is allowed by setting.
+      try {
+        autoUpdate = Services.prefs.getBoolPref("dom.mozApps.auto_confirm_update");
+      } catch(e) {}
+    }
     if (autoUpdate) {
       this.startDownload(aApp.manifestURL);
     }

@@ -15,6 +15,8 @@ Cu.import("resource://gre/modules/BrowserElementPromptService.jsm");
 Cu.import("resource://gre/modules/AppsServiceChild.jsm");
 Cu.import("resource://gre/modules/Preferences.jsm");
 
+const SETTINGS_WEBAPP_UPDATE_DATAMODE   = "webapps.update.datamode";
+
 XPCOMUtils.defineLazyServiceGetter(this, "appsService",
                                    "@mozilla.org/AppsService;1",
                                    "nsIAppsService");
@@ -22,6 +24,10 @@ XPCOMUtils.defineLazyServiceGetter(this, "appsService",
 XPCOMUtils.defineLazyServiceGetter(this, "cpmm",
                                    "@mozilla.org/childprocessmessagemanager;1",
                                    "nsIMessageSender");
+
+XPCOMUtils.defineLazyServiceGetter(this, "gSettingsService",
+                                   "@mozilla.org/settingsService;1",
+                                   "nsISettingsService");
 
 function debug(aMsg) {
   dump("-*- Webapps.js " + aMsg + "\n");
@@ -896,6 +902,22 @@ WebappsApplicationMgmt.prototype = {
     if (!aHasFullMgmtPrivilege) {
       this.applyDownload = null;
     }
+
+    // By default auto update is allowed in all data connection type.
+    // When there is user set value, it will override the default one.
+    // Then App service do not need to get setting in each update check.
+    this._updatedatamode = "all";
+    gSettingsService.createLock().get(SETTINGS_WEBAPP_UPDATE_DATAMODE, {
+      handle: function(name, result) {
+        if (name == SETTINGS_WEBAPP_UPDATE_DATAMODE) {
+          this._updatedatamode = result;
+          cpmm.sendAsyncMessage("Webapps:UpdateDataMode", this._updatedatamode);
+        }
+      },
+      handleError: function(message) {
+        debug("Setting get callback threw an exception, dropping");
+      }
+    });
   },
 
   uninit: function() {
@@ -1003,6 +1025,10 @@ WebappsApplicationMgmt.prototype = {
     return this.__DOM_IMPL__.getEventHandler("onenabledstatechange");
   },
 
+  get updatedatamode() {
+    return this._updatedatamode;
+  },
+
   set oninstall(aCallback) {
     this.__DOM_IMPL__.setEventHandler("oninstall", aCallback);
   },
@@ -1013,6 +1039,18 @@ WebappsApplicationMgmt.prototype = {
 
   set onenabledstatechange(aCallback) {
     this.__DOM_IMPL__.setEventHandler("onenabledstatechange", aCallback);
+  },
+
+  set updatedatamode(aData) {
+    if (aData != "all" && aData != "wifiOnly") {
+      return;
+    }
+    let principal = this._window.document.nodePrincipal;
+    this._updatedatamode = aData;
+    cpmm.sendAsyncMessage("Webapps:UpdateDataMode",
+      {data: this._updatedatamode}, null, principal);
+    gSettingsService.createLock().set(
+      SETTINGS_WEBAPP_UPDATE_DATAMODE, aData, null);
   },
 
   receiveMessage: function(aMessage) {
