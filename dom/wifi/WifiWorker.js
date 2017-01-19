@@ -810,7 +810,8 @@ var WifiManager = (function() {
         if (!requestName) return false;
 
         if (requestName.startsWith("PASSWORD")) {
-          notify("networkdisable", {reason: "DISABLED_AUTHENTICATION_FAILURE"});
+          notify("networkdisable",
+            {reason: "DISABLED_AUTHENTICATION_FAILURE", eapMethod: "PEAP"});
           return true;
         }
         debug("couldn't identify request type - " + event);
@@ -2257,6 +2258,14 @@ function WifiWorker() {
           self.handleNetworkConnectionFailure(WifiManager.connectionInfo.ssid);
           self._fireEvent("onauthenticationfailed",
             {network: netToDOM(configNetwork)});
+        // It takes long time to pop up dialog after PEAP password error,
+        // but CTRL-REQ-PASSWORD event actually represent the wrong PEAP
+        // password behaviour, trigger disconnect/re-associate request after
+        // receiving that to speed up the processing.
+        } else if (this.eapMethod && this.eapMethod == "PEAP") {
+          WifiManager.disconnect(function() {
+            WifiManager.reassociate(function(){});
+          });
         }
         break;
       case "DISABLED_ASSOCIATION_REJECTION":
