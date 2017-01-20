@@ -46,7 +46,7 @@ public:
    * @param aFolderlists   [in]  MAP folder Name.
    * @param aRv            [out] Error result to set in case of error.
    */
-  already_AddRefed<Promise> ReplyToFolderListing(long aMasId,
+  already_AddRefed<Promise> ReplyToFolderListing(uint8_t aMasId,
     const nsAString& aFolderlists, ErrorResult& aRv);
 
   /**
@@ -63,7 +63,7 @@ public:
    * @param aRv            [out] Error result to set in case of error.
    */
   already_AddRefed<Promise> ReplyToMessagesListing(
-    long aMasId, Blob& aBlob, bool aNewMessage, const nsAString& aTimestamp,
+    uint8_t aMasId, Blob& aBlob, bool aNewMessage, const nsAString& aTimestamp,
     int aSize, ErrorResult& aRv);
 
   /**
@@ -73,7 +73,7 @@ public:
    * @param aBlob          [in]  MAP get messages content.
    * @param aRv            [out] Error result to set in case of error.
    */
-  already_AddRefed<Promise> ReplyToGetMessage(long aMasId, Blob& aBlob,
+  already_AddRefed<Promise> ReplyToGetMessage(uint8_t aMasId, Blob& aBlob,
                                               ErrorResult& aRv);
 
   /**
@@ -83,7 +83,7 @@ public:
    * @param aStatus        [in]  MAP set message result.
    * @param aRv            [out] Error result to set in case of error.
    */
-  already_AddRefed<Promise> ReplyToSetMessageStatus(long aMasId, bool aStatus,
+  already_AddRefed<Promise> ReplyToSetMessageStatus(uint8_t aMasId, bool aStatus,
                                                     ErrorResult& aRv);
 
   /**
@@ -95,7 +95,7 @@ public:
    * @param aRv            [out] Error result to set in case of error.
    */
   already_AddRefed<Promise> ReplyToSendMessage(
-    long aMasId, const nsAString& aHandleId, bool aStatus, ErrorResult& aRv);
+    uint8_t aMasId, const nsAString& aHandleId, bool aStatus, ErrorResult& aRv);
 
   /**
    * Reply to message update request
@@ -104,7 +104,7 @@ public:
    * @param aStatus        [in]  Update inbox results.
    * @param aRv            [out] Error result to set in case of error.
    */
-  already_AddRefed<Promise> ReplyToMessageUpdate(long aMasId, bool aStatus,
+  already_AddRefed<Promise> ReplyToMessageUpdate(uint8_t aMasId, bool aStatus,
                                                  ErrorResult& aRv);
 
 private:

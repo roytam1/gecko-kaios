@@ -1787,7 +1787,7 @@ BluetoothServiceBluedroid::ReplyTovCardListing(
 
 void
 BluetoothServiceBluedroid::ReplyToMapFolderListing(
-  long aMasId,
+  uint8_t aMasId,
   const nsAString& aFolderlists,
   BluetoothReplyRunnable* aRunnable)
 {
@@ -1798,7 +1798,7 @@ void
 BluetoothServiceBluedroid::ReplyToMapMessagesListing(
   BlobParent* aBlobParent,
   BlobChild* aBlobChild,
-  long aMasId,
+  uint8_t aMasId,
   bool aNewMessage,
   const nsAString& aTimestamp,
   int aSize,
@@ -1818,7 +1818,7 @@ BluetoothServiceBluedroid::ReplyToMapMessagesListing(
 
 void
 BluetoothServiceBluedroid:: ReplyToMapMessagesListing(
-  long aMasId,
+  uint8_t aMasId,
   Blob* aBlob,
   bool aNewMessage,
   const nsAString& aTimestamp,
@@ -1840,7 +1840,7 @@ void
 BluetoothServiceBluedroid:: ReplyToMapGetMessage(
   BlobParent* aBlobParent,
   BlobChild* aBlobChild,
-  long aMasId,
+  uint8_t aMasId,
   BluetoothReplyRunnable* aRunnable)
 {
   BluetoothMapSmsManager* map = BluetoothMapSmsManager::Get();
@@ -1857,7 +1857,7 @@ BluetoothServiceBluedroid:: ReplyToMapGetMessage(
 void
 BluetoothServiceBluedroid:: ReplyToMapGetMessage(
   Blob* aBlob,
-  long aMasId,
+  uint8_t aMasId,
   BluetoothReplyRunnable* aRunnable)
 {
   BluetoothMapSmsManager* map = BluetoothMapSmsManager::Get();
@@ -1873,7 +1873,7 @@ BluetoothServiceBluedroid:: ReplyToMapGetMessage(
 
 void
 BluetoothServiceBluedroid:: ReplyToMapSetMessageStatus(
-  long aMasId,
+  uint8_t aMasId,
   bool aStatus,
   BluetoothReplyRunnable* aRunnable)
 {
@@ -1890,7 +1890,7 @@ BluetoothServiceBluedroid:: ReplyToMapSetMessageStatus(
 
 void
 BluetoothServiceBluedroid:: ReplyToMapSendMessage(
-  long aMasId,
+  uint8_t aMasId,
   const nsAString& aHandleId,
   bool aStatus,
   BluetoothReplyRunnable* aRunnable)
@@ -1908,7 +1908,7 @@ BluetoothServiceBluedroid:: ReplyToMapSendMessage(
 
 void
 BluetoothServiceBluedroid:: ReplyToMapMessageUpdate(
-  long aMasId,
+  uint8_t aMasId,
   bool aStatus,
   BluetoothReplyRunnable* aRunnable)
 {

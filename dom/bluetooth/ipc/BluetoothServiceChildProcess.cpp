@@ -451,7 +451,7 @@ BluetoothServiceChildProcess::ReplyTovCardListing(
 }
 
 void
-BluetoothServiceChildProcess::ReplyToMapFolderListing(long aMasId,
+BluetoothServiceChildProcess::ReplyToMapFolderListing(uint8_t aMasId,
   const nsAString& aFolderList,
   BluetoothReplyRunnable* aRunnable)
 {
@@ -462,7 +462,7 @@ BluetoothServiceChildProcess::ReplyToMapFolderListing(long aMasId,
 void
 BluetoothServiceChildProcess::ReplyToMapMessagesListing(BlobParent* aBlobParent,
   BlobChild* aBlobChild,
-  long aMasId,
+  uint8_t aMasId,
   bool aNewMessage,
   const nsAString& aTimestamp,
   int aSize,
@@ -474,7 +474,7 @@ BluetoothServiceChildProcess::ReplyToMapMessagesListing(BlobParent* aBlobParent,
 }
 
 void
-BluetoothServiceChildProcess::ReplyToMapMessagesListing(long aMasId,
+BluetoothServiceChildProcess::ReplyToMapMessagesListing(uint8_t aMasId,
   Blob* aBlob,
   bool aNewMessage,
   const nsAString& aTimestamp,
@@ -489,7 +489,7 @@ BluetoothServiceChildProcess::ReplyToMapMessagesListing(long aMasId,
 void
 BluetoothServiceChildProcess::ReplyToMapGetMessage(BlobParent* aBlobParent,
   BlobChild* aBlobChild,
-  long aMasId,
+  uint8_t aMasId,
   BluetoothReplyRunnable* aRunnable)
 {
   SendRequest(aRunnable,
@@ -498,7 +498,7 @@ BluetoothServiceChildProcess::ReplyToMapGetMessage(BlobParent* aBlobParent,
 
 void
 BluetoothServiceChildProcess::ReplyToMapGetMessage(Blob* aBlob,
-  long aMasId,
+  uint8_t aMasId,
   BluetoothReplyRunnable* aRunnable)
 {
   // Parent-process-only method
@@ -506,7 +506,7 @@ BluetoothServiceChildProcess::ReplyToMapGetMessage(Blob* aBlob,
 }
 
 void
-BluetoothServiceChildProcess::ReplyToMapSetMessageStatus(long aMasId,
+BluetoothServiceChildProcess::ReplyToMapSetMessageStatus(uint8_t aMasId,
   bool aStatus,
   BluetoothReplyRunnable* aRunnable)
 {
@@ -515,7 +515,7 @@ BluetoothServiceChildProcess::ReplyToMapSetMessageStatus(long aMasId,
 }
 
 void
-BluetoothServiceChildProcess::ReplyToMapSendMessage(long aMasId,
+BluetoothServiceChildProcess::ReplyToMapSendMessage(uint8_t aMasId,
   const nsAString& aHandleId,
   bool aStatus,
   BluetoothReplyRunnable* aRunnable)
@@ -525,7 +525,7 @@ BluetoothServiceChildProcess::ReplyToMapSendMessage(long aMasId,
 }
 
 void
-BluetoothServiceChildProcess::ReplyToMapMessageUpdate(long aMasId,
+BluetoothServiceChildProcess::ReplyToMapMessageUpdate(uint8_t aMasId,
   bool aStatus,
   BluetoothReplyRunnable* aRunnable)
 {

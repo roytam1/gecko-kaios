@@ -229,13 +229,13 @@ struct ReplyTovCardListingRequest
 
 struct ReplyToFolderListingRequest
 {
-  uint16_t masId;
+  uint8_t masId;
   nsString folderList;
 };
 
 struct ReplyToMessagesListingRequest
 {
-  uint16_t masId;
+  uint8_t masId;
   PBlob blob;
   bool newMessage;
   nsString timeStamp;
@@ -244,26 +244,26 @@ struct ReplyToMessagesListingRequest
 
 struct ReplyToGetMessageRequest
 {
-  uint16_t masId;
+  uint8_t masId;
   PBlob blob;
 };
 
 struct ReplyToSetMessageStatusRequest
 {
-  uint16_t masId;
+  uint8_t masId;
   bool messageStatus;
 };
 
 struct ReplyToSendMessageRequest
 {
-  uint16_t masId;
+  uint8_t masId;
   nsString handleId;
   bool messageStatus;
 };
 
 struct ReplyToMessageUpdateRequest
 {
-  uint16_t masId;
+  uint8_t masId;
   bool messageStatus;
 };
 

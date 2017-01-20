@@ -11,7 +11,7 @@ interface BluetoothMapRequestHandle
    * rejected if the MAP request operation fails.
    */
   [NewObject, Throws, AvailableIn=CertifiedApps]
-  Promise<void> replyToFolderListing(long masId, DOMString folders);
+  Promise<void> replyToFolderListing(octet masId, DOMString folders);
 
   /**
    * Reply the Messages-Listing object to the MAP request. The Promise will
@@ -19,7 +19,7 @@ interface BluetoothMapRequestHandle
    */
   [NewObject, Throws, AvailableIn=CertifiedApps]
   Promise<void> replyToMessagesListing(
-    long masId,
+    octet masId,
     Blob messageslisting,
     boolean newmessage,
     DOMString timestamp,
@@ -30,26 +30,26 @@ interface BluetoothMapRequestHandle
    * if the MAP request operation fails.
    */
   [NewObject, Throws, AvailableIn=CertifiedApps]
-  Promise<void> replyToGetMessage(long masId, Blob bmessage);
+  Promise<void> replyToGetMessage(octet masId, Blob bmessage);
 
   /**
    * Reply SetMessage object to the MAP request. The Promise will be rejected
    * if the MAP request operation fails.
    */
   [NewObject, Throws, AvailableIn=CertifiedApps]
-  Promise<void> replyToSetMessageStatus(long masId, boolean status);
+  Promise<void> replyToSetMessageStatus(octet masId, boolean status);
 
   /**
    * Reply SendMessage request to the MAP request. The Promise will be rejected
    * if the MAP request operation fails.
    */
   [NewObject, Throws, AvailableIn=CertifiedApps]
-  Promise<void> replyToSendMessage(long masId, DOMString handleId, boolean status);
+  Promise<void> replyToSendMessage(octet masId, DOMString handleId, boolean status);
 
   /**
    * Reply Message-Update object to the MAP request. The Promise will be
    * rejected if the MAP request operation fails.
    */
   [NewObject, Throws, AvailableIn=CertifiedApps]
-  Promise<void> replyToMessageUpdate(long masId, boolean status);
+  Promise<void> replyToMessageUpdate(octet masId, boolean status);
 };

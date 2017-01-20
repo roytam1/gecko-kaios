@@ -411,21 +411,21 @@ public:
                       BluetoothReplyRunnable* aRunnable) = 0;
 
   virtual void
-  ReplyToMapFolderListing(long aMasId,
+  ReplyToMapFolderListing(uint8_t aMasId,
                           const nsAString& aFolderlists,
                           BluetoothReplyRunnable* aRunnable) = 0;
 
   virtual void
   ReplyToMapMessagesListing(BlobParent* aBlobParent,
                             BlobChild* aBlobChild,
-                            long aMasId,
+                            uint8_t aMasId,
                             bool aNewMessage,
                             const nsAString& aTimestamp,
                             int aSize,
                             BluetoothReplyRunnable* aRunnable) = 0;
 
   virtual void
-  ReplyToMapMessagesListing(long aMasId,
+  ReplyToMapMessagesListing(uint8_t aMasId,
                             Blob* aBlob,
                             bool aNewMessage,
                             const nsAString& aTimestamp,
@@ -435,27 +435,27 @@ public:
   virtual void
   ReplyToMapGetMessage(BlobParent* aBlobParent,
                        BlobChild* aBlobChild,
-                       long aMasId,
+                       uint8_t aMasId,
                        BluetoothReplyRunnable* aRunnable) = 0;
 
   virtual void
   ReplyToMapGetMessage(Blob* aBlob,
-                       long aMasId,
+                       uint8_t aMasId,
                        BluetoothReplyRunnable* aRunnable) = 0;
 
   virtual void
-  ReplyToMapSetMessageStatus(long aMasId,
+  ReplyToMapSetMessageStatus(uint8_t aMasId,
                              bool aStatus,
                              BluetoothReplyRunnable* aRunnable) = 0;
 
   virtual void
   ReplyToMapSendMessage(
-    long aMasId, const nsAString& aHandleId, bool aStatus,
+    uint8_t aMasId, const nsAString& aHandleId, bool aStatus,
     BluetoothReplyRunnable* aRunnable) = 0;
 
   virtual void
   ReplyToMapMessageUpdate(
-    long aMasId, bool aStatus, BluetoothReplyRunnable* aRunnable) = 0;
+    uint8_t aMasId, bool aStatus, BluetoothReplyRunnable* aRunnable) = 0;
 
 #ifdef MOZ_B2G_RIL
   virtual void

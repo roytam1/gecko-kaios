@@ -906,7 +906,7 @@ BluetoothMapSmsManager::SendPutFinalRequest()
 }
 
 bool
-BluetoothMapSmsManager::SendMessageEvent(long aMasId, BlobParent* aActor)
+BluetoothMapSmsManager::SendMessageEvent(uint8_t aMasId, BlobParent* aActor)
 {
   RefPtr<BlobImpl> impl = aActor->GetBlobImpl();
   RefPtr<Blob> blob = Blob::Create(nullptr, impl);
@@ -940,7 +940,7 @@ BluetoothMapSmsManager::SendMessageEvent(uint8_t aMasId, Blob* aBlob)
                             reinterpret_cast<uint8_t*>(const_cast<char*>(type)),
                             strlen(type) + 1);
   uint8_t masId[1];
-  masId[0] = static_cast<uint8_t>(aMasId);
+  masId[0] = aMasId;
 
   AppendAppParameter(appParameter, sizeof(appParameter),
                      (uint8_t)Map::AppParametersTagId::MASInstanceId,
@@ -1044,7 +1044,7 @@ BluetoothMapSmsManager::ReplyToPut(uint8_t aResponse)
 }
 
 bool
-BluetoothMapSmsManager::ReplyToFolderListing(long aMasId,
+BluetoothMapSmsManager::ReplyToFolderListing(uint8_t aMasId,
                                              const nsAString& aFolderlists)
 {
   // TODO: Implement this for future Email support
@@ -1053,7 +1053,7 @@ BluetoothMapSmsManager::ReplyToFolderListing(long aMasId,
 
 bool
 BluetoothMapSmsManager::ReplyToMessagesListing(BlobParent* aActor,
-                                               long aMasId,
+                                               uint8_t aMasId,
                                                bool aNewMessage,
                                                const nsAString& aTimestamp,
                                                int aSize)
@@ -1066,7 +1066,7 @@ BluetoothMapSmsManager::ReplyToMessagesListing(BlobParent* aActor,
 }
 
 bool
-BluetoothMapSmsManager::ReplyToMessagesListing(Blob* aBlob, long aMasId,
+BluetoothMapSmsManager::ReplyToMessagesListing(Blob* aBlob, uint8_t aMasId,
                                                bool aNewMessage,
                                                const nsAString& aTimestamp,
                                                int aSize)
@@ -1148,7 +1148,7 @@ BluetoothMapSmsManager::ReplyToMessagesListing(Blob* aBlob, long aMasId,
 }
 
 bool
-BluetoothMapSmsManager::ReplyToGetMessage(BlobParent* aActor, long aMasId)
+BluetoothMapSmsManager::ReplyToGetMessage(BlobParent* aActor, uint8_t aMasId)
 {
   RefPtr<BlobImpl> impl = aActor->GetBlobImpl();
   RefPtr<Blob> blob = Blob::Create(nullptr, impl);
@@ -1157,7 +1157,7 @@ BluetoothMapSmsManager::ReplyToGetMessage(BlobParent* aActor, long aMasId)
 }
 
 bool
-BluetoothMapSmsManager::ReplyToGetMessage(Blob* aBlob, long aMasId)
+BluetoothMapSmsManager::ReplyToGetMessage(Blob* aBlob, uint8_t aMasId)
 {
   if (!GetInputStreamFromBlob(aBlob, true)) {
     SendReply(ObexResponseCode::InternalServerError);
@@ -1208,7 +1208,7 @@ BluetoothMapSmsManager::ReplyToGetMessage(Blob* aBlob, long aMasId)
 
 bool
 BluetoothMapSmsManager::ReplyToSendMessage(
-  long aMasId, const nsAString& aHandleId, bool aStatus)
+  uint8_t aMasId, const nsAString& aHandleId, bool aStatus)
 {
   if (!mMasConnected) {
     return false;
@@ -1242,14 +1242,14 @@ BluetoothMapSmsManager::ReplyToSendMessage(
 }
 
 bool
-BluetoothMapSmsManager::ReplyToSetMessageStatus(long aMasId, bool aStatus)
+BluetoothMapSmsManager::ReplyToSetMessageStatus(uint8_t aMasId, bool aStatus)
 {
   return SendReply(aStatus ? ObexResponseCode::Success
                            : ObexResponseCode::InternalServerError);
 }
 
 bool
-BluetoothMapSmsManager::ReplyToMessageUpdate(long aMasId, bool aStatus)
+BluetoothMapSmsManager::ReplyToMessageUpdate(uint8_t aMasId, bool aStatus)
 {
   return SendReply(aStatus ? ObexResponseCode::Success
                            : ObexResponseCode::InternalServerError);

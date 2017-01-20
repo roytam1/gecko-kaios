@@ -198,21 +198,21 @@ public:
                       BluetoothReplyRunnable* aRunnable);
 
   virtual void
-  ReplyToMapFolderListing(long aMasId,
+  ReplyToMapFolderListing(uint8_t aMasId,
                           const nsAString& aFolderlists,
                           BluetoothReplyRunnable* aRunnable);
 
   virtual void
   ReplyToMapMessagesListing(BlobParent* aBlobParent,
                             BlobChild* aBlobChild,
-                            long aMasId,
+                            uint8_t aMasId,
                             bool aNewMessage,
                             const nsAString& aTimestamp,
                             int aSize,
                             BluetoothReplyRunnable* aRunnable);
 
   virtual void
-  ReplyToMapMessagesListing(long aMasId,
+  ReplyToMapMessagesListing(uint8_t aMasId,
                             Blob* aBlob,
                             bool aNewMessage,
                             const nsAString& aTimestamp,
@@ -222,28 +222,28 @@ public:
   virtual void
   ReplyToMapGetMessage(BlobParent* aBlobParent,
                        BlobChild* aBlobChild,
-                       long aMasId,
+                       uint8_t aMasId,
                        BluetoothReplyRunnable* aRunnable);
 
   virtual void
   ReplyToMapGetMessage(Blob* aBlob,
-                       long aMasId,
+                       uint8_t aMasId,
                        BluetoothReplyRunnable* aRunnable);
 
   virtual void
-  ReplyToMapSetMessageStatus(long aMasId,
+  ReplyToMapSetMessageStatus(uint8_t aMasId,
                              bool aStatus,
                              BluetoothReplyRunnable* aRunnable);
 
   virtual void
-  ReplyToMapSendMessage(long aMasId,
+  ReplyToMapSendMessage(uint8_t aMasId,
                         const nsAString& aHandleId,
                         bool aStatus,
                         BluetoothReplyRunnable* aRunnable);
 
   virtual void
   ReplyToMapMessageUpdate(
-    long aMasId, bool aStatus, BluetoothReplyRunnable* aRunnable);
+    uint8_t aMasId, bool aStatus, BluetoothReplyRunnable* aRunnable);
 
   virtual void
   AnswerWaitingCall(BluetoothReplyRunnable* aRunnable);

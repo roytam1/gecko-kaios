@@ -47,7 +47,7 @@ BluetoothMapRequestHandle::Create(nsPIDOMWindowInner* aOwner)
 }
 
 already_AddRefed<Promise>
-BluetoothMapRequestHandle::ReplyToFolderListing(long aMasId,
+BluetoothMapRequestHandle::ReplyToFolderListing(uint8_t aMasId,
   const nsAString& aFolderlists, ErrorResult& aRv)
 {
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetParentObject());
@@ -72,7 +72,7 @@ BluetoothMapRequestHandle::ReplyToFolderListing(long aMasId,
 }
 
 already_AddRefed<Promise>
-BluetoothMapRequestHandle::ReplyToMessagesListing(long aMasId,
+BluetoothMapRequestHandle::ReplyToMessagesListing(uint8_t aMasId,
                                                   Blob& aBlob,
                                                   bool aNewMessage,
                                                   const nsAString& aTimestamp,
@@ -119,7 +119,7 @@ BluetoothMapRequestHandle::ReplyToMessagesListing(long aMasId,
 }
 
 already_AddRefed<Promise>
-BluetoothMapRequestHandle::ReplyToGetMessage(long aMasId, Blob& aBlob,
+BluetoothMapRequestHandle::ReplyToGetMessage(uint8_t aMasId, Blob& aBlob,
                                              ErrorResult& aRv)
 {
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetParentObject());
@@ -162,7 +162,7 @@ BluetoothMapRequestHandle::ReplyToGetMessage(long aMasId, Blob& aBlob,
 }
 
 already_AddRefed<Promise>
-BluetoothMapRequestHandle::ReplyToSetMessageStatus(long aMasId,
+BluetoothMapRequestHandle::ReplyToSetMessageStatus(uint8_t aMasId,
                                                    bool aStatus,
                                                    ErrorResult& aRv)
 {
@@ -188,7 +188,7 @@ BluetoothMapRequestHandle::ReplyToSetMessageStatus(long aMasId,
 }
 
 already_AddRefed<Promise>
-BluetoothMapRequestHandle::ReplyToSendMessage(long aMasId,
+BluetoothMapRequestHandle::ReplyToSendMessage(uint8_t aMasId,
                                               const nsAString& aHandleId,
                                               bool aStatus,
                                               ErrorResult& aRv)
@@ -215,7 +215,7 @@ BluetoothMapRequestHandle::ReplyToSendMessage(long aMasId,
 }
 
 already_AddRefed<Promise>
-BluetoothMapRequestHandle::ReplyToMessageUpdate(long aMasId,
+BluetoothMapRequestHandle::ReplyToMessageUpdate(uint8_t aMasId,
                                                 bool aStatus,
                                                 ErrorResult& aRv)
 {

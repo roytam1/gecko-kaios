@@ -102,7 +102,7 @@ public:
    * @return true if the response packet has been packed correctly and started
    *         to be sent to the remote device; false otherwise.
    */
-  bool ReplyToFolderListing(long aMasId, const nsAString& aFolderlists);
+  bool ReplyToFolderListing(uint8_t aMasId, const nsAString& aFolderlists);
 
   /**
    * Reply message-listing object to the *IPC* 'messageslisting'
@@ -117,7 +117,7 @@ public:
    *         to be sent to the remote device; false otherwise.
    */
   bool ReplyToMessagesListing(
-    BlobParent* aActor, long aMasId, bool aNewMessage,
+    BlobParent* aActor, uint8_t aMasId, bool aNewMessage,
     const nsAString& aTimestamp, int aSize);
 
   /**
@@ -133,7 +133,7 @@ public:
    *         to be sent to the remote device; false otherwise.
    */
   bool ReplyToMessagesListing(
-    Blob* aBlob, long aMasId, bool aNewMessage, const nsAString& aTimestamp,
+    Blob* aBlob, uint8_t aMasId, bool aNewMessage, const nsAString& aTimestamp,
     int aSize);
 
   /**
@@ -145,7 +145,7 @@ public:
    * @return true if the response packet has been packed correctly and started
    *         to be sent to the remote device; false otherwise.
    */
-  bool ReplyToGetMessage(BlobParent* aActor, long aMasId);
+  bool ReplyToGetMessage(BlobParent* aActor, uint8_t aMasId);
 
   /**
    * Reply bMessage to the *in-process* 'getmessage' request.
@@ -156,7 +156,7 @@ public:
    * @return true if the response packet has been packed correctly and started
    *         to be sent to the remote device; false otherwise.
    */
-  bool ReplyToGetMessage(Blob* aBlob, long aMasId);
+  bool ReplyToGetMessage(Blob* aBlob, uint8_t aMasId);
 
   /**
    * Reply to the *IPC* 'setmessage' request.
@@ -167,7 +167,7 @@ public:
    * @return true if the response packet has been packed correctly and started
    *         to be sent to the remote device; false otherwise.
    */
-  bool ReplyToSetMessageStatus(long aMasId, bool aStatus);
+  bool ReplyToSetMessageStatus(uint8_t aMasId, bool aStatus);
 
   /**
    * Reply to the *in-process* 'sendmessage' request.
@@ -180,7 +180,7 @@ public:
    *         to be sent to the remote device; false otherwise.
    */
   bool ReplyToSendMessage(
-    long aMasId, const nsAString& aHandleId , bool aStatus);
+    uint8_t aMasId, const nsAString& aHandleId , bool aStatus);
 
   /**
    * Reply to the *in-process* 'messageupdate' request.
@@ -191,7 +191,7 @@ public:
    * @return true if the response packet has been packed correctly and started
    *         to be sent to the remote device; false otherwise.
    */
-  bool ReplyToMessageUpdate(long aMasId, bool aStatus);
+  bool ReplyToMessageUpdate(uint8_t aMasId, bool aStatus);
 
  /**
   * SendEvent to MCE device. MSE shall use the SendEvent function to notify the
@@ -220,7 +220,7 @@ public:
   * @return true if the blob has started to be sent to the remote device; false
   * otherwise.
   */
- bool SendMessageEvent(long aMasId, BlobParent* aActor);
+ bool SendMessageEvent(uint8_t aMasId, BlobParent* aActor);
 
 
 protected:

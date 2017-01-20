@@ -2588,7 +2588,7 @@ BluetoothDBusService::SendInputMessage(const nsAString& aDeviceAddress,
 }
 
 void
-SendMessageEvent(long aMasId,
+SendMessageEvent(uint8_t aMasId,
                  BlobParent* aBlobParent,
                  BlobChild* aBlobChild,
                  BluetoothReplyRunnable* aRunnable)
@@ -2596,7 +2596,7 @@ SendMessageEvent(long aMasId,
 }
 
 void
-SendMessageEvent(long aMasId,
+SendMessageEvent(uint8_t aMasId,
                  nsIDOMBlob* aBlob,
                  BluetoothReplyRunnable* aRunnable)
 {
@@ -4488,7 +4488,7 @@ BluetoothDBusService::ReplyTovCardListing(
 }
 
 void
-BluetoothDBusService::ReplyToMapFolderListing(long aMasId,
+BluetoothDBusService::ReplyToMapFolderListing(uint8_t aMasId,
   const nsAString& aFolderlists,
   BluetoothReplyRunnable* aRunnable)
 {
@@ -4497,7 +4497,7 @@ BluetoothDBusService::ReplyToMapFolderListing(long aMasId,
 void
 BluetoothDBusService::ReplyToMapMessagesListing(BlobParent* aBlobParent,
   BlobChild* aBlobChild,
-  long aMasId,
+  uint8_t aMasId,
   bool aNewMessage,
   const nsAString& aTimestamp,
   int aSize,
@@ -4506,7 +4506,7 @@ BluetoothDBusService::ReplyToMapMessagesListing(BlobParent* aBlobParent,
 }
 
 void
-BluetoothDBusService::ReplyToMapMessagesListing(long aMasId,
+BluetoothDBusService::ReplyToMapMessagesListing(uint8_t aMasId,
   Blob* aBlob,
   bool aNewMessage,
   const nsAString& aTimestamp,
@@ -4518,27 +4518,27 @@ BluetoothDBusService::ReplyToMapMessagesListing(long aMasId,
 void
 BluetoothDBusService::ReplyToMapGetMessage(BlobParent* aBlobParent,
   BlobChild* aBlobChild,
-  long aMasId,
+  uint8_t aMasId,
   BluetoothReplyRunnable* aRunnable)
 {
 }
 
 void
 BluetoothDBusService::ReplyToMapGetMessage(Blob* aBlob,
-  long aMasId,
+  uint8_t aMasId,
   BluetoothReplyRunnable* aRunnable)
 {
 }
 
 void
-BluetoothDBusService::ReplyToMapSetMessageStatus(long aMasId,
+BluetoothDBusService::ReplyToMapSetMessageStatus(uint8_t aMasId,
   bool aStatus,
   BluetoothReplyRunnable* aRunnable)
 {
 }
 
 void
-BluetoothDBusService::ReplyToMapSendMessage(long aMasId,
+BluetoothDBusService::ReplyToMapSendMessage(uint8_t aMasId,
   const nsAString& aHandleId,
   bool aStatus,
   BluetoothReplyRunnable* aRunnable)
@@ -4546,7 +4546,7 @@ BluetoothDBusService::ReplyToMapSendMessage(long aMasId,
 }
 
 void
-BluetoothDBusService::ReplyToMapMessageUpdate(long aMasId, bool aStatus,
+BluetoothDBusService::ReplyToMapMessageUpdate(uint8_t aMasId, bool aStatus,
   BluetoothReplyRunnable* aRunnable)
 {
 }
