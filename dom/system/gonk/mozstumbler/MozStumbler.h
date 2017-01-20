@@ -26,7 +26,10 @@ public:
   NS_DECL_NSIWIFISCANRESULTSREADY
 
   explicit StumblerInfo(nsGeoPosition* position)
-    : mPosition(position), mCellInfoResponsesExpected(0), mCellInfoResponsesReceived(0), mIsWifiInfoResponseReceived(0)
+    : mPosition(position),
+      mCellInfoResponsesExpected(0),
+      mCellInfoResponsesReceived(0),
+      mIsWifiInfoResponseReceived(0)
   {}
   void SetWifiInfoResponseReceived();
   void SetCellInfoResponsesExpected(uint8_t count);

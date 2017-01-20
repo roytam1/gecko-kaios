@@ -155,6 +155,19 @@ StumblerInfo::SetCellInfoResponsesExpected(uint8_t count)
 #define TEXT_HEAD NS_LITERAL_CSTRING("heading")
 #define TEXT_SPD NS_LITERAL_CSTRING("speed")
 
+static void
+PrintLocationInfo(nsDataHashtable<nsCStringHashKey, double>& info, nsACString& aLocDesc)
+{
+  double val;
+  for (auto it = info.Iter(); !it.Done(); it.Next()) {
+    const nsACString& key = it.Key();
+    val = it.UserData();
+    if (!IsNaN(val)) {
+      aLocDesc += nsPrintfCString("\"%s\":%f,", key.BeginReading(), val);
+    }
+  }
+}
+
 nsresult
 StumblerInfo::LocationInfoToString(nsACString& aLocDesc)
 {
@@ -182,13 +195,7 @@ StumblerInfo::LocationInfoToString(nsACString& aLocDesc)
   coords->GetSpeed(&val);
   info.Put(TEXT_SPD, val);
 
-  for (auto it = info.Iter(); !it.Done(); it.Next()) {
-    const nsACString& key = it.Key();
-    val = it.UserData();
-    if (!IsNaN(val)) {
-      aLocDesc += nsPrintfCString("\"%s\":%f,", key.BeginReading(), val);
-    }
-  }
+  PrintLocationInfo(info, aLocDesc);
 
   aLocDesc += nsPrintfCString("\"timestamp\":%lld,", PR_Now() / PR_USEC_PER_MSEC).get();
   return NS_OK;
@@ -219,6 +226,19 @@ ExtractCommonNonCDMACellInfoItems(nsCOMPtr<T>& cell, nsDataHashtable<nsCStringHa
   info.Put(TEXT_MNC, mnc);
   info.Put(TEXT_CID, cid);
   info.Put(TEXT_STRENGTH_ASU, sig);
+}
+
+static void
+PrintCellDesc(nsDataHashtable<nsCStringHashKey, int32_t>& info, nsACString& aCellDesc)
+{
+  int32_t value;
+  for (auto it = info.Iter(); !it.Done(); it.Next()) {
+    const nsACString& key = it.Key();
+    value = it.UserData();
+    if (value != nsICellInfo::UNKNOWN_VALUE) {
+      aCellDesc += nsPrintfCString("\"%s\":%d,", key.BeginReading(), value);
+    }
+  }
 }
 
 void
@@ -296,13 +316,7 @@ StumblerInfo::CellNetworkInfoToString(nsACString& aCellDesc)
     }
 
     aCellDesc += nsPrintfCString("\"%s\":\"%s\"", TEXT_RADIOTYPE.get(), radioType);
-    for (auto it = info.Iter(); !it.Done(); it.Next()) {
-      const nsACString& key = it.Key();
-      int32_t value = it.UserData();
-      if (value != nsICellInfo::UNKNOWN_VALUE) {
-        aCellDesc += nsPrintfCString(",\"%s\":%d", key.BeginReading(), value);
-      }
-    }
+    PrintCellDesc(info, aCellDesc);
 
     aCellDesc += "}";
   }

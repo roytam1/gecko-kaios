@@ -1090,8 +1090,8 @@ GonkGPSGeolocationProvider::NetworkLocationUpdate::Update(nsIDOMGeoPosition *pos
 
   double delta = -1.0;
 
-  static double sLastMLSPosLat = 0;
-  static double sLastMLSPosLon = 0;
+  static double sLastMLSPosLat = 0.0;
+  static double sLastMLSPosLon = 0.0;
 
   if (0 != sLastMLSPosLon || 0 != sLastMLSPosLat) {
     delta = CalculateDeltaInMeter(lat, lon, sLastMLSPosLat, sLastMLSPosLon);
@@ -1102,7 +1102,7 @@ GonkGPSGeolocationProvider::NetworkLocationUpdate::Update(nsIDOMGeoPosition *pos
 
   // if the MLS coord change is smaller than this arbitrarily small value
   // assume the MLS coord is unchanged, and stick with the GPS location
-  const double kMinMLSCoordChangeInMeters = 10;
+  const double kMinMLSCoordChangeInMeters = 10.0;
 
   DOMTimeStamp time_ms = 0;
   if (provider->mLastGPSPosition) {

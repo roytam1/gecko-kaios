@@ -123,7 +123,7 @@ UploadEventListener::HandleEvent(nsIDOMEvent* aEvent)
   }
   nsresult rv = mXHR->GetStatus(&statusCode);
   if (NS_SUCCEEDED(rv)) {
-    STUMBLER_DBG("statuscode %d \n", statusCode);
+    STUMBLER_DBG("statuscode %d\n", statusCode);
   }
 
   if (200 == statusCode || 400 == statusCode) {
