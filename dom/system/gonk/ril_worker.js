@@ -4911,7 +4911,8 @@ RilObject.prototype[REQUEST_DEVICE_IDENTITY] = function REQUEST_DEVICE_IDENTITY(
   newESN = result[2];
   newMEID = result[3];
 
-  if ((newIMEI != this.deviceIdentities.imei) ||
+  if (!this.deviceIdentities ||
+      (newIMEI != this.deviceIdentities.imei) ||
       (newIMEISV != this.deviceIdentities.imeisv) ||
       (newESN != this.deviceIdentities.esn) ||
       (newMEID != this.deviceIdentities.meid)) {
@@ -15413,11 +15414,8 @@ var ContextPool = {
     RILQUIRKS_SEND_STK_PROFILE_DOWNLOAD = quirks.sendStkProfileDownload;
     RILQUIRKS_DATA_REGISTRATION_ON_DEMAND = quirks.dataRegistrationOnDemand;
     RILQUIRKS_SUBSCRIPTION_CONTROL = quirks.subscriptionControl;
-<<<<<<< HEAD
     RILQUIRKS_SIGNAL_EXTRA_INT32 = quirks.signalExtraInt;
     RILQUIRKS_AVAILABLE_NETWORKS_EXTRA_STRING = quirks.availableNetworkExtraStr;
-=======
->>>>>>> bc855c7... KaiOS/KaiOS#32: [Telephony] Merge system/gonk from Moz 2.2r. r=Ethan.
     RILQUIRKS_SMSC_ADDRESS_FORMAT = quirks.smscAddressFormat;
   },
 

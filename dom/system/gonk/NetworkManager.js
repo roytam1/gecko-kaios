@@ -1264,7 +1264,6 @@ NetworkManager.prototype = {
           }
           aResolve();
         });
-      }
     });
   },
 

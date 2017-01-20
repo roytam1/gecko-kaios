@@ -712,6 +712,10 @@ RadioInterface.prototype = {
         gTelephonyService.notifyCdmaCallWaiting(this.clientId,
                                                 message.waitingCall);
         break;
+      case "deviceIdentities":
+        gMobileConnectionService.notifyDeviceIdentities(this.clientId,
+                                                        message);
+        break;
       case "suppSvcNotification":
         gTelephonyService.notifySupplementaryService(this.clientId,
                                                      message.number,
