@@ -7351,6 +7351,16 @@ if test "$MOZ_ENABLE_MASK_AS_SHORTHAND"; then
 fi
 AC_SUBST(MOZ_ENABLE_MASK_AS_SHORTHAND)
 
+dnl ========================================================
+dnl Build koost modules if the dir exists
+dnl ========================================================
+if test -d "$_topsrcdir/koost" ; then
+  HAS_KOOST_MODULES=1
+else
+  HAS_KOOST_MODULES=
+fi
+AC_SUBST(HAS_KOOST_MODULES)
+
 # Avoid using obsolete NSPR features
 AC_DEFINE(NO_NSPR_10_SUPPORT)
 

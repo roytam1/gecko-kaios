@@ -84,4 +84,7 @@ if not CONFIG['JS_STANDALONE'] and CONFIG['MOZ_BUILD_APP']:
     # Bring in the configuration for the configured application.
     include('/' + CONFIG['MOZ_BUILD_APP'] + '/app.mozbuild')
 
+if CONFIG['HAS_KOOST_MODULES']:
+  DIRS += ['koost']
+
 include('build/templates.mozbuild')
