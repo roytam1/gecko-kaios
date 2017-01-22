@@ -49,6 +49,7 @@
 #include "mozilla/dom/Telephony.h"
 #include "mozilla/dom/Voicemail.h"
 #include "mozilla/dom/TVManager.h"
+#include "mozilla/dom/SoftkeyManager.h"
 #include "mozilla/dom/VRDevice.h"
 #include "mozilla/dom/FlipManager.h"
 #include "mozilla/dom/workers/RuntimeService.h"
@@ -204,6 +205,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Navigator)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mTelephony)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mVoicemail)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mTVManager)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mSoftkeyManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mInputPortManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mConnection)
 #ifdef MOZ_B2G_RIL
@@ -317,6 +319,10 @@ Navigator::Invalidate()
 
   if (mInputPortManager) {
     mInputPortManager = nullptr;
+  }
+
+  if (mSoftkeyManager) {
+    mSoftkeyManager = nullptr;
   }
 
   if (mConnection) {
@@ -1888,6 +1894,20 @@ Navigator::MozTCPSocket()
 {
   RefPtr<LegacyMozTCPSocket> socket = new LegacyMozTCPSocket(GetWindow());
   return socket.forget();
+}
+
+SoftkeyManager*
+Navigator::GetSoftkeyManager(ErrorResult& aRv)
+{
+  if (!mSoftkeyManager) {
+    if (!mWindow) {
+      aRv.Throw(NS_ERROR_UNEXPECTED);
+      return nullptr;
+    }
+    mSoftkeyManager = SoftkeyManager::Create(mWindow);
+  }
+
+  return mSoftkeyManager;
 }
 
 #ifdef MOZ_B2G

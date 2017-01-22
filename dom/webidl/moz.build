@@ -427,6 +427,7 @@ WEBIDL_FILES = [
     'SimpleGestureEvent.webidl',
     'SmsMessage.webidl',
     'SocketCommon.webidl',
+    'SoftkeyManager.webidl',
     'SourceBuffer.webidl',
     'SourceBufferList.webidl',
     'StereoPannerNode.webidl',

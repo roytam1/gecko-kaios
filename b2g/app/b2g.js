@@ -635,6 +635,8 @@ pref("ui.click_hold_context_menus.delay", 400);
 // Enable device storage
 pref("device.storage.enabled", true);
 
+pref("dom.softkey.enabled", true);
+
 // Enable pre-installed applications
 pref("dom.webapps.useCurrentProfile", true);
 

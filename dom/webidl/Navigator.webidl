@@ -462,6 +462,11 @@ partial interface Navigator {
   readonly attribute LegacyMozTCPSocket mozTCPSocket;
 };
 
+partial interface Navigator {
+  [Throws, Pref="dom.softkey.enabled", CheckAnyPermissions="softkey", AvailableIn=CertifiedApps]
+  readonly attribute SoftkeyManager softkeyManager;
+};
+
 #ifdef MOZ_EME
 partial interface Navigator {
   [Pref="media.eme.apiVisible", NewObject]

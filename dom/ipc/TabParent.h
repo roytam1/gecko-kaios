@@ -165,6 +165,10 @@ public:
 
   virtual bool RecvReplyKeyEvent(const WidgetKeyboardEvent& aEvent) override;
 
+  virtual bool RecvSoftkeyRegister(nsTArray<Softkey>&& aKeys) override;
+
+  virtual bool RecvSoftkeyVisibleChange(const bool& aVisible) override;
+
   virtual bool
   RecvDispatchAfterKeyboardEvent(const WidgetKeyboardEvent& aEvent) override;
 

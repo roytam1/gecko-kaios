@@ -104,6 +104,7 @@ class DeviceStorageAreaListener;
 class Presentation;
 class LegacyMozTCPSocket;
 class FlipManager;
+class SoftkeyManager;
 
 namespace time {
 class TimeManager;
@@ -259,6 +260,7 @@ public:
   Telephony* GetMozTelephony(ErrorResult& aRv);
   Voicemail* GetMozVoicemail(ErrorResult& aRv);
   TVManager* GetTv();
+  SoftkeyManager* GetSoftkeyManager(ErrorResult& aRv);
   InputPortManager* GetInputPortManager(ErrorResult& aRv);
   already_AddRefed<LegacyMozTCPSocket> MozTCPSocket();
   network::Connection* GetConnection(ErrorResult& aRv);
@@ -390,6 +392,7 @@ private:
   RefPtr<FlipManager> mFlipManager;
   RefPtr<Promise> mBatteryPromise;
   RefPtr<powersupply::PowerSupplyManager> mPowerSupplyManager;
+  RefPtr<SoftkeyManager> mSoftkeyManager;
 #ifdef MOZ_B2G_FM
   RefPtr<FMRadio> mFMRadio;
 #endif

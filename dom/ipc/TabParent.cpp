@@ -21,6 +21,7 @@
 #include "mozilla/dom/DataTransfer.h"
 #include "mozilla/dom/Event.h"
 #include "mozilla/dom/indexedDB/ActorsParent.h"
+#include "mozilla/dom/SoftkeyManager.h"
 #include "mozilla/plugins/PluginWidgetParent.h"
 #include "mozilla/EventStateManager.h"
 #include "mozilla/gfx/2D.h"
@@ -2049,6 +2050,24 @@ TabParent::RecvReplyKeyEvent(const WidgetKeyboardEvent& event)
   NS_ENSURE_TRUE(presContext, true);
 
   EventDispatcher::Dispatch(mFrameElement, presContext, &localEvent);
+  return true;
+}
+
+bool
+TabParent::RecvSoftkeyRegister(nsTArray<Softkey>&& aKeys)
+{
+  NS_ENSURE_TRUE(mFrameElement, true);
+
+  SoftkeyManager::DispatchSoftkeyRegister(mFrameElement, aKeys);
+  return true;
+}
+
+bool
+TabParent::RecvSoftkeyVisibleChange(const bool& aVisible)
+{
+  NS_ENSURE_TRUE(mFrameElement, true);
+
+  SoftkeyManager::DispatchSoftkeyVisibleChange(mFrameElement, aVisible);
   return true;
 }
 

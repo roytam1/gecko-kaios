@@ -68,6 +68,7 @@ using nsEventStatus from "mozilla/EventForwards.h";
 using nsSizeMode from "nsIWidgetListener.h";
 using mozilla::widget::CandidateWindowPosition from "ipc/nsGUIEventIPC.h";
 using class mozilla::NativeEventData from "ipc/nsGUIEventIPC.h";
+using mozilla::dom::Softkey from "mozilla/dom/SoftkeyManagerIPC.h";
 
 namespace mozilla {
 namespace dom {
@@ -515,6 +516,9 @@ parent:
 
     async AudioChannelActivityNotification(uint32_t aAudioChannel,
                                            bool aActive);
+
+    async SoftkeyRegister(Softkey[] keys);
+    async SoftkeyVisibleChange(bool visible);
 
 child:
     /**
