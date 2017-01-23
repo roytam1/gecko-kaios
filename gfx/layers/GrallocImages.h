@@ -57,6 +57,8 @@ public:
 
   virtual ~GrallocImage();
 
+  virtual bool CopyData(const Data& aData) override;
+
   /**
    * This makes a copy of the data buffers, in order to support functioning
    * in all different layer managers.

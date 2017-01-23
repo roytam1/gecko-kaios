@@ -59,6 +59,11 @@ GrallocImage::~GrallocImage()
 {
 }
 
+bool GrallocImage::CopyData(const Data& aData)
+{
+  return SetData(aData);
+}
+
 bool
 GrallocImage::SetData(const Data& aData)
 {
