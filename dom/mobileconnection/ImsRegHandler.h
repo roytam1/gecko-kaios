@@ -30,7 +30,7 @@ public:
   ImsRegHandler(nsPIDOMWindowInner *aWindow, nsIImsRegHandler *aHandler);
 
   virtual void
-  DisconnectFromOwner() MOZ_OVERRIDE;
+  DisconnectFromOwner() override;
 
   // WrapperCache
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
