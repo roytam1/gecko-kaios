@@ -177,6 +177,12 @@ StumblerInfo::LocationInfoToString(nsACString& aLocDesc)
     return NS_ERROR_FAILURE;
   }
 
+  // append timestamp of submitting location
+  aLocDesc += nsPrintfCString("\"timestamp\":%lld,", PR_Now() / PR_USEC_PER_MSEC).get();
+
+  // append position block
+  aLocDesc += "\"position\": {";
+
   nsDataHashtable<nsCStringHashKey, double> info;
 
   double val;
@@ -195,9 +201,12 @@ StumblerInfo::LocationInfoToString(nsACString& aLocDesc)
   coords->GetSpeed(&val);
   info.Put(TEXT_SPD, val);
 
+  // append position fields
   PrintLocationInfo(info, aLocDesc);
 
-  aLocDesc += nsPrintfCString("\"timestamp\":%lld,", PR_Now() / PR_USEC_PER_MSEC).get();
+  // replace the last ',' by "},"
+  aLocDesc.Replace(aLocDesc.Length() - 1, 1, "},");
+
   return NS_OK;
 }
 
