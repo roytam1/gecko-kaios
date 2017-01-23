@@ -33,7 +33,7 @@ public:
 
   already_AddRefed<Promise> GetPromise(ErrorResult& aRv);
 
-  void Notify(const bool& aIsOpened);
+  void Notify(const bool& aIsOpened) override;
 
   nsPIDOMWindowInner* GetParentObject() const
   {

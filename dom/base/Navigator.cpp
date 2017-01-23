@@ -909,7 +909,7 @@ Navigator::GetFlipOpened(ErrorResult& aRv)
 {
   if (!XRE_IsParentProcess()) {
     aRv.Throw(NS_ERROR_UNEXPECTED);
-    return nullptr;
+    return false;
   }
 
   return hal::IsFlipOpened();

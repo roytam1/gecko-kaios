@@ -21,5 +21,20 @@ void
 StartForceQuitWatchdog(hal::ShutdownMode aMode, int32_t aTimeoutSecs)
 {}
 
+void
+EnablePowerSupplyNotifications()
+{
+}
+
+void
+DisablePowerSupplyNotifications()
+{
+}
+
+void
+GetCurrentPowerSupplyStatus(hal::PowerSupplyStatus* aPowerSupplyStatus)
+{
+}
+
 } // namespace hal_impl
 } // namespace mozilla

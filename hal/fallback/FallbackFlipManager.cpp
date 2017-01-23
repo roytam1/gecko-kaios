@@ -6,6 +6,12 @@ using namespace mozilla::hal;
 namespace mozilla {
 namespace hal_impl {
 
+bool
+IsFlipOpened()
+{
+  return true;
+}
+
 void
 NotifyFlipStateFromInputDevice(bool)
 {

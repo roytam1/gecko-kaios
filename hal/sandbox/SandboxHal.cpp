@@ -637,7 +637,7 @@ public:
     return true;
   }
 
-  void Notify(const bool& aFlipState)
+  void Notify(const bool& aFlipState) override
   {
     Unused << SendNotifyFlipState(aFlipState);
   }
@@ -1096,7 +1096,7 @@ public:
   }
 
   virtual bool
-  RecvNotifyFlipState(const bool& aFlipState) {
+  RecvNotifyFlipState(const bool& aFlipState) override {
     hal::UpdateFlipState(aFlipState);
     return true;
   }
