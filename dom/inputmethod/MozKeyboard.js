@@ -431,7 +431,6 @@ MozInputMethod.prototype = {
     cpmm.addWeakMessageListener('Keyboard:SelectionChange', this);
     cpmm.addWeakMessageListener('Keyboard:GetContext:Result:OK', this);
     cpmm.addWeakMessageListener('Keyboard:SupportsSwitchingTypesChange', this);
-    cpmm.addWeakMessageListener('Keyboard:ReceiveHardwareKeyEvent', this);
     cpmm.addWeakMessageListener('InputRegistry:Result:OK', this);
     cpmm.addWeakMessageListener('InputRegistry:Result:Error', this);
 
@@ -456,7 +455,6 @@ MozInputMethod.prototype = {
     cpmm.removeWeakMessageListener('Keyboard:SelectionChange', this);
     cpmm.removeWeakMessageListener('Keyboard:GetContext:Result:OK', this);
     cpmm.removeWeakMessageListener('Keyboard:SupportsSwitchingTypesChange', this);
-    cpmm.removeWeakMessageListener('Keyboard:ReceiveHardwareKeyEvent', this);
     cpmm.removeWeakMessageListener('InputRegistry:Result:OK', this);
     cpmm.removeWeakMessageListener('InputRegistry:Result:Error', this);
     this.setActive(false);
@@ -510,24 +508,7 @@ MozInputMethod.prototype = {
       case 'Keyboard:SupportsSwitchingTypesChange':
         this._supportsSwitchingTypes = data.types;
         break;
-      case 'Keyboard:ReceiveHardwareKeyEvent':
-        if (!Ci.nsIHardwareKeyHandler) {
-          break;
-        }
 
-        let defaultPrevented = Ci.nsIHardwareKeyHandler.NO_DEFAULT_PREVENTED;
-
-        // |event.preventDefault()| is allowed to be called only when
-        // |event.cancelable| is true
-        if (this._inputcontext && data.keyDict.cancelable) {
-          defaultPrevented |= this._inputcontext.forwardHardwareKeyEvent(data);
-        }
-
-        cpmmSendAsyncMessageWithKbID(this, 'Keyboard:ReplyHardwareKeyEvent', {
-                                       type: data.type,
-                                       defaultPrevented: defaultPrevented
-                                     });
-        break;
       case 'InputRegistry:Result:OK':
         resolver.resolve();
 
@@ -703,7 +684,7 @@ MozInputMethod.prototype = {
   }
 };
 
-/**
+ /**
  * ==============================================
  * InputContextDOMRequestIpcHelper
  * ==============================================
@@ -802,20 +783,7 @@ MozInputContextSurroundingTextChangeEventDetail.prototype = {
   }
 };
 
-/**
- * ==============================================
- * HardwareInput
- * ==============================================
- */
-function MozHardwareInput() {
-}
-
-MozHardwareInput.prototype = {
-  classID: Components.ID("{1e38633d-d08b-4867-9944-afa5c648adb6}"),
-  QueryInterface: XPCOMUtils.generateQI([]),
-};
-
-/**
+ /**
  * ==============================================
  * InputContext
  * ==============================================
@@ -839,8 +807,6 @@ MozInputContext.prototype = {
   _context: null,
   _contextId: -1,
   _ipcHelper: null,
-  _hardwareinput: null,
-  _wrappedhardwareinput: null,
 
   classID: Components.ID("{1e38633d-d08b-4867-9944-afa5c648adb6}"),
 
@@ -854,9 +820,6 @@ MozInputContext.prototype = {
 
     this._ipcHelper = WindowMap.getInputContextIpcHelper(win);
     this._ipcHelper.attachInputContext(this);
-    this._hardwareinput = new MozHardwareInput();
-    this._wrappedhardwareinput =
-      this._window.MozHardwareInput._create(this._window, this._hardwareinput);
   },
 
   destroy: function ic_destroy() {
@@ -874,8 +837,6 @@ MozInputContext.prototype = {
     this._ipcHelper = null;
 
     this._window = null;
-    this._hardwareinput = null;
-    this._wrappedhardwareinput = null;
   },
 
   receiveMessage: function ic_receiveMessage(msg) {
@@ -1028,10 +989,6 @@ MozInputContext.prototype = {
     return text.substr(start, end - start + 100);
   },
 
-  get hardwareinput() {
-    return this._wrappedhardwareinput;
-  },
-
   setSelectionRange: function ic_setSelectionRange(start, length) {
     let self = this;
     return this._sendPromise(function(resolverId) {
@@ -1152,45 +1109,6 @@ MozInputContext.prototype = {
         keyboardEventDict: this._getkeyboardEventDict(dict)
       });
     });
-  },
-
-  // Generate a new keyboard event by the received keyboard dictionary
-  // and return defaultPrevented's result of the event after dispatching.
-  forwardHardwareKeyEvent: function ic_forwardHardwareKeyEvent(data) {
-    if (!Ci.nsIHardwareKeyHandler) {
-      return;
-    }
-
-    if (!this._context) {
-      return Ci.nsIHardwareKeyHandler.NO_DEFAULT_PREVENTED;
-    }
-    let evt = new this._window.KeyboardEvent(data.type,
-                                             Cu.cloneInto(data.keyDict,
-                                                          this._window));
-    this._hardwareinput.__DOM_IMPL__.dispatchEvent(evt);
-    return this._getDefaultPreventedValue(evt);
-  },
-
-  _getDefaultPreventedValue: function(evt) {
-    if (!Ci.nsIHardwareKeyHandler) {
-      return;
-    }
-
-    let flags = Ci.nsIHardwareKeyHandler.NO_DEFAULT_PREVENTED;
-
-    if (evt.defaultPrevented) {
-      flags |= Ci.nsIHardwareKeyHandler.DEFAULT_PREVENTED;
-    }
-
-    if (evt.defaultPreventedByChrome) {
-      flags |= Ci.nsIHardwareKeyHandler.DEFAULT_PREVENTED_BY_CHROME;
-    }
-
-    if (evt.defaultPreventedByContent) {
-      flags |= Ci.nsIHardwareKeyHandler.DEFAULT_PREVENTED_BY_CONTENT;
-    }
-
-    return flags;
   },
 
   _sendPromise: function(callback) {
