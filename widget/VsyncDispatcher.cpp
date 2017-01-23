@@ -200,4 +200,10 @@ RefreshTimerVsyncDispatcher::NeedsVsync()
   return (mParentRefreshTimer != nullptr) || !mChildRefreshTimers.IsEmpty();
 }
 
+void
+RefreshTimerVsyncDispatcher::ClearDisplay()
+{
+  mDisplay = nullptr;
+}
+
 } // namespace mozilla

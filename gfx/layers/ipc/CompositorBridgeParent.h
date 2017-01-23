@@ -105,8 +105,6 @@ private:
  **/
 class CompositorVsyncScheduler final : public CompositorScheduler
 {
-  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(CompositorVsyncScheduler)
-
 public:
   explicit CompositorVsyncScheduler(CompositorBridgeParent* aCompositorBridgeParent, nsIWidget* aWidget);
 

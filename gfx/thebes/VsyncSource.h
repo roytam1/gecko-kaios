@@ -38,8 +38,9 @@ class VsyncSource
 public:
   // Controls vsync unique to each display and unique on each platform
   class Display {
-    NS_INLINE_DECL_THREADSAFE_REFCOUNTING(Display)
-
+ #ifdef MOZ_WIDGET_GONK
+     NS_INLINE_DECL_THREADSAFE_REFCOUNTING(Display)
+ #endif
     public:
       Display();
 
@@ -79,6 +80,8 @@ public:
       bool mRefreshTimerNeedsVsync;
       nsTArray<RefPtr<CompositorVsyncDispatcher>> mCompositorVsyncDispatchers;
       RefPtr<RefreshTimerVsyncDispatcher> mRefreshTimerVsyncDispatcher;
+      // mRefreshDriverTimer is accessed from main thread only, no need to
+      // protect it by mDispatcherLock.
       RefPtr<RefreshDriverTimer> mRefreshDriverTimer;
   };
 

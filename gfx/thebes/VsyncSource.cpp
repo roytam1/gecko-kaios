@@ -43,10 +43,18 @@ VsyncSource::Display::Display()
 VsyncSource::Display::~Display()
 {
   MOZ_ASSERT(NS_IsMainThread());
-  MutexAutoLock lock(mDispatcherLock);
-  mRefreshTimerVsyncDispatcher = nullptr;
-  mRefreshDriverTimer = nullptr;
-  mCompositorVsyncDispatchers.Clear();
+  {
+    MutexAutoLock lock(mDispatcherLock);
+    mRefreshTimerVsyncDispatcher->ClearDisplay();
+    mRefreshTimerVsyncDispatcher = nullptr;
+    mCompositorVsyncDispatchers.Clear();
+  }
+  // No need to protect mRefreshDriverTimer by mDispatcherLock since it is
+  // accessed from main thread only, otherwise, a deadlock will occur in
+  // VsyncSource::Display::UpdateVsyncStatus() when destructing
+  // VsyncRefreshDriverTimer.
+  // More important, ClearDisplay() of mRefreshTimerVsyncDispatcher must called
+  // before releasing mRefreshDriverTimer.
 }
 
 void
@@ -108,6 +116,8 @@ VsyncSource::Display::NotifyRefreshTimerVsyncStatus(bool aEnable)
 RefreshDriverTimer*
 VsyncSource::Display::GetRefreshDriverTimer()
 {
+  MOZ_ASSERT(NS_IsMainThread());
+
   if (!mRefreshDriverTimer) {
     mRefreshDriverTimer =
       new VsyncRefreshDriverTimer(mRefreshTimerVsyncDispatcher);

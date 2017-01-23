@@ -85,6 +85,8 @@ public:
   void AddChildRefreshTimer(VsyncObserver* aVsyncObserver);
   void RemoveChildRefreshTimer(VsyncObserver* aVsyncObserver);
 
+  void ClearDisplay();
+
 private:
   RefreshTimerVsyncDispatcher();
   virtual ~RefreshTimerVsyncDispatcher();
@@ -95,6 +97,8 @@ private:
   RefPtr<VsyncObserver> mParentRefreshTimer;
   nsTArray<RefPtr<VsyncObserver>> mChildRefreshTimers;
   // Weak Display pointer is used to notify VsyncObservers changed;
+  // Need to explicitly cleared in ClearDisplay(), otherwise, it will keep
+  // notifying VsyncObservers during destructing itself.
   Display* mDisplay;
 };
 

@@ -97,7 +97,7 @@ CompositorScheduler::ComposeToTarget(gfx::DrawTarget* aTarget,
 void
 CompositorScheduler::Destroy()
 {
-  MOZ_ASSERT(mCompositorBridgeParent::IsInCompositorThread());
+  MOZ_ASSERT(CompositorBridgeParent::IsInCompositorThread());
   CancelCurrentCompositeTask();
   mCompositorBridgeParent = nullptr;
 }

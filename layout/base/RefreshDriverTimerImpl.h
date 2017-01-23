@@ -16,6 +16,7 @@
 #include "WinUtils.h"
 #endif
 
+#include "mozilla/Telemetry.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/VsyncDispatcher.h"
 #include "mozilla/layout/VsyncChild.h"
@@ -63,8 +64,7 @@ namespace mozilla {
  * for the next tick.
  */
 class RefreshDriverTimer {
-  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(RefreshDriverTimer)
-
+  NS_INLINE_DECL_REFCOUNTING(RefreshDriverTimer)
 public:
   RefreshDriverTimer()
     : mLastFireEpoch(0)
