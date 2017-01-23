@@ -37,10 +37,6 @@ interface Event {
   void preventDefault();
   [Pure]
   readonly attribute boolean defaultPrevented;
-  [ChromeOnly, Pure]
-  readonly attribute boolean defaultPreventedByChrome;
-  [ChromeOnly, Pure]
-  readonly attribute boolean defaultPreventedByContent;
 
   [Unforgeable, Pure]
   readonly attribute boolean isTrusted;
