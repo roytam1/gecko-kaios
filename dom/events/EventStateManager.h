@@ -108,10 +108,6 @@ public:
                            nsIFrame* aTargetFrame,
                            nsEventStatus* aStatus);
 
-  void PostHandleKeyboardEvent(WidgetKeyboardEvent* aKeyboardEvent,
-                               nsEventStatus& aStatus,
-                               bool dispatchedToContentProcess);
-
   /**
    * DispatchLegacyMouseScrollEvents() dispatches eLegacyMouseLineOrPageScroll
    * event and eLegacyMousePixelScroll event for compatibility with old Gecko.
@@ -910,6 +906,9 @@ private:
   static void ResetLastOverForContent(const uint32_t& aIdx,
                                       RefPtr<OverOutElementsWrapper>& aChunk,
                                       nsIContent* aClosure);
+  void PostHandleKeyboardEvent(WidgetKeyboardEvent* aKeyboardEvent,
+                               nsEventStatus& aStatus,
+                               bool dispatchedToContentProcess);
 
   int32_t     mLockCursor;
   bool mLastFrameConsumedSetCursor;
