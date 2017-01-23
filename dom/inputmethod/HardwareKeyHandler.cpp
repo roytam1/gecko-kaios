@@ -263,6 +263,7 @@ HardwareKeyHandler::DispatchKeyPress(nsINode* aTarget,
                                      nsEventStatus& aStatus)
 {
   MOZ_ASSERT(aTarget, "No target provided");
+  MOZ_ASSERT(aEvent, "No event provided");
   MOZ_ASSERT(aEvent.mMessage == eKeyPress, "Event is not keypress");
 
   // No need to dispatch keypress to the event target
@@ -302,6 +303,7 @@ HardwareKeyHandler::DispatchAfterKeyEvent(nsINode* aTarget,
                                           WidgetKeyboardEvent& aEvent)
 {
   MOZ_ASSERT(aTarget, "No target provided");
+  MOZ_ASSERT(aEvent, "No event provided");
 
   if (!PresShell::BeforeAfterKeyboardEventEnabled() ||
       aEvent.mMessage == eKeyPress) {
@@ -322,6 +324,7 @@ HardwareKeyHandler::DispatchToTargetApp(nsINode* aTarget,
                                         nsEventStatus& aStatus)
 {
   MOZ_ASSERT(aTarget, "No target provided");
+  MOZ_ASSERT(aEvent, "No event provided");
 
   // Get current focused element as the event target
   nsCOMPtr<nsIContent> currentTarget = GetCurrentTarget();
@@ -418,6 +421,7 @@ HardwareKeyHandler::PostHandleKeyboardEvent(nsINode* aTarget,
                                             nsEventStatus& aStatus)
 {
   MOZ_ASSERT(aTarget, "No target provided");
+  MOZ_ASSERT(aEvent, "No event provided");
 
   nsPresContext* presContext = GetPresContext(aTarget);
 
