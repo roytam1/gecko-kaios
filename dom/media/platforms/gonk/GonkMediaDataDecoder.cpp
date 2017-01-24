@@ -46,7 +46,11 @@ GonkDecoderManager::InitLoopers(MediaData::Type aType)
   mTaskLooper->registerHandler(this);
 
 #ifdef DEBUG
+  #if ANDROID_VERSION >= 23
+  sp<AMessage> findThreadId(new AMessage(kNotifyFindLooperId, this));
+  #else
   sp<AMessage> findThreadId(new AMessage(kNotifyFindLooperId, id()));
+  #endif
   findThreadId->post();
 #endif
 
@@ -68,8 +72,11 @@ GonkDecoderManager::Input(MediaRawData* aSample)
     MutexAutoLock lock(mMutex);
     mQueuedSamples.AppendElement(sample);
   }
-
+  #if ANDROID_VERSION >= 23
+  sp<AMessage> input = new AMessage(kNotifyProcessInput, this);
+  #else
   sp<AMessage> input = new AMessage(kNotifyProcessInput, id());
+  #endif
   if (!aSample) {
     input->setInt32("input-eos", 1);
   }
@@ -125,7 +132,11 @@ GonkDecoderManager::Flush()
 
   MonitorAutoLock lock(mFlushMonitor);
   mIsFlushing = true;
+  #if ANDROID_VERSION >= 23
+  sp<AMessage> flush = new AMessage(kNotifyProcessFlush, this);
+  #else
   sp<AMessage> flush = new AMessage(kNotifyProcessFlush, id());
+  #endif
   flush->post();
   while (mIsFlushing) {
     lock.Wait();
@@ -166,7 +177,11 @@ GonkDecoderManager::ProcessInput(bool aEndOfStream)
     }
 
     if (mToDo.get() == nullptr) {
+      #if ANDROID_VERSION >= 23
+      mToDo = new AMessage(kNotifyDecoderActivity, this);
+      #else
       mToDo = new AMessage(kNotifyDecoderActivity, id());
+      #endif
       if (aEndOfStream) {
         mToDo->setInt32("input-eos", 1);
       }
@@ -266,7 +281,11 @@ GonkDecoderManager::ProcessToDo(bool aEndOfStream)
   }
 
   if (NumQueuedSamples() || mWaitOutput.Length() > 0) {
+    #if ANDROID_VERSION >= 23
+    mToDo = new AMessage(kNotifyDecoderActivity, this);
+    #else
     mToDo = new AMessage(kNotifyDecoderActivity, id());
+    #endif
     if (aEndOfStream) {
       mToDo->setInt32("input-eos", 1);
     }

@@ -742,8 +742,11 @@ void GonkVideoDecoderManager::PostReleaseVideoBuffer(
       mPendingReleaseItems.AppendElement(ReleaseItem(aBuffer, aReleaseFence));
     }
   }
-  sp<AMessage> notify =
-            new AMessage(kNotifyPostReleaseBuffer, id());
+  #if ANDROID_VERSION >= 23
+  sp<AMessage> notify = new AMessage(kNotifyPostReleaseBuffer, this);
+  #else
+  sp<AMessage> notify = new AMessage(kNotifyPostReleaseBuffer, id());
+  #endif
   notify->post();
 
 }
