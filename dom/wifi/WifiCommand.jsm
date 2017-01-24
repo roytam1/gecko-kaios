@@ -360,10 +360,7 @@ this.WifiCommand = function(aControlMessage, aInterface, aSdkVersion) {
   };
 
   command.saveConfig = function (callback) {
-    // Make sure we never write out a value for AP_SCAN other than 1.
-    doBooleanCommand("AP_SCAN 1", "OK", function(ok) {
-      doBooleanCommand("SAVE_CONFIG", "OK", callback);
-    });
+    doBooleanCommand("SAVE_CONFIG", "OK", callback);
   };
 
   command.reloadConfig = function (callback) {

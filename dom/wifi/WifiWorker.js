@@ -3472,14 +3472,16 @@ WifiWorker.prototype = {
             if (ok) {
               self._needToEnableNetworks = true;
             }
-            if (WifiManager.state === "DISCONNECTED" ||
-                WifiManager.state === "SCANNING") {
-              WifiManager.reconnect(function (ok) {
-                self._sendMessage(message, ok, ok, msg);
-              });
-            } else {
-              self._sendMessage(message, ok, ok, msg);
-            }
+            let callback = (function (networks) {
+              for (let net in networks) {
+                if (networkKey == getNetworkKey(networks[net])) {
+                  self._sendMessage(message, ok, ok, msg);
+                  return;
+                }
+              }
+              self._sendMessage(message, false, "network not found", msg);
+            }).bind(self);
+            self.waitForScan(callback);
           });
         });
       }
