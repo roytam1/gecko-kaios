@@ -196,7 +196,6 @@ DataCallService.prototype = {
   _cleanupRequestsByTarget: function(aTarget) {
     for (let type of DATACALL_TYPES) {
       let context = this.dataCallsContext[type];
-      // v2.6 porting
       if (!context) {
         continue;
       }
@@ -220,7 +219,6 @@ DataCallService.prototype = {
   _cleanupRequestsByWinId: function(aWindowId) {
     for (let type of DATACALL_TYPES) {
       let context = this.dataCallsContext[type];
-      // TODO v2.6 porting
       if (!context) {
         continue;
       }
@@ -276,8 +274,6 @@ DataCallService.prototype = {
   },
 
   _getNetworkInterface: function(aServiceId, aType) {
-    // TODO v2.6 porting
-/*
     for each (let network in gNetworkManager.networkInterfaces) {
       if (network.type == aType) {
         try {
@@ -291,7 +287,6 @@ DataCallService.prototype = {
         return network;
       }
     }
-*/
     return null;
   },
 
@@ -592,8 +587,6 @@ DataCallService.prototype = {
   observe: function(aSubject, aTopic, aData) {
     switch (aTopic) {
       case TOPIC_CONNECTION_STATE_CHANGED:
-      // TODO v2.6 porting
-/*
         if (!(aSubject instanceof Ci.nsIRilNetworkInterface)) {
           return;
         }
@@ -604,12 +597,10 @@ DataCallService.prototype = {
         }
         this.onConnectionStateChanged(network);
         this.sendStateChangeEvent(network);
-*/
         break;
       case TOPIC_XPCOM_SHUTDOWN:
         for (let type of DATACALL_TYPES) {
           let context = this.dataCallsContext[type];
-          // TODO v2.6 porting
           if (!context) {
             continue;
           }
