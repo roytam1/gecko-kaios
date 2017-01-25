@@ -271,6 +271,9 @@ static char const *const gOMXWebMCodecs[] = {
   "vp9",
   "vp9.0",
 #endif
+#if ANDROID_VERSION > 20
+  "opus",
+#endif
   nullptr
 };
 #endif //MOZ_OMX_WEBM_DECODER
