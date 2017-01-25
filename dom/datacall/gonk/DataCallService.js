@@ -273,18 +273,19 @@ DataCallService.prototype = {
     });
   },
 
-  _getNetworkInterface: function(aServiceId, aType) {
-    for each (let network in gNetworkManager.networkInterfaces) {
-      if (network.type == aType) {
+  _getNetworkInfo: function(aServiceId, aType) {
+    for (let networkId in gNetworkManager.allNetworkInfo) {
+      let networkInfo = gNetworkManager.allNetworkInfo[networkId];
+      if (networkInfo.type == aType) {
         try {
-          if (network instanceof Ci.nsIRilNetworkInterface) {
-            let rilNetwork = network.QueryInterface(Ci.nsIRilNetworkInterface);
-            if (rilNetwork.serviceId != aServiceId) {
+          if (networkInfo instanceof Ci.nsIRilNetworkInfo) {
+            let rilNetworkInfo = networkInfo.QueryInterface(Ci.nsIRilNetworkInfo);
+            if (rilNetworkInfo.serviceId != aServiceId) {
               continue;
             }
           }
         } catch (e) {}
-        return network;
+        return networkInfo;
       }
     }
     return null;
@@ -355,8 +356,8 @@ DataCallService.prototype = {
     ril.setupDataCallByType(type);
 
     if (ril.getDataCallStateByType(type) == NETWORK_STATE_CONNECTED) {
-      let networkIface = this._getNetworkInterface(serviceId, type);
-      let dataCall = this._createDataCall(networkIface);
+      let networkInfo = this._getNetworkInfo(serviceId, type);
+      let dataCall = this._createDataCall(networkInfo);
       aTargetCallback(dataCall);
       return;
     }
@@ -424,8 +425,8 @@ DataCallService.prototype = {
       this.debug("Add host route for " + aData.serviceId + "-" + aData.type);
     }
 
-    let networkIface = this._getNetworkInterface(aData.serviceId, aData.type);
-    gNetworkManager.addHostRoute(networkIface, aData.host)
+    let networkInfo = this._getNetworkInfo(aData.serviceId, aData.type);
+    gNetworkManager.addHostRoute(networkInfo, aData.host)
       .then(() => {
         aTargetCallback();
       }, aReason => {
@@ -438,8 +439,8 @@ DataCallService.prototype = {
       this.debug("Remove host route for " + aData.serviceId + "-" + aData.type);
     }
 
-    let networkIface = this._getNetworkInterface(aData.serviceId, aData.type);
-    gNetworkManager.removeHostRoute(networkIface, aData.host)
+    let networkInfo = this._getNetworkInfo(aData.serviceId, aData.type);
+    gNetworkManager.removeHostRoute(networkInfo, aData.host)
       .then(() => {
         aTargetCallback();
       }, aReason => {
@@ -587,16 +588,16 @@ DataCallService.prototype = {
   observe: function(aSubject, aTopic, aData) {
     switch (aTopic) {
       case TOPIC_CONNECTION_STATE_CHANGED:
-        if (!(aSubject instanceof Ci.nsIRilNetworkInterface)) {
+        if (!(aSubject instanceof Ci.nsIRilNetworkInfo)) {
           return;
         }
-        let network = aSubject.QueryInterface(Ci.nsIRilNetworkInterface);
+        let networkInfo = aSubject.QueryInterface(Ci.nsIRilNetworkInfo);
         if (DEBUG) {
-          this.debug("Network " + network.type + "/" + network.name +
-                     " changed state to " + network.state);
+          this.debug("Network " + networkInfo.type + "/" + networkInfo.name +
+                     " changed state to " + networkInfo.state);
         }
-        this.onConnectionStateChanged(network);
-        this.sendStateChangeEvent(network);
+        this.onConnectionStateChanged(networkInfo);
+        this.sendStateChangeEvent(networkInfo);
         break;
       case TOPIC_XPCOM_SHUTDOWN:
         for (let type of DATACALL_TYPES) {
