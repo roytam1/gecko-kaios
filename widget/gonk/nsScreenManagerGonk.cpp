@@ -38,6 +38,7 @@
 #include "nsTArray.h"
 #include "pixelflinger/format.h"
 #include "nsIDisplayInfo.h"
+#include "libui/cutils_log.h"
 
 #if ANDROID_VERSION >= 17
 #include "libdisplay/DisplaySurface.h"
@@ -46,6 +47,12 @@
 #define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "nsScreenGonk" , ## args)
 #define LOGW(args...) __android_log_print(ANDROID_LOG_WARN, "nsScreenGonk", ## args)
 #define LOGE(args...) __android_log_print(ANDROID_LOG_ERROR, "nsScreenGonk", ## args)
+
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
+// Tag used by SLOGI
+#define LOG_TAG "Gecko"
 
 using namespace mozilla;
 using namespace mozilla::hal;
@@ -830,6 +837,22 @@ nsScreenManagerGonk::Initialize()
         return;
     }
 
+    char propValue[PROPERTY_VALUE_MAX];
+    property_get("ro.build.type", propValue, NULL);
+    if (strcmp(propValue, "user") != 0) {
+        SLOGI("============ KaiOS device information ============");
+
+        property_get("ro.build.kaios_uid", propValue, NULL);
+        SLOGI("Build UID         = %s", propValue);
+
+        property_get("ro.build.description", propValue, NULL);
+        SLOGI("Build Description = %s", propValue);
+
+        property_get("ro.bootloader", propValue, NULL);
+        SLOGI("Bootloader        = %s", propValue);
+
+        SLOGI("==================================================");
+    }
     mScreenOnEvent = new ScreenOnOffEvent(true);
     mScreenOffEvent = new ScreenOnOffEvent(false);
     GetGonkDisplay()->OnEnabled(displayEnabledCallback);
