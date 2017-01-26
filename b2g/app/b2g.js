@@ -1179,3 +1179,6 @@ pref("google.geocoding.URL", "https://maps.googleapis.com/maps/api/geocode/json?
 // GLCursor draws a cursor image if widget receives eMouseMove event. It is
 // usually enabled with SpatialNavigation.
 pref("gfx.glcursor.enabled", false);
+
+// In compatibility mode, 'Firefox' will be added to UA.
+pref("compatMode.firefox", true);
