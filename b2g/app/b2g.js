@@ -1181,4 +1181,4 @@ pref("google.geocoding.URL", "https://maps.googleapis.com/maps/api/geocode/json?
 pref("gfx.glcursor.enabled", false);
 
 // In compatibility mode, 'Firefox' will be added to UA.
-pref("compatMode.firefox", true);
+pref("general.useragent.compatMode.firefox", true);
