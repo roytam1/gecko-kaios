@@ -183,6 +183,13 @@ HwcComposer2D::Vsync(int aDisplay, nsecs_t aVsyncTimestamp)
     // Only support hardware vsync on kitkat, L and up due to inaccurate timings
     // with JellyBean.
 #if (ANDROID_VERSION == 19 || ANDROID_VERSION >= 21)
+    // KaiOS Bug 567: The vsync here might be fired during testing whether vsync
+    // is avaliabe in gfxAndroidPlatform::CreateHardwareVsyncSource. At this
+    // timing created VsyncSource doesn't be assigned to gfxPlatform yet.
+    if (!gfxPlatform::GetPlatform()->GetHardwareVsync()) {
+        return;
+    }
+
     TimeStamp vsyncTime = mozilla::TimeStamp::FromSystemTime(aVsyncTimestamp);
     gfxPlatform::GetPlatform()->GetHardwareVsync()->GetGlobalDisplay().NotifyVsync(vsyncTime);
 #else
