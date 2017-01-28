@@ -37,7 +37,8 @@
 #include "mozilla/Assertions.h"
 
 #define DEFAULT_XDPI 75.0
-#define GET_FRAMEBUFFER_FORMAT_FROM_HWC
+// This define should be passed from gonk-misc and depends on device config.
+// #define GET_FRAMEBUFFER_FORMAT_FROM_HWC
 
 using namespace android;
 
