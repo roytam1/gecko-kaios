@@ -235,12 +235,14 @@ double GetKeyLightBrightness();
  * followed by GetScreenBrightness(), the value returned by
  * GetScreenBrightness() may not be exactly x.
  */
+__attribute__ ((visibility ("default")))
 void SetScreenBrightness(double aBrightness);
 
 /**
  * Set the brightness of the device's external screen's backlight,
  * on a scale from 0 (very dimm) to 1 (full blast).
  */
+__attribute__ ((visibility ("default")))
 void SetExtScreenBrightness(double aBrightness);
 
 /**

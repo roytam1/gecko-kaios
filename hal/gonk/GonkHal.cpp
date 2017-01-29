@@ -978,6 +978,7 @@ GetExtScreenBrightness()
   return brightness / 255.0;
 }
 
+__attribute__ ((visibility ("default")))
 void
 SetExtScreenBrightness(double brightness)
 {
@@ -1105,6 +1106,7 @@ GetScreenBrightness()
   return 0;
 }
 
+__attribute__ ((visibility ("default")))
 void
 SetScreenBrightness(double brightness)
 {

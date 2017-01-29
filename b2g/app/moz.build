@@ -45,6 +45,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
     USE_LIBS += [
         'display',
         'mozpng',
+        'xul',
     ]
     OS_LIBS += CONFIG['MOZ_ZLIB_LIBS']
     if CONFIG['ANDROID_VERSION'] in ('17', '18', '19', '21', '22', '23'):

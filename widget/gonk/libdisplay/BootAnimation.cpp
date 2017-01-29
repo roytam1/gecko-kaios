@@ -36,6 +36,15 @@
 using namespace mozilla;
 using namespace std;
 
+namespace mozilla {
+namespace hal_impl {
+  __attribute__ ((visibility ("default")))
+  void SetScreenBrightness(double aBrightness);
+  __attribute__ ((visibility ("default")))
+  void SetExtScreenBrightness(double aBrightness);
+}
+}
+
 static pthread_t sAnimationThread;
 static bool sRunAnimation;
 
@@ -293,6 +302,18 @@ struct RawReadState {
     uint32_t offset;
     uint32_t length;
 };
+
+static void
+setBacklight(double aBrightness)
+{
+  hal_impl::SetScreenBrightness(aBrightness);
+}
+
+static void
+setExtBacklight(double aBrightness)
+{
+  hal_impl::SetExtScreenBrightness(aBrightness);
+}
 
 static void
 RawReader(png_structp png_ptr, png_bytep data, png_size_t length)
@@ -751,7 +772,17 @@ AnimationThread(void *)
                                 GonkDisplay::DISPLAY_EXTERNAL);
             animVec.pop_back();
         }
+        else {
+            // Turn on external screen backlight before playing animation and
+            // draw a solid frame to clear noise on panel.
+            ShowSolidColorFrame(display, grmodule, extDispData.mSurfaceformat,
+                            GonkDisplay::DISPLAY_EXTERNAL);
+            usleep(20000);
+            setExtBacklight(1);
+        }
     }
+    // Turn on primary screen backlight before playing animation,
+    setBacklight(1);
 
     bool animPlayed = false;
 
