@@ -235,6 +235,19 @@ SetExtScreenBrightness(double aBrightness)
   NS_RUNTIMEABORT("SetExtScreenBrightness() can't be called from sandboxed contexts.");
 }
 
+double
+GetKeyLightBrightness()
+{
+  NS_RUNTIMEABORT("GetKeyLightBrightness() can't be called from sandboxed contexts.");
+  return 0;
+}
+
+void
+SetKeyLightBrightness(double aBrightness)
+{
+  NS_RUNTIMEABORT("SetKeyLightBrightness() can't be called from sandboxed contexts.");
+}
+
 void
 AdjustSystemClock(int64_t aDeltaMilliseconds)
 {

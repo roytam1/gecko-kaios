@@ -211,6 +211,22 @@ PowerManager::SetExtScreenBrightness(double aBrightness, ErrorResult& aRv)
   }
 }
 
+double
+PowerManager::KeyLightBrightness()
+{
+  return hal::GetKeyLightBrightness();
+}
+
+void
+PowerManager::SetKeyLightBrightness(double aBrightness, ErrorResult& aRv)
+{
+  if (0 <= aBrightness && aBrightness <= 1) {
+    hal::SetKeyLightBrightness(aBrightness);
+  } else {
+    aRv.Throw(NS_ERROR_INVALID_ARG);
+  }
+}
+
 bool
 PowerManager::CpuSleepAllowed()
 {

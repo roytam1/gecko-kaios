@@ -58,6 +58,8 @@ public:
   void SetScreenBrightness(double aBrightness, ErrorResult& aRv);
   double ExtScreenBrightness();
   void SetExtScreenBrightness(double aBrightness, ErrorResult& aRv);
+  double KeyLightBrightness();
+  void SetKeyLightBrightness(double aBrightness, ErrorResult& aRv);
   bool CpuSleepAllowed();
   void SetCpuSleepAllowed(bool aAllowed);
 

@@ -217,6 +217,15 @@ double GetScreenBrightness();
 double GetExtScreenBrightness();
 
 /**
+ * Get the brightness of the device's keypad's backlight,
+ * on a scale from 0 (very dim) to 1 (full blast).
+ *
+ * When the keypad is off, the brightness could be set to 0.
+ * But this always returns the brightness of keypad when it is on.
+ */
+double GetKeyLightBrightness();
+
+/**
  * Set the brightness of the device's screen's backlight, on a scale from 0
  * (very dimm) to 1 (full blast).  Values larger than 1 are treated like 1, and
  * values smaller than 0 are treated like 0.
@@ -233,6 +242,12 @@ void SetScreenBrightness(double aBrightness);
  * on a scale from 0 (very dimm) to 1 (full blast).
  */
 void SetExtScreenBrightness(double aBrightness);
+
+/**
+ * Set the brightness of the device's keypad's backlight,
+ * on a scale from 0 (very dimm) to 1 (full blast).
+ */
+void SetKeyLightBrightness(double aBrightness);
 
 /**
  * Determine whether the device is allowed to sleep.

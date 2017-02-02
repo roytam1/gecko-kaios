@@ -577,6 +577,18 @@ void SetExtScreenBrightness(double aBrightness)
   PROXY_IF_SANDBOXED(SetExtScreenBrightness(clamped(aBrightness, 0.0, 1.0)));
 }
 
+double GetKeyLightBrightness()
+{
+  AssertMainThread();
+  RETURN_PROXY_IF_SANDBOXED(GetKeyLightBrightness(), 0);
+}
+
+void SetKeyLightBrightness(double aBrightness)
+{
+  AssertMainThread();
+  PROXY_IF_SANDBOXED(SetKeyLightBrightness(clamped(aBrightness, 0.0, 1.0)));
+}
+
 class SystemClockChangeObserversManager : public ObserversManager<int64_t>
 {
 protected:

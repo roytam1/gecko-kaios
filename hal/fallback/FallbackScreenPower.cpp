@@ -57,5 +57,15 @@ void
 SetExtScreenBrightness(double aBrightness)
 {}
 
+double
+GetKeyLightBrightness()
+{
+  return 1;
+}
+
+void
+SetKeyLightBrightness(double aBrightness)
+{}
+
 } // namespace hal_impl
 } // namespace mozilla

@@ -105,6 +105,16 @@ interface MozPowerManager
     attribute double extScreenBrightness;
 
     /**
+     * How bright is the keypad's backlight, on a scale
+     * from 0 (very dim) to 1 (full brightness)?
+     * Setting this attribute modifies keypad's brightness.
+     *
+     * @throw NS_ERROR_INVALID_ARG if brightness is not in the range [0, 1].
+     */
+    [SetterThrows]
+    attribute double keyLightBrightness;
+
+    /**
      * Is it possible that the device's CPU will sleep after the screen is
      * disabled?  Setting this attribute to false will prevent the device
      * entering suspend state.

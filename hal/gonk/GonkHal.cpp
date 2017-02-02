@@ -1001,6 +1001,11 @@ SetExtScreenBrightness(double brightness)
   SetLight(eHalLightID_ExtBacklight, config);
 }
 
+static int
+GetKeyLightMaxBrightness(){
+  return Preferences::GetInt("device.keypad.max_brightness", 255);
+}
+
 bool
 GetKeyLightEnabled()
 {
@@ -1022,16 +1027,63 @@ SetKeyLightEnabled(bool aEnabled)
   config.color = 0x00000000;
 
   if (aEnabled) {
-    // Convert the value in [0, 1] to an int between 0 and 255 and then convert
-    // it to a color. Note that the high byte is FF, corresponding to the alpha
-    // channel.
+    // Convert the value in [0, 1] to an int between 0 and KeyLightMaxBrightness
+    // and then convert it to a color. Note that the high byte is FF,
+    // corresponding to the alpha channel.
     double brightness = GetScreenBrightness();
-    uint32_t val = static_cast<int>(round(brightness * 255.0));
+    uint32_t val =
+      static_cast<int>(round(brightness * GetKeyLightMaxBrightness()));
     uint32_t color = (0xff<<24) + (val<<16) + (val<<8) + val;
 
     config.color = color;
   }
 
+  SetLight(eHalLightID_Buttons, config);
+  SetLight(eHalLightID_Keyboard, config);
+}
+
+double
+GetKeyLightBrightness()
+{
+  LightConfiguration config;
+  LightType light = eHalLightID_Buttons;
+
+  GetLight(light, &config);
+  // backlight is brightness only, so using one of the RGB elements as value.
+  int brightness = config.color & 0xFF;
+
+  return brightness / GetKeyLightMaxBrightness();
+}
+
+void
+SetKeyLightBrightness(double brightness)
+{
+  if(!GetKeyLightEnabled()) {
+    return;
+  }
+
+  // Don't use De Morgan's law to push the ! into this expression; we want to
+  // catch NaN too.
+  if (!(0 <= brightness && brightness <= 1)) {
+    HAL_LOG("SetKeyLightBrightness: Dropping illegal brightness %f.", brightness);
+    return;
+  }
+
+  // Convert the value in [0, 1] to an int between 0 and KeyLightMaxBrightness
+  // and convert to a color note that the high byte is FF, corresponding to the
+  // alpha channel.
+  uint32_t val =
+    static_cast<int>(round(brightness * GetKeyLightMaxBrightness()));
+  uint32_t color = (0xff<<24) + (val<<16) + (val<<8) + val;
+
+  LightConfiguration config;
+  config.mode = eHalLightMode_User;
+  config.flash = eHalLightFlash_None;
+  config.flashOnMS = config.flashOffMS = 0;
+  config.color = color;
+
+  // FIXME: here we assume the max brightness of buttons and keyboard are the
+  // same, need to add extra preference if they are different.
   SetLight(eHalLightID_Buttons, config);
   SetLight(eHalLightID_Keyboard, config);
 }
