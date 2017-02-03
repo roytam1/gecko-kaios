@@ -408,6 +408,12 @@ def main():
                 precompile_cache(formatter.copier[omnijar_path],
                                  args.source, gre_path, base)
 
+    # Put repo information to device
+    repo_info = 'repo_info.txt'
+    if os.path.exists(os.path.join(args.source, repo_info)):
+        copier.add(os.path.join(respath, repo_info),
+                   File(os.path.join(args.source, repo_info)))
+
     copier.copy(args.destination)
 
 
