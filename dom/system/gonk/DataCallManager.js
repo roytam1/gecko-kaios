@@ -244,9 +244,10 @@ DataCallManager.prototype = {
       oldSettings.enabled = false;
     }
 
-    oldConnHandler.deactivateDataCallsAndWait().then(() => {
-      applyPendingDataSettings();
-    });
+    oldConnHandler.deactivateDataCallsAndWait(RIL.DATACALL_DEACTIVATE_SERVICEID_CHANGED)
+      .then(() => {
+        applyPendingDataSettings();
+      });
   },
 
   _shutdown: function() {
@@ -554,11 +555,12 @@ DataCallHandler.prototype = {
     return true;
   },
 
-  deactivateDataCallsAndWait: function() {
+  deactivateDataCallsAndWait: function(aReason) {
     return new Promise((aResolve, aReject) => {
-      this.deactivateDataCalls({
-        notifyDataCallsDisconnected: function() {
-          aResolve();
+      this.deactivateDataCalls(aReason,
+        {
+          notifyDataCallsDisconnected: function() {
+            aResolve();
         }
       });
     });
@@ -575,7 +577,7 @@ DataCallHandler.prototype = {
     }
 
     this._pendingApnSettings = aNewApnSettings;
-    this.deactivateDataCallsAndWait().then(() => {
+    this.deactivateDataCallsAndWait(RIL.DATACALL_DEACTIVATE_APN_CHANGED).then(() => {
       this._setupApnSettings(this._pendingApnSettings);
       this._pendingApnSettings = null;
       this.updateRILNetworkInterface();
@@ -762,7 +764,7 @@ DataCallHandler.prototype = {
 
   _deactivatingDataCalls: false,
 
-  deactivateDataCalls: function(aCallback) {
+  deactivateDataCalls: function(aReason, aCallback) {
     let dataDisconnecting = false;
     this.dataNetworkInterfaces.forEach(function(networkInterface) {
       if (networkInterface.enabled) {
@@ -770,7 +772,7 @@ DataCallHandler.prototype = {
             networkInterface.info.state != NETWORK_STATE_DISCONNECTED) {
           dataDisconnecting = true;
         }
-        networkInterface.disconnect();
+        networkInterface.disconnect(aReason);
       }
     });
 
@@ -1076,6 +1078,7 @@ DataCall.prototype = {
       if (aDataCall.suggestedRetryTime === INT32_MAX ||
           this.isPermanentFail(aDataCall.failCause, errorMsg)) {
         if (DEBUG) this.debug("Data call error: no retry needed.");
+        this.notifyInterfacesWithReason(RIL.DATACALL_PERMANENT_FAILURE);
         return;
       }
 
@@ -1392,6 +1395,7 @@ DataCall.prototype = {
       this.apnRetryCounter = 0;
       this.timer = null;
       if (DEBUG) this.debug("Too many APN Connection retries - STOP retrying");
+      this.notifyInterfacesWithReason(RIL.DATACALL_RETRY_FAILED);
       return;
     }
 
@@ -1491,6 +1495,14 @@ DataCall.prototype = {
       this.timer.cancel();
       this.timer = null;
     }
+  },
+
+  notifyInterfacesWithReason: function(aReason) {
+    for (let i = 0; i < this.requestedNetworkIfaces.length; i++) {
+      let networkInterface = this.requestedNetworkIfaces[i];
+      networkInterface.info.setReason(aReason);
+      networkInterface.notifyRILNetworkInterface();
+    }
   }
 };
 
@@ -1498,6 +1510,7 @@ function RILNetworkInfo(aClientId, aType, aNetworkInterface)
 {
   this.serviceId = aClientId;
   this.type = aType;
+  this.reason = Ci.nsINetworkInfo.REASON_NONE;
 
   this.networkInterface = aNetworkInterface;
 }
@@ -1621,6 +1634,8 @@ RILNetworkInfo.prototype = {
     return this.getApnSetting().mmsport || -1;
   },
 
+  reason: null,
+
   getPcscf: function(aCount) {
     if (this.type != NETWORK_TYPE_MOBILE_IMS) {
       if (DEBUG) this.debug("Error! Only IMS network can get pcscf.");
@@ -1633,6 +1648,10 @@ RILNetworkInfo.prototype = {
       aCount.value = linkInfo.pcscf.length;
     }
     return linkInfo.pcscf.slice();
+  },
+
+  setReason: function(aReason) {
+    this.reason = aReason;
   },
 };
 
@@ -1696,7 +1715,7 @@ RILNetworkInterface.prototype = {
   notifyRILNetworkInterface: function() {
     if (DEBUG) {
       this.debug("notifyRILNetworkInterface type: " + this.info.type +
-                 ", state: " + this.info.state);
+                 ", state: " + this.info.state + ", reason: " + this.info.reason);
     }
 
     gNetworkManager.updateNetworkInterface(this);
@@ -1704,15 +1723,17 @@ RILNetworkInterface.prototype = {
 
   connect: function() {
     this.enabled = true;
+    this.info.setReason(Ci.nsINetworkInfo.REASON_NONE);
 
     this.dataCall.connect(this);
   },
 
-  disconnect: function() {
+  disconnect: function(aReason = Ci.nsINetworkInfo.REASON_NONE) {
     if (!this.enabled) {
       return;
     }
     this.enabled = false;
+    this.info.setReason(aReason);
 
     this.dataCall.disconnect(this);
   },

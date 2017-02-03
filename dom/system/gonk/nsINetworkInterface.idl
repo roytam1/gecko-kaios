@@ -23,6 +23,19 @@ interface nsINetworkInfo : nsISupports
    */
   readonly attribute long state;
 
+  const long REASON_NONE              = 0;
+  const long REASON_RADIO_SHUTDOWN    = 1;
+  const long REASON_APN_CHANGED       = 2;
+  const long REASON_SERVICEID_CHANGED = 3;
+  const long REASON_RETRY_FAILED      = 4;
+  const long REASON_PERMANENT_FAILURE = 5;
+
+  /*
+   * Additional information to describe the current state, if available. One of
+   * the REASON_* constants.
+   */
+  readonly attribute long reason;
+
   const long NETWORK_TYPE_UNKNOWN     = -1;
   const long NETWORK_TYPE_WIFI        = 0;
   const long NETWORK_TYPE_MOBILE      = 1;

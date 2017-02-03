@@ -55,10 +55,12 @@ interface nsIDataCallHandler : nsISupports
   /**
    * Deactivate all data calls.
    *
+   * @param reason
+   *        The deactivate reason. One of the nsINetworkInfo.REASON_* values.
    * @param callback
    *        Callback to notify when all data calls are disconnected.
    */
-  void deactivateDataCalls(in nsIDeactivateDataCallsCallback callback);
+  void deactivateDataCalls(in long reason, in nsIDeactivateDataCallsCallback callback);
 
   /**
    * Called to reconsider data call state.

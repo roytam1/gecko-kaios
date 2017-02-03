@@ -62,7 +62,7 @@ XPCOMUtils.defineLazyGetter(this, "gDataCallHelper", function() {
           // implies the mobile network is no longer available. We'll set state
           // as 'unavailable' and block all subsequent requests to the DataCall.
           if (aReason !== undefined &&
-              aReason !== Ci.nsINetworkInterface.REASON_NONE) {
+              aReason !== Ci.nsINetworkInfo.REASON_NONE) {
             return "unavailable";
           }
           return "disconnected";

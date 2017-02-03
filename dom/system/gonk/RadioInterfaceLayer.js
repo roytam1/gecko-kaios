@@ -316,7 +316,7 @@ XPCOMUtils.defineLazyGetter(this, "gRadioEnabledController", function() {
         let deferred = _deactivatingDeferred[clientId] = Promise.defer();
         let dataCallHandler = gDataCallManager.getDataCallHandler(clientId);
 
-        dataCallHandler.deactivateDataCalls(function() {
+        dataCallHandler.deactivateDataCalls(RIL.DATACALL_DEACTIVATE_RADIO_SHUTDOWN, function() {
           deferred.resolve();
         });
 
