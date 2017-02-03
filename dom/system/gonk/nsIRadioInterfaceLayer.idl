@@ -21,8 +21,8 @@ interface nsIRadioInterface : nsISupports
    * PDP APIs
    *
    * @param networkType
-   *        Mobile network type, that is, nsINetworkInterface.NETWORK_TYPE_MOBILE
-   *        or one of the nsINetworkInterface.NETWORK_TYPE_MOBILE_* values.
+   *        Mobile network type, that is, nsINetworkInfo.NETWORK_TYPE_MOBILE
+   *        or one of the nsINetworkInfo.NETWORK_TYPE_MOBILE_* values.
    */
   void setupDataCallByType(in long networkType);
   void deactivateDataCallByType(in long networkType);

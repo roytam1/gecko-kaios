@@ -16,7 +16,7 @@ const NETWORKMANAGER_CONTRACTID = "@mozilla.org/network/manager;1";
 const NETWORKMANAGER_CID =
   Components.ID("{1ba9346b-53b5-4660-9dc6-58f0b258d0a6}");
 
-const DEFAULT_PREFERRED_NETWORK_TYPE = Ci.nsINetworkInterface.NETWORK_TYPE_ETHERNET;
+const DEFAULT_PREFERRED_NETWORK_TYPE = Ci.nsINetworkInfo.NETWORK_TYPE_ETHERNET;
 
 XPCOMUtils.defineLazyGetter(this, "ppmm", function() {
   return Cc["@mozilla.org/parentprocessmessagemanager;1"]
@@ -607,9 +607,9 @@ NetworkManager.prototype = {
 
   networkInterfaceLinks: null,
 
-  _networkTypePriorityList: [Ci.nsINetworkInterface.NETWORK_TYPE_ETHERNET,
-                             Ci.nsINetworkInterface.NETWORK_TYPE_WIFI,
-                             Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE],
+  _networkTypePriorityList: [Ci.nsINetworkInfo.NETWORK_TYPE_ETHERNET,
+                             Ci.nsINetworkInfo.NETWORK_TYPE_WIFI,
+                             Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE],
   get networkTypePriorityList() {
     return this._networkTypePriorityList;
   },
@@ -621,9 +621,9 @@ NetworkManager.prototype = {
 
     // Check if types in new priority list are valid and also make sure there
     // are no duplicate types.
-    let list = [Ci.nsINetworkInterface.NETWORK_TYPE_ETHERNET,
-                Ci.nsINetworkInterface.NETWORK_TYPE_WIFI,
-                Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE];
+    let list = [Ci.nsINetworkInfo.NETWORK_TYPE_ETHERNET,
+                Ci.nsINetworkInfo.NETWORK_TYPE_WIFI,
+                Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE];
     while (list.length) {
       let type = list.shift();
       if (val.indexOf(type) == -1) {
@@ -661,9 +661,9 @@ NetworkManager.prototype = {
     return this._preferredNetworkType;
   },
   set preferredNetworkType(val) {
-    if ([Ci.nsINetworkInterface.NETWORK_TYPE_WIFI,
-         Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE,
-         Ci.nsINetworkInterface.NETWORK_TYPE_ETHERNET].indexOf(val) == -1) {
+    if ([Ci.nsINetworkInfo.NETWORK_TYPE_WIFI,
+         Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE,
+         Ci.nsINetworkInfo.NETWORK_TYPE_ETHERNET].indexOf(val) == -1) {
       throw "Invalid network type";
     }
     this._preferredNetworkType = val;
@@ -678,9 +678,9 @@ NetworkManager.prototype = {
   _overriddenActive: null,
 
   overrideActive: function(network) {
-    if ([Ci.nsINetworkInterface.NETWORK_TYPE_WIFI,
-         Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE,
-         Ci.nsINetworkInterface.NETWORK_TYPE_ETHERNET].indexOf(val) == -1) {
+    if ([Ci.nsINetworkInfo.NETWORK_TYPE_WIFI,
+         Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE,
+         Ci.nsINetworkInfo.NETWORK_TYPE_ETHERNET].indexOf(val) == -1) {
       throw "Invalid network type";
     }
 
@@ -1089,9 +1089,9 @@ NetworkManager.prototype = {
     // If there is internal interface change (e.g., MOBILE_MMS, MOBILE_SUPL),
     // the function will return null so that it won't trigger type change event
     // in NetworkInformation API.
-    if (aNetworkInfo.type != Ci.nsINetworkInterface.NETWORK_TYPE_WIFI &&
-        aNetworkInfo.type != Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE &&
-        aNetworkInfo.type != Ci.nsINetworkInterface.NETWORK_TYPE_ETHERNET) {
+    if (aNetworkInfo.type != Ci.nsINetworkInfo.NETWORK_TYPE_WIFI &&
+        aNetworkInfo.type != Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE &&
+        aNetworkInfo.type != Ci.nsINetworkInfo.NETWORK_TYPE_ETHERNET) {
       return null;
     }
 
@@ -1104,7 +1104,7 @@ NetworkManager.prototype = {
         return CONNECTION_TYPE_WIFI;
       case Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE:
         return CONNECTION_TYPE_CELLULAR;
-      case Ci.nsINetworkInterface.NETWORK_TYPE_ETHERNET:
+      case Ci.nsINetworkInfo.NETWORK_TYPE_ETHERNET:
         return CONNECTION_TYPE_ETHERNET;
     }
   },
@@ -1211,7 +1211,7 @@ NetworkManager.prototype = {
   },
 
   requestClat: function(network) {
-    let connected = (network.state == Ci.nsINetworkInterface.NETWORK_STATE_CONNECTED);
+    let connected = (network.state == Ci.nsINetworkInfo.NETWORK_STATE_CONNECTED);
     if (!connected) {
       return Promise.resolve(false);
     }

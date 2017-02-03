@@ -51,13 +51,13 @@ XPCOMUtils.defineLazyGetter(this, "gDataCallHelper", function() {
     // Should match with enum DataCallState in DataCallManager webidl.
     convertToDataCallState: function(aState, aReason) {
       switch (aState) {
-        case Ci.nsINetworkInterface.NETWORK_STATE_CONNECTING:
+        case Ci.nsINetworkInfo.NETWORK_STATE_CONNECTING_CONNECTING:
           return "connecting";
-        case Ci.nsINetworkInterface.NETWORK_STATE_CONNECTED:
+        case Ci.nsINetworkInfo.NETWORK_STATE_CONNECTING_CONNECTED:
           return "connected";
-        case Ci.nsINetworkInterface.NETWORK_STATE_DISCONNECTING:
+        case Ci.nsINetworkInfo.NETWORK_STATE_CONNECTING_DISCONNECTING:
           return "disconnecting";
-        case Ci.nsINetworkInterface.NETWORK_STATE_DISCONNECTED:
+        case Ci.nsINetworkInfo.NETWORK_STATE_CONNECTING_DISCONNECTED:
           // If state is DISCONNECTED and reason is other than REASON_NONE,
           // implies the mobile network is no longer available. We'll set state
           // as 'unavailable' and block all subsequent requests to the DataCall.
@@ -74,15 +74,15 @@ XPCOMUtils.defineLazyGetter(this, "gDataCallHelper", function() {
     // Should match with enum DataCallType in DataCallManager webidl.
     convertToDataCallType: function(aNetworkType) {
       switch (aNetworkType) {
-        case Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE_MMS:
+        case Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_MMS:
           return "mms";
-        case Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE_SUPL:
+        case Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_SUPL:
           return "supl";
-        case Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE_IMS:
+        case Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_IMS:
           return "ims";
-        case Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE_DUN:
+        case Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_DUN:
           return "dun";
-        case Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE_FOTA:
+        case Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_FOTA:
           return "fota";
         default:
           return "unknown";
@@ -92,17 +92,17 @@ XPCOMUtils.defineLazyGetter(this, "gDataCallHelper", function() {
     convertToNetworkType: function(aType) {
       switch (aType) {
         case "mms":
-          return Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE_MMS;
+          return Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_MMS;
         case "supl":
-          return Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE_SUPL;
+          return Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_SUPL;
         case "ims":
-          return Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE_IMS;
+          return Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_IMS;
         case "dun":
-          return Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE_DUN;
+          return Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_DUN;
         case "fota":
-          return Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE_FOTA;
+          return Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_FOTA;
         default:
-          return Ci.nsINetworkInterface.NETWORK_TYPE_UNKNOWN;
+          return Ci.nsINetworkInfo.NETWORK_TYPE_UNKNOWN;
       }
     },
   };
@@ -225,7 +225,7 @@ DOMDataCallManager.prototype = {
 
     return this.createPromise((aResolve, aReject) => {
       let networkType = gDataCallHelper.convertToNetworkType(aType);
-      if (networkType == Ci.nsINetworkInterface.NETWORK_TYPE_UNKNOWN) {
+      if (networkType == Ci.nsINetworkInfo.NETWORK_TYPE_UNKNOWN) {
         aReject("Invalid data call type.");
         return;
       }
@@ -249,7 +249,7 @@ DOMDataCallManager.prototype = {
 
     return this.createPromise((aResolve, aReject) => {
       let networkType = gDataCallHelper.convertToNetworkType(aType);
-      if (networkType == Ci.nsINetworkInterface.NETWORK_TYPE_UNKNOWN) {
+      if (networkType == Ci.nsINetworkInfo.NETWORK_TYPE_UNKNOWN) {
         aReject("Invalid data call type.");
         return;
       }

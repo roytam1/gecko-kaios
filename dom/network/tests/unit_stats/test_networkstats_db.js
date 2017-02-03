@@ -41,8 +41,8 @@ function filterTimestamp(date) {
 }
 
 function getNetworks() {
-  return [{ id: '0', type: Ci.nsINetworkInterface.NETWORK_TYPE_WIFI },
-          { id: '1234', type: Ci.nsINetworkInterface.NETWORK_TYPE_MOBILE }];
+  return [{ id: '0', type: Ci.nsINetworkInfo.NETWORK_TYPE_WIFI },
+          { id: '1234', type: Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE }];
 }
 
 function compareNetworks(networkA, networkB) {
