@@ -169,7 +169,10 @@ Components.utils.import('resource://gre/modules/ctypes.jsm');
 
     let build_type = libcutils.property_get('ro.build.type');
     if (build_type === 'eng' || build_type === 'userdebug') {
-      os_version += ' {' + libcutils.property_get('ro.build.kaios_uid').slice(0,7) + '}';
+      let kaios_uid = libcutils.property_get('ro.build.kaios_uid');
+      if (kaios_uid && kaios_uid.length != 0) {
+        os_version += ' {' + kaios_uid.slice(0,7) + '}';
+      }
     }
   }
 
