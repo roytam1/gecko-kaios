@@ -90,13 +90,14 @@ function defineLazyRegExp(obj, name, pattern) {
 }
 
 function ExtraNetworkInfo(aNetwork) {
+  let ips_length;
   let ips = {};
   let prefixLengths = {};
-  aNetwork.info.getAddresses(ips, prefixLengths);
 
   this.state = aNetwork.info.state;
   this.type = aNetwork.info.type;
   this.name = aNetwork.info.name;
+  this.ips_length = aNetwork.info.getAddresses(ips, prefixLengths);
   this.ips = ips.value;
   this.prefixLengths = prefixLengths.value;
   this.gateways = aNetwork.info.getGateways();
@@ -390,21 +391,13 @@ NetworkManager.prototype = {
       return true;
     }
 
-    let pre_ips = {};
-    let pre_prefixLengths = {};
-    let new_ips = {};
-    let new_prefixLengths = {};
-
-    let pre_length = preIface.getAddresses(pre_ips, pre_prefixLengths);
-    let new_length = newIface.getAddresses(new_ips, new_prefixLengths);
-
     // Check if IP changes.
-    if (pre_length != new_length) {
+    if (preIface.ips_length != newIface.ips_length) {
       return true;
     }
 
-    pre_ips.value.forEach((aIpAddress) => {
-      if (new_ips.value.indexOf(aIpAddress) == -1) {
+    preIface.ips.forEach((aIpAddress) => {
+      if (newIface.ips.indexOf(aIpAddress) == -1) {
         return true;
       }
     });
