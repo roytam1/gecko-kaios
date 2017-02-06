@@ -206,6 +206,13 @@ MozInputMethodManager.prototype = {
     cpmmSendAsyncMessageWithKbID(this, 'Keyboard:SwitchToNextInputMethod', {});
   },
 
+  previous: function() {
+    if (!WindowMap.isActive(this._window)) {
+      return;
+    }
+    cpmmSendAsyncMessageWithKbID(this, 'Keyboard:SwitchToPreviousInputMethod', {});
+  },
+
   supportsSwitching: function() {
     if (!WindowMap.isActive(this._window)) {
       return false;
@@ -429,6 +436,7 @@ MozInputMethod.prototype = {
     cpmm.addWeakMessageListener('Keyboard:Focus', this);
     cpmm.addWeakMessageListener('Keyboard:Blur', this);
     cpmm.addWeakMessageListener('Keyboard:SelectionChange', this);
+    cpmm.addWeakMessageListener('Keyboard:SendHardwareKeyEvent', this);
     cpmm.addWeakMessageListener('Keyboard:GetContext:Result:OK', this);
     cpmm.addWeakMessageListener('Keyboard:SupportsSwitchingTypesChange', this);
     cpmm.addWeakMessageListener('InputRegistry:Result:OK', this);
@@ -453,6 +461,7 @@ MozInputMethod.prototype = {
     cpmm.removeWeakMessageListener('Keyboard:Focus', this);
     cpmm.removeWeakMessageListener('Keyboard:Blur', this);
     cpmm.removeWeakMessageListener('Keyboard:SelectionChange', this);
+    cpmm.removeWeakMessageListener('Keyboard:SendHardwareKeyEvent', this);
     cpmm.removeWeakMessageListener('Keyboard:GetContext:Result:OK', this);
     cpmm.removeWeakMessageListener('Keyboard:SupportsSwitchingTypesChange', this);
     cpmm.removeWeakMessageListener('InputRegistry:Result:OK', this);
@@ -473,8 +482,10 @@ MozInputMethod.prototype = {
   },
 
   receiveMessage: function mozInputMethodReceiveMsg(msg) {
+    let forceHandleMessage = msg.name === 'Keyboard:SendHardwareKeyEvent';
     if (msg.name.startsWith('Keyboard') &&
-        !WindowMap.isActive(this._window)) {
+        !WindowMap.isActive(this._window) &&
+        !forceHandleMessage) {
       return;
     }
 
@@ -501,6 +512,18 @@ MozInputMethod.prototype = {
         if (this.inputcontext) {
           this._inputcontext.updateSelectionContext(data, false);
         }
+        break;
+      case 'Keyboard:SendHardwareKeyEvent':
+        let defaultPrevented = false;
+        if (this._inputcontext) {
+          defaultPrevented = this._inputcontext.processKeyboardEvent(data);
+        }
+
+        cpmmSendAsyncMessageWithKbID(this, 'Keyboard:ReplyHardwareKeyEvent', {
+          preventDefaulted: defaultPrevented,
+          eventType: data.eventType,
+          generation: data.generation
+        });
         break;
       case 'Keyboard:GetContext:Result:OK':
         this.setInputContext(data);
@@ -676,6 +699,11 @@ MozInputMethod.prototype = {
     cpmm.sendAsyncMessage('System:RemoveFocus', {});
   },
 
+  clearAll: function () {
+    this._ensureIsSystem();
+    cpmm.sendAsyncMessage('System:ClearAll', {});
+  },
+
   _hasInputManagePerm: function(win) {
     let principal = win.document.nodePrincipal;
     let perm = Services.perms.testExactPermissionFromPrincipal(principal,
@@ -794,6 +822,7 @@ function MozInputContext(data) {
     inputType: data.inputType,
     inputMode: data.inputMode,
     lang: data.lang,
+    isFromApp: data.isFromApp,
     selectionStart: data.selectionStart,
     selectionEnd: data.selectionEnd,
     text: data.value
@@ -931,6 +960,27 @@ MozInputContext.prototype = {
     }
   },
 
+  processKeyboardEvent: function ic_processKeyboardEvent(evt) {
+    if (!this._context) {
+      return false;
+    }
+    let detail = {
+      keyCode: evt.keyCode,
+      charCode: evt.charCode,
+      key: evt.key,
+      timeStamp: evt.timeStamp
+    };
+    var event = new this._window.CustomEvent(evt.eventType,
+      Cu.cloneInto({
+        cancelable: true,
+        detail
+      }, this._window));
+    if (event) {
+      this.__DOM_IMPL__.dispatchEvent(event);
+    }
+    return event.defaultPrevented;
+  },
+
   // tag name of the input field
   get type() {
     return this._context.type;
@@ -947,6 +997,10 @@ MozInputContext.prototype = {
 
   get lang() {
     return this._context.lang;
+  },
+
+  get isFromApp() {
+    return this._context.isFromApp;
   },
 
   getText: function ic_getText(offset, length) {

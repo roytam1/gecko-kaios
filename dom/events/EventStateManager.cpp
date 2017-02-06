@@ -2825,6 +2825,14 @@ NodeAllowsClickThrough(nsINode* aNode)
 #endif
 
 void
+EventStateManager::InjectCurrentTargetContent(nsIContent* aTargetContent)
+{
+  NS_ENSURE_TRUE_VOID(aTargetContent);
+
+  mCurrentTargetContent = aTargetContent;
+}
+
+void
 EventStateManager::PostHandleKeyboardEvent(WidgetKeyboardEvent* aKeyboardEvent,
                                            nsEventStatus& aStatus,
                                            bool dispatchedToContentProcess)

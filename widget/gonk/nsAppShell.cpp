@@ -243,7 +243,8 @@ private:
 
     void DispatchKeyDownEvent();
     void DispatchKeyUpEvent();
-    nsEventStatus DispatchKeyEventInternal(EventMessage aEventMessage);
+    nsEventStatus DispatchKeyEventInternal(EventMessage aEventMessage,
+                                           bool* aHandledByIME = nullptr);
 };
 
 KeyEventDispatcher::KeyEventDispatcher(const UserInputData& aData,
@@ -295,7 +296,8 @@ KeyEventDispatcher::PrintableKeyValue() const
 }
 
 nsEventStatus
-KeyEventDispatcher::DispatchKeyEventInternal(EventMessage aEventMessage)
+KeyEventDispatcher::DispatchKeyEventInternal(EventMessage aEventMessage,
+                                             bool* aHandledByIME)
 {
     WidgetKeyboardEvent event(true, aEventMessage, nullptr);
     if (aEventMessage == eKeyPress) {
@@ -316,7 +318,14 @@ KeyEventDispatcher::DispatchKeyEventInternal(EventMessage aEventMessage)
     event.mModifiers = getDOMModifiers(mData.metaState);
     event.location = mDOMKeyLocation;
     event.mTime = mData.timeMs;
-    return nsWindow::DispatchKeyInput(event);
+
+    nsEventStatus status =
+      nsWindow::DispatchKeyInput(event);
+
+    if (aHandledByIME) {
+      *aHandledByIME = event.mFlags.mHandledByIME;
+    }
+    return status;
 }
 
 void
@@ -347,8 +356,9 @@ KeyEventDispatcher::Dispatch()
 void
 KeyEventDispatcher::DispatchKeyDownEvent()
 {
-    nsEventStatus status = DispatchKeyEventInternal(eKeyDown);
-    if (status != nsEventStatus_eConsumeNoDefault) {
+    bool handledByIME;
+    nsEventStatus status = DispatchKeyEventInternal(eKeyDown, &handledByIME);
+    if (status != nsEventStatus_eConsumeNoDefault || handledByIME) {
         DispatchKeyEventInternal(eKeyPress);
     }
 }
@@ -1240,7 +1250,7 @@ nsAppShell::CheckPowerKey()
     // If Power is pressed while we startup, mark safe mode.
     // Consumers of the b2g.safe_mode preference need to listen on this
     // preference change to prevent startup races.
-    nsCOMPtr<nsIRunnable> prefSetter = 
+    nsCOMPtr<nsIRunnable> prefSetter =
     NS_NewRunnableFunction([powerState] () -> void {
         Preferences::SetCString("b2g.safe_mode",
                                 (powerState == AKEY_STATE_DOWN) ? "yes" : "no");

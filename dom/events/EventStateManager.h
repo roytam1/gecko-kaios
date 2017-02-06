@@ -98,6 +98,24 @@ public:
                           nsIContent* aTargetContent,
                           nsEventStatus* aStatus);
 
+  /* This is created for the feature - relay keyboard event to Keyboard App for
+   * further processing before dispatching it.
+   *
+   * The original event flow would be preHandleEvent, DispatchToDOM and Post-
+   * HandleEvent. Because the reply from Keyboard App is asynchronous and the
+   * event is now being dispatched according to that reply, we skip the works
+   * in PostHandleEvent by setting the event status to nsEventStatus_
+   * eConsumeNoDefault. After receiving the reply from Keyboard App, we'll
+   * finish what we have skipped previously.
+   *
+   * In the case of keyboard event, Content of current event target will be set
+   * in PreHandleEvent and cleared in PostHandleEvent. Due to the change above,
+   * target content will be cleared in the first run of PostHandleEvent. When we
+   * receive the reply from Keyboard App and want to re-process PostHandleEvent,
+   * this function is used to set the target content back.
+   */
+  void InjectCurrentTargetContent(nsIContent* aTargetContent);
+
   /* The PostHandleEvent method should contain all system processing which
    * should occur conditionally based on DOM or frame processing.  It should
    * also contain any centralized event processing which must occur after

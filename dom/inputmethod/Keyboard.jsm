@@ -23,6 +23,12 @@ XPCOMUtils.defineLazyGetter(this, "appsService", function() {
   return Cc["@mozilla.org/AppsService;1"].getService(Ci.nsIAppsService);
 });
 
+XPCOMUtils.defineLazyGetter(this, "KeyboardAppProxy", function() {
+  return Cc["@acadine.com/keyboardAppProxy;1"].getService(
+    Ci.nsIKeyboardAppProxy);
+});
+
+
 var Utils = {
   getMMFromMessage: function u_getMMFromMessage(msg) {
     let mm;
@@ -50,16 +56,18 @@ this.Keyboard = {
   _supportsSwitchingTypes: [],
   _systemMessageNames: [
     'SetValue', 'RemoveFocus', 'SetSelectedOption', 'SetSelectedOptions',
-    'SetSupportsSwitchingTypes', 'RegisterSync', 'Unregister'
+    'SetSupportsSwitchingTypes', 'RegisterSync', 'Unregister',
+    'ClearAll'
   ],
 
   _messageNames: [
     'RemoveFocus',
     'SetSelectionRange', 'ReplaceSurroundingText', 'ShowInputMethodPicker',
-    'SwitchToNextInputMethod', 'HideInputMethod',
+    'SwitchToNextInputMethod', 'SwitchToPreviousInputMethod', 'HideInputMethod',
     'SendKey', 'GetContext',
     'SetComposition', 'EndComposition',
-    'RegisterSync', 'Unregister'
+    'RegisterSync', 'Unregister',
+    'ReplyHardwareKeyEvent'
   ],
 
   get formMM() {
@@ -120,6 +128,21 @@ this.Keyboard = {
     }
 
     this.inputRegistryGlue = new InputRegistryGlue();
+
+    KeyboardAppProxy.keyboardEventForwarder(
+      this._onKeyboardEventReceived.bind(this));
+  },
+
+  _onKeyboardEventReceived: function _onKeyboardEventReceived(
+    eventType, keyCode, charCode, key, timeStamp, generation) {
+    this.sendToKeyboard('Keyboard:SendHardwareKeyEvent', {
+      eventType: eventType,
+      keyCode: keyCode,
+      charCode: charCode,
+      key: key,
+      timeStamp: timeStamp,
+      generation: generation
+    });
   },
 
   observe: function keyboardObserve(subject, topic, data) {
@@ -134,7 +157,7 @@ this.Keyboard = {
     }
 
     if (topic == 'oop-frameloader-crashed' ||
-	      topic == 'message-manager-close') {
+        topic == 'message-manager-close') {
       if (this.formMM == mm) {
         // The application has been closed unexpectingly. Let's tell the
         // keyboard app that the focus has been lost.
@@ -202,6 +225,15 @@ this.Keyboard = {
       }
     }
 
+    // We'd like to reply back the hardware key even if keyboard has destroyed.
+    // That says, if keyboard is unregisterd at keydown, we will still reply
+    // gecko the keyup of that key, and gecko will dispatch that keyup as usual.
+    if (msg.name === "Keyboard:ReplyHardwareKeyEvent") {
+      KeyboardAppProxy.replyKey(msg.data.eventType, msg.data.preventDefaulted,
+        msg.data.generation);
+      return;
+    }
+
     // we don't process kb messages (other than register)
     // if they come from a kb that we're currently not regsitered for.
     // this decision is made with the kbID kept by us and kb app
@@ -237,9 +269,11 @@ this.Keyboard = {
         let name = msg.name.replace(/^Forms/, 'Keyboard');
         this.forwardEvent(name, msg);
         break;
-
       case 'System:SetValue':
         this.setValue(msg);
+        break;
+      case 'System:ClearAll':
+        this.clearAll(msg);
         break;
       case 'Keyboard:RemoveFocus':
       case 'System:RemoveFocus':
@@ -281,6 +315,9 @@ this.Keyboard = {
       case 'Keyboard:SwitchToNextInputMethod':
         this.switchToNextInputMethod();
         break;
+      case 'Keyboard:SwitchToPreviousInputMethod':
+        this.switchToPreviousInputMethod();
+        break;
       case 'Keyboard:ShowInputMethodPicker':
         this.showInputMethodPicker();
         break;
@@ -297,6 +334,7 @@ this.Keyboard = {
         this.endComposition(msg);
         break;
       case 'Keyboard:RegisterSync':
+        KeyboardAppProxy.isIMEActive = true;
         this._keyboardMM = mm;
         if (kbID) {
           // keyboard identifies itself, use its kbID
@@ -312,6 +350,7 @@ this.Keyboard = {
         }
         break;
       case 'Keyboard:Unregister':
+        KeyboardAppProxy.isIMEActive = false;
         this._keyboardMM = null;
         this._keyboardID = -1;
         break;
@@ -323,6 +362,11 @@ this.Keyboard = {
     let mm = msg.target.QueryInterface(Ci.nsIFrameLoaderOwner)
                 .frameLoader.messageManager;
     this.formMM = mm;
+
+    // Since focus element is changed, to check whether this element
+    // is from an mozApp window or not.
+    let appManifest = msg.target.appManifestURL;
+    msg.data.isFromApp = appManifest !== '' ? true : false;
 
     // Notify the current active input app to gain focus.
     this.forwardEvent('Keyboard:Focus', msg);
@@ -353,6 +397,8 @@ this.Keyboard = {
       return;
     }
 
+    msg.data.isFromApp = null;
+
     // unset formMM
     this.formMM = null;
 
@@ -367,6 +413,11 @@ this.Keyboard = {
   },
 
   forwardEvent: function keyboardForwardEvent(newEventName, msg) {
+    if (newEventName === 'Keyboard:GetContext:Result:OK') {
+      let appManifest = msg.target.appManifestURL;
+      msg.data.isFromApp = appManifest !== '' ? true : false;
+    }
+
     this.sendToKeyboard(newEventName, msg.data);
   },
 
@@ -398,6 +449,10 @@ this.Keyboard = {
     this.sendToForm('Forms:ReplaceSurroundingText', msg.data);
   },
 
+  clearAll: function keyboardClearAll(msg) {
+    this.sendToForm('Forms:ClearAll', msg.data);
+  },
+
   showInputMethodPicker: function keyboardShowInputMethodPicker() {
     this.sendToSystem('System:ShowAll', {});
 
@@ -413,6 +468,12 @@ this.Keyboard = {
     // XXX: To be removed with mozContentEvent support from shell.js
     SystemAppProxy.dispatchEvent({
       type: "inputmethod-next"
+    });
+  },
+
+  switchToPreviousInputMethod: function keyboardSwitchToPreviousInputMethod() {
+    SystemAppProxy.dispatchEvent({
+      type: "inputmethod-previous"
     });
   },
 

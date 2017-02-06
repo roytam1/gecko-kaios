@@ -112,6 +112,10 @@ interface MozInputMethod : EventTarget {
    */
   [CheckAnyPermissions="input-manage"]
   void setSelectedOptions(sequence<long> indexes);
+
+  // Select and delete all editable content including selection|text|node.
+  [Throws]
+  void clearAll();
 };
 
 /**
@@ -136,6 +140,11 @@ interface MozInputMethodManager : EventTarget {
    */
   [CheckAllPermissions="input"]
   void next();
+
+  // Ask the OS to switch to previous Keyboard app.
+  // OS should ignore this request if the app is currently not the active one.
+  [CheckAllPermissions="input"]
+  void previous();
 
   /**
    * If this method returns true, it is recommended that the input app provides
@@ -344,6 +353,11 @@ interface MozInputContext: EventTarget {
    * See http://www.whatwg.org/specs/web-apps/current-work/multipage/elements.html#htmlelement
    */
   readonly attribute DOMString? lang;
+
+  /*
+   * Whether this inputcontext is from an mozApp or not.
+   */
+  readonly attribute boolean isFromApp;
 
   /**
    * Get the whole text content of the input field.

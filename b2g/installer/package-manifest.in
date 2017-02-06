@@ -671,6 +671,7 @@
 ; InputMethod API
 @RESPATH@/components/MozKeyboard.js
 @RESPATH@/components/InputMethod.manifest
+@RESPATH@/components/inputmethod.xpt
 
 @RESPATH@/components/EngineeringMode.manifest
 @RESPATH@/components/EngineeringModeAPI.js

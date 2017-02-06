@@ -767,6 +767,14 @@ TextInputProcessor::PrepareKeyboardEventToDispatch(
         aKeyboardEvent.mKeyNameIndex);
   }
 
+  if (aKeyFlags & KEY_FLAG_NOT_CROSS_PROCESS_BOUNDARY_FORWARDING) {
+    aKeyboardEvent.mFlags.mNoCrossProcessBoundaryForwarding = true;
+  }
+
+  if (aKeyFlags & KEY_FLAG_GENERATED_FROM_IME) {
+    aKeyboardEvent.mFlags.mGeneratedFromIME = true;
+  }
+
   return NS_OK;
 }
 

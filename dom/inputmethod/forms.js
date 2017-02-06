@@ -427,6 +427,7 @@ var FormAssistant = {
     addMessageListener("Forms:GetContext", this);
     addMessageListener("Forms:SetComposition", this);
     addMessageListener("Forms:EndComposition", this);
+    addMessageListener("Forms:ClearAll", this);
   },
 
   ignoredInputTypes: new Set([
@@ -775,6 +776,9 @@ var FormAssistant = {
           }
         }
 
+        flags |= tip.KEY_FLAG_NOT_CROSS_PROCESS_BOUNDARY_FORWARDING;
+        flags |= tip.KEY_FLAG_GENERATED_FROM_IME;
+
         let keyboardEvent = new win.KeyboardEvent("", keyboardEventDict);
 
         let keydownDefaultPrevented = false;
@@ -946,6 +950,12 @@ var FormAssistant = {
         });
         break;
       }
+
+      case "Forms:ClearAll": {
+        CompositionManager.endComposition('');
+        clearAll(target);
+        break;
+      }
     }
     this._editing = false;
 
@@ -1071,6 +1081,14 @@ function isPlainTextField(element) {
   return element instanceof HTMLTextAreaElement ||
          (element instanceof HTMLInputElement &&
           element.mozIsTextField(false));
+}
+
+function isNumberType(element) {
+  if(!element) {
+    return false;
+  }
+
+  return (element.getAttribute("type").toLowerCase() == "number");
 }
 
 function getJSON(element, focusCounter) {
@@ -1439,6 +1457,27 @@ function replaceSurroundingText(element, text, offset, length) {
     // Insert the text to be replaced with.
     editor.insertText(text);
   }
+  return true;
+}
+
+function clearAll(element) {
+  let editor = FormAssistant.editor;
+  if (!editor && !isNumberType(element)) {
+    return false;
+  }
+  if(editor) {
+    //Select all and then delete all.
+    editor.selectAll();
+    editor.deleteSelection(Ci.nsIEditor.ePrevious, Ci.nsIEditor.eStrip);
+  } else {
+    //For number type only
+    element.value = null;
+  }
+  //fire event to notify change
+  let event = element.ownerDocument.createEvent('HTMLEvents');
+  event.initEvent('change', true, true);
+  element.dispatchEvent(event);
+
   return true;
 }
 

@@ -436,6 +436,13 @@ TextEventDispatcher::DispatchKeyboardEventInternal(
   WidgetKeyboardEvent keyEvent(true, aMessage, mWidget);
   InitEvent(keyEvent);
   keyEvent.AssignKeyEventData(aKeyboardEvent, false);
+  // AssignKeyEventData() does not copy the mFlags of keyboard event, however,
+  // these two flags are set iff this key event are dispatched by b2g's IME.
+  // a.k.a. forms.js. Explictly copy the flags value here in case
+  // AssignKeyEventData() are used by others.
+  keyEvent.mFlags.mNoCrossProcessBoundaryForwarding =
+    aKeyboardEvent.mFlags.mNoCrossProcessBoundaryForwarding;
+  keyEvent.mFlags.mGeneratedFromIME = aKeyboardEvent.mFlags.mGeneratedFromIME;
 
   if (aStatus == nsEventStatus_eConsumeNoDefault) {
     // If the key event should be dispatched as consumed event, marking it here.

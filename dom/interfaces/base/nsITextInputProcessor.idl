@@ -489,6 +489,14 @@ interface nsITextInputProcessor : nsISupports
   // or emulating legacy API behavior.
   const unsigned long KEY_DONT_DISPATCH_MODIFIER_KEY_EVENT         = 0x00000020;
 
+  // If this is set, the mNoCrossProcessBoundaryForwarding flag is set to true
+  // on the key event. Otherwise it is false
+  const unsigned long KEY_FLAG_NOT_CROSS_PROCESS_BOUNDARY_FORWARDING = 0x00000040;
+
+  // If this is set, the mGeneratedFromIME flag is set to true
+  // on the key event. Otherwise it is false.
+  const unsigned long KEY_FLAG_GENERATED_FROM_IME = 0x00000080;
+
   // These values can be used to do bitwise operation with the return value of
   // the keydown() method.
   const unsigned long KEYEVENT_NOT_CONSUMED                        = 0x00000000;

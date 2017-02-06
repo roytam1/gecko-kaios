@@ -193,6 +193,7 @@
 #include "mozilla/StyleSetHandleInlines.h"
 #include "mozilla/StyleSheetHandle.h"
 #include "mozilla/StyleSheetHandleInlines.h"
+#include "nsIKeyboardAppProxy.h"
 
 #ifdef ANDROID
 #include "nsIDocShellTreeOwner.h"
@@ -7129,6 +7130,76 @@ PresShell::CanDispatchEvent(const WidgetGUIEvent* aEvent) const
 }
 
 void
+PresShell::HandleEventRejectedByKeyboardApp(
+  nsIContent* aTarget, WidgetKeyboardEvent& aEvent)
+{
+  bool wasHandlingKeyBoardEvent = nsContentUtils::IsHandlingKeyBoardEvent();
+  nsContentUtils::SetIsHandlingKeyBoardEvent(true);
+
+  // Dispatch actual key event to event target.
+  nsEventStatus aStatus = nsEventStatus_eIgnore;
+  nsPresShellEventCB eventCB(this);
+  EventDispatcher::Dispatch(aTarget, mPresContext,
+                            &aEvent, nullptr, &aStatus, &eventCB);
+
+  if (BeforeAfterKeyboardEventEnabled() &&
+      !EventStateManager::IsRemoteTarget(aTarget) &&
+      aEvent.mMessage != eKeyPress &&
+      CanDispatchEvent()) {
+    nsCOMPtr<nsIContent> content(do_QueryInterface(aTarget));
+    bool isIFrame = content && content->IsHTMLElement(nsGkAtoms::iframe);
+    bool embeddedCancelled = aEvent.mFlags.mDefaultPrevented ?
+      !isIFrame : false;
+    DispatchAfterKeyboardEvent(aTarget, aEvent, embeddedCancelled);
+  }
+
+  nsContentUtils::SetIsHandlingKeyBoardEvent(wasHandlingKeyBoardEvent);
+
+  mPresContext->EventStateManager()->InjectCurrentTargetContent(aTarget);
+  mPresContext->EventStateManager()->PostHandleEvent(mPresContext, &aEvent,
+    GetCurrentEventFrame(), &aStatus);
+}
+
+bool
+PresShell::TryRelayToKeyboardApp(WidgetKeyboardEvent& aEvent,
+                                 nsEventStatus* aStatus)
+{
+  if (XRE_GetProcessType() != GeckoProcessType_Default ||
+      aEvent.mFlags.mGeneratedFromIME) {
+    return false;
+  }
+
+  nsresult rv;
+  nsCOMPtr <nsIKeyboardAppProxy> keyboardAppProxy =
+    do_GetService(KEYBOARDAPPPROXY_CONTRACTID, &rv);
+  NS_ENSURE_SUCCESS(rv, false);
+
+  bool isActive = false;
+  keyboardAppProxy->GetIsIMEActive(&isActive);
+
+  // once the function call above is failed, the default value is false
+  // already.
+  if (!isActive) {
+      return false;
+  }
+
+  rv = keyboardAppProxy->SendKey(&aEvent);
+
+  if (rv == NS_OK) {
+    aEvent.mFlags.mHandledByIME = true;
+    // This key is relayed to Keyboard App already, so don't forward it from
+    // chrome to content process which the real target lives.
+    aEvent.mFlags.mNoCrossProcessBoundaryForwarding = true;
+    // The default behavior should be recovered after the reply from keyboard-
+    // AppProxy.
+    *aStatus = nsEventStatus_eConsumeNoDefault;
+    return true;
+  }
+
+  return false;
+}
+
+void
 PresShell::HandleKeyboardEvent(nsINode* aTarget,
                                WidgetKeyboardEvent& aEvent,
                                bool aEmbeddedCancelled,
@@ -7139,7 +7210,11 @@ PresShell::HandleKeyboardEvent(nsINode* aTarget,
   // plugin, or there is no need to fire beforeKey* and afterKey* events.
   if (aEvent.mMessage == eKeyPress ||
       aEvent.IsKeyEventOnPlugin() ||
-      !BeforeAfterKeyboardEventEnabled()) {
+      !BeforeAfterKeyboardEventEnabled() ||
+      aEvent.mFlags.mGeneratedFromIME) {
+    if (TryRelayToKeyboardApp(aEvent, aStatus)) {
+      return;
+    }
     EventDispatcher::Dispatch(aTarget, mPresContext,
                               &aEvent, nullptr, aStatus, aEventCB);
     return;
@@ -7175,6 +7250,13 @@ PresShell::HandleKeyboardEvent(nsINode* aTarget,
 
   // Event listeners may kill nsPresContext and nsPresShell.
   if (!CanDispatchEvent()) {
+    return;
+  }
+
+  // If Keyboard App is active then it should have a chance to process
+  // this keyboard event first. Whether this event will be blocked or continued
+  // depends on the async reply of Keyboard App.
+  if (TryRelayToKeyboardApp(aEvent, aStatus)) {
     return;
   }
 
