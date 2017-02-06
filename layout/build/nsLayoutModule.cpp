@@ -273,6 +273,11 @@ static void Shutdown();
 
 #include "SpatialNavigationService.h"
 
+#ifdef MOZ_B2G
+#include "nsIHardwareKeyHandler.h"
+#include "mozilla/HardwareKeyHandler.h"
+#endif
+
 using namespace mozilla;
 using namespace mozilla::dom;
 using namespace mozilla::toolkit;
@@ -687,6 +692,11 @@ NS_GENERIC_FACTORY_CONSTRUCTOR(UDPSocketChild)
 
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(GeckoMediaPluginService, GeckoMediaPluginService::GetGeckoMediaPluginService)
 
+#ifdef MOZ_B2G
+NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsIHardwareKeyHandler,
+                                         HardwareKeyHandler::GetInstance)
+#endif
+
 #ifdef ACCESSIBILITY
 #include "nsAccessibilityService.h"
 
@@ -895,20 +905,12 @@ NS_DEFINE_NAMED_CID(PRESENTATION_TCP_SESSION_TRANSPORT_CID);
 
 NS_DEFINE_NAMED_CID(TEXT_INPUT_PROCESSOR_CID);
 
-<<<<<<< HEAD
 NS_DEFINE_NAMED_CID(SPATIAL_NAVIGATION_SERVICE_CID);
 
 #ifdef MOZ_B2G
 NS_DEFINE_NAMED_CID(NS_HARDWARE_KEY_HANDLER_CID);
 #endif
 
-||||||| merged common ancestors
-#ifdef MOZ_B2G
-NS_DEFINE_NAMED_CID(NS_HARDWARE_KEY_HANDLER_CID);
-#endif
-
-=======
->>>>>>> Revert "Bug 1110030 - part4 - HardwareKeyHandler component. r=masayuki, r=smaug"
 static nsresult
 CreateWindowCommandTableConstructor(nsISupports *aOuter,
                                     REFNSIID aIID, void **aResult)
@@ -1210,17 +1212,10 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
   { &kTEXT_INPUT_PROCESSOR_CID, false, nullptr, TextInputProcessorConstructor },
   { &kFAKE_INPUTPORT_SERVICE_CID, false, nullptr, FakeInputPortServiceConstructor },
   { &kINPUTPORT_DATA_CID, false, nullptr, InputPortDataConstructor },
-<<<<<<< HEAD
 #ifdef MOZ_B2G
   { &kNS_HARDWARE_KEY_HANDLER_CID, false, nullptr, nsIHardwareKeyHandlerConstructor },
 #endif
   { &kSPATIAL_NAVIGATION_SERVICE_CID, false, nullptr, nsISpatialNavigationServiceConstructor },
-||||||| merged common ancestors
-#ifdef MOZ_B2G
-  { &kNS_HARDWARE_KEY_HANDLER_CID, false, nullptr, nsIHardwareKeyHandlerConstructor },
-#endif
-=======
->>>>>>> Revert "Bug 1110030 - part4 - HardwareKeyHandler component. r=masayuki, r=smaug"
   { nullptr }
 };
 
@@ -1393,17 +1388,10 @@ static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
   { "@mozilla.org/text-input-processor;1", &kTEXT_INPUT_PROCESSOR_CID },
   { FAKE_INPUTPORT_SERVICE_CONTRACTID, &kFAKE_INPUTPORT_SERVICE_CID },
   { INPUTPORT_DATA_CONTRACTID, &kINPUTPORT_DATA_CID },
-<<<<<<< HEAD
 #ifdef MOZ_B2G
   { NS_HARDWARE_KEY_HANDLER_CONTRACTID, &kNS_HARDWARE_KEY_HANDLER_CID },
 #endif
   { SPATIAL_NAVIGATION_SERVICE_CONTRACTID, &kSPATIAL_NAVIGATION_SERVICE_CID },
-||||||| merged common ancestors
-#ifdef MOZ_B2G
-  { NS_HARDWARE_KEY_HANDLER_CONTRACTID, &kNS_HARDWARE_KEY_HANDLER_CID },
-#endif
-=======
->>>>>>> Revert "Bug 1110030 - part4 - HardwareKeyHandler component. r=masayuki, r=smaug"
   { nullptr }
 };
 
