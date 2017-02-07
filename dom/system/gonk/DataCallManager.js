@@ -63,14 +63,18 @@ const TOPIC_PREF_CHANGED        = "nsPref:changed";
 const TOPIC_DATA_CALL_ERROR     = "data-call-error";
 const PREF_RIL_DEBUG_ENABLED    = "ril.debugging.enabled";
 
-const NETWORK_TYPE_UNKNOWN     = Ci.nsINetworkInfo.NETWORK_TYPE_UNKNOWN;
-const NETWORK_TYPE_WIFI        = Ci.nsINetworkInfo.NETWORK_TYPE_WIFI;
-const NETWORK_TYPE_MOBILE      = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE;
-const NETWORK_TYPE_MOBILE_MMS  = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_MMS;
-const NETWORK_TYPE_MOBILE_SUPL = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_SUPL;
-const NETWORK_TYPE_MOBILE_IMS  = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_IMS;
-const NETWORK_TYPE_MOBILE_DUN  = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_DUN;
-const NETWORK_TYPE_MOBILE_FOTA = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_FOTA;
+const NETWORK_TYPE_UNKNOWN      = Ci.nsINetworkInfo.NETWORK_TYPE_UNKNOWN;
+const NETWORK_TYPE_WIFI         = Ci.nsINetworkInfo.NETWORK_TYPE_WIFI;
+const NETWORK_TYPE_MOBILE       = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE;
+const NETWORK_TYPE_MOBILE_MMS   = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_MMS;
+const NETWORK_TYPE_MOBILE_SUPL  = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_SUPL;
+const NETWORK_TYPE_MOBILE_IMS   = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_IMS;
+const NETWORK_TYPE_MOBILE_DUN   = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_DUN;
+const NETWORK_TYPE_MOBILE_FOTA  = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_FOTA;
+const NETWORK_TYPE_MOBILE_HIPRI = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_HIPRI;
+const NETWORK_TYPE_MOBILE_CBS   = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_CBS;
+const NETWORK_TYPE_MOBILE_IA    = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_IA;
+const NETWORK_TYPE_MOBILE_ECC   = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_ECC;
 
 const NETWORK_STATE_UNKNOWN       = Ci.nsINetworkInfo.NETWORK_STATE_UNKNOWN;
 const NETWORK_STATE_CONNECTING    = Ci.nsINetworkInfo.NETWORK_STATE_CONNECTING;
@@ -454,6 +458,8 @@ DataCallHandler.prototype = {
         return NETWORK_TYPE_MOBILE_DUN;
       case "fota":
         return NETWORK_TYPE_MOBILE_FOTA;
+      case "ia":
+        return NETWORK_TYPE_MOBILE_IA;
       default:
         return NETWORK_TYPE_UNKNOWN;
      }
@@ -577,11 +583,82 @@ DataCallHandler.prototype = {
     }
 
     this._pendingApnSettings = aNewApnSettings;
+    this.setInitialAttachApn(this._pendingApnSettings);
     this.deactivateDataCallsAndWait(RIL.DATACALL_DEACTIVATE_APN_CHANGED).then(() => {
       this._setupApnSettings(this._pendingApnSettings);
       this._pendingApnSettings = null;
       this.updateRILNetworkInterface();
     });
+  },
+
+  setInitialAttachApn: function(aNewApnSettings) {
+      if (!aNewApnSettings) {
+        return;
+      }
+
+      let iaApnSetting;
+      let defaultApnSetting;
+      let firstApnSetting;
+
+      for (let inputApnSetting of aNewApnSettings) {
+        if(!this._validateApnSetting(inputApnSetting)) {
+          continue;
+        }
+
+        if (!firstApnSetting) {
+          firstApnSetting = inputApnSetting;
+        }
+
+        for (let i = 0; i < inputApnSetting.types.length; i++) {
+          let apnType = inputApnSetting.types[i];
+          let networkType = this._convertApnType(apnType);
+          if (networkType == NETWORK_TYPE_MOBILE_IA) {
+            iaApnSetting = inputApnSetting;
+          } else if (networkType == NETWORK_TYPE_MOBILE) {
+            defaultApnSetting = inputApnSetting;
+          }
+        }
+      }
+
+      let initalAttachApn;
+      if (iaApnSetting) {
+        initalAttachApn = iaApnSetting;
+      } else if (defaultApnSetting) {
+        initalAttachApn = defaultApnSetting;
+      } else if (firstApnSetting) {
+        initalAttachApn = firstApnSetting;
+      } else {
+        if (DEBUG) {
+          this.debug("Can not find any initial attach APN!");
+        }
+        return;
+      }
+
+      let connection = gMobileConnectionService.getItemByServiceId(this.clientId);
+      let dataInfo = connection && connection.data;
+      if (dataInfo == null) {
+        return;
+      }
+
+      let pdpType = !dataInfo.roaming
+                  ? RIL.RIL_DATACALL_PDP_TYPES.indexOf(initalAttachApn.protocol)
+                  : RIL.RIL_DATACALL_PDP_TYPES.indexOf(initalAttachApn.roaming_protocol);
+      if (pdpType == -1) {
+        pdpType = RIL.GECKO_DATACALL_PDP_TYPE_IP;
+      }
+
+      let authtype = RIL.RIL_DATACALL_AUTH_TO_GECKO.indexOf(initalAttachApn.authtype);
+      if (authtype == -1) {
+        authtype = RIL.RIL_DATACALL_AUTH_TO_GECKO.indexOf(RIL.GECKO_DATACALL_AUTH_DEFAULT);
+      }
+
+      this.dataCallInterface.setInitialAttachApn(
+        initalAttachApn.apn || "",
+        pdpType,
+        authtype,
+        initalAttachApn.user || "",
+        initalAttachApn.password || ""
+      );
   },
 
   updateRILNetworkInterface: function() {
@@ -700,7 +777,11 @@ DataCallHandler.prototype = {
         aNetworkType === NETWORK_TYPE_MOBILE_SUPL ||
         aNetworkType === NETWORK_TYPE_MOBILE_IMS ||
         aNetworkType === NETWORK_TYPE_MOBILE_DUN ||
-        aNetworkType === NETWORK_TYPE_MOBILE_FOTA) {
+        aNetworkType === NETWORK_TYPE_MOBILE_FOTA ||
+        aNetworkType === NETWORK_TYPE_MOBILE_HIPRI ||
+        aNetworkType === NETWORK_TYPE_MOBILE_CBS ||
+        aNetworkType === NETWORK_TYPE_MOBILE_IA ||
+        aNetworkType === NETWORK_TYPE_MOBILE_ECC) {
       return true;
     }
 
@@ -1269,11 +1350,9 @@ DataCall.prototype = {
                       (this.apnProfile.password || '') == (aApnSetting.password || '') &&
                       (this.apnProfile.authType || '') == (aApnSetting.authtype || '');
 
-    if (RILQUIRKS_HAVE_IPV6) {
-      isIdentical = isIdentical &&
-                    (this.apnProfile.protocol || '') == (aApnSetting.protocol || '') &&
-                    (this.apnProfile.roaming_protocol || '') == (aApnSetting.roaming_protocol || '');
-    }
+    isIdentical = isIdentical &&
+                  (this.apnProfile.protocol || '') == (aApnSetting.protocol || '') &&
+                  (this.apnProfile.roaming_protocol || '') == (aApnSetting.roaming_protocol || '');
 
     return isIdentical;
   },
@@ -1356,19 +1435,17 @@ DataCall.prototype = {
     }
 
     let pdpType = Ci.nsIDataCallInterface.DATACALL_PDP_TYPE_IPV4;
-    if (RILQUIRKS_HAVE_IPV6) {
-      pdpType = !dataInfo.roaming
-              ? RIL.RIL_DATACALL_PDP_TYPES.indexOf(this.apnProfile.protocol)
-              : RIL.RIL_DATACALL_PDP_TYPES.indexOf(this.apnProfile.roaming_protocol);
-      if (pdpType == -1) {
-        if (DEBUG) {
-          this.debug("Invalid pdpType '" + (!dataInfo.roaming
-                     ? this.apnProfile.protocol
-                     : this.apnProfile.roaming_protocol) +
-                     "', using '" + RIL.GECKO_DATACALL_PDP_TYPE_DEFAULT + "'");
-        }
-        pdpType = RIL.RIL_DATACALL_PDP_TYPES.indexOf(RIL.GECKO_DATACALL_PDP_TYPE_DEFAULT);
+    pdpType = !dataInfo.roaming
+            ? RIL.RIL_DATACALL_PDP_TYPES.indexOf(this.apnProfile.protocol)
+            : RIL.RIL_DATACALL_PDP_TYPES.indexOf(this.apnProfile.roaming_protocol);
+    if (pdpType == -1) {
+      if (DEBUG) {
+        this.debug("Invalid pdpType '" + (!dataInfo.roaming
+                   ? this.apnProfile.protocol
+                   : this.apnProfile.roaming_protocol) +
+                   "', using '" + RIL.GECKO_DATACALL_PDP_TYPE_DEFAULT + "'");
       }
+      pdpType = RIL.RIL_DATACALL_PDP_TYPES.indexOf(RIL.GECKO_DATACALL_PDP_TYPE_DEFAULT);
     }
 
     let dcInterface = this.dataCallHandler.dataCallInterface;

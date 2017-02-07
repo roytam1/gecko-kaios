@@ -1871,6 +1871,17 @@ RilObject.prototype = {
     this.sendChromeMessage(options);
   },
 
+  setInitialAttachApn: function(options) {
+    let Buf = this.context.Buf;
+    Buf.newParcel(REQUEST_SET_INITIAL_ATTACH_APN, options);
+    Buf.writeString(options.apn);
+    Buf.writeString(options.protocol);
+    Buf.writeInt32(options.authType);
+    Buf.writeString(options.username);
+    Buf.writeString(options.password);
+    Buf.sendParcel();
+  },
+
   /**
    * Get failure casue code for the most recently failed PDP context.
    */
@@ -5078,7 +5089,9 @@ RilObject.prototype[REQUEST_VOICE_RADIO_TECH] = function REQUEST_VOICE_RADIO_TEC
   this._processRadioTech(radioTech[0]);
 };
 RilObject.prototype[REQUEST_SET_UNSOL_CELL_INFO_LIST_RATE] = null;
-RilObject.prototype[REQUEST_SET_INITIAL_ATTACH_APN] = null;
+RilObject.prototype[REQUEST_SET_INITIAL_ATTACH_APN] = function REQUEST_SET_INITIAL_ATTACH_APN(length, options) {
+  this.sendChromeMessage(options);
+};
 RilObject.prototype[REQUEST_IMS_REGISTRATION_STATE] = null;
 RilObject.prototype[REQUEST_IMS_SEND_SMS] = null;
 RilObject.prototype[REQUEST_SIM_TRANSMIT_APDU_BASIC] = null;

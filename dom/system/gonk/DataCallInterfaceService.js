@@ -234,6 +234,23 @@ DataCallInterface.prototype = {
     });
   },
 
+  setInitialAttachApn: function(aApn, aProtocol, aAuthType, aUsername,
+                                aPassword) {
+    this._radioInterface.sendWorkerMessage("setInitialAttachApn", {
+      apn: aApn,
+      protocol: aProtocol,
+      authType: aAuthType,
+      username: aUsername,
+      password: aPassword
+    }, (aResponse) => {
+      if (aResponse.errorMsg) {
+        if (DEBUG) {
+          this.debug("setInitialAttachApn errorMsg : " + aResponse.errorMsg);
+        }
+      }
+    });
+  },
+
   handleDataCallListChanged: function(aCount, aDataCalls) {
     this._notifyAllListeners("notifyDataCallListChanged", [aCount, aDataCalls]);
   },

@@ -4,7 +4,7 @@
 
 #include "nsISupports.idl"
 
-[scriptable, uuid(4816a559-5620-4cb5-8433-ff0b25e6622f)]
+[scriptable, uuid(b13280b2-4aee-4b1b-820f-b17054d2106a)]
 interface nsINetworkInfo : nsISupports
 {
   const long NETWORK_STATE_UNKNOWN       = -1;
@@ -36,16 +36,20 @@ interface nsINetworkInfo : nsISupports
    */
   readonly attribute long reason;
 
-  const long NETWORK_TYPE_UNKNOWN     = -1;
-  const long NETWORK_TYPE_WIFI        = 0;
-  const long NETWORK_TYPE_MOBILE      = 1;
-  const long NETWORK_TYPE_MOBILE_MMS  = 2;
-  const long NETWORK_TYPE_MOBILE_SUPL = 3;
-  const long NETWORK_TYPE_WIFI_P2P    = 4;
-  const long NETWORK_TYPE_MOBILE_IMS  = 5;
-  const long NETWORK_TYPE_MOBILE_DUN  = 6;
-  const long NETWORK_TYPE_MOBILE_FOTA = 7;
-  const long NETWORK_TYPE_ETHERNET    = 8;
+  const long NETWORK_TYPE_UNKNOWN      = -1;
+  const long NETWORK_TYPE_WIFI         = 0;
+  const long NETWORK_TYPE_MOBILE       = 1;
+  const long NETWORK_TYPE_MOBILE_MMS   = 2;
+  const long NETWORK_TYPE_MOBILE_SUPL  = 3;
+  const long NETWORK_TYPE_WIFI_P2P     = 4;
+  const long NETWORK_TYPE_MOBILE_IMS   = 5;
+  const long NETWORK_TYPE_MOBILE_DUN   = 6;
+  const long NETWORK_TYPE_MOBILE_FOTA  = 7;
+  const long NETWORK_TYPE_ETHERNET     = 8;
+  const long NETWORK_TYPE_MOBILE_HIPRI = 9;
+  const long NETWORK_TYPE_MOBILE_CBS   = 10;
+  const long NETWORK_TYPE_MOBILE_IA    = 11;
+  const long NETWORK_TYPE_MOBILE_ECC   = 12;
 
   /**
    * Network type. One of the NETWORK_TYPE_* constants.

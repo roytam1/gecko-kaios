@@ -105,7 +105,7 @@ interface nsIDataCallCallback : nsISupports
   void notifyError(in AString errorMsg);
 };
 
-[scriptable, uuid(ec219021-8623-4b9f-aba5-4db58c60684f)]
+[scriptable, uuid(c612185d-d357-4225-ac00-3c0dcba775b5)]
 interface nsIDataCallInterface : nsISupports
 {
   /**
@@ -253,6 +253,24 @@ interface nsIDataCallInterface : nsISupports
    * nsIDataCallInterface.
    */
   void unregisterListener(in nsIDataCallInterfaceListener listener);
+
+  /**
+   * Set initial attach APN.
+   * @param apn
+   *        Apn to connect to.
+   * @param protocol
+   *        Protocol is the connection type, ex: "IP", "IPV6", "IPV4V6".
+   * @param authType
+   *        AuthType is the PAP / CHAP auth type.
+   * @param username
+   *        Username for apn.
+   * @param password
+   *        Password for apn.
+   */
+   void setInitialAttachApn(in AString apn, in AString protocol,
+                            in long authType, in AString username,
+                            in AString password);
+
 };
 
 [scriptable, uuid(64700406-7429-4743-a6ae-f82e9877fd0d)]
