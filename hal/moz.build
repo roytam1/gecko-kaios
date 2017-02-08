@@ -39,7 +39,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
     UNIFIED_SOURCES += [
         'android/AndroidAlarm.cpp',
         'android/AndroidSensor.cpp',
-        'fallback/FallbackFlip.cpp',
+        'fallback/FallbackFlipManager.cpp',
         'fallback/FallbackPower.cpp',
         'linux/LinuxMemory.cpp',
     ]
@@ -86,7 +86,7 @@ elif CONFIG['OS_TARGET'] == 'Linux':
 elif CONFIG['OS_TARGET'] == 'WINNT':
     UNIFIED_SOURCES += [
         'fallback/FallbackAlarm.cpp',
-        'fallbacks/FallbackFlip.cpp',
+        'fallback/FallbackFlipManager.cpp',
         'fallback/FallbackMemory.cpp',
         'fallback/FallbackPower.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
@@ -110,7 +110,7 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
 elif CONFIG['OS_TARGET'] in ('OpenBSD', 'NetBSD', 'FreeBSD', 'DragonFly'):
     UNIFIED_SOURCES += [
         'fallback/FallbackAlarm.cpp',
-        'fallback/FallbackFlip.cpp',
+        'fallback/FallbackFlipManager.cpp',
         'fallback/FallbackMemory.cpp',
         'fallback/FallbackPower.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
@@ -129,7 +129,7 @@ else:
     UNIFIED_SOURCES += [
         'fallback/FallbackAlarm.cpp',
         'fallback/FallbackBattery.cpp',
-        'fallback/FallbackFlip.cpp',
+        'fallback/FallbackFlipManager.cpp',
         'fallback/FallbackMemory.cpp',
         'fallback/FallbackPower.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
