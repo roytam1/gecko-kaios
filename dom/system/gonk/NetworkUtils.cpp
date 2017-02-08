@@ -709,6 +709,11 @@ void NetworkUtils::cleanUpStreamInterfaceForwarding(CommandChain* aChain,
                                                     NetworkResultOptions& aResult)
 {
   char command[MAX_COMMAND_SIZE];
+  if (!strcmp(GET_CHAR(mPreExternalIfname), "rmnet0")) {
+    NU_DBG("%s : ignore interface - %s", __FUNCTION__, GET_CHAR(mPreExternalIfname));
+    next(aChain, false, aResult);
+    return;
+  }
   NU_DBG("cleanUpStreamInterfaceForwarding: internal = %s, external = %s", GET_CHAR(mPreInternalIfname), GET_CHAR(mPreExternalIfname));
   snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd remove %s %s",
     GET_CHAR(mPreInternalIfname), GET_CHAR(mPreExternalIfname));
@@ -721,6 +726,11 @@ void NetworkUtils::createUpStreamInterfaceForwarding(CommandChain* aChain,
                                                      NetworkResultOptions& aResult)
 {
   char command[MAX_COMMAND_SIZE];
+  if (!strcmp(GET_CHAR(mCurExternalIfname), "rmnet0")) {
+    NU_DBG("%s : ignore interface - %s", __FUNCTION__, GET_CHAR(mCurExternalIfname));
+    next(aChain, false, aResult);
+    return;
+  }
   NU_DBG("createUpStreamInterfaceForwarding: internal = %s, external = %s", GET_CHAR(mCurInternalIfname), GET_CHAR(mCurExternalIfname));
   snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd add %s %s",
     GET_CHAR(mCurInternalIfname), GET_CHAR(mCurExternalIfname));
@@ -1025,6 +1035,11 @@ void NetworkUtils::setInterfaceForwardingEnabled(CommandChain* aChain,
                                                  NetworkResultOptions& aResult)
 {
   char command[MAX_COMMAND_SIZE];
+  if (!strcmp(GET_CHAR(mExternalIfname), "rmnet0")) {
+    NU_DBG("%s : ignore interface - %s", __FUNCTION__, GET_CHAR(mExternalIfname));
+    next(aChain, false, aResult);
+    return;
+  }
   NU_DBG("setInterfaceForwardingEnabled: internal=%s, external=%s", GET_CHAR(mInternalIfname), GET_CHAR(mExternalIfname));
   // for ipfwd add internal external.
   snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd add %s %s",
@@ -1037,6 +1052,11 @@ void NetworkUtils::setInterfaceForwardingDisabled(CommandChain* aChain,
                                                   NetworkResultOptions& aResult)
 {
   char command[MAX_COMMAND_SIZE];
+  if (!strcmp(GET_CHAR(mExternalIfname),"rmnet0")) {
+    NU_DBG("%s : ignore interface - %s", __FUNCTION__, GET_CHAR(mExternalIfname));
+    next(aChain, false, aResult);
+    return;
+  }
   NU_DBG("setInterfaceForwardingDisabled: internal=%s, external=%s", GET_CHAR(mInternalIfname), GET_CHAR(mExternalIfname));
   // for ipfwd remove internal external.
   snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd remove %s %s",
