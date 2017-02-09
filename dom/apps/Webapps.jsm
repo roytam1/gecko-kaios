@@ -3900,7 +3900,12 @@ this.DOMApplicationRegistry = {
       if (Services.prefs.getBoolPref("dom.apps.developer_mode")) {
         maxStatus = Ci.nsIPrincipal.APP_STATUS_CERTIFIED;
       }
-    } catch(e) {};
+      // service center (kaios-plus) is certified app and we need to update it.
+      let manifest = Services.prefs.getCharPref("apps.serviceCenter.manifest");
+      if (aOldApp.manifestURL == manifest) {
+        maxStatus = Ci.nsIPrincipal.APP_STATUS_CERTIFIED;
+      }
+    } catch(e) {}
 
     let allowUnsignedLangpack = false;
     try  {
