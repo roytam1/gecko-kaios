@@ -419,7 +419,7 @@ private:
   DECL_GFX_PREF(Once, "layout.scroll.root-frame-containers",   LayoutUseContainersForRootFrames, bool, true);
 
   // This is a test pref for drawing mouse cursor on gonk platform
-  DECL_GFX_PREF(Live, "layers.draw-gonk-cursor",               LayersDrawGonkCursor, bool, true);
+  DECL_GFX_PREF(Live, "layers.draw-gonk-cursor",               LayersDrawGonkCursor, bool, false);
 
   // These affect how line scrolls from wheel events will be accelerated.
   DECL_GFX_PREF(Live, "mousewheel.acceleration.factor",        MouseWheelAccelerationFactor, int32_t, -1);
