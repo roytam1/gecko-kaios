@@ -693,7 +693,7 @@ var settingsToObserve = {
   'dom.presentation.discoverable': false,
   'dom.serviceWorkers.testing.enabled': false,
   'gfx.layerscope.enabled': false,
-  'layers.draw-gonk-cursor': true,
+  'layers.draw-gonk-cursor': false,
   'layers.draw-borders': false,
   'layers.draw-tile-borders': false,
   'layers.dump': false,
