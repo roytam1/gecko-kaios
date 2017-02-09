@@ -410,9 +410,6 @@ void OpenSlesInput::SetupVoiceMode() {
   SLAndroidConfigurationItf configItf;
   SLresult res = (*sles_recorder_)->GetInterface(sles_recorder_, SL_IID_ANDROIDCONFIGURATION_,
                                                  (void*)&configItf);
-#if ANDROID_VERSION >= 23
-  static const android::String16 webRTCPackage("WebRTC");
-#endif
   WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "OpenSL GetInterface: %d", res);
 
   if (res == SL_RESULT_SUCCESS) {
@@ -481,6 +478,9 @@ bool OpenSlesInput::CheckPlatformAEC() {
 
 void OpenSlesInput::SetupAECAndNS() {
   bool hasAec = CheckPlatformAEC();
+#if ANDROID_VERSION >= 23
+  static const android::String16 webRTCPackage("WebRTC");
+#endif
   WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "Platform has AEC: %d", hasAec);
   // This code should not have been enabled if this fails, because it means the
   // software AEC has will have been disabled as well. If you hit this, you need
