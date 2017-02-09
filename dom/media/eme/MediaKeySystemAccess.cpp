@@ -467,7 +467,7 @@ IsSupportedInitDataType(const nsString& aCandidate, const nsAString& aKeySystem)
     || aKeySystem.EqualsLiteral("com.widevine.alpha")
 #endif
     ) &&
-    (aCandidate.EqualsLiteral("keyids") || aCandidate.EqualsLiteral("webm)")));
+    (aCandidate.EqualsLiteral("keyids") || aCandidate.EqualsLiteral("webm")));
 }
 
 static bool
