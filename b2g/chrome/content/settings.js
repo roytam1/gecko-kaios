@@ -166,6 +166,11 @@ Components.utils.import('resource://gre/modules/ctypes.jsm');
     product_model = libcutils.property_get('ro.product.model');
     product_device = libcutils.property_get('ro.product.device');
     build_number = libcutils.property_get('ro.build.version.incremental');
+
+    let build_type = libcutils.property_get('ro.build.type');
+    if (build_type === 'eng' || build_type === 'userdebug') {
+      os_version += ' {' + libcutils.property_get('ro.build.kaios_uid').slice(0,7) + '}';
+    }
   }
 
   // Populate deviceinfo settings,
