@@ -473,7 +473,7 @@ pref("dom.phonenumber.substringmatching.PE", 7);
 pref("dom.mozAlarms.enabled", true);
 
 // SimplePush
-pref("services.push.enabled", true);
+pref("services.push.enabled", false);
 // Debugging enabled.
 pref("services.push.debug", false);
 // Is the network connection allowed to be up?
@@ -1141,10 +1141,10 @@ pref("dom.requestSync.enabled", true);
 // the system app in dev mode.
 pref("dom.activities.developer_mode_only", "import-app");
 
-// mulet apparently loads firefox.js as well as b2g.js, so we have to explicitly
-// disable serviceworkers and push here to get them disabled in mulet.
-pref("dom.serviceWorkers.enabled", false);
-pref("dom.push.enabled", false);
+// Enable W3C Push API
+pref("dom.serviceWorkers.enabled", true);
+pref("dom.webnotifications.serviceworker.enabled", true);
+pref("dom.push.enabled", true);
 
 // Retain at most 10 processes' layers buffers
 pref("layers.compositor-lru-size", 10);
