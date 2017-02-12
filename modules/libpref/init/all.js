@@ -4787,18 +4787,6 @@ pref("dom.apps.reset-permissions", false);
 // Load activities indexdb complete
 pref("dom.apps.load-activities-complete", false);
 
-// XXX Security: You CANNOT safely add a new app store for
-// installing privileged apps just by modifying this pref and
-// adding the signing cert for that store to the cert trust
-// database. *Any* origin listed can install apps signed with
-// *any* certificate trusted; we don't try to maintain a strong
-// association between certificate with installOrign. The
-// expectation here is that in production builds the pref will
-// contain exactly one origin. However, in custom development
-// builds it may contain more than one origin so we can test
-// different stages (dev, staging, prod) of the same app store.
-pref("dom.mozApps.signed_apps_installable_from", "https://marketplace.firefox.com");
-
 // Whether or not to dump mozApps debug messages to the console.
 // Only checked on startup, so restart after changing this pref.
 // Ignored on Android, where we always report debug messages because it's
