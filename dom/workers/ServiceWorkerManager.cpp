@@ -14,6 +14,7 @@
 #include "nsIHttpChannel.h"
 #include "nsIHttpChannelInternal.h"
 #include "nsIHttpHeaderVisitor.h"
+#include "nsIJARChannel.h"
 #include "nsINetworkInterceptController.h"
 #include "nsIMutableArray.h"
 #include "nsIScriptError.h"
@@ -662,9 +663,11 @@ ServiceWorkerManager::Register(mozIDOMWindow* aWindow,
   // might inherit the origin.
   bool isHttp = false;
   bool isHttps = false;
+  bool isApp = false;
   aScriptURI->SchemeIs("http", &isHttp);
   aScriptURI->SchemeIs("https", &isHttps);
-  if (NS_WARN_IF(!isHttp && !isHttps)) {
+  aScriptURI->SchemeIs("app", &isApp);
+  if (NS_WARN_IF(!isHttp && !isHttps && !isApp)) {
     return NS_ERROR_DOM_SECURITY_ERR;
   }
 
@@ -2784,7 +2787,6 @@ ServiceWorkerManager::GetAllClients(nsIPrincipal* aPrincipal,
 
       // All controlled documents must have an outer window.
       MOZ_ASSERT(doc->GetWindow());
-
       ProcessDocument(aPrincipal, doc);
     }
   }

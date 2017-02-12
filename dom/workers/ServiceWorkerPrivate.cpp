@@ -1102,6 +1102,7 @@ class FetchEventRunnable : public ExtendableFunctionalEventWorkerRunnable
   nsString mClientId;
   bool mIsReload;
   RequestCache mCacheMode;
+  DebugOnly<bool> mIsHttpChannel;
   RequestMode mRequestMode;
   RequestRedirect mRequestRedirect;
   RequestCredentials mRequestCredentials;
@@ -1126,6 +1127,7 @@ public:
     , mClientId(aDocumentId)
     , mIsReload(aIsReload)
     , mCacheMode(RequestCache::Default)
+    , mIsHttpChannel(false)
     , mRequestMode(RequestMode::No_cors)
     , mRequestRedirect(RequestRedirect::Follow)
     // By default we set it to same-origin since normal HTTP fetches always
@@ -1181,65 +1183,76 @@ public:
 
     mContentPolicyType = loadInfo->InternalContentPolicyType();
 
+    nsCOMPtr<nsIURI> referrerURI;
+    rv = NS_GetReferrerFromChannel(channel, getter_AddRefs(referrerURI));
+    // We can't bail on failure since certain non-http channels like JAR
+    // channels are intercepted but don't have referrers.
+    if (NS_SUCCEEDED(rv) && referrerURI) {
+      rv = referrerURI->GetSpec(mReferrer);
+      NS_ENSURE_SUCCESS(rv, rv);
+    }
+
     nsCOMPtr<nsIHttpChannel> httpChannel = do_QueryInterface(channel);
-    MOZ_ASSERT(httpChannel, "How come we don't have an HTTP channel?");
 
-    nsAutoCString referrer;
-    // Ignore the return value since the Referer header may not exist.
-    httpChannel->GetRequestHeader(NS_LITERAL_CSTRING("Referer"), referrer);
-    if (!referrer.IsEmpty()) {
-      mReferrer = referrer;
-    }
+    if (httpChannel) {
+      mIsHttpChannel = true;
 
-    uint32_t referrerPolicy = 0;
-    rv = httpChannel->GetReferrerPolicy(&referrerPolicy);
-    NS_ENSURE_SUCCESS(rv, rv);
-    switch (referrerPolicy) {
-    case nsIHttpChannel::REFERRER_POLICY_NO_REFERRER:
-      mReferrerPolicy = ReferrerPolicy::No_referrer;
-      break;
-    case nsIHttpChannel::REFERRER_POLICY_ORIGIN:
-      mReferrerPolicy = ReferrerPolicy::Origin;
-      break;
-    case nsIHttpChannel::REFERRER_POLICY_NO_REFERRER_WHEN_DOWNGRADE:
-      mReferrerPolicy = ReferrerPolicy::No_referrer_when_downgrade;
-      break;
-    case nsIHttpChannel::REFERRER_POLICY_ORIGIN_WHEN_XORIGIN:
-      mReferrerPolicy = ReferrerPolicy::Origin_when_cross_origin;
-      break;
-    case nsIHttpChannel::REFERRER_POLICY_UNSAFE_URL:
-      mReferrerPolicy = ReferrerPolicy::Unsafe_url;
-      break;
-    default:
-      MOZ_ASSERT_UNREACHABLE("Invalid Referrer Policy enum value?");
-      break;
-    }
+      nsAutoCString referrer;
+      // Ignore the return value since the Referer header may not exist.
+      httpChannel->GetRequestHeader(NS_LITERAL_CSTRING("Referer"), referrer);
+      if (!referrer.IsEmpty()) {
+        mReferrer = referrer;
+      }
 
-    rv = httpChannel->GetRequestMethod(mMethod);
-    NS_ENSURE_SUCCESS(rv, rv);
+      uint32_t referrerPolicy = 0;
+      rv = httpChannel->GetReferrerPolicy(&referrerPolicy);
+      NS_ENSURE_SUCCESS(rv, rv);
+      switch (referrerPolicy) {
+      case nsIHttpChannel::REFERRER_POLICY_NO_REFERRER:
+        mReferrerPolicy = ReferrerPolicy::No_referrer;
+        break;
+      case nsIHttpChannel::REFERRER_POLICY_ORIGIN:
+        mReferrerPolicy = ReferrerPolicy::Origin;
+        break;
+      case nsIHttpChannel::REFERRER_POLICY_NO_REFERRER_WHEN_DOWNGRADE:
+        mReferrerPolicy = ReferrerPolicy::No_referrer_when_downgrade;
+        break;
+      case nsIHttpChannel::REFERRER_POLICY_ORIGIN_WHEN_XORIGIN:
+        mReferrerPolicy = ReferrerPolicy::Origin_when_cross_origin;
+        break;
+      case nsIHttpChannel::REFERRER_POLICY_UNSAFE_URL:
+        mReferrerPolicy = ReferrerPolicy::Unsafe_url;
+        break;
+      default:
+        MOZ_ASSERT_UNREACHABLE("Invalid Referrer Policy enum value?");
+        break;
+      }
 
-    nsCOMPtr<nsIHttpChannelInternal> internalChannel = do_QueryInterface(httpChannel);
-    NS_ENSURE_TRUE(internalChannel, NS_ERROR_NOT_AVAILABLE);
+      rv = httpChannel->GetRequestMethod(mMethod);
+      NS_ENSURE_SUCCESS(rv, rv);
 
-    mRequestMode = InternalRequest::MapChannelToRequestMode(channel);
+      nsCOMPtr<nsIHttpChannelInternal> internalChannel = do_QueryInterface(httpChannel);
+      NS_ENSURE_TRUE(internalChannel, NS_ERROR_NOT_AVAILABLE);
 
-    // This is safe due to static_asserts in ServiceWorkerManager.cpp.
-    uint32_t redirectMode;
-    internalChannel->GetRedirectMode(&redirectMode);
-    mRequestRedirect = static_cast<RequestRedirect>(redirectMode);
+      mRequestMode = InternalRequest::MapChannelToRequestMode(channel);
 
-    // This is safe due to static_asserts in ServiceWorkerManager.cpp.
-    uint32_t cacheMode;
-    internalChannel->GetFetchCacheMode(&cacheMode);
-    mCacheMode = static_cast<RequestCache>(cacheMode);
+      // This is safe due to static_asserts in ServiceWorkerManager.cpp.
+      uint32_t redirectMode;
+      internalChannel->GetRedirectMode(&redirectMode);
+      mRequestRedirect = static_cast<RequestRedirect>(redirectMode);
 
-    mRequestCredentials = InternalRequest::MapChannelToRequestCredentials(channel);
+      // This is safe due to static_asserts in ServiceWorkerManager.cpp.
+      uint32_t cacheMode;
+      internalChannel->GetFetchCacheMode(&cacheMode);
+      mCacheMode = static_cast<RequestCache>(cacheMode);
 
-    rv = httpChannel->VisitNonDefaultRequestHeaders(this);
-    NS_ENSURE_SUCCESS(rv, rv);
+      mRequestCredentials = InternalRequest::MapChannelToRequestCredentials(channel);
 
-    nsCOMPtr<nsIUploadChannel2> uploadChannel = do_QueryInterface(httpChannel);
-    if (uploadChannel) {
+      rv = httpChannel->VisitNonDefaultRequestHeaders(this);
+      NS_ENSURE_SUCCESS(rv, rv);
+
+      nsCOMPtr<nsIUploadChannel2> uploadChannel = do_QueryInterface(httpChannel);
+      if (uploadChannel) {
       MOZ_ASSERT(!mUploadStream);
       bool bodyHasHeaders = false;
       rv = uploadChannel->GetUploadStreamHasHeaders(&bodyHasHeaders);
@@ -1251,6 +1264,19 @@ public:
         HandleBodyWithHeaders(uploadStream);
       } else {
         mUploadStream = uploadStream;
+      }
+      }
+    } else {
+      nsCOMPtr<nsIJARChannel> jarChannel = do_QueryInterface(channel);
+      // If it is not an HTTP channel it must be a JAR one.
+      NS_ENSURE_TRUE(jarChannel, NS_ERROR_NOT_AVAILABLE);
+
+      mMethod = "GET";
+
+      mRequestMode = InternalRequest::MapChannelToRequestMode(channel);
+
+      if (loadFlags & nsIRequest::LOAD_ANONYMOUS) {
+        mRequestCredentials = RequestCredentials::Omit;
       }
     }
 
@@ -1341,7 +1367,7 @@ private:
     }
     RefPtr<Request> request = new Request(global, internalReq);
 
-    MOZ_ASSERT_IF(internalReq->IsNavigationRequest(),
+    MOZ_ASSERT_IF(mIsHttpChannel && internalReq->IsNavigationRequest(),
                   request->Redirect() == RequestRedirect::Manual);
 
     RootedDictionary<FetchEventInit> init(aCx);

@@ -294,6 +294,12 @@ InternalRequest::MapChannelToRequestMode(nsIChannel* aChannel)
   }
 
   // TODO: remove the worker override once securityMode is fully implemented (bug 1189945)
+
+  nsCOMPtr<nsIJARChannel> jarChannel = do_QueryInterface(aChannel);
+  if (jarChannel) {
+    return RequestMode::No_cors;
+  }
+
   if (IsWorkerContentPolicy(contentPolicy)) {
     return RequestMode::Same_origin;
   }
