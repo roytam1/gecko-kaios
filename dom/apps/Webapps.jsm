@@ -3796,14 +3796,14 @@ this.DOMApplicationRegistry = {
     let root = TrustedRootCertificate.index;
 
     // Use dev certificate to install App from specific origin.
-    let devOrigin;
+    let devOrigins;
     try {
-      devOrigin = Services.prefs.getCharPref("apps.serviceCenter.dev_origin");
+      devOrigins = Services.prefs.getCharPref("apps.serviceCenter.devOrigins");
     } catch(e) { }
     // Use dev certificate to verify the app package's signature.
     // When the app manifest is downloaded from specific url.
     let manifestUri = Services.io.newURI(aManifestURL, null, null).prePath;
-    if (manifestUri == devOrigin) {
+    if (devOrigins.split(",").indexOf(manifestUri) == 0) {
           root = Ci.nsIX509CertDB.AppServiceCenterDevPublicRoot;
     }
 
