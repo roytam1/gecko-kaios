@@ -32,7 +32,7 @@ const prefs = new Preferences("dom.push.");
 /**
  * The push subscription record, stored in IndexedDB.
  */
-function PushRecord(props) {
+this.PushRecord = function(props) {
   this.pushEndpoint = props.pushEndpoint;
   this.scope = props.scope;
   this.originAttributes = props.originAttributes;
