@@ -17,6 +17,7 @@
 
 #include "mozilla/dom/BodyUtil.h"
 #include "mozilla/dom/ContentParent.h"
+#include "nsXPCOMStrings.h"
 
 namespace mozilla {
 namespace dom {
@@ -136,37 +137,40 @@ PushNotifier::NotifyPushWorkers(const nsACString& aScope,
     return NS_ERROR_INVALID_ARG;
   }
 
-  if (XRE_IsContentProcess() || !BrowserTabsRemoteAutostart()) {
-    // Notify the worker from the current process. Either we're running in
-    // the content process and received a message from the parent, or e10s
-    // is disabled.
-    RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
-    if (!swm) {
-      return NS_ERROR_FAILURE;
+  if (XRE_IsParentProcess()) {
+    // We're in the parent. Broadcast the event
+    // to the content processes with same scope.
+    nsAutoCString nScope(aScope);
+    bool ok = true;
+    nsTArray<ContentParent*> contentActors;
+    ContentParent::GetAll(contentActors);
+    for (uint32_t i = 0; i < contentActors.Length(); ++i) {
+      const nsString nAppManifestURL = contentActors[i]->AppManifestURL();
+      if (!nAppManifestURL.Find(nScope.get())) {
+        if (aData) {
+          ok &= contentActors[i]->SendPushWithData(PromiseFlatCString(aScope),
+            IPC::Principal(aPrincipal), PromiseFlatString(aMessageId), aData.ref());
+        } else {
+          ok &= contentActors[i]->SendPush(PromiseFlatCString(aScope),
+            IPC::Principal(aPrincipal), PromiseFlatString(aMessageId));
+        }
+        return ok ? NS_OK : NS_ERROR_FAILURE;
+      }
     }
-    nsAutoCString originSuffix;
-    nsresult rv = aPrincipal->GetOriginSuffix(originSuffix);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return rv;
-    }
-    return swm->SendPushEvent(originSuffix, aScope, aMessageId, aData);
   }
 
-  // Otherwise, we're in the parent and e10s is enabled. Broadcast the event
-  // to all content processes.
-  bool ok = true;
-  nsTArray<ContentParent*> contentActors;
-  ContentParent::GetAll(contentActors);
-  for (uint32_t i = 0; i < contentActors.Length(); ++i) {
-    if (aData) {
-      ok &= contentActors[i]->SendPushWithData(PromiseFlatCString(aScope),
-        IPC::Principal(aPrincipal), PromiseFlatString(aMessageId), aData.ref());
-    } else {
-      ok &= contentActors[i]->SendPush(PromiseFlatCString(aScope),
-        IPC::Principal(aPrincipal), PromiseFlatString(aMessageId));
-    }
+  // Notify the worker from the current process.
+  RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
+  if (!swm) {
+    return NS_ERROR_FAILURE;
   }
-  return ok ? NS_OK : NS_ERROR_FAILURE;
+  nsAutoCString originSuffix;
+  nsresult rv = aPrincipal->GetOriginSuffix(originSuffix);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+  return swm->SendPushEvent(originSuffix, aScope, aMessageId, aData);
+
 }
 
 nsresult
@@ -178,29 +182,33 @@ PushNotifier::NotifySubscriptionChangeWorkers(const nsACString& aScope,
     return NS_ERROR_INVALID_ARG;
   }
 
-  if (XRE_IsContentProcess() || !BrowserTabsRemoteAutostart()) {
-    // Content process or e10s disabled.
-    RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
-    if (!swm) {
-      return NS_ERROR_FAILURE;
+  if (XRE_IsParentProcess()) {
+    // We're in the parent. Broadcast the event
+    // to the content processes with same scope.
+    bool ok = true;
+    nsAutoCString nScope(aScope);
+    nsTArray<ContentParent*> contentActors;
+    ContentParent::GetAll(contentActors);
+    for (uint32_t i = 0; i < contentActors.Length(); ++i) {
+      const nsString nAppManifestURL = contentActors[i]->AppManifestURL();
+      if (!nAppManifestURL.Find(nScope.get())) {
+        ok &= contentActors[i]->SendPushSubscriptionChange(
+        PromiseFlatCString(aScope), IPC::Principal(aPrincipal));
+        return ok ? NS_OK : NS_ERROR_FAILURE;
+      }
     }
-    nsAutoCString originSuffix;
-    nsresult rv = aPrincipal->GetOriginSuffix(originSuffix);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return rv;
-    }
-    return swm->SendPushSubscriptionChangeEvent(originSuffix, aScope);
   }
-
-  // Parent process, e10s enabled.
-  bool ok = true;
-  nsTArray<ContentParent*> contentActors;
-  ContentParent::GetAll(contentActors);
-  for (uint32_t i = 0; i < contentActors.Length(); ++i) {
-    ok &= contentActors[i]->SendPushSubscriptionChange(
-      PromiseFlatCString(aScope), IPC::Principal(aPrincipal));
+  // Notify the worker from the current process.
+  RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
+  if (!swm) {
+    return NS_ERROR_FAILURE;
   }
-  return ok ? NS_OK : NS_ERROR_FAILURE;
+  nsAutoCString originSuffix;
+  nsresult rv = aPrincipal->GetOriginSuffix(originSuffix);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+  return swm->SendPushSubscriptionChangeEvent(originSuffix, aScope);
 }
 
 void
@@ -210,9 +218,44 @@ PushNotifier::NotifyErrorWorkers(const nsACString& aScope,
 {
   AssertIsOnMainThread();
 
-  if (XRE_IsContentProcess() || !BrowserTabsRemoteAutostart()) {
-    // Content process or e10s disabled.
-    RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
+  if (XRE_IsParentProcess()) {
+    // We're in the parent. Broadcast the event
+    // to the content processes with same scope.
+    nsAutoCString nScope(aScope);
+    nsTArray<ContentParent*> contentActors;
+    ContentParent::GetAll(contentActors);
+    if (!contentActors.IsEmpty()) {
+      // At least one content process active.
+      for (uint32_t i = 0; i < contentActors.Length(); ++i) {
+        const nsString nAppManifestURL = contentActors[i]->AppManifestURL();
+        if (!nAppManifestURL.Find(nScope.get())) {
+          Unused << NS_WARN_IF(
+            !contentActors[i]->SendPushError(PromiseFlatCString(aScope),
+              PromiseFlatString(aMessage), aFlags));
+          return;
+        }
+      }
+    }
+    // Report to the console if no content processes are active.
+    nsCOMPtr<nsIURI> scopeURI;
+    nsresult rv = NS_NewURI(getter_AddRefs(scopeURI), aScope);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return;
+    }
+    Unused << NS_WARN_IF(NS_FAILED(
+      nsContentUtils::ReportToConsoleNonLocalized(aMessage,
+                                                  aFlags,
+                                                  NS_LITERAL_CSTRING("Push"),
+                                                  nullptr, /* aDocument */
+                                                  scopeURI, /* aURI */
+                                                  EmptyString(), /* aLine */
+                                                  0, /* aLineNumber */
+                                                  0, /* aColumnNumber */
+                                                  nsContentUtils::eOMIT_LOCATION)));
+    return;
+  }
+  // Notify the worker from the current process.
+  RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
     if (swm) {
       swm->ReportToAllClients(PromiseFlatCString(aScope),
                               PromiseFlatString(aMessage),
@@ -221,38 +264,8 @@ PushNotifier::NotifyErrorWorkers(const nsACString& aScope,
                               0, /* aLineNumber */
                               0, /* aColumnNumber */
                               aFlags);
-    }
-    return;
   }
-
-  // Parent process, e10s enabled.
-  nsTArray<ContentParent*> contentActors;
-  ContentParent::GetAll(contentActors);
-  if (!contentActors.IsEmpty()) {
-    // At least one content process active.
-    for (uint32_t i = 0; i < contentActors.Length(); ++i) {
-      Unused << NS_WARN_IF(
-        !contentActors[i]->SendPushError(PromiseFlatCString(aScope),
-          PromiseFlatString(aMessage), aFlags));
-    }
-    return;
-  }
-  // Report to the console if no content processes are active.
-  nsCOMPtr<nsIURI> scopeURI;
-  nsresult rv = NS_NewURI(getter_AddRefs(scopeURI), aScope);
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return;
-  }
-  Unused << NS_WARN_IF(NS_FAILED(
-    nsContentUtils::ReportToConsoleNonLocalized(aMessage,
-                                                aFlags,
-                                                NS_LITERAL_CSTRING("Push"),
-                                                nullptr, /* aDocument */
-                                                scopeURI, /* aURI */
-                                                EmptyString(), /* aLine */
-                                                0, /* aLineNumber */
-                                                0, /* aColumnNumber */
-                                                nsContentUtils::eOMIT_LOCATION)));
+  return;
 }
 
 nsresult
