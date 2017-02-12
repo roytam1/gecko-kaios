@@ -112,8 +112,8 @@ PushRecord.prototype = {
    *  The time is expressed in milliseconds since Epoch.
    */
   getLastVisit: Task.async(function* () {
-    if (!this.quotaApplies() || this.isTabOpen()) {
-      // If the registration isn't subject to quota, or the user already
+    if (!this.quotaApplies() || this.isInstalledApp() || this.isTabOpen()) {
+      // If the registration isn't subject to quota, by InstalledApp or the user already
       // has the site open, skip expensive database queries.
       return Date.now();
     }
@@ -168,6 +168,20 @@ PushRecord.prototype = {
     return lastVisit / 1000;
   }),
 
+  /**
+   * Indicates whether the registration was created by an installed app. These
+   * registrations are always exempt from the quota.
+   */
+  isInstalledApp() {
+    return this.principal.originAttributes.appId !=
+           Ci.nsIScriptSecurityManager.NO_APP_ID;
+  },
+
+  /**
+   * Indicates whether the registration is associated with a site whose tab is
+   * open. These registrations remain exempt from the quota until the tab is
+   * closed.
+  */
   isTabOpen() {
     let windows = Services.wm.getEnumerator("navigator:browser");
     while (windows.hasMoreElements()) {
@@ -176,8 +190,17 @@ PushRecord.prototype = {
         continue;
       }
       // `gBrowser` on Desktop; `BrowserApp` on Fennec.
-      let tabs = window.gBrowser ? window.gBrowser.tabContainer.children :
-                 window.BrowserApp.tabs;
+      let tabs;
+      if (window.gBrowser) {
+        // `gBrowser` on Desktop.
+        tabs = window.gBrowser.tabContainer.children;
+      } else if (window.BrowserApp) {
+        // `BrowserApp` on Fennec.
+        tabs = window.BrowserApp.tabs;
+      } else {
+        // B2G, or a chrome window without a tab browser.
+        continue;
+      }
       for (let tab of tabs) {
         // `linkedBrowser` on Desktop; `browser` on Fennec.
         let tabURI = (tab.linkedBrowser || tab.browser).currentURI;
