@@ -1253,18 +1253,18 @@ public:
 
       nsCOMPtr<nsIUploadChannel2> uploadChannel = do_QueryInterface(httpChannel);
       if (uploadChannel) {
-      MOZ_ASSERT(!mUploadStream);
-      bool bodyHasHeaders = false;
-      rv = uploadChannel->GetUploadStreamHasHeaders(&bodyHasHeaders);
-      NS_ENSURE_SUCCESS(rv, rv);
-      nsCOMPtr<nsIInputStream> uploadStream;
-      rv = uploadChannel->CloneUploadStream(getter_AddRefs(uploadStream));
-      NS_ENSURE_SUCCESS(rv, rv);
-      if (bodyHasHeaders) {
-        HandleBodyWithHeaders(uploadStream);
-      } else {
-        mUploadStream = uploadStream;
-      }
+        MOZ_ASSERT(!mUploadStream);
+        bool bodyHasHeaders = false;
+        rv = uploadChannel->GetUploadStreamHasHeaders(&bodyHasHeaders);
+        NS_ENSURE_SUCCESS(rv, rv);
+        nsCOMPtr<nsIInputStream> uploadStream;
+        rv = uploadChannel->CloneUploadStream(getter_AddRefs(uploadStream));
+        NS_ENSURE_SUCCESS(rv, rv);
+        if (bodyHasHeaders) {
+          HandleBodyWithHeaders(uploadStream);
+        } else {
+          mUploadStream = uploadStream;
+        }
       }
     } else {
       nsCOMPtr<nsIJARChannel> jarChannel = do_QueryInterface(channel);

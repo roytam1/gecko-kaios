@@ -124,6 +124,15 @@ private:
 
 } // namespace
 
+bool
+ServiceWorkerWindowClient::FocusEnabled(JSContext* aCx, JSObject* aObj)
+{
+  WorkerPrivate* worker = GetCurrentThreadWorkerPrivate();
+  MOZ_ASSERT(worker);
+  worker->AssertIsOnWorkerThread();
+  return worker->FocusEnabled();
+}
+
 already_AddRefed<Promise>
 ServiceWorkerWindowClient::Focus(ErrorResult& aRv) const
 {

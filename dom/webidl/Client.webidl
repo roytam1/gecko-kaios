@@ -23,7 +23,8 @@ interface WindowClient : Client {
   readonly attribute VisibilityState visibilityState;
   readonly attribute boolean focused;
 
-  [Throws, NewObject]
+  [Throws, NewObject,
+    Func="mozilla::dom::workers::ServiceWorkerWindowClient::FocusEnabled"]
   Promise<WindowClient> focus();
 };
 

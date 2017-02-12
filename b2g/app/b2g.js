@@ -1145,6 +1145,7 @@ pref("dom.activities.developer_mode_only", "import-app");
 pref("dom.serviceWorkers.enabled", true);
 pref("dom.webnotifications.serviceworker.enabled", true);
 pref("dom.push.enabled", true);
+pref("dom.serviceWorkers.focus.enabled", false);
 
 // Retain at most 10 processes' layers buffers
 pref("layers.compositor-lru-size", 10);

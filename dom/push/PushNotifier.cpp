@@ -170,7 +170,6 @@ PushNotifier::NotifyPushWorkers(const nsACString& aScope,
     return rv;
   }
   return swm->SendPushEvent(originSuffix, aScope, aMessageId, aData);
-
 }
 
 nsresult

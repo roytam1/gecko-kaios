@@ -43,6 +43,9 @@ public:
     return mFocused;
   }
 
+  static bool
+  FocusEnabled(JSContext* aCx, JSObject* aObj);
+
   already_AddRefed<Promise>
   Focus(ErrorResult& aRv) const;
 
