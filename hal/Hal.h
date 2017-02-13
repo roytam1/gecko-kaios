@@ -235,14 +235,14 @@ double GetKeyLightBrightness();
  * followed by GetScreenBrightness(), the value returned by
  * GetScreenBrightness() may not be exactly x.
  */
-__attribute__ ((visibility ("default")))
+MOZ_EXPORT
 void SetScreenBrightness(double aBrightness);
 
 /**
  * Set the brightness of the device's external screen's backlight,
  * on a scale from 0 (very dimm) to 1 (full blast).
  */
-__attribute__ ((visibility ("default")))
+MOZ_EXPORT
 void SetExtScreenBrightness(double aBrightness);
 
 /**
