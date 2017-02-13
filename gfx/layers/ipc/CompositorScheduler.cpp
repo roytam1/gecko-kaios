@@ -6,6 +6,7 @@
 
 #include "mozilla/layers/CompositorScheduler.h"
 #include "mozilla/layers/CompositorBridgeParent.h"
+#include "gfxPrefs.h"
 
 namespace mozilla {
 namespace layers {
@@ -79,7 +80,7 @@ CompositorScheduler::ResumeComposition()
 
 void
 CompositorScheduler::ForceComposeToTarget(gfx::DrawTarget* aTarget,
-                                          const IntRect* aRect)
+                                          const gfx::IntRect* aRect)
 {
   mLastCompose = TimeStamp::Now();
   ComposeToTarget(aTarget, aRect);
@@ -87,7 +88,7 @@ CompositorScheduler::ForceComposeToTarget(gfx::DrawTarget* aTarget,
 
 void
 CompositorScheduler::ComposeToTarget(gfx::DrawTarget* aTarget,
-                                     const IntRect* aRect)
+                                     const gfx::IntRect* aRect)
 {
   MOZ_ASSERT(CompositorBridgeParent::IsInCompositorThread());
   MOZ_ASSERT(mCompositorBridgeParent);
