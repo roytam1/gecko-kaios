@@ -92,6 +92,13 @@ HookHotplug(const struct hwc_procs* aProcs, int aDisplay,
     HwcComposer2D::GetInstance()->Hotplug(aDisplay, aConnected);
 }
 
+__attribute__ ((visibility ("default")))
+void
+HookSetVsyncAlwaysEnabled(bool aAlways)
+{
+    HwcComposer2D::GetInstance()->SetVsyncAlwaysEnabled(aAlways);
+}
+
 static StaticRefPtr<HwcComposer2D> sInstance;
 
 HwcComposer2D::HwcComposer2D()
@@ -102,6 +109,7 @@ HwcComposer2D::HwcComposer2D()
     , mPrepared(false)
     , mHasHWVsync(false)
     , mStopRenderWithHwc(false)
+    , mAlwaysEnabled(false)
     , mLock("mozilla.HwcComposer2D.mLock")
 {
     mHal = HwcHALBase::CreateHwcHAL();
@@ -162,6 +170,12 @@ HwcComposer2D::EnableVsync(bool aEnable)
     if (!mHasHWVsync) {
         return false;
     }
+
+    // Early return if try to disable vsync when mAlwaysEnabled is true
+    if (mAlwaysEnabled && !aEnable) {
+      return true;
+    }
+
     return mHal->EnableVsync(aEnable) && aEnable;
 }
 
@@ -1000,6 +1014,12 @@ void
 HwcComposer2D::StopRenderWithHwc(bool aIsStop)
 {
     mStopRenderWithHwc = aIsStop;
+}
+
+void
+HwcComposer2D::SetVsyncAlwaysEnabled(bool aAlways)
+{
+    mAlwaysEnabled = aAlways;
 }
 
 } // namespace mozilla

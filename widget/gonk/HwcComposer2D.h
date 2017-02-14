@@ -93,6 +93,7 @@ public:
     // aIsStop equals true stops render with Hwc, vice versa.
     void StopRenderWithHwc(bool aIsStop);
 
+    void SetVsyncAlwaysEnabled(bool aAlways);
 private:
     void Reset();
     void Prepare(buffer_handle_t dispHandle, int fence, nsScreenGonk* screen);
@@ -120,6 +121,7 @@ private:
     bool                    mPrepared;
     bool                    mHasHWVsync;
     bool                    mStopRenderWithHwc;
+    bool                    mAlwaysEnabled;
     layers::CompositorBridgeParent* mCompositorBridgeParent;
     Mutex mLock;
 };

@@ -45,6 +45,11 @@ namespace hal_impl {
 }
 }
 
+namespace mozilla {
+  __attribute__ ((visibility ("default")))
+  void HookSetVsyncAlwaysEnabled(bool aAlways);
+}
+
 static pthread_t sAnimationThread;
 static bool sRunAnimation;
 
@@ -882,6 +887,7 @@ StartBootAnimation()
 {
     GetGonkDisplay(); // Ensure GonkDisplay exist
     sRunAnimation = true;
+    HookSetVsyncAlwaysEnabled(true);
     pthread_create(&sAnimationThread, nullptr, AnimationThread, nullptr);
 }
 
@@ -891,6 +897,7 @@ StopBootAnimation()
 {
     if (sRunAnimation) {
         sRunAnimation = false;
+        HookSetVsyncAlwaysEnabled(false);
         pthread_join(sAnimationThread, nullptr);
         GetGonkDisplay()->NotifyBootAnimationStopped();
     }
