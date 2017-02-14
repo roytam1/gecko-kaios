@@ -1025,7 +1025,20 @@ this.TextValue = {
    *        A null or undefined or text string.
    */
   encode: function(data, text) {
-    encodeAlternatives(data, text, null, NoValue, TokenText, QuotedString);
+    // @see WAP-230-WSP-20010705-a clause 8.4.2.3
+    //
+    // Text-string = [Quote] *TEXT End-of-string
+    // ;If the first character in the TEXT is in the range of 128-255, a Quote
+    // character must precede it.
+    // ; Otherwise the Quote character must be omitted. The Quote is not part
+    // of the contents.
+    let errorFallback;
+    if (text.charCodeAt(0) >= 128) {
+      errorFallback = QuotedString;
+    } else {
+      errorFallback = TextString;
+    }
+    encodeAlternatives(data, text, null, NoValue, TokenText, errorFallback);
   },
 };
 
