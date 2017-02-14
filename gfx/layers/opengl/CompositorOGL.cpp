@@ -1717,12 +1717,11 @@ void CompositorOGL::DrawGLCursor(LayoutDeviceIntRect aRect,
                                                 mCursorTextureCache,
                                                 Filter::POINT,
                                                 true);
-  DrawQuad(gfx::Rect(aCursorPos.x - aHotspot.x,
-                     aCursorPos.y - aHotspot.y,
-                     aImgSize.width, aImgSize.height),
-           gfx::Rect(aRect.x, aRect.y, aRect.width, aRect.height),
-           effects, alpha, gfx::Matrix4x4(),
-           gfx::Rect(aCursorPos.x, aCursorPos.y, 30, 30));
+  Compositor::DrawQuad(
+    gfx::Rect(aCursorPos.x - aHotspot.x, aCursorPos.y - aHotspot.y,
+              aImgSize.width, aImgSize.height),
+    gfx::Rect(aRect.x, aRect.y, aRect.width, aRect.height),
+    effects, alpha, gfx::Matrix4x4());
 }
 
 GLuint
