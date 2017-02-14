@@ -272,6 +272,17 @@ BrowserElementParent::OpenWindowOOP(TabParent* aOpenerTabParent,
   aPopupTabParent->SetOwnerElement(popupFrameElement);
   popupFrameElement->AllowCreateFrameLoader();
   popupFrameElement->CreateRemoteFrameLoader(aPopupTabParent);
+  
+  // Because the FrameLoader(nor BrowserAPI) of popupFrameElement has not yet
+  // initialsed before dispatching mozbrowseropenwindow event, System App does
+  // not have the chance to block a window from self focusing if this window is
+  // opened by window.open(), false canTakeFocus of this popupFrameElement, but
+  // System App should be responsible for its focus carefully.
+  nsCOMPtr<nsIFrameLoader> frameLoader;
+  popupFrameElement->GetFrameLoader(getter_AddRefs(frameLoader));
+  if (frameLoader) {
+    frameLoader->SetCanTakeFocus(false);
+  }
 
   RenderFrameParent* rfp = static_cast<RenderFrameParent*>(aRenderFrame);
   if (!aPopupTabParent->SetRenderFrame(rfp) ||
@@ -329,6 +340,13 @@ BrowserElementParent::OpenWindowInProcess(nsPIDOMWindowOuter* aOpenerWindow,
   nsCOMPtr<nsIFrameLoader> frameLoader;
   popupFrameElement->GetFrameLoader(getter_AddRefs(frameLoader));
   NS_ENSURE_TRUE(frameLoader, BrowserElementParent::OPEN_WINDOW_IGNORED);
+
+  // Because the FrameLoader(nor BrowserAPI) of popupFrameElement has not yet
+  // initialsed before dispatching mozbrowseropenwindow event, System App does
+  // not have the chance to block a window from self focusing if this window is
+  // opened by window.open(), false canTakeFocus of this popupFrameElement, but
+  // System App should be responsible for its focus carefully.
+  frameLoader->SetCanTakeFocus(false);
 
   nsCOMPtr<nsIDocShell> docshell;
   frameLoader->GetDocShell(getter_AddRefs(docshell));
