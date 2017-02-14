@@ -1861,7 +1861,10 @@ MediaDecoderStateMachine::OnMetadataRead(MetadataHolder* aMetadata)
 #else
     false;
 #endif
-  mNotifyMetadataBeforeFirstFrame = mDuration.Ref().isSome() || waitingForCDM;
+  // Wait until decoded first frame when duration is zero.
+  mNotifyMetadataBeforeFirstFrame = (mDuration.Ref().isSome() &&
+                                     mDuration.Ref().ref().ToMicroseconds() > 0) ||
+                                     waitingForCDM;
   if (mNotifyMetadataBeforeFirstFrame) {
     EnqueueLoadedMetadataEvent();
   }
