@@ -3803,7 +3803,7 @@ this.DOMApplicationRegistry = {
     // Use dev certificate to verify the app package's signature.
     // When the app manifest is downloaded from specific url.
     let manifestUri = Services.io.newURI(aManifestURL, null, null).prePath;
-    if (devOrigins.split(",").indexOf(manifestUri) == 0) {
+    if (devOrigins.split(",").indexOf(manifestUri) > -1) {
           root = Ci.nsIX509CertDB.AppServiceCenterDevPublicRoot;
     }
 
