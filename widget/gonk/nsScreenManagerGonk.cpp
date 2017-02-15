@@ -776,7 +776,7 @@ NS_IMPL_ISUPPORTS(nsScreenManagerGonk, nsIScreenManager)
 nsScreenManagerGonk::nsScreenManagerGonk()
     : mInitialized(false)
 #if ANDROID_VERSION >= 19
-    , mDisplayEnabled(false)
+    , mDisplayEnabled(hal::GetScreenEnabled())
 #endif
 {
 }

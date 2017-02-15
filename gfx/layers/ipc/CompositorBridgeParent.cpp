@@ -316,7 +316,7 @@ CompositorVsyncScheduler::CompositorVsyncScheduler(CompositorBridgeParent* aComp
   , mSetNeedsCompositeTask(nullptr)
 #ifdef MOZ_WIDGET_GONK
 #if ANDROID_VERSION >= 19
-  , mDisplayEnabled(false)
+  , mDisplayEnabled(hal::GetScreenEnabled())
   , mSetDisplayMonitor("SetDisplayMonitor")
   , mSetDisplayTask(nullptr)
 #endif
