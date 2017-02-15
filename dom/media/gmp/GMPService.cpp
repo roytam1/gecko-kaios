@@ -40,6 +40,10 @@
 #include "mozilla/dom/PluginCrashedEvent.h"
 #include "mozilla/EventDispatcher.h"
 
+#ifdef MOZ_NUWA_PROCESS
+#include "ipc/Nuwa.h"
+#endif
+
 namespace mozilla {
 
 #ifdef LOG
@@ -295,6 +299,18 @@ GeckoMediaPluginService::RunPluginCrashCallbacks(const uint32_t aPluginId,
   }
 }
 
+#ifdef MOZ_NUWA_PROCESS
+class RegisterGMPThreadWithNuwaRunnable : public nsRunnable
+{
+public:
+  NS_IMETHOD Run()
+  {
+    NuwaMarkCurrentThread(nullptr, nullptr);
+    return NS_OK;
+  }
+};
+#endif
+
 nsresult
 GeckoMediaPluginService::Init()
 {
@@ -306,7 +322,20 @@ GeckoMediaPluginService::Init()
 
   // Kick off scanning for plugins
   nsCOMPtr<nsIThread> thread;
-  return GetThread(getter_AddRefs(thread));
+  nsresult rv = GetThread(getter_AddRefs(thread));
+
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+
+#ifdef MOZ_NUWA_PROCESS
+  if (IsNuwaProcess()) {
+    nsCOMPtr<nsIRunnable> worker = new RegisterGMPThreadWithNuwaRunnable();
+    thread->Dispatch(worker, NS_DISPATCH_NORMAL);
+    MOZ_RELEASE_ASSERT(NS_SUCCEEDED(rv), "Should register GMPThread with Nuwa process");
+  }
+#endif
+  return rv;
 }
 
 void
