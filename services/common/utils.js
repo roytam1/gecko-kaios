@@ -88,6 +88,25 @@ this.CommonUtils = {
     return s;
   },
 
+   /**
+   * Encode byte string as base64 (RFC 4648).
+   *
+   * @param bytes
+   *        (string) Raw byte string to encode.
+   * @param pad
+   *        (bool) Whether to include padding characters (=). Defaults
+   *        to true for historical reasons.
+   */
+  encodeBase64: function encodeBase64(bytes, pad=true) {
+    let s = btoa(bytes);
+
+    if (!pad) {
+      s = s.replace("=", "", "g");
+    }
+
+    return s;
+  },
+
   /**
    * Create a nsIURI instance from a string.
    */

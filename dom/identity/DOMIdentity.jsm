@@ -14,6 +14,8 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 const PREF_FXA_ENABLED = "identity.fxaccounts.enabled";
 const FXA_PERMISSION = "firefox-accounts";
+const PREF_KAIA_ENABLED = "identity.kaiaccounts.enabled";
+const KAIA_PERMISSION = "kaios-accounts";
 
 // This is the parent process corresponding to nsDOMIdentity.
 this.EXPORTED_SYMBOLS = ["DOMIdentity"];
@@ -32,6 +34,9 @@ XPCOMUtils.defineLazyModuleGetter(this, "IdentityService",
 
 XPCOMUtils.defineLazyModuleGetter(this, "FirefoxAccounts",
                                   "resource://gre/modules/identity/FirefoxAccounts.jsm");
+
+XPCOMUtils.defineLazyModuleGetter(this, "KaiosAccounts",
+                                  "resource://gre/modules/identity/KaiosAccounts.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "makeMessageObject",
                                   "resource://gre/modules/identity/IdentityUtils.jsm");
@@ -240,6 +245,13 @@ this.DOMIdentity = {
     }
 
     let context = this._serviceContexts.get(message.id);
+    if (context.wantIssuer == "kaios-accounts") {
+      if (Services.prefs.getPrefType(PREF_KAIA_ENABLED) === Ci.nsIPrefBranch.PREF_BOOL
+          && Services.prefs.getBoolPref(PREF_KAIA_ENABLED)) {
+        return KaiosAccounts;
+      }
+      log("WARNING: KaiOS Accounts is not enabled; Defaulting to BrowserID");
+    }
     if (context.wantIssuer == "firefox-accounts") {
       if (Services.prefs.getPrefType(PREF_FXA_ENABLED) === Ci.nsIPrefBranch.PREF_BOOL
           && Services.prefs.getBoolPref(PREF_FXA_ENABLED)) {
@@ -271,19 +283,23 @@ this.DOMIdentity = {
   },
 
   hasPermission: function(aMessage) {
-    // We only check that the firefox accounts permission is present in the
+    // We only check that the firefox/kaios accounts permission is present in the
     // manifest.
-    if (aMessage.json && aMessage.json.wantIssuer == "firefox-accounts") {
+    if (aMessage.json && (aMessage.json.wantIssuer == "kaios-accounts" ||
+      aMessage.json.wantIssuer == "firefox-accounts")) {
       if (!aMessage.principal) {
         return false;
       }
 
+      let whichAccount = aMessage.json.wantIssuer == "kaios-accounts" ?
+                         KAIA_PERMISSION : FXA_PERMISSION;
       let permission =
         permissionManager.testPermissionFromPrincipal(aMessage.principal,
-                                                      FXA_PERMISSION);
+                                                      whichAccount);
       return permission != Ci.nsIPermissionManager.UNKNOWN_ACTION &&
              permission != Ci.nsIPermissionManager.DENY_ACTION;
     }
+
     return true;
   },
 

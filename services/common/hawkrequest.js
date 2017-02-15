@@ -69,7 +69,8 @@ HAWKAuthenticatedRESTRequest.prototype = {
   __proto__: RESTRequest.prototype,
 
   dispatch: function dispatch(method, data, onComplete, onProgress) {
-    let contentType = "text/plain";
+    // DELETE and GET RESTFul request do not need any payload.
+    let contentType;
     if (method == "POST" || method == "PUT" || method == "PATCH") {
       contentType = "application/json";
     }
@@ -90,7 +91,9 @@ HAWKAuthenticatedRESTRequest.prototype = {
       this.setHeader(header, this.extraHeaders[header]);
     }
 
-    this.setHeader("Content-Type", contentType);
+    if (contentType) {
+      this.setHeader("Content-Type", contentType);
+    }
 
     this.setHeader("Accept-Language", this._intl.accept_languages);
 

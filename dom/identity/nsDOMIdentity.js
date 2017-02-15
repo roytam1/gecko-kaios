@@ -779,7 +779,7 @@ function assertCorrectCallbacks(aOptions) {
   let requiredCallbacks = ["onlogin"];
   let optionalCallbacks = ["onlogout", "onready", "onerror"];
 
-  if (aOptions.wantIssuer == "firefox-accounts") {
+  if (aOptions.wantIssuer == "kaios-accounts" || aOptions.wantIssuer == "firefox-accounts") {
     requiredCallbacks = ["onlogin", "onlogout", "onready"];
     optionalCallbacks = ["onerror"];
   }

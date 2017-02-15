@@ -1079,8 +1079,11 @@ pref("layout.accessiblecaret.use_long_tap_injector", false);
 pref("layout.accessiblecaret.always_show_when_scrolling", false);
 
 // Enable sync and mozId with Firefox Accounts.
-pref("services.sync.fxaccounts.enabled", true);
-pref("identity.fxaccounts.enabled", true);
+pref("services.sync.fxaccounts.enabled", false);
+pref("identity.fxaccounts.enabled", false);
+
+// Enable sync and mozId with KaiOS Accounts.
+pref("identity.kaiaccounts.enabled", true);
 
 // Mobile Identity API.
 pref("services.mobileid.server.uri", "https://msisdn.services.mozilla.com");

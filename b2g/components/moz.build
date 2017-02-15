@@ -64,6 +64,7 @@ EXTRA_JS_MODULES += [
     'ErrorPage.jsm',
     'Frames.jsm',
     'FxAccountsMgmtService.jsm',
+    'KaiAccountsMgmtService.jsm',
     'KillSwitchMain.jsm',
     'LogCapture.jsm',
     'LogParser.jsm',
