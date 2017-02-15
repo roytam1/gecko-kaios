@@ -232,7 +232,7 @@ DOMWifiManager.prototype = {
         break;
 
       case "WifiManager:associate:Return:NO":
-        Services.DOMRequest.fireError(request, "Unable to add the network");
+        Services.DOMRequest.fireError(request, msg.data);
         break;
 
       case "WifiManager:forget:Return:OK":
