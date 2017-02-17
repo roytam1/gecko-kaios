@@ -339,6 +339,11 @@ pref("media.cache_readahead_limit", 30);
 pref("media.gonk.enabled", true);
 #endif
 
+// Set maximum Video buffer size to 40MB(40*1024*1024).
+pref("media.mediasource.eviction_threshold.video", 41943040);
+// Set maximum Audio buffer size to 20MB(20*1024*1024).
+pref("media.mediasource.eviction_threshold.audio", 20971520);
+
 //Encrypted media extensions.
 pref("media.eme.enabled", true);
 pref("media.eme.apiVisible", true);
