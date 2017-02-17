@@ -100,6 +100,9 @@ pref("network.predictor.enabled", false); // disabled on b2g
 pref("network.predictor.max-db-size", 2097152); // bytes
 pref("network.predictor.preserve", 50); // percentage of predictor data to keep when cleaning up
 
+// Disable IPC security to let WebRTC works on https://appr.tc
+pref("network.disable.ipc.security", true);
+
 /* session history */
 pref("browser.sessionhistory.max_entries", 50);
 pref("browser.sessionhistory.contentViewerTimeout", 360);
