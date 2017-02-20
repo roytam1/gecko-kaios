@@ -20,6 +20,8 @@ interface Clients {
   Promise<WindowClient?> openWindow(USVString url);
   [NewObject]
   Promise<void> claim();
+  [NewObject]
+  Promise<void> openApp(optional OpenAppOptions options);
 };
 
 dictionary ClientQueryOptions {
@@ -34,3 +36,6 @@ enum ClientType {
   "all"
 };
 
+dictionary OpenAppOptions {
+  DOMString msg = "";
+};

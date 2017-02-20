@@ -706,6 +706,10 @@ SystemMessageInternal.prototype = {
           ", showApp: " + showApp + ", onlyShowApp: " + onlyShowApp +
           ", extra: " + JSON.stringify(aExtra));
 
+    if (typeof aExtra !== 'undefined' && typeof aExtra.showApp === 'boolean') {
+        showApp = showApp || aExtra.showApp;
+    }
+
     let glue = Cc["@mozilla.org/dom/messages/system-message-glue;1"]
                  .createInstance(Ci.nsISystemMessageGlue);
     if (glue) {

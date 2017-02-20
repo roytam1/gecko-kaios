@@ -85,6 +85,9 @@ this.SystemMessagePermissionsTable = {
   "notification": {
     "desktop-notification": []
   },
+  "serviceworker-notification": {
+    "desktop-notification": []
+  },
   "push": {
   	"push": []
   },

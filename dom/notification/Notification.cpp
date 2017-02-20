@@ -2622,6 +2622,13 @@ Notification::ShowPersistentNotification(JSContext* aCx,
 {
   MOZ_ASSERT(aGlobal);
 
+  // Reject showNotifcation if the service worker is running on content process.
+  // In this case, app is alive, sw can contact App by postMessage.
+  if (XRE_IsContentProcess()) {
+    aRv.Throw(NS_ERROR_DOM_INVALID_ACCESS_ERR);
+    return nullptr;
+  }
+
   // Validate scope.
   // XXXnsm: This may be slow due to blocking the worker and waiting on the main
   // thread. On calls from content, we can be sure the scope is valid since

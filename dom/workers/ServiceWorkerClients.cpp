@@ -32,6 +32,8 @@
 #include "nsPIWindowWatcher.h"
 #include "nsWindowWatcher.h"
 #include "nsWeakReference.h"
+#include "xpcpublic.h"
+#include "nsISystemMessagesInternal.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -42,8 +44,8 @@ NS_IMPL_CYCLE_COLLECTING_RELEASE(ServiceWorkerClients)
 NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(ServiceWorkerClients, mWorkerScope)
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(ServiceWorkerClients)
-  NS_WRAPPERCACHE_INTERFACE_MAP_ENTRY
-  NS_INTERFACE_MAP_ENTRY(nsISupports)
+NS_WRAPPERCACHE_INTERFACE_MAP_ENTRY
+NS_INTERFACE_MAP_ENTRY(nsISupports)
 NS_INTERFACE_MAP_END
 
 ServiceWorkerClients::ServiceWorkerClients(ServiceWorkerGlobalScope* aWorkerScope)
@@ -172,8 +174,8 @@ class MatchAllRunnable final : public nsRunnable
       nsTArray<RefPtr<ServiceWorkerClient>> ret;
       for (size_t i = 0; i < mValue.Length(); i++) {
         ret.AppendElement(RefPtr<ServiceWorkerClient>(
-              new ServiceWorkerWindowClient(promise->GetParentObject(),
-                                            mValue.ElementAt(i))));
+                            new ServiceWorkerWindowClient(promise->GetParentObject(),
+                                mValue.ElementAt(i))));
       }
 
       promise->MaybeResolve(ret);
@@ -266,8 +268,8 @@ public:
   ClaimRunnable(PromiseWorkerProxy* aPromiseProxy, const nsCString& aScope)
     : mPromiseProxy(aPromiseProxy)
     , mScope(aScope)
-    // Safe to call GetWorkerPrivate() since we are being called on the worker
-    // thread via script (so no clean up has occured yet).
+      // Safe to call GetWorkerPrivate() since we are being called on the worker
+      // thread via script (so no clean up has occured yet).
     , mServiceWorkerID(aPromiseProxy->GetWorkerPrivate()->ServiceWorkerID())
   {
     MOZ_ASSERT(aPromiseProxy);
@@ -298,16 +300,129 @@ public:
   }
 };
 
+class ResolveOpenAppRunnable final : public WorkerRunnable
+{
+  RefPtr<PromiseWorkerProxy> mPromiseProxy;
+  nsresult mResult;
+
+public:
+  ResolveOpenAppRunnable(WorkerPrivate* aWorkerPrivate,
+                         PromiseWorkerProxy* aPromiseProxy)
+    : WorkerRunnable(aWorkerPrivate, WorkerThreadModifyBusyCount)
+    , mPromiseProxy(aPromiseProxy)
+  {
+    AssertIsOnMainThread();
+  }
+
+  bool
+  WorkerRun(JSContext* aCx, WorkerPrivate* aWorkerPrivate) override
+  {
+    MOZ_ASSERT(aWorkerPrivate);
+    aWorkerPrivate->AssertIsOnWorkerThread();
+
+    RefPtr<Promise> promise = mPromiseProxy->WorkerPromise();
+    MOZ_ASSERT(promise);
+
+    promise->MaybeResolve(JS::UndefinedHandleValue);
+
+    mPromiseProxy->CleanUp();
+    return true;
+  }
+};
+
+class OpenAppRunnable final : public nsRunnable
+{
+  RefPtr<PromiseWorkerProxy> mPromiseProxy;
+  nsString mScope;
+  nsString mData;
+  uint64_t mServiceWorkerID;
+
+public:
+  OpenAppRunnable(PromiseWorkerProxy* aPromiseProxy, const nsAString& aScope, const nsAString& aData)
+    : mPromiseProxy(aPromiseProxy)
+    , mScope(aScope)
+    , mData(aData)
+      // Safe to call GetWorkerPrivate() since we are being called on the worker
+      // thread via script (so no clean up has occured yet).
+    , mServiceWorkerID(aPromiseProxy->GetWorkerPrivate()->ServiceWorkerID())
+  {
+    MOZ_ASSERT(aPromiseProxy);
+  }
+
+  NS_IMETHOD
+  Run() override
+  {
+    MutexAutoLock lock(mPromiseProxy->Lock());
+    if (mPromiseProxy->CleanedUp()) {
+      return NS_OK;
+    }
+
+    WorkerPrivate* workerPrivate = mPromiseProxy->GetWorkerPrivate();
+    MOZ_ASSERT(workerPrivate);
+
+    OpenApp();
+
+    RefPtr<ResolveOpenAppRunnable> r =
+      new ResolveOpenAppRunnable(workerPrivate, mPromiseProxy);
+
+    r->Dispatch();
+    return NS_OK;
+  }
+private:
+  void
+  OpenApp()
+  {
+    nsCOMPtr<nsISystemMessagesInternal> systemMessenger =
+      do_GetService("@mozilla.org/system-message-internal;1");
+    MOZ_ASSERT(systemMessenger);
+
+    // This is called with no JS on the stack.
+    // We need to pass a jsval to SendMessage.
+    // Only system code should be looking at the result here,
+    // so we just create it in the System-Principaled Junk Scope.
+    AutoJSContext cx;
+    JSAutoCompartment ac(cx, xpc::PrivilegedJunkScope());
+
+    JS::Rooted<JSObject*> eventObj(cx);
+    eventObj = JS_NewPlainObject(cx);
+
+    JS::Rooted<JSString*> string(cx,
+                                 JS_NewUCStringCopyZ(cx, mData.Data()));
+    JS::Rooted<JS::Value> value(cx);
+    value.setString(string);
+    JS_SetProperty(cx, eventObj, "msg", value);
+    JS::Rooted<JS::Value> event(cx, JS::ObjectValue(*eventObj));
+
+    JS::Rooted<JSObject*> extraObj(cx);
+    extraObj = JS_NewPlainObject(cx);
+    JS::Rooted<JS::Value> showApp(cx, JS::BooleanValue(true));
+    JS_SetProperty(cx, extraObj, "showApp", showApp);
+    JS::Rooted<JS::Value> extra(cx, JS::ObjectValue(*extraObj));
+
+    nsCOMPtr<nsIURI> manifestURI;
+    nsString nAppManifestURL;
+    nAppManifestURL.Assign(mScope.get());
+    nAppManifestURL.Append(MOZ_UTF16("manifest.webapp"));
+    NS_NewURI(getter_AddRefs(manifestURI), nAppManifestURL);
+
+    nsCOMPtr<nsISupports> promise;
+    nsString aEvent;
+    aEvent.Assign(MOZ_UTF16("serviceworker-notification"));
+    systemMessenger->SendMessage(aEvent, event, nullptr, manifestURI,
+                                 extra, getter_AddRefs(promise));
+  }
+};
+
 class ResolveOpenWindowRunnable final : public WorkerRunnable
 {
 public:
   ResolveOpenWindowRunnable(PromiseWorkerProxy* aPromiseProxy,
                             UniquePtr<ServiceWorkerClientInfo>&& aClientInfo,
                             const nsresult aStatus)
-  : WorkerRunnable(aPromiseProxy->GetWorkerPrivate(), WorkerThreadModifyBusyCount)
-  , mPromiseProxy(aPromiseProxy)
-  , mClientInfo(Move(aClientInfo))
-  , mStatus(aStatus)
+    : WorkerRunnable(aPromiseProxy->GetWorkerPrivate(), WorkerThreadModifyBusyCount)
+    , mPromiseProxy(aPromiseProxy)
+    , mClientInfo(Move(aClientInfo))
+    , mStatus(aStatus)
   {
     AssertIsOnMainThread();
     MOZ_ASSERT(aPromiseProxy);
@@ -352,10 +467,10 @@ public:
                       ServiceWorkerPrivate* aServiceWorkerPrivate,
                       nsPIDOMWindowOuter* aWindow,
                       nsIURI* aBaseURI)
-  : mPromiseProxy(aPromiseProxy)
-  , mServiceWorkerPrivate(aServiceWorkerPrivate)
-  , mWindow(aWindow)
-  , mBaseURI(aBaseURI)
+    : mPromiseProxy(aPromiseProxy)
+    , mServiceWorkerPrivate(aServiceWorkerPrivate)
+    , mWindow(aWindow)
+    , mBaseURI(aBaseURI)
   {
     MOZ_ASSERT(aPromiseProxy);
     MOZ_ASSERT(aServiceWorkerPrivate);
@@ -373,7 +488,7 @@ public:
                 uint32_t aStateFlags, nsresult aStatus) override
   {
     if (!(aStateFlags & STATE_IS_DOCUMENT) ||
-         !(aStateFlags & (STATE_STOP | STATE_TRANSFERRING))) {
+        !(aStateFlags & (STATE_STOP | STATE_TRANSFERRING))) {
       return NS_OK;
     }
 
@@ -465,8 +580,8 @@ NS_IMPL_CYCLE_COLLECTION(WebProgressListener, mPromiseProxy,
                          mServiceWorkerPrivate, mWindow)
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(WebProgressListener)
-  NS_INTERFACE_MAP_ENTRY(nsIWebProgressListener)
-  NS_INTERFACE_MAP_ENTRY(nsISupportsWeakReference)
+NS_INTERFACE_MAP_ENTRY(nsIWebProgressListener)
+NS_INTERFACE_MAP_ENTRY(nsISupportsWeakReference)
 NS_INTERFACE_MAP_END
 
 class OpenWindowRunnable final : public nsRunnable
@@ -751,7 +866,7 @@ ServiceWorkerClients::OpenWindow(const nsAString& aUrl,
   mWorkerScope->GetScope(scope);
 
   RefPtr<OpenWindowRunnable> r = new OpenWindowRunnable(promiseProxy,
-                                                          aUrl, scope);
+                                                        aUrl, scope);
   MOZ_ALWAYS_SUCCEEDS(NS_DispatchToMainThread(r));
 
   return promise.forget();
@@ -782,5 +897,46 @@ ServiceWorkerClients::Claim(ErrorResult& aRv)
     new ClaimRunnable(promiseProxy, NS_ConvertUTF16toUTF8(scope));
 
   MOZ_ALWAYS_SUCCEEDS(NS_DispatchToMainThread(runnable));
+  return promise.forget();
+}
+
+already_AddRefed<Promise>
+ServiceWorkerClients::OpenApp(const OpenAppOptions& options, ErrorResult& aRv)
+{
+  WorkerPrivate* workerPrivate = GetCurrentThreadWorkerPrivate();
+  MOZ_ASSERT(workerPrivate);
+
+  RefPtr<Promise> promise = Promise::Create(mWorkerScope, aRv);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return nullptr;
+  }
+
+  RefPtr<PromiseWorkerProxy> promiseProxy =
+    PromiseWorkerProxy::Create(workerPrivate, promise);
+  if (!promiseProxy) {
+    promise->MaybeReject(NS_ERROR_DOM_ABORT_ERR);
+    return promise.forget();
+  }
+
+  // [[4. If this algorithm is not allowed to show a popup ..]]
+  // In Gecko the service worker is allowed to show a popup only if the user
+  // just clicked on a notification.
+  // and only allow openApp in chrome process
+  if (!workerPrivate->GlobalScope()->WindowInteractionAllowed()
+      || XRE_IsContentProcess()) {
+    promise->MaybeReject(NS_ERROR_DOM_INVALID_ACCESS_ERR);
+    return promise.forget();
+  }
+
+  nsString scope;
+  mWorkerScope->GetScope(scope);
+
+  nsString message(options.mMsg);
+
+  RefPtr<OpenAppRunnable> runnable =
+    new OpenAppRunnable(promiseProxy, scope, message);
+
+  MOZ_ALWAYS_SUCCEEDS(NS_DispatchToMainThread(runnable));
+
   return promise.forget();
 }

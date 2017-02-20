@@ -41,6 +41,10 @@ public:
   already_AddRefed<Promise>
   Claim(ErrorResult& aRv);
 
+  // Return a raw pointer here to avoid refcounting, but make sure it's safe (the object should be kept alive by the callee).
+  already_AddRefed<Promise>
+  OpenApp(const OpenAppOptions& options, ErrorResult& aRv);
+
   JSObject*
   WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
