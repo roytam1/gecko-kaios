@@ -367,7 +367,7 @@ nsDOMCameraManager::Register(nsDOMCameraControl* aDOMCameraControl)
   while (i > 0) {
     --i;
     RefPtr<nsDOMCameraControl> cameraControl =
-      do_QueryObject(controls->ElementAt(i));
+      do_QueryReferent(controls->ElementAt(i));
     if (!cameraControl) {
       controls->RemoveElementAt(i);
     }
@@ -394,7 +394,7 @@ nsDOMCameraManager::Shutdown(uint64_t aWindowId)
   while (i > 0) {
     --i;
     RefPtr<nsDOMCameraControl> cameraControl =
-      do_QueryObject(controls->ElementAt(i));
+      do_QueryReferent(controls->ElementAt(i));
     if (cameraControl) {
       cameraControl->Shutdown();
     }
