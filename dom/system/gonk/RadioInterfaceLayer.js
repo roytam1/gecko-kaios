@@ -816,6 +816,10 @@ RadioInterface.prototype = {
       case "cdma-info-rec-received":
         this.handleCdmaInformationRecords(message.records);
         break;
+      case "isiminfochange":
+        gIccService.notifyIsimInfoChanged(this.clientId,
+                                          message.impi ? message : null);
+        break;
       default:
         throw new Error("Don't know about this message type: " +
                         message.rilMessageType);

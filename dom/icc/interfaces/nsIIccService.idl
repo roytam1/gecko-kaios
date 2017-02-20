@@ -7,17 +7,19 @@
 interface nsIIcc;
 interface nsIIccContact;
 interface nsIIccInfo;
+interface nsIIsimIccInfo;
 interface nsIStkDownloadEvent;
 interface nsIStkProactiveCmd;
 interface nsIStkTerminalResponse;
 
-[scriptable, uuid(71b33012-eca2-11e4-a40d-9ff040a6fe2a)]
+[scriptable, uuid(da853037-02b3-4eb4-8e6f-67fead6f9260)]
 interface nsIIccListener : nsISupports
 {
   void notifyStkCommand(in nsIStkProactiveCmd aStkProactiveCmd);
   void notifyStkSessionEnd();
   void notifyCardStateChanged();
   void notifyIccInfoChanged();
+  void notifyIsimInfoChanged();
 };
 
 /**
@@ -126,7 +128,7 @@ interface nsIIccChannelCallback : nsISupports
 
 %{C++
 #define ICC_SERVICE_CID \
-  { 0xbab0277a, 0x900e, 0x11e4, { 0x80, 0xc7, 0xdb, 0xd7, 0xad, 0x05, 0x24, 0x01 } }
+  { 0x73d22c18, 0xf72c, 0x11e6, { 0xbc, 0x64, 0x92, 0x36, 0x1f, 0x00, 0x26, 0x71 } }
 #define ICC_SERVICE_CONTRACTID \
   "@mozilla.org/icc/iccservice;1"
 
@@ -136,7 +138,7 @@ template<typename T> struct already_AddRefed;
 /**
  * XPCOM Service for the selection of the ICC to be accessed.
  */
-[scriptable, uuid(6590a04c-9ca4-11e4-ae95-570876ecc428)]
+[scriptable, uuid(9caebc96-f78b-11e6-bc64-92361f002671)]
 interface nsIIccService : nsISupports
 {
   /**
@@ -158,7 +160,7 @@ NS_CreateIccService();
 /**
  * XPCOM component that provides the access to the selected ICC.
  */
-[scriptable, uuid(1791f102-b081-4435-8555-37eb035fa4e2)]
+[scriptable, uuid(641df892-f722-11e6-bc64-92361f002671)]
 interface nsIIcc : nsISupports
 {
   /**
@@ -276,6 +278,13 @@ interface nsIIcc : nsISupports
    * Information stored in this ICC.
    */
   readonly attribute nsIIccInfo iccInfo;
+
+  /**
+   * Information stored in this ISIM.
+   *
+   * TODO: Integrate isim info. into iccInfo.
+   */
+  readonly attribute nsIIsimIccInfo isimInfo;
 
   /**
    * Indicates the state of this ICC.

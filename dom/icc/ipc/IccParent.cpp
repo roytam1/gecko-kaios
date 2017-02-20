@@ -248,6 +248,11 @@ IccParent::NotifyIccInfoChanged()
     ? NS_OK : NS_ERROR_FAILURE;
 }
 
+NS_IMETHODIMP
+IccParent::NotifyIsimInfoChanged()
+{
+  return NS_OK;
+}
 /**
  * PIccRequestParent Implementation.
  */

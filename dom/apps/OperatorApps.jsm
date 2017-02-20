@@ -89,7 +89,9 @@ var iccListener = {
       messenger.broadcastMessage("first-run-with-sim", { mcc: mcc,
                                                          mnc: mnc });
     }
-  }
+  },
+
+  notifyIsimInfoChanged: function() {}
 };
 #endif
 

@@ -138,7 +138,9 @@ this.MobileIdentityManager = {
 
           self._iccInfo = null;
           self._iccIds = null;
-        }
+        },
+
+        notifyIsimInfoChanged: function() {}
       };
 
       // _iccInfo is a local cache containing the information about the SIM cards

@@ -80,6 +80,16 @@ CdmaIccInfo.prototype = {
   prlVersion: 0
 };
 
+function IsimIccInfo() {}
+IsimIccInfo.prototype = {
+  QueryInterface: XPCOMUtils.generateQI([Ci.nsIIsimIccInfo]),
+
+  // nsIIsimIccInfo
+
+  impi: null,
+  impus: [],
+};
+
 function IccContact(aContact) {
   this.id = aContact.contactId || null;
   this._names = [];
@@ -259,6 +269,15 @@ IccService.prototype = {
 
     let icc = this.getIccByServiceId(aServiceId);
     icc.imsi = aImsi || null;
+  },
+
+  notifyIsimInfoChanged: function(aServiceId, aIsimInfo) {
+    if (DEBUG) {
+      debug("notifyIsimInfoChanged for service Id: " + aServiceId +
+            ", IsimInfo: " + JSON.stringify(aIsimInfo));
+    }
+
+    this.getIccByServiceId(aServiceId)._updateIsimIccInfo(aIsimInfo);
   },
 
   /**
@@ -457,6 +476,21 @@ Icc.prototype = {
       }
     }
     return true;
+  },
+
+  /**
+   * nsIIsimIccInfo interface.
+   */
+  isimInfo: null,
+  _updateIsimIccInfo: function(aIsimInfo) {
+    if (!this.isimInfo) {
+      this.isimInfo = new IsimIccInfo();
+    }
+
+    this.isimInfo.impi = aIsimInfo.impi;
+    this.isimInfo.impus = aIsimInfo.impus.slice();
+
+    this._deliverListenerEvent("notifyIsimInfoChanged");
   },
 
   /**

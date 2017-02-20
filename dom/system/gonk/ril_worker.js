@@ -2598,6 +2598,22 @@ RilObject.prototype = {
     // This was moved down from CARD_APPSTATE_READY
     this.requestNetworkInfo();
     if (newCardState == GECKO_CARDSTATE_READY) {
+      // Cache SIM/RUIM/ISIM aid(s) for later use.
+      let usimApp = iccStatus.apps[iccStatus.gsmUmtsSubscriptionAppIndex];
+      if (usimApp) {
+        this.context.SimRecordHelper.setAid(usimApp.aid);
+      }
+
+      let ruimApp = iccStatus.apps[iccStatus.cdmaSubscriptionAppIndex];
+      if (ruimApp) {
+        this.context.RuimRecordHelper.setAid(ruimApp.aid);
+      }
+
+      let isimApp = iccStatus.apps[iccStatus.imsSubscriptionAppIndex];
+      if (isimApp) {
+        this.context.ISimRecordHelper.setAid(isimApp.aid);
+      }
+
       // For type SIM, we need to check EF_phase first.
       // Other types of ICC we can send Terminal_Profile immediately.
       if (this.appType == CARD_APPTYPE_SIM) {
@@ -11376,6 +11392,22 @@ ICCFileHelperObject.prototype = {
     }
   },
 
+  /*
+   * This function handles EFs for ISIM
+   */
+  getIsimEFPath: function(fileId) {
+    switch(fileId) {
+      case ICC_EF_ISIM_IMPI:
+      case ICC_EF_ISIM_DOMAIN:
+      case ICC_EF_ISIM_IMPU:
+      case ICC_EF_ISIM_IST:
+      case ICC_EF_ISIM_PCSCF:
+        return EF_PATH_MF_SIM + EF_PATH_ADF_ISIM;
+      default:
+        return null;
+    }
+  },
+
   /**
    * Helper function for getting the pathId for the specific ICC record
    * depeding on which type of ICC card we are using.
@@ -11438,7 +11470,8 @@ ICCIOHelperObject.prototype = {
     }).bind(this);
 
     options.structure = EF_STRUCTURE_LINEAR_FIXED;
-    options.pathId = this.context.ICCFileHelper.getEFPath(options.fileId);
+    options.pathId = options.pathId ||
+                     this.context.ICCFileHelper.getEFPath(options.fileId);
     if (options.recordSize) {
       readRecord(options);
       return;
@@ -11736,6 +11769,8 @@ ICCRecordHelperObject.prototype = {
         this.context.RuimRecordHelper.fetchRuimRecords();
         break;
     }
+
+    this.context.ISimRecordHelper.fetchISimRecords();
   },
 
   /**
@@ -12472,6 +12507,15 @@ function SimRecordHelperObject(aContext) {
 }
 SimRecordHelperObject.prototype = {
   context: null,
+  // aid for USIM application.
+  aid: null,
+
+  setAid: function(aid) {
+    if (DEBUG) {
+      this.context.debug("USIM aid : " + aid);
+    }
+    this.aid = aid;
+  },
 
   /**
    * Fetch (U)SIM records.
@@ -13669,6 +13713,15 @@ function RuimRecordHelperObject(aContext) {
 }
 RuimRecordHelperObject.prototype = {
   context: null,
+  // aid for RUIM application.
+  aid: null,
+
+  setAid: function(aid) {
+    if (DEBUG) {
+      this.context.debug("RUIM aid : " + aid);
+    }
+    this.aid = aid;
+  },
 
   fetchRuimRecords: function() {
     this.getIMSI_M();
@@ -13908,6 +13961,141 @@ RuimRecordHelperObject.prototype = {
       fileId: ICC_EF_CSIM_SPN,
       callback: callback.bind(this)
     });
+  }
+};
+
+function ISimRecordHelperObject(aContext) {
+  this.context = aContext;
+}
+ISimRecordHelperObject.prototype = {
+  context: null,
+  // aid for ISIM application.
+  aid: null,
+
+  // IMS private user identity. Transparent EF.
+  impi: null,
+  // IMS public user identity. Linear fixed EF.
+  impus: [],
+
+  setAid: function(aid) {
+    if (DEBUG) {
+      this.context.debug("ISIM aid : " + aid);
+    }
+    this.aid = aid;
+  },
+
+  fetchISimRecords: function() {
+    // Return if no ISIM aid was cached.
+    if (!this.aid) {
+      return;
+    }
+
+    this.readIMPI();
+    this.readIMPU();
+  },
+
+  readIMPI: function() {
+    let ICCFileHelper = this.context.ICCFileHelper;
+    let ICCIOHelper = this.context.ICCIOHelper;
+
+    function callback() {
+      let Buf = this.context.Buf;
+      let strLen = Buf.readInt32();
+      let octetLen = strLen / 2;
+      let readLen = 0;
+
+      let GsmPDUHelper = this.context.GsmPDUHelper;
+      let tlvTag = GsmPDUHelper.readHexOctet();
+      let tlvLen = GsmPDUHelper.readHexOctet();
+      readLen += 2; // For tag and length fields.
+      if (tlvTag === ICC_ISIM_NAI_TLV_DATA_OBJECT_TAG) {
+        let str = "";
+        for (let i = 0; i < tlvLen; i++) {
+          str += String.fromCharCode(GsmPDUHelper.readHexOctet());
+        }
+        readLen += tlvLen;
+        if (DEBUG) {
+          this.context.debug("impi : " + str);
+        }
+        this.impi = str;
+      }
+
+      // Consume unread octets.
+      Buf.seekIncoming((octetLen - readLen) * Buf.PDU_HEX_OCTET_SIZE);
+      Buf.readStringDelimiter(strLen);
+
+      this._handleIsimInfoChange();
+    }
+
+    ICCIOHelper.loadTransparentEF({
+      fileId: ICC_EF_ISIM_IMPI,
+      pathId: ICCFileHelper.getIsimEFPath(ICC_EF_ISIM_IMPI),
+      aid: this.aid,
+      callback: callback.bind(this)
+    });
+  },
+
+  readIMPU: function() {
+    // Reset impu to empty array for avoiding redundant push.
+    this.impus = [];
+    let ICCFileHelper = this.context.ICCFileHelper;
+    let ICCIOHelper = this.context.ICCIOHelper;
+
+    function callback(options) {
+      let Buf = this.context.Buf;
+      let GsmPDUHelper = this.context.GsmPDUHelper;
+      let ICCIOHelper = this.context.ICCIOHelper;
+      let strLen = Buf.readInt32();
+      let octetLen = strLen / 2;
+      let readLen = 0;
+
+      let tlvTag = GsmPDUHelper.readHexOctet();
+      let tlvLen = GsmPDUHelper.readHexOctet();
+      readLen += 2; // For tag and length fields.
+      if (tlvTag === ICC_ISIM_URI_TLV_DATA_OBJECTTAG) {
+        let str = "";
+        for (let i = 0; i < tlvLen; i++) {
+          str += String.fromCharCode(GsmPDUHelper.readHexOctet());
+        }
+        readLen += tlvLen;
+        if (str.length) {
+          if (DEBUG) {
+            this.context.debug("impu : " + str);
+          }
+          this.impus.push(str);
+        }
+      }
+
+      // Consume unread octets.
+      Buf.seekIncoming((octetLen - readLen) * Buf.PDU_HEX_OCTET_SIZE);
+      Buf.readStringDelimiter(strLen);
+
+      if (options.p1 < options.totalRecords) {
+        ICCIOHelper.loadNextRecord(options);
+      } else {
+        this._handleIsimInfoChange();
+      }
+    }
+    function onerror(errorMsg) {
+      this.context.debug("Error on reading readIMPU  : " + errorMsg)
+    }
+
+    ICCIOHelper.loadLinearFixedEF({
+      fileId: ICC_EF_ISIM_IMPU,
+      pathId: ICCFileHelper.getIsimEFPath(ICC_EF_ISIM_IMPU),
+      aid: this.aid,
+      callback: callback.bind(this),
+      onerror: onerror.bind(this)
+    });
+  },
+
+  _handleIsimInfoChange: function() {
+    if (this.impi && this.impus && this.impus.length) {
+      this.context.ICCUtilsHelper.handleISIMInfoChange({
+        impi: this.impi,
+        impus: this.impus
+      });
+    }
   }
 };
 
@@ -14218,6 +14406,15 @@ ICCUtilsHelperObject.prototype = {
     let RIL = this.context.RIL;
     RIL.iccInfo.rilMessageType = "iccinfochange";
     RIL.sendChromeMessage(RIL.iccInfo);
+  },
+
+  /**
+   * Update the ISIM information to RadioInterfaceLayer.
+   */
+  handleISIMInfoChange: function(options) {
+    options.rilMessageType = "isiminfochange";
+    let RIL = this.context.RIL;
+    RIL.sendChromeMessage(options);
   },
 
   /**
@@ -15367,7 +15564,7 @@ Context.prototype = {
     "BerTlvHelper", "BitBufferHelper", "CdmaPDUHelper",
     "ComprehensionTlvHelper", "GsmPDUHelper", "ICCContactHelper",
     "ICCFileHelper", "ICCIOHelper", "ICCPDUHelper", "ICCRecordHelper",
-    "ICCUtilsHelper", "RuimRecordHelper", "SimRecordHelper",
+    "ICCUtilsHelper", "RuimRecordHelper", "SimRecordHelper", "ISimRecordHelper",
     "StkCommandParamsFactory", "StkProactiveCmdHelper", "IconLoader",
   ];
 

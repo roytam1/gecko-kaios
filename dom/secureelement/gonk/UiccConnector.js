@@ -341,6 +341,8 @@ UiccConnector.prototype = {
 
   notifyIccInfoChanged: function() {},
 
+  notifyIsimInfoChanged: function() {},
+
   notifyCardStateChanged: function() {
     debug("Card state changed, updating UICC presence.");
     this._updatePresenceState();

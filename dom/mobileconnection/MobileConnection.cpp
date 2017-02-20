@@ -1252,3 +1252,9 @@ MobileConnection::NotifyIccInfoChanged()
 
   return asyncDispatcher->PostDOMEvent();
 }
+
+NS_IMETHODIMP
+MobileConnection::NotifyIsimInfoChanged()
+{
+  return NS_OK;
+}

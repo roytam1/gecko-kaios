@@ -68,3 +68,17 @@ interface nsICdmaIccInfo : nsIIccInfo
    */
   readonly attribute long prlVersion;
 };
+
+[scriptable, uuid(07712790-f76d-11e6-bc64-92361f002671)]
+interface nsIIsimIccInfo : nsISupports
+{
+  /**
+   * IMS private user identity (IMPI) of the subscriber.
+   */
+  readonly attribute DOMString impi;
+
+  /**
+   * IMS public user identity (IMPU) of the subscriber.
+   */
+  readonly attribute jsval impus; // DOMString[]
+};

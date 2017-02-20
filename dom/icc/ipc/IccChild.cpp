@@ -210,6 +210,12 @@ IccChild::GetIccInfo(nsIIccInfo** aIccInfo)
 }
 
 NS_IMETHODIMP
+IccChild::GetIsimInfo(nsIIsimIccInfo**)
+{
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 IccChild::GetCardState(uint32_t* aCardState)
 {
   *aCardState = mCardState;

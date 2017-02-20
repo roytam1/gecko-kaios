@@ -531,6 +531,17 @@ this.ICC_EF_CSIM_CDMAHOME = 0x6f28;
 this.ICC_EF_CSIM_CST      = 0x6f32; // CDMA Service table
 this.ICC_EF_CSIM_SPN      = 0x6f41;
 
+// ISIM files
+this.ICC_EF_ISIM_IMPI   = 0x6f02;
+this.ICC_EF_ISIM_DOMAIN = 0x6f03;
+this.ICC_EF_ISIM_IMPU   = 0x6f04;
+this.ICC_EF_ISIM_IST    = 0x6f07;
+this.ICC_EF_ISIM_PCSCF  = 0x6f09;
+
+// ISIM files tlv tags. See TS 31.103 Annex B.
+this.ICC_ISIM_NAI_TLV_DATA_OBJECT_TAG = 0x80;
+this.ICC_ISIM_URI_TLV_DATA_OBJECTTAG = 0x80;
+
 this.ICC_PHASE_1 = 0x00;
 this.ICC_PHASE_2 = 0x02;
 this.ICC_PHASE_2_PROFILE_DOWNLOAD_REQUIRED = 0x03;
@@ -606,6 +617,7 @@ this.EF_PATH_DF_TELECOM   = "7f10";
 this.EF_PATH_DF_GSM       = "7f20";
 this.EF_PATH_DF_CDMA      = "7f25";
 this.EF_PATH_ADF_USIM     = "7fff";
+this.EF_PATH_ADF_ISIM     = "7fff";
 
 // Status code of sw1 for ICC I/O,
 // see GSM11.11 and TS 51.011 clause 9.4, and ISO 7816-4

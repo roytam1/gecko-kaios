@@ -140,3 +140,9 @@ IccListener::NotifyIccInfoChanged()
 
   return NS_OK;
 }
+
+NS_IMETHODIMP
+IccListener::NotifyIsimInfoChanged()
+{
+  return NS_OK;
+}
