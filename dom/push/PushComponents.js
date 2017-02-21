@@ -75,11 +75,11 @@ PushServiceBase.prototype = {
 
   observe(subject, topic, data) {
     if (topic === "app-startup") {
-      Services.obs.addObserver(this, "sessionstore-windows-restored", true);
+      Services.obs.addObserver(this, "final-ui-startup", true);
       return;
     }
-    if (topic === "sessionstore-windows-restored") {
-      Services.obs.removeObserver(this, "sessionstore-windows-restored");
+    if (topic === "final-ui-startup") {
+      Services.obs.removeObserver(this, "final-ui-startup");
       this._handleReady();
       return;
     }
