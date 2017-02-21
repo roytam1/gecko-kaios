@@ -5,6 +5,7 @@
 
 
 chrome.jar:
+% content controls %content/controls/
 % content branding %content/branding/ contentaccessible=yes
 % content b2g %content/
 
@@ -63,3 +64,18 @@ chrome.jar:
   content/images/exitfullscreen-hdpi.png (content/images/exitfullscreen-hdpi.png)
   content/images/throbber.png          (content/images/throbber.png)
   content/images/error.png             (content/images/error.png)
+  content/controls/index.js             (content/controls/index.js)
+  content/images/controls/CSK_key.png          (content/images/controls/CSK_key.png)
+  content/images/controls/CSK_ok_press.png          (content/images/controls/CSK_ok_press.png)
+  content/images/controls/CSK_arrow_normal.png      (content/images/controls/CSK_arrow_normal.png)
+  content/images/controls/CSK_arrow_press.png       (content/images/controls/CSK_arrow_press.png)
+  content/images/controls/Numeric.png              (content/images/controls/Numeric.png)
+  content/images/controls/button_r_normal.png      (content/images/controls/button_r_normal.png)
+  content/images/controls/button_r_press.png       (content/images/controls/button_r_press.png)
+  content/images/controls/ic_LSK.png               (content/images/controls/ic_LSK.png)
+  content/images/controls/ic_RSK.png               (content/images/controls/ic_RSK.png)
+  content/images/controls/ic_call.png              (content/images/controls/ic_call.png)
+  content/images/controls/ic_endcall.png           (content/images/controls/ic_endcall.png)
+  content/images/controls/keypad_number.png        (content/images/controls/keypad_number.png)
+  content/images/controls/keypad_number_normal.png (content/images/controls/keypad_number_normal.png)
+  content/images/controls/keypad_number_press.png  (content/images/controls/keypad_number_press.png)

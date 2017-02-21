@@ -2,58 +2,80 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-var browserWindow = Services.wm.getMostRecentWindow("navigator:browser");
-var isMulet = "ResponsiveUI" in browserWindow;
+const browserWindow = Services.wm.getMostRecentWindow("navigator:browser");
+let contentWindow;
 
-// Enable touch event shim on desktop that translates mouse events
-// into touch ones
-function enableTouch() {
-  let require = Cu.import('resource://devtools/shared/Loader.jsm', {})
-                  .devtools.require;
-  let { TouchEventSimulator } = require('devtools/shared/touch/simulator');
-  let touchEventSimulator = new TouchEventSimulator(shell.contentBrowser);
-  touchEventSimulator.start();
+/**
+ * Required to avoid black homescreen background
+ */
+Cu.import("resource://gre/modules/GlobalSimulatorScreen.jsm");
+GlobalSimulatorScreen.width = 826;
+GlobalSimulatorScreen.height = 540;
+
+/**
+ * Set debug mode or not.
+ * Use function logger() to log.
+ */
+Services.prefs.setBoolPref('browser.dom.window.dump.enabled', false);
+
+/**
+ * Dispatch events to content window
+ */
+function controlEventFactory(element, eventDetail){
+
+  const keg = new contentWindow.KeyboardEventGenerator();
+  element.addEventListener('mousedown', function(evt) {
+    logger('[DEBUG] mousedown:', eventDetail);
+
+    // prevent from grabbing input focus in contentWindow
+    evt.preventDefault();
+
+    // required: manually focus each time before sending event to contentWindow
+    contentWindow.document.activeElement.focus();
+
+    keg.generate(new contentWindow.KeyboardEvent('keydown', eventDetail));
+    keg.generate(new contentWindow.KeyboardEvent('keyup', eventDetail));
+  });
+
 }
 
-// Some additional buttons are displayed on simulators to fake hardware buttons.
-function setupButtons() {
-  let link = document.createElement('link');
-  link.type = 'text/css';
-  link.rel = 'stylesheet';
-  link.href = 'chrome://b2g/content/desktop.css';
-  document.head.appendChild(link);
 
-  let footer = document.createElement('footer');
-  footer.id = 'controls';
-  document.body.appendChild(footer);
-  let homeButton = document.createElement('button');
-  homeButton.id = 'home-button';
-  footer.appendChild(homeButton);
-  let rotateButton = document.createElement('button');
-  rotateButton.id = 'rotate-button';
-  footer.appendChild(rotateButton);
+function setupControls() {
+  contentWindow = shell.contentBrowser.contentWindow;
+  if(!contentWindow.KeyboardEventGenerator){
+    dump('KeyboardEventGenerator undefined, is pref("dom.keyboardEventGenerator.enabled", true) at b2g.js ?');
+    return;
+  }
 
-  homeButton.addEventListener('mousedown', function() {
-    let window = shell.contentBrowser.contentWindow;
-    let e = new window.KeyboardEvent('keydown', {key: 'Home'});
-    window.dispatchEvent(e);
-    homeButton.classList.add('active');
-  });
-  homeButton.addEventListener('mouseup', function() {
-    let window = shell.contentBrowser.contentWindow;
-    let e = new window.KeyboardEvent('keyup', {key: 'Home'});
-    window.dispatchEvent(e);
-    homeButton.classList.remove('active');
+  const controlEventMap = {
+    'lsk-anchor': { key: 'SoftLeft', keyCode: 0 },
+    'rsk-anchor': { key: 'SoftRight', keyCode: 0 },
+    'call-anchor': { key: 'Call', keyCode: 0 },
+    'endcall-anchor': { key: 'EndCall', keyCode: 95 },
+    'csk-anchor': { key: 'Enter', keyCode: 13 },
+    'csk-l-anchor': { key: 'ArrowLeft', keyCode: 37 },
+    'csk-u-anchor': { key: 'ArrowUp', keyCode: 38 },
+    'csk-r-anchor': { key: 'ArrowRight', keyCode: 39 },
+    'csk-d-anchor': { key: 'ArrowDown', keyCode: 40 },
+    'num1-anchor': { key: '1', keyCode: 49 },
+    'num2-anchor': { key: '2', keyCode: 50 },
+    'num3-anchor': { key: '3', keyCode: 51 },
+    'num4-anchor': { key: '4', keyCode: 52 },
+    'num5-anchor': { key: '5', keyCode: 53 },
+    'num6-anchor': { key: '6', keyCode: 54 },
+    'num7-anchor': { key: '7', keyCode: 55 },
+    'num8-anchor': { key: '8', keyCode: 56 },
+    'num9-anchor': { key: '9', keyCode: 57 },
+    'num0-anchor': { key: '0', keyCode: 48 },
+    'star-anchor': { key: '*', keyCode: 170 },
+    'hash-anchor': { key: '#', keyCode: 163 }
+  };
+
+  Object.keys(controlEventMap).forEach( id => {
+    const elem = document.getElementById(id);
+    controlEventFactory(elem, controlEventMap[id]);
   });
 
-  Cu.import("resource://gre/modules/GlobalSimulatorScreen.jsm");
-  rotateButton.addEventListener('mousedown', function() {
-    rotateButton.classList.add('active');
-  });
-  rotateButton.addEventListener('mouseup', function() {
-    GlobalSimulatorScreen.flipScreen();
-    rotateButton.classList.remove('active');
-  });
 }
 
 function setupStorage() {
@@ -86,69 +108,6 @@ function setupStorage() {
   Services.prefs.setCharPref('device.storage.overrideRootDir', directory.path);
 }
 
-function checkDebuggerPort() {
-  // XXX: To be removed once bug 942756 lands.
-  // We are hacking 'unix-domain-socket' pref by setting a tcp port (number).
-  // SocketListener.open detects that it isn't a file path (string), and starts
-  // listening on the tcp port given here as command line argument.
-
-  // Get the command line arguments that were passed to the b2g client
-  let args;
-  try {
-    let service = Cc["@mozilla.org/commandlinehandler/general-startup;1?type=b2gcmds"].getService(Ci.nsISupports);
-    args = service.wrappedJSObject.cmdLine;
-  } catch(e) {}
-
-  if (!args) {
-    return;
-  }
-
-  let dbgport;
-  try {
-    dbgport = args.handleFlagWithParam('start-debugger-server', false);
-  } catch(e) {}
-
-  if (dbgport) {
-    dump('Opening debugger server on ' + dbgport + '\n');
-    Services.prefs.setCharPref('devtools.debugger.unix-domain-socket', dbgport);
-    navigator.mozSettings.createLock().set(
-      {'debugger.remote-mode': 'adb-devtools'});
-  }
-}
-
-
-function initResponsiveDesign() {
-  Cu.import('resource://devtools/client/responsivedesign/responsivedesign.jsm');
-  ResponsiveUIManager.on('on', function(event, {tab:tab}) {
-    let responsive = ResponsiveUIManager.getResponsiveUIForTab(tab);
-    let document = tab.ownerDocument;
-
-    // Only tweak reponsive mode for shell.html tabs.
-    if (tab.linkedBrowser.contentWindow != window) {
-      return;
-    }
-
-    // Disable transition as they mess up with screen size handler
-    responsive.transitionsEnabled = false;
-
-    responsive.buildPhoneUI();
-
-    responsive.rotatebutton.addEventListener('command', function (evt) {
-      GlobalSimulatorScreen.flipScreen();
-      evt.stopImmediatePropagation();
-      evt.preventDefault();
-    }, true);
-
-    // Enable touch events
-    responsive.enableTouch();
-  });
-
-
-  let mgr = browserWindow.ResponsiveUI.ResponsiveUIManager;
-  mgr.toggle(browserWindow, browserWindow.gBrowser.selectedTab);
-
-}
-
 function openDevtools() {
   // Open devtool panel while maximizing its size according to screen size
   Services.prefs.setIntPref('devtools.toolbox.sidebar.width',
@@ -161,19 +120,40 @@ function openDevtools() {
 }
 
 window.addEventListener('ContentStart', function() {
-  // On Firefox Mulet, touch events are enabled within the responsive mode
-  if (!isMulet) {
-    enableTouch();
-  }
-  if (Services.prefs.getBoolPref('b2g.software-buttons')) {
-    setupButtons();
-  }
-  checkDebuggerPort();
-  setupStorage();
-  // On Firefox mulet, we automagically enable the responsive mode
-  // and show the devtools
-  if (isMulet) {
-    initResponsiveDesign(browserWindow);
-    openDevtools();
-  }
+  setupDebugger();
+  setupControls();
+
+//  setupStorage();
+//  openDevtools();
 });
+
+/**
+ * Handle for '-start-debugger-server somePort' option
+ * Be able to use remote runtime in WebIDE
+ */
+function setupDebugger() {
+
+  // Get the command line arguments that were passed to the b2g client
+  const service = Cc["@mozilla.org/commandlinehandler/general-startup;1?type=b2gcmds"].getService(Ci.nsISupports);
+  const args = service.wrappedJSObject.cmdLine;
+  if(!args) return;
+
+  const dbgport = args.handleFlagWithParam('start-debugger-server', false);
+  if(dbgport){
+    dump('Opening debugger server on ' + dbgport + '\n');
+    Services.prefs.setCharPref('devtools.debugger.unix-domain-socket', dbgport);
+    navigator.mozSettings.createLock().set({'debugger.remote-mode': 'adb-devtools'});
+  }
+
+}
+
+/**
+ * Logger for debug mode
+ */
+function logger(...args){
+  if(!Services.prefs.getBoolPref('browser.dom.window.dump.enabled')) return;
+
+  Cu.import('resource://gre/modules/devtools/Console.jsm');
+  console.log.apply(console, args);
+}
+

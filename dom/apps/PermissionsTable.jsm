@@ -284,6 +284,14 @@ this.PermissionsTable =  { geolocation: {
                              privileged: ALLOW_ACTION,
                              certified: ALLOW_ACTION
                            },
+                           "storage": {
+                             app: ALLOW_ACTION,
+                             privileged: ALLOW_ACTION,
+                             certified: ALLOW_ACTION,
+                             substitute: [
+                               "indexedDB-unlimited"
+                             ]
+                           },
                            "background-sensors": {
                              app: DENY_ACTION,
                              privileged: DENY_ACTION,
