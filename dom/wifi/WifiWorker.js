@@ -30,7 +30,7 @@ const kScreenStateChangedTopic           = "screen-state-changed";
 const MAX_RETRIES_ON_AUTHENTICATION_FAILURE = 2;
 const MAX_SUPPLICANT_LOOP_ITERATIONS = 4;
 const MAX_RETRIES_ON_DHCP_FAILURE = 2;
-const MAX_RETRIES_ON_ASSOCIATION_REJECT = 2;
+const MAX_RETRIES_ON_ASSOCIATION_REJECT = 5;
 
 // Settings DB path for wifi
 const SETTINGS_WIFI_ENABLED            = "wifi.enabled";
@@ -899,7 +899,9 @@ var WifiManager = (function() {
       }
       return false;
     }
-    if(eventData.indexOf("CTRL-EVENT-SSID-TEMP-DISABLED") === 0) {
+    if (eventData.indexOf("CTRL-EVENT-SSID-TEMP-DISABLED") === 0 &&
+         ((event.indexOf("WRONG_KEY") != -1) ||
+          (event.indexOf("AUTH_FAILED") != -1))) {
       notify("networkdisable", {reason: "DISABLED_AUTHENTICATION_FAILURE"});
       return true;
     }
@@ -2236,14 +2238,16 @@ function WifiWorker() {
         if (WifiManager.dhcpFailuresCount >= MAX_RETRIES_ON_DHCP_FAILURE) {
           WifiManager.clearDisableReasonCounter(function(){});
           WifiManager.isWepNetwork(WifiManager.connectionInfo.ssid, function(ok) {
-            self.handleNetworkConnectionFailure(WifiManager.connectionInfo.ssid);
-            if (ok) {
-              self._fireEvent("onauthenticationfailed",
-                {network: netToDOM(self.currentNetwork)});
-            } else {
-              self._fireEvent("ondhcpfailed",
-                {network: netToDOM(self.currentNetwork)});
-            }
+            self.handleNetworkConnectionFailure(WifiManager.connectionInfo.ssid, function(netId) {
+              if (ok) {
+                self.handleWrongPassword(netId);
+                self._fireEvent("onauthenticationfailed",
+                  {network: netToDOM(self.currentNetwork)});
+              } else {
+                self._fireEvent("ondhcpfailed",
+                  {network: netToDOM(self.currentNetwork)});
+              }
+            });
           });
         } else {
           WifiManager.disconnect(function() {
@@ -2255,9 +2259,11 @@ function WifiWorker() {
         WifiManager.authenticationFailuresCount++;
         if (WifiManager.authenticationFailuresCount >= MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
           WifiManager.clearDisableReasonCounter(function(){});
-          self.handleNetworkConnectionFailure(WifiManager.connectionInfo.ssid);
-          self._fireEvent("onauthenticationfailed",
-            {network: netToDOM(configNetwork)});
+          self.handleNetworkConnectionFailure(WifiManager.connectionInfo.ssid, function(netId) {
+            self.handleWrongPassword(netId);
+            self._fireEvent("onauthenticationfailed",
+              {network: netToDOM(configNetwork)});
+          });
         // It takes long time to pop up dialog after PEAP password error,
         // but CTRL-REQ-PASSWORD event actually represent the wrong PEAP
         // password behaviour, trigger disconnect/re-associate request after
@@ -2273,14 +2279,16 @@ function WifiWorker() {
         if (WifiManager.associationRejectCount >= MAX_RETRIES_ON_ASSOCIATION_REJECT) {
           WifiManager.clearDisableReasonCounter(function(){});
           WifiManager.isWepNetwork(WifiManager.connectionInfo.ssid, function(ok) {
-            self.handleNetworkConnectionFailure(WifiManager.connectionInfo.ssid);
-            if (ok) {
-              self._fireEvent("onauthenticationfailed",
-                {network: netToDOM(self.currentNetwork)});
-            } else {
-              self._fireEvent("onassociationreject",
-                {network: netToDOM(self.currentNetwork)});
-            }
+            self.handleNetworkConnectionFailure(WifiManager.connectionInfo.ssid, function(netId) {
+              if (ok) {
+                self.handleWrongPassword(netId);
+                self._fireEvent("onauthenticationfailed",
+                  {network: netToDOM(self.currentNetwork)});
+              } else {
+                self._fireEvent("onassociationreject",
+                  {network: netToDOM(self.currentNetwork)});
+              }
+            });
           });
         }
         break;
@@ -2721,7 +2729,7 @@ WifiWorker.prototype = {
     return airplaneMode;
   },
 
-  handleNetworkConnectionFailure: function(ssid) {
+  handleNetworkConnectionFailure: function(ssid, callback) {
     let self = this;
     // We may fail to establish the connection, re-enable the
     // rest of our networks.
@@ -2736,7 +2744,7 @@ WifiWorker.prototype = {
 
     WifiManager.getNetworkId(ssid, function(netId) {
       // Trying to get netId from current network.
-      if (!netId &&
+      if (netId === null &&
           self.currentNetwork && self.currentNetwork.ssid &&
           dequote(self.currentNetwork.ssid) == ssid &&
           typeof self.currentNetwork.netId !== "undefined") {
@@ -2745,14 +2753,21 @@ WifiWorker.prototype = {
       if (netId >= 0) {
         WifiManager.disableNetwork(netId, function() {
           debug("disable network - ssid: " + ssid + " id: " + netId);
-          WifiManager.removeNetwork(netId, function() {
-            debug("remove network - ssid: " + ssid + " id: " + netId);
-            WifiManager.saveConfig(function() {
-                self._reloadConfiguredNetworks(function() {});
-            });
-          });
+          if (callback) {
+            callback(netId);
+          }
         });
       }
+    });
+  },
+
+  handleWrongPassword: function(netId) {
+    let self = this;
+    WifiManager.removeNetwork(netId, function() {
+      debug("remove network - id: " + netId);
+      WifiManager.saveConfig(function() {
+        self._reloadConfiguredNetworks(function() {});
+      });
     });
   },
 
