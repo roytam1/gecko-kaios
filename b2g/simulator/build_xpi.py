@@ -86,7 +86,7 @@ def main(platform):
 
     srcdir = os.path.join(topsrcdir, "b2g", "simulator")
 
-    app_buildid = open(os.path.join(build.topobjdir, "config", "buildid")).read().strip()
+    app_buildid = open(os.path.join(build.topobjdir, "buildid.h")).read().split(' ')[2]
 
     # The simulator uses a shorter version string,
     # it only keeps the major version digits A.B
