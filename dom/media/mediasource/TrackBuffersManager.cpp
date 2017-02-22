@@ -695,6 +695,22 @@ TrackBuffersManager::SegmentParserLoop()
         return;
       }
 
+      // From step 6 of 3.5.1 "Segment Parser Loop" of media source extension
+      // spec. in [1], it doesn't mention the case when receiving multiple
+      // initialization segments in PARSING_MEDIA_SEGMENT state.
+      // We should drop the duplicated initialization segments and wait for
+      // more media segments.
+      // The problem is found when doing youtube conformance test case 92 in [2].
+      // [1] https://www.w3.org/TR/media-source/
+      // [2] https://goo.gl/7NTQ4t
+
+      if (mParser->IsInitSegmentPresent(mInputBuffer)) {
+        mInputBuffer = nullptr;
+        NeedMoreData();
+        MSE_DEBUG("Got the initialization segment in PARSING_MEDIA_SEGMENT state!!!");
+        return;
+      }
+
       // We can't feed some demuxers (WebMDemuxer) with data that do not have
       // monotonizally increasing timestamps. So we check if we have a
       // discontinuity from the previous segment parsed.
