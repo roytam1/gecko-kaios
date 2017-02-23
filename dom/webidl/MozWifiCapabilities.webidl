@@ -13,17 +13,21 @@ enum WifiSecurityMethod {
   "OPEN",
   "WEP",
   "WPA-PSK",
+  "WPA2-PSK",
   "WPA-EAP"
 };
 
 enum WifiWpaMethod {
   "SIM",
+  "AKA",
   "PEAP",
   "TTLS",
   "TLS"
 };
 
 enum WifiWpaPhase2Method {
+  "PAP",
+  "MSCHAP",
   "MSCHAPV2",
   "GTC"
 };

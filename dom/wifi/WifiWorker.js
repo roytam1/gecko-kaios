@@ -126,7 +126,7 @@ var WifiManager = (function() {
       schedScanRecovery: libcutils.property_get("ro.moz.wifi.sched_scan_recover") === "false" ? false : true,
       driverDelay: libcutils.property_get("ro.moz.wifi.driverDelay"),
       p2pSupported: libcutils.property_get("ro.moz.wifi.p2p_supported") === "1",
-      eapSimSupported: libcutils.property_get("ro.moz.wifi.eapsim_supported") === "1",
+      eapSimSupported: libcutils.property_get("ro.moz.wifi.eapsim_supported", "true") === "true",
       ibssSupported: libcutils.property_get("ro.moz.wifi.ibss_supported", "true") === "true",
       ifname: libcutils.property_get("wifi.interface")
     };
@@ -136,14 +136,15 @@ var WifiManager = (function() {
        driverDelay, p2pSupported, eapSimSupported, ibssSupported, ifname} = getStartupPrefs();
 
   let capabilities = {
-    security: ["OPEN", "WEP", "WPA-PSK", "WPA-EAP"],
+    security: ["OPEN", "WEP", "WPA-PSK", "WPA2-PSK", "WPA-EAP"],
     eapMethod: ["PEAP", "TTLS", "TLS"],
-    eapPhase2: ["MSCHAPV2"],
+    eapPhase2: ["PAP", "MSCHAPV", "MSCHAPV2", "GTC"],
     certificate: ["SERVER"],
     mode: [MODE_ESS]
   };
   if (eapSimSupported) {
     capabilities.eapMethod.unshift("SIM");
+    capabilities.eapMethod.unshift("AKA");
   }
   if (ibssSupported) {
     capabilities.mode.push(MODE_IBSS);
