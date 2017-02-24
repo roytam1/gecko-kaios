@@ -279,6 +279,8 @@ this.PushServiceWebSocket = {
     }
     console.debug("New _UAID", newID);
     prefs.set("userAgentID", newID);
+    // Ensure the UAID changed is immediately persisted
+    Services.prefs.savePrefFile(null);
   },
 
   _ws: null,
