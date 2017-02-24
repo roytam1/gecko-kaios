@@ -1106,7 +1106,8 @@ BluetoothAdapter::IsBluetoothCertifiedApp()
   nsAutoCString appOrigin;
   doc->NodePrincipal()->GetOriginNoSuffix(appOrigin);
 
-  return appOrigin.Equals(prefOrigin);
+  // Don't use 'Equals()' since the origin might contain a postfix for appId.
+  return appOrigin.Find(prefOrigin) != -1;
 }
 
 void
