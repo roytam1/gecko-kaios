@@ -1788,14 +1788,22 @@ WebGLTexture::CopyTexImage2D(TexImageTarget target, GLint level, GLenum internal
     ScopedCopyTexImageSource maybeSwizzle(mContext, funcName, srcWidth, srcHeight,
                                           srcFormat, dstUsage);
 
-    uint32_t readX, readY;
-    uint32_t writeX, writeY;
-    uint32_t rwWidth, rwHeight;
-    Intersect(srcWidth, x, width, &readX, &writeX, &rwWidth);
-    Intersect(srcHeight, y, height, &readY, &writeY, &rwHeight);
+    ////
+
+    int32_t readX, readY;
+    int32_t writeX, writeY;
+    int32_t rwWidth, rwHeight;
+    if (!Intersect(srcWidth, x, width, &readX, &writeX, &rwWidth) ||
+        !Intersect(srcHeight, y, height, &readY, &writeY, &rwHeight))
+    {
+        mContext->ErrorOutOfMemory("%s: Bad subrect selection.", funcName);
+        return;
+    }
+
+    ////
 
     GLenum error;
-    if (rwWidth == uint32_t(width) && rwHeight == uint32_t(height)) {
+    if (rwWidth == width && rwHeight == height) {
         MOZ_ASSERT(dstUsage->idealUnpack);
         error = DoCopyTexImage2D(gl, target, level, dstUsage->idealUnpack->internalFormat, x, y, width, height,
                                  border);
@@ -1909,11 +1917,19 @@ WebGLTexture::CopyTexSubImage(const char* funcName, TexImageTarget target, GLint
     ScopedCopyTexImageSource maybeSwizzle(mContext, funcName, srcWidth, srcHeight,
                                           srcFormat, dstUsage);
 
-    uint32_t readX, readY;
-    uint32_t writeX, writeY;
-    uint32_t rwWidth, rwHeight;
-    Intersect(srcWidth, x, width, &readX, &writeX, &rwWidth);
-    Intersect(srcHeight, y, height, &readY, &writeY, &rwHeight);
+    ////
+
+    int32_t readX, readY;
+    int32_t writeX, writeY;
+    int32_t rwWidth, rwHeight;
+    if (!Intersect(srcWidth, x, width, &readX, &writeX, &rwWidth) ||
+        !Intersect(srcHeight, y, height, &readY, &writeY, &rwHeight))
+    {
+        mContext->ErrorOutOfMemory("%s: Bad subrect selection.", funcName);
+        return;
+    }
+
+    ////
 
     if (!rwWidth || !rwHeight) {
         // There aren't any, so we're 'done'.
