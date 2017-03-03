@@ -2746,6 +2746,14 @@ nsXMLHttpRequest::Send(nsIVariant* aVariant, const Nullable<RequestBody>& aBody)
     // Not doing this for system XHR uses since those don't use CORS.
     nsCOMPtr<nsILoadInfo> loadInfo = mChannel->GetLoadInfo();
     static_cast<LoadInfo*>(loadInfo.get())->SetIncludeCookiesSecFlag();
+  } else if (mIsAnon && (mState & XML_HTTP_REQUEST_AC_WITH_CREDENTIALS)) {
+    nsCOMPtr<nsILoadInfo> loadInfo = mChannel->GetLoadInfo();
+    static_cast<LoadInfo*>(loadInfo.get())->SetIncludeCookiesSecFlag();
+
+    // Prevent the request from both reading from the cache, and writing to the
+    // cache for anonymous load, but with credential attribute.
+    AddLoadFlags(mChannel,
+                 nsIRequest::LOAD_BYPASS_CACHE | nsIRequest::INHIBIT_CACHING);
   }
 
   // Blocking gets are common enough out of XHR that we should mark
@@ -3195,9 +3203,8 @@ nsXMLHttpRequest::SetWithCredentials(bool aWithCredentials, ErrorResult& aRv)
   // Return error if we're already processing a request.  Note that we can't use
   // ReadyState() here, because it can't differentiate between "opened" and
   // "sent", so we use mState directly.
-  if ((!(mState & XML_HTTP_REQUEST_UNSENT) &&
-       !(mState & XML_HTTP_REQUEST_OPENED)) ||
-      mIsAnon) {
+  if (!(mState & XML_HTTP_REQUEST_UNSENT) &&
+      !(mState & XML_HTTP_REQUEST_OPENED)) {
     aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
     return;
   }
