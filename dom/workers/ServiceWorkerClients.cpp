@@ -34,6 +34,7 @@
 #include "nsWeakReference.h"
 #include "xpcpublic.h"
 #include "nsISystemMessagesInternal.h"
+#include "nsIAppsService.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -307,9 +308,11 @@ class ResolveOpenAppRunnable final : public WorkerRunnable
 
 public:
   ResolveOpenAppRunnable(WorkerPrivate* aWorkerPrivate,
-                         PromiseWorkerProxy* aPromiseProxy)
+                         PromiseWorkerProxy* aPromiseProxy,
+                         const nsresult aResult)
     : WorkerRunnable(aWorkerPrivate, WorkerThreadModifyBusyCount)
     , mPromiseProxy(aPromiseProxy)
+    , mResult(aResult)
   {
     AssertIsOnMainThread();
   }
@@ -323,7 +326,11 @@ public:
     RefPtr<Promise> promise = mPromiseProxy->WorkerPromise();
     MOZ_ASSERT(promise);
 
-    promise->MaybeResolve(JS::UndefinedHandleValue);
+    if (NS_SUCCEEDED(mResult)) {
+      promise->MaybeResolve(JS::UndefinedHandleValue);
+    } else {
+      promise->MaybeReject(mResult);
+    }
 
     mPromiseProxy->CleanUp();
     return true;
@@ -333,14 +340,12 @@ public:
 class OpenAppRunnable final : public nsRunnable
 {
   RefPtr<PromiseWorkerProxy> mPromiseProxy;
-  nsString mScope;
   nsString mData;
   uint64_t mServiceWorkerID;
 
 public:
-  OpenAppRunnable(PromiseWorkerProxy* aPromiseProxy, const nsAString& aScope, const nsAString& aData)
+  OpenAppRunnable(PromiseWorkerProxy* aPromiseProxy, const nsAString& aData)
     : mPromiseProxy(aPromiseProxy)
-    , mScope(aScope)
     , mData(aData)
       // Safe to call GetWorkerPrivate() since we are being called on the worker
       // thread via script (so no clean up has occured yet).
@@ -360,17 +365,28 @@ public:
     WorkerPrivate* workerPrivate = mPromiseProxy->GetWorkerPrivate();
     MOZ_ASSERT(workerPrivate);
 
-    OpenApp();
+    // Get the app manifestUrl for openApp
+    nsresult rv;
+    uint32_t appId = nsIScriptSecurityManager::UNKNOWN_APP_ID;
+    appId = workerPrivate->GetPrincipal()->GetAppId();
+    if (appId != nsIScriptSecurityManager::UNKNOWN_APP_ID) {
+      nsCOMPtr<nsIAppsService> appsService = do_GetService("@mozilla.org/AppsService;1");
+      nsString manifestUrl = EmptyString();
+      rv = appsService->GetManifestURLByLocalId(appId, manifestUrl);
+      if (NS_SUCCEEDED(rv)) {
+        OpenApp(manifestUrl);
+      }
+    }
 
     RefPtr<ResolveOpenAppRunnable> r =
-      new ResolveOpenAppRunnable(workerPrivate, mPromiseProxy);
+      new ResolveOpenAppRunnable(workerPrivate, mPromiseProxy, rv);
 
     r->Dispatch();
     return NS_OK;
   }
 private:
   void
-  OpenApp()
+  OpenApp(const nsAString& aManifestUrl)
   {
     nsCOMPtr<nsISystemMessagesInternal> systemMessenger =
       do_GetService("@mozilla.org/system-message-internal;1");
@@ -400,10 +416,7 @@ private:
     JS::Rooted<JS::Value> extra(cx, JS::ObjectValue(*extraObj));
 
     nsCOMPtr<nsIURI> manifestURI;
-    nsString nAppManifestURL;
-    nAppManifestURL.Assign(mScope.get());
-    nAppManifestURL.Append(MOZ_UTF16("manifest.webapp"));
-    NS_NewURI(getter_AddRefs(manifestURI), nAppManifestURL);
+    NS_NewURI(getter_AddRefs(manifestURI), aManifestUrl);
 
     nsCOMPtr<nsISupports> promise;
     nsString aEvent;
@@ -928,13 +941,10 @@ ServiceWorkerClients::OpenApp(const OpenAppOptions& options, ErrorResult& aRv)
     return promise.forget();
   }
 
-  nsString scope;
-  mWorkerScope->GetScope(scope);
-
   nsString message(options.mMsg);
 
   RefPtr<OpenAppRunnable> runnable =
-    new OpenAppRunnable(promiseProxy, scope, message);
+    new OpenAppRunnable(promiseProxy, message);
 
   MOZ_ALWAYS_SUCCEEDS(NS_DispatchToMainThread(runnable));
 
