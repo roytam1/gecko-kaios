@@ -41,11 +41,14 @@ IPDL_SOURCES += [
 ]
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk' and CONFIG['MOZ_B2G_RIL']:
+    if not CONFIG['DISABLE_MOZ_RIL_GEOLOC']:
+        EXTRA_COMPONENTS += [
+            'gonk/IccService.js',
+            'gonk/IccService.manifest',
+        ]
     EXTRA_COMPONENTS += [
-        'gonk/IccService.js',
-        'gonk/IccService.manifest',
         'gonk/StkCmdFactory.js',
-        'gonk/StkCmdFactory.manifest'
+        'gonk/StkCmdFactory.manifest',
     ]
 
 include('/ipc/chromium/chromium-config.mozbuild')
