@@ -57,4 +57,9 @@ interface nsIWifi : nsISupports
      * On failure after 3 scan retry attempts a callback is notified of failure.
      */
     void getWifiScanResults(in nsIWifiScanResultsReady callback);
+
+    /**
+     * Returns the device WIFI MAC address.
+     */
+    readonly attribute DOMString macAddress;
 };

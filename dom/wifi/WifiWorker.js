@@ -2012,7 +2012,6 @@ function WifiWorker() {
 
   this.currentNetwork = null;
   this.ipAddress = "";
-  this.macAddress = null;
 
   this._lastConnectionInfo = null;
   this._connectionInfoTimer = null;
@@ -2212,7 +2211,7 @@ function WifiWorker() {
 
     // Notify everybody, even if they didn't ask us to come up.
     WifiManager.getMacAddress(function (mac) {
-      self.macAddress = mac;
+      self._macAddress = mac;
       debug("Got mac: " + mac);
       self._fireEvent("wifiUp", { macAddress: mac });
       self.requestDone();
@@ -3096,7 +3095,7 @@ WifiWorker.prototype = {
                  connectionInfo: this._lastConnectionInfo,
                  enabled: WifiManager.enabled,
                  status: translateState(WifiManager.state),
-                 macAddress: this.macAddress,
+                 macAddress: this._macAddress,
                  capabilities: WifiManager.getCapabilities()};
       }
     }
@@ -3212,6 +3211,11 @@ WifiWorker.prototype = {
       }
       return result;
     }
+  },
+
+  _macAddress: null,
+  get macAddress() {
+    return this._macAddress;
   },
 
   getKnownNetworks: function(msg) {
