@@ -700,7 +700,6 @@ MozInputMethod.prototype = {
   },
 
   clearAll: function () {
-    this._ensureIsSystem();
     cpmm.sendAsyncMessage('System:ClearAll', {});
   },
 
