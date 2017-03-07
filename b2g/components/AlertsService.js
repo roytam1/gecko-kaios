@@ -21,6 +21,14 @@ XPCOMUtils.defineLazyServiceGetter(this, "notificationStorage",
                                    "@mozilla.org/notificationStorage;1",
                                    "nsINotificationStorage");
 
+XPCOMUtils.defineLazyServiceGetter(this, "serviceWorkerManager",
+                                   "@mozilla.org/serviceworkers/manager;1",
+                                   "nsIServiceWorkerManager");
+
+XPCOMUtils.defineLazyServiceGetter(this, "appsService",
+                                   "@mozilla.org/AppsService;1",
+                                   "nsIAppsService");
+
 XPCOMUtils.defineLazyGetter(this, "cpmm", function() {
   return Cc["@mozilla.org/childprocessmessagemanager;1"]
            .getService(Ci.nsIMessageSender);
@@ -110,7 +118,6 @@ AlertsService.prototype = {
     let uid = (aDetails.id == "") ?
           "app-notif-" + uuidGenerator.generateUUID() : aDetails.id;
 
-    let dataObj = this.deserializeStructuredClone(aDetails.data);
     this._listeners[uid] = {
       observer: aAlertListener,
       title: aTitle,
@@ -123,7 +130,9 @@ AlertsService.prototype = {
       dir: aDetails.dir || undefined,
       tag: aDetails.tag || undefined,
       timestamp: aDetails.timestamp || undefined,
-      dataObj: dataObj || undefined
+      dataObj: aDetails.data || undefined,
+      mozbehavior: aDetails.mozbehavior,
+      serviceWorkerRegistrationID: aDetails.serviceWorkerRegistrationID
     };
 
     cpmm.sendAsyncMessage(kMessageAppNotificationSend, {
@@ -150,29 +159,54 @@ AlertsService.prototype = {
     try {
       listener.observer.observe(null, topic, null);
     } catch (e) {
-      // It seems like there is no callbacks anymore, forward the click on
-      // notification via a system message containing the title/text/icon of
-      // the notification so the app get a change to react.
-      if (data.target) {
-        if (topic !== kTopicAlertShow) {
-          // excluding the 'show' event: there is no reason a unlaunched app
-          // would want to be notified that a notification is shown. This
-          // happens when a notification is still displayed at reboot time.
-          gSystemMessenger.sendMessage(kNotificationSystemMessageName, {
-              clicked: (topic === kTopicAlertClickCallback),
-              title: listener.title,
-              body: listener.text,
-              imageURL: listener.imageURL,
-              lang: listener.lang,
-              dir: listener.dir,
-              id: listener.id,
-              tag: listener.tag,
-              timestamp: listener.timestamp,
-              data: listener.dataObj || undefined,
-            },
-            Services.io.newURI(data.target, null, null),
-            Services.io.newURI(listener.manifestURL, null, null)
+      // The non-empty serviceWorkerRegistrationID means the notification
+      // is issued by service worker, so deal with this listener
+      // via serviceWorkerManager
+      if (listener.serviceWorkerRegistrationID.length) {
+        if (topic == kTopicAlertClickCallback) {
+          let appId = appsService.getAppLocalIdByManifestURL(listener.manifestURL);
+          let originSuffix = "^appId=" + appId;
+
+          serviceWorkerManager.sendNotificationClickEvent(
+            originSuffix,
+            listener.serviceWorkerRegistrationID,
+            listener.id,
+            listener.title,
+            listener.dir,
+            listener.lang,
+            listener.text,
+            listener.tag,
+            listener.imageURL,
+            listener.dataObj || undefined,
+            listener.mozbehavior
           );
+        }
+      } else {
+        // It seems like there is no callbacks anymore, forward the click on
+        // notification via a system message containing the title/text/icon of
+        // the notification so the app get a change to react.
+        if (data.target) {
+          if (topic !== kTopicAlertShow) {
+            // excluding the 'show' event: there is no reason a unlaunched app
+            // would want to be notified that a notification is shown. This
+            // happens when a notification is still displayed at reboot time.
+            let dataObj = this.deserializeStructuredClone(listener.dataObj);
+            gSystemMessenger.sendMessage(kNotificationSystemMessageName, {
+                clicked: (topic === kTopicAlertClickCallback),
+                title: listener.title,
+                body: listener.text,
+                imageURL: listener.imageURL,
+                lang: listener.lang,
+                dir: listener.dir,
+                id: listener.id,
+                tag: listener.tag,
+                timestamp: listener.timestamp,
+                data: dataObj || undefined,
+              },
+              Services.io.newURI(data.target, null, null),
+              Services.io.newURI(listener.manifestURL, null, null)
+            );
+          }
         }
       }
       if (topic === kTopicAlertFinished && listener.dbId) {

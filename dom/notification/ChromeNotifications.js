@@ -73,7 +73,8 @@ ChromeNotifications.prototype = {
           dbId: notification.id,
           timestamp: notification.timestamp,
           data: notification.data,
-          mozbehavior: behavior
+          mozbehavior: behavior,
+          serviceWorkerRegistrationID: notification.serviceWorkerRegistrationID
         }
       );
       resentNotifications++;
