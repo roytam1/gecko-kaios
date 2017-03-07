@@ -1144,8 +1144,12 @@ pref("dom.activities.developer_mode_only", "import-app");
 // Enable W3C Push API
 pref("dom.serviceWorkers.enabled", true);
 pref("dom.webnotifications.serviceworker.enabled", true);
-pref("dom.push.enabled", true);
 pref("dom.serviceWorkers.focus.enabled", false);
+pref("dom.push.enabled", true);
+// Enable Adaptive ping
+pref("dom.push.adaptive.enabled", true);
+// enable udp wakeup support
+pref("dom.push.udp.wakeupEnabled", true);
 
 // Retain at most 10 processes' layers buffers
 pref("layers.compositor-lru-size", 10);
