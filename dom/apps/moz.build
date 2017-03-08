@@ -34,7 +34,6 @@ EXTRA_COMPONENTS += [
 
 EXTRA_JS_MODULES += [
     'AppDownloadManager.jsm',
-    'AppsServiceCenter.jsm',
     'AppsServiceChild.jsm',
     'FreeSpaceWatcher.jsm',
     'Langpacks.jsm',

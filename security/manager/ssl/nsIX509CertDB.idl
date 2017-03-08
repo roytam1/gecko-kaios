@@ -265,14 +265,15 @@ interface nsIX509CertDB : nsISupports {
    *  as input, to encourage users of the API to verify the signature as the
    *  first step in opening the JAR.
    */
-  const AppTrustedRoot AppServiceCenterProdPublicRoot = 1;
-  const AppTrustedRoot AppServiceCenterDevPublicRoot = 2;
-  const AppTrustedRoot AppServiceCenterTestRoot = 3;
-  const AppTrustedRoot AppXPCShellRoot = 4;
-  const AppTrustedRoot AddonsPublicRoot = 5;
-  const AppTrustedRoot AddonsStageRoot = 6;
-  const AppTrustedRoot PrivilegedPackageRoot = 7;
-
+  const AppTrustedRoot AppMarketplaceProdPublicRoot = 1;
+  const AppTrustedRoot AppMarketplaceProdReviewersRoot = 2;
+  const AppTrustedRoot AppMarketplaceDevPublicRoot = 3;
+  const AppTrustedRoot AppMarketplaceDevReviewersRoot = 4;
+  const AppTrustedRoot AppMarketplaceStageRoot = 5;
+  const AppTrustedRoot AppXPCShellRoot = 6;
+  const AppTrustedRoot AddonsPublicRoot = 7;
+  const AppTrustedRoot AddonsStageRoot = 8;
+  const AppTrustedRoot PrivilegedPackageRoot = 9;
   /*
    * If DeveloperImportedRoot is set as trusted root, a CA from local file
    * system will be imported. Only used when preference

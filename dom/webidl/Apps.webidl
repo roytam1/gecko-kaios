@@ -137,8 +137,4 @@ interface DOMApplicationsManager : EventTarget {
   attribute EventHandler oninstall;
   attribute EventHandler onuninstall;
   attribute EventHandler onenabledstatechange;
-
-  // Allow kaios-plus to set a data type for auto update.
-  // Supported attr "all" and "wifiOnly"
-  attribute DOMString updatedatamode;
 };

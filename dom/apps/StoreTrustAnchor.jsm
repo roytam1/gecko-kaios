@@ -11,14 +11,16 @@ this.EXPORTED_SYMBOLS = [
   "TrustedRootCertificate"
 ];
 
-const APP_TRUSTED_ROOTS= ["AppServiceCenterProdPublicRoot",
-                          "AppServiceCenterDevPublicRoot",
-                          "AppServiceCenterTestRoot",
+const APP_TRUSTED_ROOTS= ["AppMarketplaceProdPublicRoot",
+                          "AppMarketplaceProdReviewersRoot",
+                          "AppMarketplaceDevPublicRoot",
+                          "AppMarketplaceDevReviewersRoot",
+                          "AppMarketplaceStageRoot",
                           "PrivilegedPackageRoot",
                           "AppXPCShellRoot"];
 
 this.TrustedRootCertificate = {
-  _index: Ci.nsIX509CertDB.AppServiceCenterProdPublicRoot,
+  _index: Ci.nsIX509CertDB.AppMarketplaceProdPublicRoot,
   get index() {
     return this._index;
   },

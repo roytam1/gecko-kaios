@@ -734,17 +734,7 @@ var shell = {
 
     Services.obs.notifyObservers(null, 'content-start', null);
 
-    if (isGonk) {
-      Cu.import('resource://gre/modules/OperatorApps.jsm');
-
-      try {
-        if (Services.prefs.getBoolPref('apps.serviceCenter.enabled')) {
-          Cu.import('resource://gre/modules/AppsServiceCenter.jsm');
-        }
-      } catch(e) {
-        // Do nothing if this pref is not set.
-      }
-    }
+    isGonk && Cu.import('resource://gre/modules/OperatorApps.jsm');
 
     if (AppConstants.MOZ_GRAPHENE &&
         Services.prefs.getBoolPref("b2g.nativeWindowGeometry.fullscreen")) {

@@ -580,29 +580,15 @@ this.AppsUtils = {
    * @return boolean
    **/
   checkInstallAllowed: function checkInstallAllowed(aManifest, aInstallOrigin) {
+    if (!aManifest.installs_allowed_from) {
+      return true;
+    }
 
-    try {
-      // When allowedOrigins list is defined,
-      // allow install if aInstallOrigin match any of allowedOrigins.
-      let allowedOrigins = Services.prefs.getCharPref("apps.serviceCenter.allowedOrigins").split(",");
+    function cbCheckAllowedOrigin(aOrigin) {
+      return aOrigin == "*" || aOrigin == aInstallOrigin;
+    }
 
-      return allowedOrigins.some(function(aOrigin) {
-        return aInstallOrigin == aOrigin;
-      });
-    } catch(e) {}
-
-    try {
-      // When allowedOrigins list is not defined,
-      // allow install if aInstallOrigin match the server URL path.
-      let serverURL = Services.prefs.getCharPref("apps.serviceCenter.serverURL");
-      let serverPath = Services.io.newURI(serverURL, null, null).prePath;
-
-      return aInstallOrigin == serverPath;
-    } catch(e) {}
-
-    // Allow install apps from specific origins only.
-    // Block when allowed origins are not defined.
-    return false;
+    return aManifest.installs_allowed_from.some(cbCheckAllowedOrigin);
   },
 
   /**

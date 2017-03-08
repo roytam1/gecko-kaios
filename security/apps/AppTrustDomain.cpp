@@ -20,9 +20,11 @@
 #include "secerr.h"
 
 // Generated in Makefile.in
-#include "service-center-prod-public.inc"
-#include "service-center-dev-public.inc"
-#include "service-center-test.inc"
+#include "marketplace-prod-public.inc"
+#include "marketplace-prod-reviewers.inc"
+#include "marketplace-dev-public.inc"
+#include "marketplace-dev-reviewers.inc"
+#include "marketplace-stage.inc"
 #include "xpcshell.inc"
 // Trusted Hosted Apps Certificates
 #include "manifest-signing-root.inc"
@@ -64,19 +66,31 @@ AppTrustDomain::SetTrustedRoot(AppTrustedRoot trustedRoot)
 
   switch (trustedRoot)
   {
-    case nsIX509CertDB::AppServiceCenterProdPublicRoot:
-      trustedDER.data = const_cast<uint8_t*>(serviceCenterProdPublicRoot);
-      trustedDER.len = mozilla::ArrayLength(serviceCenterProdPublicRoot);
+    case nsIX509CertDB::AppMarketplaceProdPublicRoot:
+      trustedDER.data = const_cast<uint8_t*>(marketplaceProdPublicRoot);
+      trustedDER.len = mozilla::ArrayLength(marketplaceProdPublicRoot);
       break;
 
-    case nsIX509CertDB::AppServiceCenterDevPublicRoot:
-      trustedDER.data = const_cast<uint8_t*>(serviceCenterDevPublicRoot);
-      trustedDER.len = mozilla::ArrayLength(serviceCenterDevPublicRoot);
+    case nsIX509CertDB::AppMarketplaceProdReviewersRoot:
+      trustedDER.data = const_cast<uint8_t*>(marketplaceProdReviewersRoot);
+      trustedDER.len = mozilla::ArrayLength(marketplaceProdReviewersRoot);
       break;
 
-    case nsIX509CertDB::AppServiceCenterTestRoot:
-      trustedDER.data = const_cast<uint8_t*>(serviceCenterTestRoot);
-      trustedDER.len = mozilla::ArrayLength(serviceCenterTestRoot);
+    case nsIX509CertDB::AppMarketplaceDevPublicRoot:
+      trustedDER.data = const_cast<uint8_t*>(marketplaceDevPublicRoot);
+      trustedDER.len = mozilla::ArrayLength(marketplaceDevPublicRoot);
+      break;
+
+    case nsIX509CertDB::AppMarketplaceDevReviewersRoot:
+      trustedDER.data = const_cast<uint8_t*>(marketplaceDevReviewersRoot);
+      trustedDER.len = mozilla::ArrayLength(marketplaceDevReviewersRoot);
+      break;
+
+    case nsIX509CertDB::AppMarketplaceStageRoot:
+      trustedDER.data = const_cast<uint8_t*>(marketplaceStageRoot);
+      trustedDER.len = mozilla::ArrayLength(marketplaceStageRoot);
+      // The staging root was generated with a 1024-bit key.
+      mMinRSABits = 1024u;
       break;
 
     case nsIX509CertDB::AppXPCShellRoot:

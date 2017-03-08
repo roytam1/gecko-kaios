@@ -1202,11 +1202,3 @@ pref("dom.keyboardEventGenerator.enabled", false);
 
 // In compatibility mode, 'Firefox' will be added to UA.
 pref("general.useragent.compatMode.firefox", true);
-
-// service center
-// Required by service center, values need to be updated accordingly.
-pref("apps.serviceCenter.enabled", true);
-pref("apps.serviceCenter.checkInterval", 86400);
-pref("apps.serviceCenter.allowedOrigins", "https://kaios-plus.kaiostech.com,app://kaios-plus.kaiostech.com");
-pref("apps.serviceCenter.devOrigins", "https://api.test.kaiostech.com,https://api.stage.kaiostech.com,https://storage.test.kaiostech.com,https://storage.stage.kaiostech.com,http://storage.test.kaiostech.com,http://storage.stage.kaiostech.com");
-pref("apps.serviceCenter.serverURL", "https://api.kaiostech.com/v2.0/apps?cu=%DEVICE_REF%");

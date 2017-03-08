@@ -687,6 +687,8 @@ var settingsToObserve = {
     resetToPref: true
   },
 
+  'dom.mozApps.use_reviewer_certs': false,
+  'dom.mozApps.signed_apps_installable_from': 'https://marketplace.firefox.com',
   'dom.presentation.discovery.enabled': false,
   'dom.presentation.discoverable': false,
   'dom.serviceWorkers.testing.enabled': false,
@@ -751,10 +753,7 @@ var settingsToObserve = {
     resetToPref: true
   },
   'wap.UAProf.tagname': 'x-wap-profile',
-  'wap.UAProf.url': '',
-  // Try to use setting from gaia build if it does exist.
-  'apps.serviceCenter.use_test_key': false,
-  'apps.serviceCenter.manifest': 'https://kaioz-plus.kaiostech.com/update.webapp'
+  'wap.UAProf.url': ''
 };
 
 if (AppConstants.MOZ_GRAPHENE) {

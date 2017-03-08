@@ -30,8 +30,10 @@ WebappsUpdateTimer.prototype = {
 
   notify: function(aTimer) {
     try {
-      // We don't want to continue when webapps update is not enabled.
-      if (!Services.prefs.getBoolPref("webapps.update.enabled")) {
+      // We want to check app updates if system updates are disabled or
+      // if they update frecency is not daily.
+      if (Services.prefs.getBoolPref("app.update.enabled") === true &&
+          Services.prefs.getIntPref("app.update.interval") === 86400) {
         return;
       }
     } catch(e) {
