@@ -61,7 +61,7 @@ void MediaOmxCommonReader::CheckAudioOffload()
   // Supporting audio offload only when there is no video, no streaming
   bool hasVideo = HasVideo();
   bool isStreaming
-      = mDecoder->GetResource()->IsDataCachedToEndOfResource(0);
+      = !mDecoder->GetResource()->IsDataCachedToEndOfResource(0);
 
   if (hasVideo || isStreaming) {
     return;
@@ -74,7 +74,8 @@ void MediaOmxCommonReader::CheckAudioOffload()
     return;
   }
 
-  if (gfxPrefs::VolumeBalance()) {
+  //Check if we need to adjust VolumeBalance.
+  if (gfxPrefs::VolumeBalance() != 50) {
     return;
   }
 
