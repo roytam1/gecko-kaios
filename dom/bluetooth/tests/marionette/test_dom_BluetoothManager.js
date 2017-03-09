@@ -19,26 +19,6 @@
 MARIONETTE_TIMEOUT = 60000;
 MARIONETTE_HEAD_JS = 'head.js';
 
-// TODO: Listens to 'onattributechanged' when B2G supports the feature that
-//       allows user to add/remove Bluetooth adapter.
-// Currently, B2G recognizes build-in Bluetooth chip as default adapter and
-// don't support adding additional Bluetooth dongles in gonk layer.
-// Therefore, the 'onattributechanged' would be triggered *only* when the
-// instance of BluetoothManager is created.
-function waitForManagerAttributeChanged() {
-  let deferred = Promise.defer();
-
-  bluetoothManager.onattributechanged = function(aEvent) {
-    if(aEvent.attrs.indexOf("defaultAdapter")) {
-      bluetoothManager.onattributechanged = null;
-      ok(true, "BluetoothManager event 'onattributechanged' got.");
-      deferred.resolve(aEvent);
-    }
-  };
-
-  return deferred.promise;
-}
-
 startBluetoothTestBase(["settings-read", "settings-write", "settings-api-read", "settings-api-write"],
                        function testCaseMain() {
   let adapters = bluetoothManager.getAdapters();

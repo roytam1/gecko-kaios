@@ -67,37 +67,34 @@ var pendingEmulatorCmdCount = 0;
 function ensureBluetoothManager(aPermissions) {
   let deferred = Promise.defer();
 
-  let permissions = ["bluetooth"];
-  if (aPermissions) {
-    if (Array.isArray(aPermissions)) {
-      permissions = permissions.concat(aPermissions);
-    } else if (typeof aPermissions == "string") {
-      permissions.push(aPermissions);
-    }
+  // TODO: push permissions for running test on content app.
+  // let permissions = ["bluetooth"];
+  // if (aPermissions) {
+  //   if (Array.isArray(aPermissions)) {
+  //     permissions = permissions.concat(aPermissions);
+  //   } else if (typeof aPermissions == "string") {
+  //     permissions.push(aPermissions);
+  //   }
+  // }
+  //
+  // let obj = [];
+  // for (let perm of permissions) {
+  //   obj.push({
+  //     "type": perm,
+  //     "allow": 1,
+  //     "context": document,
+  //   });
+  // }
+
+  bluetoothManager = window.navigator.mozBluetooth;
+  log("navigator.mozBluetooth is " +
+      (bluetoothManager ? "available" : "unavailable"));
+
+  if (bluetoothManager instanceof BluetoothManager) {
+    deferred.resolve(bluetoothManager);
+  } else {
+    deferred.reject();
   }
-
-  let obj = [];
-  for (let perm of permissions) {
-    obj.push({
-      "type": perm,
-      "allow": 1,
-      "context": document,
-    });
-  }
-
-  SpecialPowers.pushPermissions(obj, function() {
-    ok(true, "permissions pushed: " + JSON.stringify(permissions));
-
-    bluetoothManager = window.navigator.mozBluetooth;
-    log("navigator.mozBluetooth is " +
-        (bluetoothManager ? "available" : "unavailable"));
-
-    if (bluetoothManager instanceof BluetoothManager) {
-      deferred.resolve(bluetoothManager);
-    } else {
-      deferred.reject();
-    }
-  });
 
   return deferred.promise;
 }
@@ -830,7 +827,7 @@ function cleanUp() {
   // Use ok here so that we have at least one test run.
   ok(true, ":: CLEANING UP ::");
 
-  waitFor(finish, function() {
+  waitFor(() => finish(), function() {
     return pendingEmulatorCmdCount === 0;
   });
 }
@@ -839,7 +836,7 @@ function startBluetoothTestBase(aPermissions, aTestCaseMain) {
   ensureBluetoothManager(aPermissions)
     .then(function() {
       log("Wait for creating bluetooth adapter...");
-      return waitForManagerStateChanged(bluetoothManager);
+      return waitForManagerInit(bluetoothManager);
     })
     .then(aTestCaseMain)
     .then(cleanUp, function() {
@@ -890,18 +887,29 @@ function startBluetoothTest(aReenable, aTestCaseMain) {
   });
 }
 
-function waitForManagerStateChanged(aManager) {
+/**
+ * Wait for the initialization of BluetoothManager and defaultAdapter.
+ *
+ * Resolve when aManager.defaultAdapter is ready. Never reject
+ * If the defaultAdapter is already there, resolved the promise immediately.
+ *
+ * Fulfill params: (none)
+ * @param aManager
+ *        A BluetoothManager of the target device.
+ * @return A deferred promise.
+ */
+function waitForManagerInit(aManager) {
   let deferred = Promise.defer();
 
+  if (aManager.defaultAdapter != null) {
+    deferred.resolve();
+  }
+
   aManager.onattributechanged = function(evt) {
-    for (var i in evt.attrs) {
-      switch (evt.attrs[i]) {
-        case 'defaultAdapter':
-          deferred.resolve(evt);
-          break;
-        default:
-          break;
-      }
+    if (evt.attrs.indexOf("defaultAdapter") != -1) {
+      bluetoothManager.onattributechanged = null;
+      ok(true, "BluetoothManager event 'onattributechanged' got.");
+      deferred.resolve();
     }
   }
 
