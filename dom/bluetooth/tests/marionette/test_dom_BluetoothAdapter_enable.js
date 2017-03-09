@@ -72,5 +72,5 @@ startBluetoothTest(true, function testCaseMain(aAdapter) {
       }
       is(aAdapter.address, originalAddr, "adapter.address");
       is(aAdapter.name, originalName, "adapter.name");
-    })
+    });
 });

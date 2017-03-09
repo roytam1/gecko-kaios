@@ -4,9 +4,9 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 // Test Purpose:
-//   To verify entire paring process of BluetoothAdapter, except for
+//   To verify entire pairing process of BluetoothAdapter, except for
 //   in-line pairing.
-//   Testers have to put a discoverable remote device near the testing device
+//   Testers have to put a pairable remote device near the testing device
 //   and click the 'confirm' button on remote device when it receives a pairing
 //   request from testing device.
 //   To pass this test, Bluetooth address of the remote device should equal to
@@ -15,16 +15,12 @@
 // Test Procedure:
 //   [0] Set Bluetooth permission and enable default adapter.
 //   [1] Unpair device if it's already paired.
-//   [2] Start discovery.
-//   [3] Wait for the specified 'devicefound' event.
-//   [4] Type checking for BluetoothDeviceEvent and BluetoothDevice.
-//   [5] Pair and wait for confirmation.
-//   [6] Get paired devices and verify 'devicepaired' event.
-//   [7] Pair again.
-//   [8] Unpair.
-//   [9] Get paired devices and verify 'deviceunpaired' event.
-//   [10] Unpair again.
-//   [11] Stop discovery.
+//   [2] Pair and wait for confirmation.
+//   [3] Get paired devices and verify 'devicepaired' event.
+//   [4] Pair again.
+//   [5] Unpair.
+//   [6] Get paired devices and verify 'deviceunpaired' event.
+//   [7] Unpair again.
 //
 // Test Coverage:
 //   - BluetoothAdapter.pair()
@@ -34,23 +30,29 @@
 //   - BluetoothAdapter.ondeviceunpaired()
 //   - BluetoothAdapter.pairingReqs
 //
-//   - BluetoothPairingListener.ondisplaypassykeyreq()
-//   - BluetoothPairingListener.onenterpincodereq()
+//   - BluetoothPairingListener.ondisplaypassykeyreq()      // not covered yet
+//   - BluetoothPairingListener.onenterpincodereq()         // not covered yet
 //   - BluetoothPairingListener.onpairingconfirmationreq()
 //   - BluetoothPairingListener.onpairingconsentreq()
 //
-//   - BluetoothPairingEvent.device
+//   - BluetoothPairingEvent.deviceName
 //   - BluetoothPairingEvent.handle
 //
-//   - BluetoothPairingHandle.setPinCode()
 //   - BluetoothPairingHandle.accept()
+//   - BluetoothPairingHandle.reject()      // not covered yet
+//   - BluetoothPairingHandle.setPinCode()  // not covered yet
 //
 ///////////////////////////////////////////////////////////////////////////////
 
 MARIONETTE_TIMEOUT = 60000;
 MARIONETTE_HEAD_JS = 'head.js';
 
-const ADDRESS_OF_TARGETED_REMOTE_DEVICE = "0c:bd:51:20:a1:e0";
+// The default remote device is Sony SBH50
+const ADDRESS_OF_TARGETED_REMOTE_DEVICE = "40:b8:37:fe:ff:2c";
+
+// The specified remote device which tester wants to pair with.
+// 'null' representing accepts every pairing request.
+const NAME_OF_TARGETED_REMOTE_DEVICE = null;
 
 startBluetoothTest(true, function testCaseMain(aAdapter) {
   log("Checking adapter attributes ...");
@@ -79,63 +81,37 @@ startBluetoothTest(true, function testCaseMain(aAdapter) {
       return;
     })
     .then(function() {
-      log("[2] Start discovery ... ");
-      return aAdapter.startDiscovery();
-    })
-    .then(function(discoveryHandle) {
-      log("[3] Wait for the specified 'devicefound' event ... ");
-      return waitForSpecifiedDevicesFound(discoveryHandle, [ADDRESS_OF_TARGETED_REMOTE_DEVICE]);
-    })
-    .then(function(deviceEvents) {
-      log("[4] Type checking for BluetoothDeviceEvent and BluetoothDevice ... ");
+      log("[2] Pair and wait for confirmation ... ");
 
-      let device = deviceEvents[0].device;
-      ok(deviceEvents[0] instanceof BluetoothDeviceEvent, "device should be a BluetoothDeviceEvent");
-      ok(device instanceof BluetoothDevice, "device should be a BluetoothDevice");
-
-      log("  - BluetoothDevice.address: " + device.address);
-      log("  - BluetoothDevice.name: " + device.name);
-      log("  - BluetoothDevice.cod: " + device.cod);
-      log("  - BluetoothDevice.paired: " + device.paired);
-      log("  - BluetoothDevice.uuids: " + device.uuids);
-
-      return device;
-    })
-    .then(function(device) {
-      log("[5] Pair and wait for confirmation ... ");
-
-      addEventHandlerForPairingRequest(aAdapter, device.address);
+      addEventHandlerForPairingRequest(aAdapter, NAME_OF_TARGETED_REMOTE_DEVICE);
 
       let promises = [];
       promises.push(waitForAdapterEvent(aAdapter, "devicepaired"));
-      promises.push(aAdapter.pair(device.address));
+      promises.push(aAdapter.pair(ADDRESS_OF_TARGETED_REMOTE_DEVICE));
+
       return Promise.all(promises);
     })
     .then(function(results) {
-      log("[6] Get paired devices and verify 'devicepaired' event ... ");
+      log("[3] Get paired devices and verify 'devicepaired' event ... ");
       return verifyDevicePairedUnpairedEvent(aAdapter, results[0]);
     })
     .then(function(deviceEvent) {
-      log("[7] Pair again... ");
-      return aAdapter.pair(deviceEvent.device.address).then(deviceEvent.device.address);
+      log("[4] Pair again... ");
+      return aAdapter.pair(deviceEvent.device.address).then(() => deviceEvent.device.address);
     })
     .then(function(deviceAddress) {
-      log("[8] Unpair ... ");
+      log("[5] Unpair ... ");
       let promises = [];
       promises.push(waitForAdapterEvent(aAdapter, "deviceunpaired"));
       promises.push(aAdapter.unpair(deviceAddress));
       return Promise.all(promises);
     })
     .then(function(results) {
-      log("[9] Get paired devices and verify 'deviceunpaired' event ... ");
+      log("[6] Get paired devices and verify 'deviceunpaired' event ... ");
       return verifyDevicePairedUnpairedEvent(aAdapter, results[0])
     })
     .then(function(deviceEvent) {
-      log("[10] Unpair again... ");
+      log("[7] Unpair again... ");
       return aAdapter.unpair(deviceEvent.address);
-    })
-    .then(function() {
-      log("[11] Stop discovery ... ");
-      return aAdapter.stopDiscovery();
     });
 });

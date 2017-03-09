@@ -702,30 +702,32 @@ function verifyDevicePairedUnpairedEvent(aAdapter, aDeviceEvent) {
  *
  * @param aAdapter
  *        The BluetoothAdapter you want to use.
- * @param aSpecifiedBdAddress (optional)
- *        Bluetooth address of the specified remote device which adapter wants
- *        to pair with. If aSpecifiedBdAddress is an empty string, 'null' or
- *        'undefined', this function accepts every pairing request.
+ * @param aSpecifiedBdName (optional)
+ *        Bluetooth device name of the specified remote device which adapter
+ *        wants to pair with. If aSpecifiedBdName is an empty string, 'null'
+ *        or 'undefined', this function accepts every pairing request.
  */
-function addEventHandlerForPairingRequest(aAdapter, aSpecifiedBdAddress) {
+function addEventHandlerForPairingRequest(aAdapter, aSpecifiedBdName) {
   log("  - Add event handlers for pairing requests.");
 
   aAdapter.pairingReqs.ondisplaypasskeyreq = function onDisplayPasskeyReq(evt) {
+    ok(evt.handle instanceof BluetoothPairingHandle, "type checking for handle.");
+    ok(typeof evt.deviceName === 'string', "type checking for deviceName.");
     let passkey = evt.handle.passkey; // passkey to display
     ok(typeof passkey === 'string', "type checking for passkey.");
     log("  - Received 'ondisplaypasskeyreq' event with passkey: " + passkey);
 
-    let device = evt.device;
-    if (!aSpecifiedBdAddress || device.address == aSpecifiedBdAddress) {
+    if (!aSpecifiedBdName || evt.deviceName == aSpecifiedBdName) {
       cleanupPairingListener(aAdapter.pairingReqs);
     }
   };
 
   aAdapter.pairingReqs.onenterpincodereq = function onEnterPinCodeReq(evt) {
+    ok(evt.handle instanceof BluetoothPairingHandle, "type checking for handle.");
+    ok(typeof evt.deviceName === 'string', "type checking for deviceName.");
     log("  - Received 'onenterpincodereq' event.");
 
-    let device = evt.device;
-    if (!aSpecifiedBdAddress || device.address == aSpecifiedBdAddress) {
+    if (!aSpecifiedBdName || evt.deviceName == aSpecifiedBdName) {
       // TODO: Allow user to enter pincode.
       let UserEnteredPinCode = "0000";
       let pinCode = UserEnteredPinCode;
@@ -744,12 +746,13 @@ function addEventHandlerForPairingRequest(aAdapter, aSpecifiedBdAddress) {
 
   aAdapter.pairingReqs.onpairingconfirmationreq
     = function onPairingConfirmationReq(evt) {
+    ok(evt.handle instanceof BluetoothPairingHandle, "type checking for handle.");
+    ok(typeof evt.deviceName === 'string', "type checking for deviceName.");
     let passkey = evt.handle.passkey; // passkey for user to confirm
     ok(typeof passkey === 'string', "type checking for passkey.");
     log("  - Received 'onpairingconfirmationreq' event with passkey: " + passkey);
 
-    let device = evt.device;
-    if (!aSpecifiedBdAddress || device.address == aSpecifiedBdAddress) {
+    if (!aSpecifiedBdName || evt.deviceName == aSpecifiedBdName) {
       evt.handle.accept().then(
         function onResolve() {
           log("  - 'accept' resolve.");
@@ -763,10 +766,11 @@ function addEventHandlerForPairingRequest(aAdapter, aSpecifiedBdAddress) {
   };
 
   aAdapter.pairingReqs.onpairingconsentreq = function onPairingConsentReq(evt) {
+    ok(evt.handle instanceof BluetoothPairingHandle, "type checking for handle.");
+    ok(typeof evt.deviceName === 'string', "type checking for deviceName.");
     log("  - Received 'onpairingconsentreq' event.");
 
-    let device = evt.device;
-    if (!aSpecifiedBdAddress || device.address == aSpecifiedBdAddress) {
+    if (!aSpecifiedBdName || evt.deviceName == aSpecifiedBdName) {
       evt.handle.accept().then(
         function onResolve() {
           log("  - 'accept' resolve.");
