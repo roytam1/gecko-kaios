@@ -8,12 +8,15 @@
  Constructor(DOMString type, optional BluetoothDeviceEventInit eventInitDict)]
 interface BluetoothDeviceEvent : Event
 {
+  // should not be null except for BluetoothAdapter.ondeviceunpaired
   readonly attribute BluetoothDevice? device;
+
+  // would be null except for BluetoothAdapter.ondeviceunpaired
   readonly attribute DOMString?       address;
 };
 
 dictionary BluetoothDeviceEventInit : EventInit
 {
   BluetoothDevice? device = null;
-  DOMString?       address = "";
+  DOMString?       address = null;
 };
