@@ -1720,6 +1720,20 @@ Navigator::HasFeature(const nsAString& aName, ErrorResult& aRv)
     }
   }
 
+  const char deviceCapabilities[][64] = {
+    "device.capability.flip"
+  , "device.capability.endcall-key"
+  , "device.capability.volume-key"
+  };
+
+  nsAutoCString capability= NS_ConvertUTF16toUTF8(aName);
+  for (uint32_t i = 0; i < MOZ_ARRAY_LENGTH(deviceCapabilities); i++) {
+    if (capability.Equals(deviceCapabilities[i])) {
+      p->MaybeResolve(Preferences::GetBool(deviceCapabilities[i], false));
+      return p.forget();
+    }
+  }
+
   NS_NAMED_LITERAL_STRING(apiWindowPrefix, "api.window.");
   if (StringBeginsWith(aName, apiWindowPrefix)) {
     const nsAString& featureName = Substring(aName, apiWindowPrefix.Length());
