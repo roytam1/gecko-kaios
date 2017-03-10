@@ -67,14 +67,22 @@ public:
     aValue.setUndefined();
 
     const BluetoothValue& v = mReply->get_BluetoothReplySuccess().value();
-    NS_ENSURE_TRUE(v.type() == BluetoothValue::TArrayOfnsString, false);
-    const InfallibleTArray<nsString>& uuids = v.get_ArrayOfnsString();
+    NS_ENSURE_TRUE(v.type() == BluetoothValue::TArrayOfBluetoothUuid, false);
+    const nsTArray<BluetoothUuid>& uuids = v.get_ArrayOfBluetoothUuid();
 
     AutoJSAPI jsapi;
     NS_ENSURE_TRUE(jsapi.Init(mDevice->GetParentObject()), false);
 
+    // convert nsTArray<BluetoothUuid> to nsTArray<nsString>
+    nsTArray<nsString> uuidStrs;
+    for (size_t i = 0; i < uuids.Length(); ++i) {
+      nsAutoString uuidStr;
+      UuidToString(uuids[i], uuidStr);
+      uuidStrs.AppendElement(uuidStr);
+    }
+
     JSContext* cx = jsapi.cx();
-    if (!ToJSValue(cx, uuids, aValue)) {
+    if (!ToJSValue(cx, uuidStrs, aValue)) {
       BT_WARNING("Cannot create JS array!");
       jsapi.ClearException();
       return false;
