@@ -16,9 +16,9 @@
 //   [2] Wait for 'devicefound' events.
 //   [3] Type checking for BluetoothDeviceEvent and BluetoothDevice.
 //   [4] Attach the 'onattributechanged' handler for the first device.
-//   [5] Fetch the UUIDs of the first device.
-//   [6] Verify the UUIDs.
-//   [7] Stop discovery.
+//   [5] Stop discovery.
+//   [6] Fetch the UUIDs of the first device.
+//   [7] Verify the UUIDs.
 //
 // Test Coverage:
 //   - BluetoothDevice.address
@@ -38,6 +38,7 @@ MARIONETTE_HEAD_JS = 'head.js';
 
 const EXPECTED_NUMBER_OF_REMOTE_DEVICES = 1;
 
+var remoteDevice = null;
 var hasReceivedUuidsChanged = false;
 var originalUuids;
 
@@ -88,24 +89,26 @@ startBluetoothTest(true, function testCaseMain(aAdapter) {
         log("  - BluetoothDevice.paired: " + device.paired);
         log("  - BluetoothDevice.uuids: " + device.uuids);
       }
-      return deviceEvents[0].device;
+
+      // Pick the first remote device for testing
+      remoteDevice = deviceEvents[0].device;
     })
-    .then(function(device) {
+    .then(function() {
       log("[4] Attach the 'onattributechanged' handler for the remote device ... ");
-      device.onattributechanged = function(aEvent) {
+      remoteDevice.onattributechanged = function(aEvent) {
         for (let i in aEvent.attrs) {
           switch (aEvent.attrs[i]) {
             case "cod":
-              log("  'cod' changed to " + device.cod);
+              log("  'cod' changed to " + remoteDevice.cod);
               break;
             case "name":
-              log("  'name' changed to " + device.name);
+              log("  'name' changed to " + remoteDevice.name);
               break;
             case "paired":
-              log("  'paired' changed to " + device.paired);
+              log("  'paired' changed to " + remoteDevice.paired);
               break;
             case "uuids":
-              log("  'uuids' changed to " + device.uuids);
+              log("  'uuids' changed to " + remoteDevice.uuids);
               hasReceivedUuidsChanged = true;
               break;
             case "unknown":
@@ -115,32 +118,27 @@ startBluetoothTest(true, function testCaseMain(aAdapter) {
           }
         }
       };
-      return device;
     })
-    .then(function(device) {
-      log("[5] Fetch the UUIDs of remote device ... ");
-      let promises = [];
-      promises.push(Promise.resolve(device));
-      promises.push(device.fetchUuids());
-      return Promise.all(promises);
+    .then(function() {
+      log("[5] Stop discovery ... ");
+      return aAdapter.stopDiscovery();
     })
-    .then(function(aResults) {
-      log("[6] Verify the UUIDs ... ");
-      let device = aResults[0];
-      let uuids = aResults[1];
+    .then(function() {
+      log("[6] Fetch the UUIDs of remote device ... ");
+
+      return remoteDevice.fetchUuids();
+    })
+    .then(function(uuids) {
+      log("[7] Verify the UUIDs ... ");
 
       ok(Array.isArray(uuids), "type checking for 'fetchUuids'.");
 
-      ok(isUuidsEqual(uuids, device.uuids),
-        "device.uuids should equal to the result from 'fetchUuids'");
+      ok(isUuidsEqual(uuids, remoteDevice.uuids),
+        "remoteDevice.uuids should equal to the result from 'fetchUuids'");
 
-      bool isUuidsChanged = !isUuidsEqual(originalUuids, device.uuids);
-      is(isUuidsChanged, hasReceivedUuidsChanged, "device.uuids has changed.");
+      let isUuidsChanged = !isUuidsEqual(originalUuids, remoteDevice.uuids);
+      is(isUuidsChanged, hasReceivedUuidsChanged, "remoteDevice.uuids has changed.");
 
-      device.onattributechanged = null;
-    })
-    .then(function() {
-      log("[7] Stop discovery ... ");
-      return aAdapter.stopDiscovery();
-    })
+      remoteDevice.onattributechanged = null;
+    });
 });
