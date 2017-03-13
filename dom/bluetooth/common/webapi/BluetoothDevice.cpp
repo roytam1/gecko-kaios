@@ -179,7 +179,6 @@ BluetoothDevice::SetPropertyByValue(const BluetoothNamedValue& aValue)
   } else if (name.EqualsLiteral("UUIDs")) {
     // We sort the received UUIDs and remove any duplicates.
     const nsTArray<BluetoothUuid>& uuids = value.get_ArrayOfBluetoothUuid();
-    nsTArray<nsString> uuidStrs;
     mUuids.Clear();
     for (uint32_t index = 0; index < uuids.Length(); ++index) {
       if (!mUuids.Contains(uuids[index])) { // filter out duplicate UUIDs
