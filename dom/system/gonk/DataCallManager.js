@@ -645,6 +645,9 @@ DataCallHandler.prototype = {
                   : RIL.RIL_DATACALL_PDP_TYPES.indexOf(initalAttachApn.roaming_protocol);
       if (pdpType == -1) {
         pdpType = RIL.GECKO_DATACALL_PDP_TYPE_IP;
+      } else {
+        // Found, convert back to IP/IPV4V6/IPV6 string.
+        pdpType = RIL.RIL_DATACALL_PDP_TYPES[pdpType];
       }
 
       let authtype = RIL.RIL_DATACALL_AUTH_TO_GECKO.indexOf(initalAttachApn.authtype);
