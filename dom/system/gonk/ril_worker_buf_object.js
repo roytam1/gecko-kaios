@@ -21,7 +21,7 @@
   let BufObject = function(aContext) {
     this.context = aContext;
     // This gets incremented each time we send out a parcel.
-    this.mToken = 1;
+    this.mToken = 0;
     // Maps tokens we send out with requests to the request type, so that
     // when we get a response parcel back, we know what request it was for.
     this.mTokenRequestMap = new Map();
@@ -112,8 +112,16 @@
    *        original main thread message object that led to the RIL request.
    */
   BufObject.prototype.newParcel = function(type, options) {
+    // Reset token serial number to 1 if reach MAX_SAFE_INTEGER.
+    if (this.mToken < Number.MAX_SAFE_INTEGER) {
+      this.mToken++;
+    } else {
+      this.mToken = 1;
+    }
+
     if (DEBUG) {
-      this.context.debug("New outgoing parcel of type " + type);
+      this.context.debug("New outgoing parcel of type " + type + ", token "
+        + this.mToken);
     }
 
     // We're going to leave room for the parcel size at the beginning.
@@ -126,7 +134,6 @@
     }
     options.rilRequestType = type;
     this.mTokenRequestMap.set(this.mToken, options);
-    this.mToken++;
     return this.mToken;
   };
 

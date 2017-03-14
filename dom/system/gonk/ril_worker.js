@@ -1817,7 +1817,6 @@ RilObject.prototype = {
     Buf.writeString(options.chappap.toString());
     Buf.writeString(options.pdptype);
     Buf.sendParcel();
-    return token;
   },
 
   /**
