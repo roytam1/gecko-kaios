@@ -565,7 +565,7 @@ function waitForAdapterAttributeChanged(aAdapter, aAttrName, aExpectedValue) {
 }
 
 /**
- * Wait for specified number of 'devicefound' events.
+ * Wait for specified number of 'devicefound' events triggered by discovery.
  *
  * Resolve if specified number of devices has been found. Never reject.
  *
@@ -586,15 +586,62 @@ function waitForDevicesFound(aDiscoveryHandle, aExpectedNumberOfDevices) {
   ok(aDiscoveryHandle instanceof BluetoothDiscoveryHandle,
     "aDiscoveryHandle should be a BluetoothDiscoveryHandle");
 
-  let devicesArray = [];
+  let deviceEvents = [];
   aDiscoveryHandle.ondevicefound = function onDeviceFound(aEvent) {
     ok(aEvent instanceof BluetoothDeviceEvent,
       "aEvent should be a BluetoothDeviceEvent");
 
-    devicesArray.push(aEvent);
-    if (devicesArray.length >= aExpectedNumberOfDevices) {
+    ok(aEvent.device instanceof BluetoothDevice,
+      "aEvent.device should be a BluetoothDevice");
+
+    deviceEvents.push(aEvent);
+    if (deviceEvents.length >= aExpectedNumberOfDevices) {
       aDiscoveryHandle.ondevicefound = null;
-      deferred.resolve(devicesArray);
+      deferred.resolve(deviceEvents);
+    }
+  };
+
+  return deferred.promise;
+}
+
+/**
+ * Wait for specified number of 'devicefound' events triggered by LE scan.
+ *
+ * Resolve if specified number of devices has been found. Never reject.
+ *
+ * Fulfill params: an array which contains BluetoothLeDeviceEvents that we
+ *                 received from the BluetoothDiscoveryHandle.
+ *
+ * @param aDiscoveryHandle
+ *        A BluetoothDiscoveryHandle which is used to notify application of
+ *        discovered remote LE bluetooth devices.
+ * @param aExpectedNumberOfDevices
+ *        The number of remote devices we expect to scan.
+ *
+ * @return A deferred promise.
+ */
+function waitForLeDevicesFound(aDiscoveryHandle, aExpectedNumberOfDevices) {
+  let deferred = Promise.defer();
+
+  ok(aDiscoveryHandle instanceof BluetoothDiscoveryHandle,
+    "aDiscoveryHandle should be a BluetoothDiscoveryHandle");
+
+  let deviceEvents = [];
+  aDiscoveryHandle.ondevicefound = function onDeviceFound(aEvent) {
+    ok(aEvent instanceof BluetoothLeDeviceEvent,
+      "aEvent should be a BluetoothLeDeviceEvent");
+
+    ok(aEvent.device instanceof BluetoothDevice,
+      "aEvent.device should be a BluetoothDevice");
+
+    ok(typeof aEvent.rssi === 'number', "rssi should be a number");
+    ok(typeof aEvent.scanRecord === 'object', "scanRecord should be a object");
+    isnot(aEvent.device.type, 'classic', "BluetoothDevice.type");
+
+    deviceEvents.push(aEvent);
+    if (deviceEvents.length >= aExpectedNumberOfDevices) {
+      aDiscoveryHandle.ondevicefound = null;
+      deferred.resolve(deviceEvents);
     }
   };
 
