@@ -2512,6 +2512,10 @@ BluetoothServiceBluedroid::PinRequestNotification(
 {
   MOZ_ASSERT(NS_IsMainThread());
 
+  BT_LOGR("addr: %02x:%02x:%02x:%02x:%02x:%02x",
+    aRemoteBdAddr.mAddr[0], aRemoteBdAddr.mAddr[1], aRemoteBdAddr.mAddr[2],
+    aRemoteBdAddr.mAddr[3], aRemoteBdAddr.mAddr[4], aRemoteBdAddr.mAddr[5]);
+
   BluetoothRemoteName bdName;
   InfallibleTArray<BluetoothNamedValue> propertiesArray;
 
@@ -2542,6 +2546,11 @@ BluetoothServiceBluedroid::SspRequestNotification(
   uint32_t aCod, BluetoothSspVariant aPairingVariant, uint32_t aPassKey)
 {
   MOZ_ASSERT(NS_IsMainThread());
+
+  BT_LOGR("variant: %d, addr: %02x:%02x:%02x:%02x:%02x:%02x",
+    static_cast<int>(aPairingVariant),
+    aRemoteBdAddr.mAddr[0], aRemoteBdAddr.mAddr[1], aRemoteBdAddr.mAddr[2],
+    aRemoteBdAddr.mAddr[3], aRemoteBdAddr.mAddr[4], aRemoteBdAddr.mAddr[5]);
 
   BluetoothRemoteName bdName;
   InfallibleTArray<BluetoothNamedValue> propertiesArray;

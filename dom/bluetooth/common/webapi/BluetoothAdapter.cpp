@@ -946,12 +946,14 @@ BluetoothAdapter::PairUnpair(bool aPair, const nsAString& aDeviceAddress,
 already_AddRefed<Promise>
 BluetoothAdapter::Pair(const nsAString& aDeviceAddress, ErrorResult& aRv)
 {
+  BT_LOGR(" %s", NS_ConvertUTF16toUTF8(aDeviceAddress).get());
   return PairUnpair(true, aDeviceAddress, aRv);
 }
 
 already_AddRefed<Promise>
 BluetoothAdapter::Unpair(const nsAString& aDeviceAddress, ErrorResult& aRv)
 {
+  BT_LOGR(" %s", NS_ConvertUTF16toUTF8(aDeviceAddress).get());
   return PairUnpair(false, aDeviceAddress, aRv);
 }
 
