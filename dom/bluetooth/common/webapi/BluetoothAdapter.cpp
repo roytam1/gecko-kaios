@@ -66,8 +66,12 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(BluetoothAdapter,
    * after unlinked. Please see Bug 1138267 for detail informations.
    */
   UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_ADAPTER), tmp);
-  UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_PBAP), tmp);
-  UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_MAP), tmp);
+  if (tmp->mHasListenedToPbapSignal) {
+    UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_PBAP), tmp);
+  }
+  if (tmp->mHasListenedToMapSignal) {
+    UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_MAP), tmp);
+  }
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(BluetoothAdapter,
@@ -370,8 +374,12 @@ void
 BluetoothAdapter::Cleanup()
 {
   UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_ADAPTER), this);
-  UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_PBAP), this);
-  UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_MAP), this);
+  if (mHasListenedToPbapSignal) {
+    UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_PBAP), this);
+  }
+  if (mHasListenedToMapSignal) {
+    UnregisterBluetoothSignalHandler(NS_LITERAL_STRING(KEY_MAP), this);
+  }
 
   // Stop ongoing LE scans and clear the LeScan handle array
   if (!mLeScanHandleArray.IsEmpty()) {
