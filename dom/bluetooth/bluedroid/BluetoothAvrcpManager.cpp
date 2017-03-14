@@ -270,6 +270,23 @@ BluetoothAvrcpManager::InitAvrcpInterface(BluetoothProfileResultHandler* aRes)
 BluetoothAvrcpManager::~BluetoothAvrcpManager()
 { }
 
+nsresult
+BluetoothAvrcpManager::Init()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
+  NS_ENSURE_TRUE(obs, NS_ERROR_NOT_AVAILABLE);
+
+  auto rv = obs->AddObserver(this, NS_XPCOM_SHUTDOWN_OBSERVER_ID, false);
+  if (NS_FAILED(rv)) {
+    BT_WARNING("Failed to add observers!");
+    return rv;
+  }
+
+  return NS_OK;
+}
+
 void
 BluetoothAvrcpManager::Uninit()
 {
@@ -298,8 +315,11 @@ BluetoothAvrcpManager::Get()
   // If we're in shutdown, don't create a new instance
   NS_ENSURE_FALSE(sInShutdown, nullptr);
 
-  // Create a new instance and return
-  sBluetoothAvrcpManager = new BluetoothAvrcpManager();
+  // Create a new instance, register, and return
+  RefPtr<BluetoothAvrcpManager> manager = new BluetoothAvrcpManager();
+  NS_ENSURE_SUCCESS(manager->Init(), nullptr);
+
+  sBluetoothAvrcpManager = manager;
 
   return sBluetoothAvrcpManager;
 }

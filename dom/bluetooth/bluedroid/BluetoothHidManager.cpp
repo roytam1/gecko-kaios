@@ -189,6 +189,23 @@ BluetoothHidManager::InitHidInterface(BluetoothProfileResultHandler* aRes)
 BluetoothHidManager::~BluetoothHidManager()
 { }
 
+nsresult
+BluetoothHidManager::Init()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
+  NS_ENSURE_TRUE(obs, NS_ERROR_NOT_AVAILABLE);
+
+  auto rv = obs->AddObserver(this, NS_XPCOM_SHUTDOWN_OBSERVER_ID, false);
+  if (NS_FAILED(rv)) {
+    BT_WARNING("Failed to add observers!");
+    return rv;
+  }
+
+  return NS_OK;
+}
+
 void
 BluetoothHidManager::Uninit()
 {
@@ -352,7 +369,10 @@ BluetoothHidManager::Get()
   NS_ENSURE_FALSE(sInShutdown, nullptr);
 
   // Create a new instance, register, and return
-  sBluetoothHidManager = new BluetoothHidManager();
+  RefPtr<BluetoothHidManager> manager = new BluetoothHidManager();
+  NS_ENSURE_SUCCESS(manager->Init(), nullptr);
+
+  sBluetoothHidManager = manager;
 
   return sBluetoothHidManager;
 }

@@ -58,6 +58,7 @@ private:
 
   BluetoothA2dpManager();
 
+  nsresult Init();
   void Uninit();
   void HandleShutdown();
   void NotifyConnectionStatusChanged();

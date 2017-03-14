@@ -230,6 +230,23 @@ BluetoothA2dpManager::InitA2dpInterface(BluetoothProfileResultHandler* aRes)
 BluetoothA2dpManager::~BluetoothA2dpManager()
 { }
 
+nsresult
+BluetoothA2dpManager::Init()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
+  NS_ENSURE_TRUE(obs, NS_ERROR_NOT_AVAILABLE);
+
+  auto rv = obs->AddObserver(this, NS_XPCOM_SHUTDOWN_OBSERVER_ID, false);
+  if (NS_FAILED(rv)) {
+    BT_WARNING("Failed to add observers!");
+    return rv;
+  }
+
+  return NS_OK;
+}
+
 void
 BluetoothA2dpManager::Uninit()
 {
@@ -277,8 +294,11 @@ BluetoothA2dpManager::Get()
   // If we're in shutdown, don't create a new instance
   NS_ENSURE_FALSE(sInShutdown, nullptr);
 
-  // Create a new instance and return
-  sBluetoothA2dpManager = new BluetoothA2dpManager();
+  // Create a new instance, register, and return
+  RefPtr<BluetoothA2dpManager> manager = new BluetoothA2dpManager();
+  NS_ENSURE_SUCCESS(manager->Init(), nullptr);
+
+  sBluetoothA2dpManager = manager;
 
   return sBluetoothA2dpManager;
 }

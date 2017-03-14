@@ -71,6 +71,7 @@ private:
 
   BluetoothAvrcpManager();
 
+  nsresult Init();
   void Uninit();
   void HandleShutdown();
   void NotifyConnectionStatusChanged();

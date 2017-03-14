@@ -60,6 +60,7 @@ private:
   class VirtualUnplugResultHandler;
 
   BluetoothHidManager();
+  nsresult Init();
   void Uninit();
   void HandleShutdown();
   void NotifyConnectionStateChanged(const nsAString& aType);
