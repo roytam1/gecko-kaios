@@ -1229,8 +1229,9 @@ BluetoothAdapter::HandleLeDeviceFound(const BluetoothValue& aValue)
       MOZ_ASSERT(value.type() == BluetoothValue::TArrayOfuint8_t);
       advData = value.get_ArrayOfuint8_t();
     } else {
-      BT_WARNING("Receive an unexpected value name '%s'",
-                 NS_ConvertUTF16toUTF8(name).get());
+      // Few values are handled by BluetoothDevice::SetPropertyByValue()
+      BT_LOGD("Not handling BluetoothValue name: %s",
+              NS_ConvertUTF16toUTF8(name).get());
     }
   }
 

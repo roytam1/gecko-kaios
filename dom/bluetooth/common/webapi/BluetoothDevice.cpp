@@ -194,8 +194,9 @@ BluetoothDevice::SetPropertyByValue(const BluetoothNamedValue& aValue)
     advData = value.get_ArrayOfuint8_t();
     UpdatePropertiesFromAdvData(advData);
   } else {
-    BT_WARNING("Not handling device property: %s",
-               NS_ConvertUTF16toUTF8(name).get());
+    // "Rssi" is handled by BluetoothAdapter::HandleLeDeviceFound()
+    BT_LOGD("Not handling device property: %s",
+            NS_ConvertUTF16toUTF8(name).get());
   }
 }
 

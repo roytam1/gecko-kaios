@@ -414,7 +414,7 @@ BluetoothService::DistributeSignal(const BluetoothSignal& aSignal)
     return;
   }
 
-  BT_LOGR("No observer registered for path %s",
+  BT_WARNING("No observer registered for path %s",
       NS_ConvertUTF16toUTF8(aSignal.path()).get());
 
   // If there is no BluetoohPairingListener in observer table, put the signal

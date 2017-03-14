@@ -393,7 +393,7 @@ public:
   void OnError(BluetoothStatus aStatus) override
   {
     MOZ_ASSERT(mImpl->IsConsumerThread());
-    BT_LOGR("BluetoothSocketInterface::Accept failed: %d", (int)aStatus);
+    BT_LOGD("BluetoothSocketInterface::Accept failed: %d", (int)aStatus);
 
     if (!mImpl->IsShutdownOnConsumerThread()) {
       // Instead of NotifyError(), call NotifyDisconnect() to trigger
