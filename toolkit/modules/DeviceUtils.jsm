@@ -11,9 +11,20 @@ const Cu = Components.utils;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
+Cu.import("resource://gre/modules/Promise.jsm");
 #ifdef PROPRIETARY_JRD_SERVICE
 Cu.import('resource://gre/modules/jrd_service.jsm');
 #endif
+
+const PREF_SERVICE_DEVICE_TYPE = "services.kaiostech.device_type";
+const PREF_SERVICE_DEVICE_BRAND = "services.kaiostech.brand";
+const PREF_SERVICE_DEVICE_MODEL = "services.kaiostech.model";
+
+XPCOMUtils.defineLazyServiceGetter(this, "gMobileConnectionService",
+                                   "@mozilla.org/mobileconnection/mobileconnectionservice;1",
+                                   "nsIMobileConnectionService");
+
+let device_info;
 
 this.DeviceUtils = {
 
@@ -35,5 +46,50 @@ this.DeviceUtils = {
       }
     } catch(e) {}
     return cuRefStr;
-  }
+  },
+
+  initTDeviceObject: function DeviceUtils_initTDeviceObject() {
+    if (!device_info) {
+      device_info = {
+        reference: this.getRefNumber(),
+        os: Services.prefs.getCharPref("b2g.osName"),
+        os_version: Services.prefs.getCharPref("b2g.version"),
+      };
+      try {
+        device_info.device_type = Services.prefs.getIntPref(PREF_SERVICE_DEVICE_TYPE);
+        device_info.brand       = Services.prefs.getCharPref(PREF_SERVICE_DEVICE_BRAND);
+        device_info.model       = Services.prefs.getCharPref(PREF_SERVICE_DEVICE_MODEL);
+      } catch (e) {}
+    }
+  },
+
+  getTDeviceObject: function DeviceUtils_getTDeviceObject() {
+    let deferred = Promise.defer();
+    this.initTDeviceObject();
+    // TODO: need to check how to handle dual-SIM case.
+    if (typeof device_info.device_id != "undefined") {
+      deferred.resolve(device_info);
+    }
+    if (typeof gMobileConnectionService != "undefined") {
+      let conn = gMobileConnectionService.getItemByServiceId(0);
+      conn.getDeviceIdentities({
+        notifyGetDeviceIdentitiesRequestSuccess: function(aResult) {
+          if (aResult.imei && parseInt(aResult.imei) !== 0) {
+            device_info.device_id = aResult.imei;
+          } else if (aResult.meid && parseInt(aResult.meid) !== 0) {
+            device_info.device_id = aResult.meid;
+          } else if (aResult.esn && parseInt(aResult.esn) !== 0) {
+            device_info.device_id = aResult.esn;
+          } else {
+            deferred.reject();
+            return;
+          }
+          deferred.resolve(device_info);
+        }
+      });
+    } else {
+      deferred.reject();
+    }
+    return deferred.promise;
+  },
 };
