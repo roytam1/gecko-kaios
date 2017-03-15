@@ -228,7 +228,7 @@ nsDOMCameraManager::CreateInstance(nsPIDOMWindowInner* aWindow)
   if (!sActiveWindows) {
     sActiveWindows = new ::WindowTable();
   }
-  
+
   RefPtr<nsDOMCameraManager> cameraManager =
     new nsDOMCameraManager(aWindow);
 
@@ -592,19 +592,22 @@ nsDOMCameraManager::Shutdown(uint64_t aWindowId)
   MOZ_ASSERT(NS_IsMainThread());
 
   CameraControls* controls = sActiveWindows->Get(aWindowId);
-  if (controls) {
-    uint32_t i = controls->Length();
-    while (i > 0) {
-      --i;
-      RefPtr<nsDOMCameraControl> cameraControl =
-        do_QueryReferent(controls->ElementAt(i));
-      if (cameraControl) {
-        cameraControl->Shutdown();
-      }
-    }
-    controls->Clear();
-    sActiveWindows->Remove(aWindowId);
+  if (!controls) {
+    return;
   }
+
+  uint32_t i = controls->Length();
+  while (i > 0) {
+    --i;
+    RefPtr<nsDOMCameraControl> cameraControl =
+      do_QueryReferent(controls->ElementAt(i));
+    if (cameraControl) {
+      cameraControl->Shutdown();
+    }
+  }
+  controls->Clear();
+
+  sActiveWindows->Remove(aWindowId);
 
   //==Surface test start==
 #ifdef FEED_TEST_DATA_TO_PRODUCER
@@ -668,4 +671,3 @@ nsDOMCameraManager::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto
 {
   return CameraManagerBinding::Wrap(aCx, this, aGivenProto);
 }
-

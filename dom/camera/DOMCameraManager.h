@@ -92,7 +92,7 @@ public:
   GetPreviewStream(const mozilla::dom::SurfaceConfiguration& aOptions, mozilla::ErrorResult& aRv);
   already_AddRefed<mozilla::dom::Promise>
   GetDisplayStream(const mozilla::dom::SurfaceConfiguration& aOptions, mozilla::ErrorResult& aRv);
-  
+
   nsPIDOMWindowInner* GetParentObject() const { return mWindow; }
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
