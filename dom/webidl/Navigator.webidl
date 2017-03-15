@@ -432,7 +432,9 @@ partial interface Navigator {
 
 // Service Workers/Navigation Controllers
 partial interface Navigator {
-  [Func="ServiceWorkerContainer::IsEnabled", SameObject]
+  [Func="ServiceWorkerContainer::IsEnabled",
+   CheckAnyPermissions="serviceworker",
+   SameObject]
   readonly attribute ServiceWorkerContainer serviceWorker;
 };
 
