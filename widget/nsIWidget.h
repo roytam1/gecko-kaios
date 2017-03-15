@@ -380,6 +380,7 @@ class nsIWidget : public nsISupports {
       , mWindowType(eWindowType_child)
       , mZIndex(0)
       , mDrawMouse(false)
+      , mDrawVirtualMouse(false)
 
     {
       ClearNativeTouchSequence(nullptr);

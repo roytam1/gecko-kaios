@@ -259,22 +259,12 @@ nsWindow::KickOffComposition()
     MOZ_ASSERT(NS_IsMainThread());
 
     // gFocusedWindow should only be accessed in main thread.
-    if (!gFocusedWindow ||
-        !gFocusedWindow->GetLayerManager()) {
+    if (!gFocusedWindow) {
         return;
     }
 
-    RefPtr<LayerTransactionChild> transaction;
-    ShadowLayerForwarder* forwarder =
-        gFocusedWindow->GetLayerManager()->AsShadowForwarder();
-    if (forwarder && forwarder->HasShadowManager()) {
-        transaction = forwarder->GetShadowManager();
-    }
-
-    if (transaction && transaction->IPCOpen()) {
-        //Trigger compostion to draw GL cursor
-        transaction->SendForceComposite();
-    }
+    gFocusedWindow->mCompositorBridgeParent->InvalidateOnCompositorThread();
+    gFocusedWindow->mCompositorBridgeParent->ScheduleRenderOnCompositorThread();
 }
 
 void
