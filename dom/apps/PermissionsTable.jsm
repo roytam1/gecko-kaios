@@ -460,6 +460,13 @@ this.PermissionsTable =  { geolocation: {
                              privileged: DENY_ACTION,
                              certified: ALLOW_ACTION
                            },
+                           "kaios-accounts:service": {
+                             app: DENY_ACTION,
+                             trusted: DENY_ACTION,
+                             privileged: PROMPT_ACTION,
+                             certified: ALLOW_ACTION,
+                             substitute: ["kaios-accounts"]
+                           },
                            "themeable": {
                              app: DENY_ACTION,
                              privileged: DENY_ACTION,
