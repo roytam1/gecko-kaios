@@ -64,6 +64,7 @@ LOCAL_INCLUDES += [
     '/dom/media/webaudio',
     '/dom/media/webspeech/recognition',
     '/dom/powersupply',
+    '/dom/surface',
     '/dom/svg',
     '/dom/workers',
     '/dom/xbl',

@@ -118,6 +118,7 @@ DIRS += [
     'u2f',
     'datacall',
     'powersupply',
+    'surface',
 ]
 
 if CONFIG['OS_ARCH'] == 'WINNT':

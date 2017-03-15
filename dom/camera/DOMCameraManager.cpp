@@ -14,6 +14,8 @@
 #include "nsIPermissionManager.h"
 #include "nsIScriptObjectPrincipal.h"
 #include "DOMCameraControl.h"
+#include "DOMSurfaceControl.h"
+#include "IDOMSurfaceControlCallback.h"
 #include "nsDOMClassInfo.h"
 #include "CameraCommon.h"
 #include "CameraPreferences.h"
@@ -23,6 +25,11 @@
 
 using namespace mozilla;
 using namespace mozilla::dom;
+using namespace android;
+
+#ifdef FEED_TEST_DATA_TO_PRODUCER
+#include <cutils/properties.h>
+#endif
 
 NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(nsDOMCameraManager, mWindow)
 
@@ -49,10 +56,56 @@ GetCameraLog()
   return sLog;
 }
 
+class DOMSurfaceControlCallback : public IDOMSurfaceControlCallback
+{
+public:
+  DOMSurfaceControlCallback(nsDOMCameraManager* aCameraManager) :
+    mDOMCameraManager(aCameraManager) {
+  }
+
+  virtual void OnProducerCreated(
+    android::sp<android::IGraphicBufferProducer> aProducer) override;
+  virtual void OnProducerDestroyed() override;
+
+  virtual ~DOMSurfaceControlCallback() { }
+
+private:
+  nsDOMCameraManager* mDOMCameraManager;
+};
+
+void DOMSurfaceControlCallback::OnProducerCreated(android::sp<android::IGraphicBufferProducer> aProducer)
+{
+#ifdef FEED_TEST_DATA_TO_PRODUCER
+  char prop[128];
+  if (property_get("vt.surface.test", prop, NULL) != 0) {
+    if (strcmp(prop, "2") == 0) {
+      if(mDOMCameraManager) {
+        mDOMCameraManager->mProducer = aProducer;
+        mDOMCameraManager->TestSurfaceInput();
+      }
+    }
+  }
+#endif
+}
+
+void DOMSurfaceControlCallback::OnProducerDestroyed()
+{
+
+}
+
 ::WindowTable* nsDOMCameraManager::sActiveWindows = nullptr;
+::WindowTable* nsDOMCameraManager::sSurfaceActiveWindows = nullptr;
 
 nsDOMCameraManager::nsDOMCameraManager(nsPIDOMWindowInner* aWindow)
-  : mWindowId(aWindow->WindowID())
+  :
+#ifdef FEED_TEST_DATA_TO_PRODUCER
+    mTestImage(NULL)
+  , mTestImage2(NULL)
+  , mTestImageIndex(0)
+  , mIsTestRunning(false)
+  ,
+#endif
+    mWindowId(aWindow->WindowID())
   , mPermission(nsIPermissionManager::DENY_ACTION)
   , mWindow(aWindow)
 {
@@ -63,6 +116,18 @@ nsDOMCameraManager::nsDOMCameraManager(nsPIDOMWindowInner* aWindow)
 
 nsDOMCameraManager::~nsDOMCameraManager()
 {
+  if (mDOMSurfaceControlCallback) {
+    delete mDOMSurfaceControlCallback;
+  }
+#ifdef FEED_TEST_DATA_TO_PRODUCER
+  if (mTestImage) {
+    delete [] mTestImage;
+  }
+
+  if (mTestImage2) {
+    delete [] mTestImage2;
+  }
+#endif
   /* destructor code */
   MOZ_COUNT_DTOR(nsDOMCameraManager);
   DOM_CAMERA_LOGT("%s:%d : this=%p\n", __func__, __LINE__, this);
@@ -109,6 +174,9 @@ nsDOMCameraManager::CreateInstance(nsPIDOMWindowInner* aWindow)
     sActiveWindows = new ::WindowTable();
   }
 
+  if (!sSurfaceActiveWindows) {
+    sSurfaceActiveWindows = new ::SurfaceWindowTable();
+  }
   RefPtr<nsDOMCameraManager> cameraManager =
     new nsDOMCameraManager(aWindow);
 
@@ -326,6 +394,37 @@ nsDOMCameraManager::GetCamera(const nsAString& aCamera,
   return promise.forget();
 }
 
+already_AddRefed<Promise>
+nsDOMCameraManager::GetSurface(const SurfaceConfiguration& aInitialConfig, mozilla::ErrorResult& aRv)
+{
+  nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(mWindow);
+  if (!global) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return nullptr;
+  }
+
+  RefPtr<Promise> promise = Promise::Create(global, aRv);
+  if (aRv.Failed()) {
+    return nullptr;
+  }
+
+  nsCOMPtr<nsIScriptObjectPrincipal> sop = do_QueryInterface(mWindow);
+  if (!sop) {
+    aRv.Throw(NS_ERROR_UNEXPECTED);
+    return nullptr;
+  }
+
+  // Creating this object will trigger the aOnSuccess callback
+  //  (or the aOnError one, if it fails).
+  mDOMSurfaceControlCallback = new DOMSurfaceControlCallback(this);
+  RefPtr<nsDOMSurfaceControl> surfaceControl =
+    new nsDOMSurfaceControl(aInitialConfig, promise, mWindow, mDOMSurfaceControlCallback);
+
+  RegisterSurface(surfaceControl);
+
+  return promise.forget();
+}
+
 void
 nsDOMCameraManager::PermissionAllowed(uint32_t aCameraId,
                                       const CameraConfiguration& aInitialConfig,
@@ -386,22 +485,68 @@ nsDOMCameraManager::Shutdown(uint64_t aWindowId)
   MOZ_ASSERT(NS_IsMainThread());
 
   CameraControls* controls = sActiveWindows->Get(aWindowId);
-  if (!controls) {
-    return;
+  if (controls) {
+    uint32_t i = controls->Length();
+    while (i > 0) {
+      --i;
+      RefPtr<nsDOMCameraControl> cameraControl =
+        do_QueryReferent(controls->ElementAt(i));
+      if (cameraControl) {
+        cameraControl->Shutdown();
+      }
+    }
+    controls->Clear();
+    sActiveWindows->Remove(aWindowId);
   }
 
+  //==Surface test start==
+  //Stop test if any
+  mIsTestRunning = false;
+  SurfaceControls* surfaceControls = sSurfaceActiveWindows->Get(aWindowId);
+  if (surfaceControls) {
+    uint32_t i = surfaceControls->Length();
+    while (i > 0) {
+      --i;
+      RefPtr<nsDOMSurfaceControl> surfaceControl =
+        do_QueryReferent(surfaceControls->ElementAt(i));
+      if (surfaceControl) {
+        surfaceControl->Shutdown();
+      }
+    }
+    surfaceControls->Clear();
+    sSurfaceActiveWindows->Remove(aWindowId);
+  }
+
+  //==Surface test end==
+}
+
+void
+nsDOMCameraManager::RegisterSurface(nsDOMSurfaceControl* aDOMSurfaceControl)
+{
+  DOM_CAMERA_LOGI(">>> Register( nsDOMSurfaceControl = %p ) mWindowId = 0x%" PRIx64 "\n", aDOMSurfaceControl, mWindowId);
+  MOZ_ASSERT(NS_IsMainThread());
+
+  SurfaceControls* controls = sSurfaceActiveWindows->Get(mWindowId);
+  if (!controls) {
+    controls = new SurfaceControls();
+    sSurfaceActiveWindows->Put(mWindowId, controls);
+  }
+
+  // Remove any stale SurfaceControl objects to limit our memory usage
   uint32_t i = controls->Length();
   while (i > 0) {
     --i;
-    RefPtr<nsDOMCameraControl> cameraControl =
+    RefPtr<nsDOMSurfaceControl> surfaceControl =
       do_QueryReferent(controls->ElementAt(i));
-    if (cameraControl) {
-      cameraControl->Shutdown();
+    if (!surfaceControl) {
+      controls->RemoveElementAt(i);
     }
   }
-  controls->Clear();
 
-  sActiveWindows->Remove(aWindowId);
+  // Put the surface control into the hash table
+  nsWeakPtr surfaceControl =
+    do_GetWeakReference(static_cast<DOMMediaStream*>(aDOMSurfaceControl));
+  controls->AppendElement(surfaceControl);
 }
 
 void
@@ -450,3 +595,123 @@ nsDOMCameraManager::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto
 {
   return CameraManagerBinding::Wrap(aCx, this, aGivenProto);
 }
+#ifdef FEED_TEST_DATA_TO_PRODUCER
+bool getYUVDataFromFile(const char *path,unsigned char * pYUVData,int size){
+    FILE *fp = fopen(path,"rb");
+    if(fp == NULL){
+        return false;
+    }
+    fread(pYUVData,size,1,fp);
+    fclose(fp);
+    return true;
+}
+
+nsresult
+nsDOMCameraManager::TestSurfaceInput()
+{
+  if (mTestANativeWindow == NULL) {
+    if (mProducer != NULL) {
+      mTestANativeWindow = new android::Surface(mProducer, /*controlledByApp*/ true);
+
+      native_window_set_buffer_count(
+              mTestANativeWindow.get(),
+              8);
+    } else {
+      return NS_ERROR_FAILURE;
+    }
+  }
+
+  //Prepare test data
+  if (!mTestImage) {
+    int size = 176 * 144  * 1.5;
+    mTestImage = new unsigned char[size];
+
+    const char *path = "/mnt/media_rw/sdcard/tulips_yuv420_prog_planar_qcif.yuv";
+    bool getResult = getYUVDataFromFile(path, mTestImage, size);
+    if (!getResult) {
+      memset(mTestImage, 120, size);
+    }  }
+
+
+  if (!mTestImage2) {
+    int size = 176 * 144  * 1.5;
+    mTestImage2 = new unsigned char[size];
+
+    const char *path = "/mnt/media_rw/sdcard/tulips_yvu420_inter_planar_qcif.yuv";
+    bool getResult = getYUVDataFromFile(path, mTestImage2, size);//get yuv data from file;
+    if (!getResult) {
+      memset(mTestImage2, 60, size);
+    }
+  }
+
+  mIsTestRunning = true;
+  return TestSurfaceInputImpl();
+}
+
+nsresult
+nsDOMCameraManager::TestSurfaceInputImpl()
+{
+  if (!mIsTestRunning) {
+    return NS_OK;
+  }
+
+  int err;
+  int cropWidth = 176;
+  int cropHeight = 144;
+
+  int halFormat = HAL_PIXEL_FORMAT_YCrCb_420_SP;
+  int bufWidth = (cropWidth + 1) & ~1;
+  int bufHeight = (cropHeight + 1) & ~1;
+
+  native_window_set_usage(
+  mTestANativeWindow.get(),
+  GRALLOC_USAGE_SW_READ_NEVER | GRALLOC_USAGE_SW_WRITE_OFTEN
+  | GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_EXTERNAL_DISP);
+
+
+  native_window_set_scaling_mode(
+  mTestANativeWindow.get(),
+  NATIVE_WINDOW_SCALING_MODE_SCALE_TO_WINDOW);
+
+  native_window_set_buffers_geometry(
+      mTestANativeWindow.get(),
+      bufWidth,
+      bufHeight,
+      halFormat);
+
+  ANativeWindowBuffer *buf;
+
+  if ((err = native_window_dequeue_buffer_and_wait(mTestANativeWindow.get(),
+          &buf)) != 0) {
+      return NS_OK;
+  }
+
+  GraphicBufferMapper &mapper = GraphicBufferMapper::get();
+
+  android::Rect bounds(cropWidth, cropHeight);
+
+  void *dst;
+   mapper.lock(buf->handle, GRALLOC_USAGE_SW_WRITE_OFTEN, bounds, &dst);
+
+  if (mTestImageIndex == 0) {
+    mTestImageIndex = 1;
+    memcpy(dst, mTestImage, cropWidth * cropHeight * 1.5);
+  } else {
+    mTestImageIndex = 0;
+    memcpy(dst, mTestImage2, cropWidth * cropHeight * 1.5);
+  }
+  mapper.unlock(buf->handle);
+
+  err = mTestANativeWindow->queueBuffer(mTestANativeWindow.get(), buf, -1);
+
+  buf = NULL;
+
+  //Next round
+  usleep(100000);
+  nsCOMPtr<nsIRunnable> testSurfaceInputTask =
+    NS_NewRunnableMethod(this, &nsDOMCameraManager::TestSurfaceInputImpl);
+  NS_DispatchToMainThread(testSurfaceInputTask, NS_DISPATCH_NORMAL);
+
+  return NS_OK;
+}
+#endif

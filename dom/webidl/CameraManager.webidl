@@ -45,6 +45,23 @@ dictionary CameraConfiguration
   DOMString recorderProfile = "default";
 };
 
+/* Used for the dimensions of a preview stream */
+dictionary SurfaceSize
+{
+  unsigned long width = 0;
+  unsigned long height = 0;
+};
+
+/* Pre-emptive surface configuration options.
+   To determine 'previewSize', one should generally provide the size of the
+   element which will contain the preview rather than guess which supported
+   preview size is the best. If not specified, 'previewSize' defaults to the
+   inner window size. */
+dictionary SurfaceConfiguration
+{
+  SurfaceSize previewSize = null;
+};
+
 [Func="nsDOMCameraManager::HasSupport"]
 interface CameraManager
 {
@@ -60,4 +77,8 @@ interface CameraManager
    */
   [Throws]
   sequence<DOMString> getListOfCameras();
+
+  [Throws]
+  Promise<SurfaceControl> getSurface(optional SurfaceConfiguration initialConfiguration);
+
 };

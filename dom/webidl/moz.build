@@ -439,6 +439,7 @@ WEBIDL_FILES = [
     'StyleSheet.webidl',
     'StyleSheetList.webidl',
     'SubtleCrypto.webidl',
+    'SurfaceControl.webidl',
     'SVGAElement.webidl',
     'SVGAltGlyphElement.webidl',
     'SVGAngle.webidl',

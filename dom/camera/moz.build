@@ -63,6 +63,7 @@ else:
 
 LOCAL_INCLUDES += [
     '../base',
+    '../surface',
     '/media/libyuv/include',
 ]
 
