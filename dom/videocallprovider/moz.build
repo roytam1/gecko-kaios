@@ -1,0 +1,50 @@
+# -*- Mode: python; c-basic-offset: 4; indent-tabs-mode: nil; tab-width: 40 -*-
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+XPIDL_SOURCES += [
+    'nsIVideoCallCallback.idl',
+    'nsIVideoCallProvider.idl'
+]
+
+EXPORTS.mozilla.dom += [
+    'DOMVideoCallCameraCapabilities.h',
+    'DOMVideoCallProfile.h',
+    'DOMVideoCallProvider.h',
+]
+
+EXPORTS.mozilla.dom.videocallprovider += [
+    'ipc/VideoCallIPCSerializer.h',
+    'ipc/VideoCallProviderChild.h',
+    'ipc/VideoCallProviderParent.h'
+]
+
+UNIFIED_SOURCES += [
+    'DOMVideoCallCameraCapabilities.cpp',
+    'DOMVideoCallProfile.cpp',
+    'DOMVideoCallProvider.cpp',
+    'ipc/VideoCallProviderChild.cpp',
+    'ipc/VideoCallProviderParent.cpp'
+]
+
+IPDL_SOURCES += [
+    'ipc/PVideoCallProvider.ipdl'
+]
+
+LOCAL_INCLUDES += [
+    '../surface',
+]
+
+include('/ipc/chromium/chromium-config.mozbuild')
+
+FINAL_LIBRARY = 'xul'
+
+XPIDL_MODULE = 'dom_videocallprovider'
+
+# Suppress some GCC warnings being treated as errors:
+#  - about attributes on forward declarations for types that are already
+#    defined, which complains about an important MOZ_EXPORT for android::AString
+if CONFIG['GNU_CC']:
+    CXXFLAGS += ['-Wno-error=attributes']

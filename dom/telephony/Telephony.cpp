@@ -14,6 +14,7 @@
 #include "mozilla/dom/RingbackToneEvent.h"
 #include "mozilla/dom/TtyModeReceivedEvent.h"
 #include "mozilla/dom/TelephonyCoverageLosingEvent.h"
+#include "mozilla/dom/DOMVideoCallProvider.h"
 #include "mozilla/unused.h"
 
 #include "nsCharSeparatedTokenizer.h"
@@ -36,6 +37,10 @@
 #include "nsIGonkTelephonyService.h"
 #endif
 #include "nsXULAppAPI.h" // For XRE_GetProcessType()
+
+#include <android/log.h>
+#undef LOG
+#define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "Telephony" , ## args)
 
 using namespace mozilla::dom;
 using namespace mozilla::dom::telephony;
@@ -194,7 +199,8 @@ Telephony::GetServiceId(const Optional<uint32_t>& aServiceId,
 
 already_AddRefed<Promise>
 Telephony::DialInternal(uint32_t aServiceId, const nsAString& aNumber,
-                        bool aEmergency, ErrorResult& aRv)
+                        bool aEmergency, ErrorResult& aRv,
+                        uint16_t aType)
 {
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetOwner());
   if (!global) {
@@ -214,7 +220,7 @@ Telephony::DialInternal(uint32_t aServiceId, const nsAString& aNumber,
   nsCOMPtr<nsITelephonyDialCallback> callback =
     new TelephonyDialCallback(GetOwner(), this, promise);
 
-  nsresult rv = mService->Dial(aServiceId, aNumber, aEmergency, callback);
+  nsresult rv = mService->Dial(aServiceId, aNumber, aEmergency, aType, callback);
   if (NS_FAILED(rv)) {
     promise->MaybeReject(NS_ERROR_DOM_INVALID_STATE_ERR);
     return promise.forget();
@@ -254,6 +260,8 @@ already_AddRefed<TelephonyCall>
 Telephony::CreateCall(TelephonyCallId* aId, uint32_t aServiceId,
                       uint32_t aCallIndex, TelephonyCallState aState,
                       TelephonyCallVoiceQuality aVoiceQuality,
+                      uint16_t aVideoCallState, uint32_t aCapabilities,
+                      uint32_t aRadioTech,
                       bool aEmergency, bool aConference,
                       bool aSwitchable, bool aMergeable,
                       bool aConferenceParent)
@@ -266,7 +274,10 @@ Telephony::CreateCall(TelephonyCallId* aId, uint32_t aServiceId,
   RefPtr<TelephonyCall> call =
     TelephonyCall::Create(this, aId, aServiceId, aCallIndex, aState, aVoiceQuality,
                           aEmergency, aConference, aSwitchable, aMergeable,
-                          aConferenceParent);
+                          aConferenceParent,
+                          aCapabilities,
+                          static_cast<TelephonyVideoCallState>(aVideoCallState),
+                          static_cast<TelephonyCallRadioTech>(aRadioTech));
 
   NS_ASSERTION(call, "This should never fail!");
   NS_ASSERTION(aConference ? mGroup->CallsArray().Contains(call)
@@ -324,6 +335,9 @@ Telephony::HandleCallInfo(nsITelephonyCallInfo* aInfo)
   uint32_t callIndex;
   uint16_t callState;
   uint16_t voiceQuality;
+  uint16_t videoCallState;
+  uint32_t capabilities;
+  uint32_t radioTech;
 
   bool isEmergency;
   bool isConference;
@@ -335,6 +349,10 @@ Telephony::HandleCallInfo(nsITelephonyCallInfo* aInfo)
   aInfo->GetCallIndex(&callIndex);
   aInfo->GetCallState(&callState);
   aInfo->GetVoiceQuality(&voiceQuality);
+  aInfo->GetVideoCallState(&videoCallState);
+  aInfo->GetCapabilities(&capabilities);
+  aInfo->GetRadioTech(&radioTech);
+
   aInfo->GetIsEmergency(&isEmergency);
   aInfo->GetIsConference(&isConference);
   aInfo->GetIsSwitchable(&isSwitchable);
@@ -350,6 +368,7 @@ Telephony::HandleCallInfo(nsITelephonyCallInfo* aInfo)
   if (!call) {
     RefPtr<TelephonyCallId> id = CreateCallId(aInfo);
     call = CreateCall(id, serviceId, callIndex, state, quality, isEmergency,
+                      videoCallState, capabilities, radioTech,
                       isConference, isSwitchable, isMergeable, isConferenceParent);
     // The newly created call is an incoming call.
     if (call &&
@@ -366,6 +385,11 @@ Telephony::HandleCallInfo(nsITelephonyCallInfo* aInfo)
   call->UpdateMergeable(isMergeable);
 
   call->UpdateVoiceQuality(quality);
+
+  call->UpdateVideoCallState(videoCallState);
+  call->UpdateCapabilities(capabilities);
+  call->UpdateRadioTech(radioTech);
+
   nsAutoString number;
   aInfo->GetNumber(number);
   RefPtr<TelephonyCallId> id = call->Id();
@@ -478,6 +502,15 @@ Telephony::Dial(const nsAString& aNumber, const Optional<uint32_t>& aServiceId,
 {
   uint32_t serviceId = GetServiceId(aServiceId);
   RefPtr<Promise> promise = DialInternal(serviceId, aNumber, false, aRv);
+  return promise.forget();
+}
+
+already_AddRefed<Promise>
+Telephony::DialVT(const nsAString& aNumber, const uint16_t& aType,
+                  const Optional<uint32_t>& aServiceId, ErrorResult& aRv)
+{
+  uint32_t serviceId = GetServiceId(aServiceId);
+  RefPtr<Promise> promise = DialInternal(serviceId, aNumber, false, aRv, aType);
   return promise.forget();
 }
 
@@ -631,6 +664,27 @@ Telephony::HandleAudioAgentState()
     }
   }
   return NS_OK;
+}
+
+already_AddRefed<DOMVideoCallProvider>
+Telephony::GetLoopbackProvider() const
+{
+  LOG("GetLoopbackProvider");
+
+  if (mLoopbackProvider) {
+    LOG("return cached provider");
+    RefPtr<DOMVideoCallProvider> provider = mLoopbackProvider;
+      return provider.forget();
+  } else {
+    LOG("return new provider");
+    nsCOMPtr<nsIVideoCallProvider> handler;
+    mService->GetVideoCallProvider(1000, 1000, getter_AddRefs(handler));
+    // if fail to acquire nsIVideoCallProvider, return nullptr
+    mLoopbackProvider = new DOMVideoCallProvider(GetOwner(), handler);
+    RefPtr<DOMVideoCallProvider> provider = mLoopbackProvider;
+
+    return provider.forget();
+  }
 }
 
 bool

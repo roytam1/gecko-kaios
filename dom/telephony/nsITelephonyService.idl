@@ -6,6 +6,7 @@
 
 interface nsIMobileCallForwardingOptions;
 interface nsITelephonyCallInfo;
+interface nsIVideoCallProvider;
 
 [scriptable, uuid(baa9f5f3-5cab-40e0-81e9-ae0abd917907)]
 interface nsITelephonyListener : nsISupports
@@ -181,7 +182,7 @@ interface nsITelephonyDialCallback : nsITelephonyCallback
  * XPCOM component (in the content process) that provides the telephony
  * information.
  */
-[scriptable, uuid(6b072284-d2eb-47b4-8352-89d78e61f0ae)]
+[scriptable, uuid(7d5c079c-9125-44c8-8526-6ecd0bd8752a)]
 interface nsITelephonyService : nsISupports
 {
   const unsigned short CALL_STATE_UNKNOWN = 0;
@@ -210,6 +211,54 @@ interface nsITelephonyService : nsISupports
 
   const unsigned short COVERAGE_LOST_IMS_OVER_WIFI = 0;
 
+  /**
+   * Voice telephony IR.92 & IR.94 (voide + video upgrade/downgrade)
+   */
+  const unsigned short CALL_TYPE_VOICE_N_VIDEO = 1;
+  /**
+   * IR.92 (Voice only)
+   */
+  const unsigned short CALL_TYPE_VOICE = 2;
+  /**
+   * Video telephony to support IR.92 and IR.94 (voice + video upgrade/downgrade)
+   */
+  const unsigned short CALL_TYPE_VIDEO_N_VOICE = 3;
+  /**
+   * Video telephony (audio / video two way)
+   * TBD phase 2?
+   */
+  const unsigned short CALL_TYPE_VT = 4;
+  /**
+   * Video telephony (audio two way / video TX one way)
+   * TBD phase 2?
+   */
+  const unsigned short CALL_TYPE_VT_TX = 5;
+  /**
+   * Video telephony (audio two way / video RX one way)
+   * TBD phase 2?
+   */
+  const unsigned short CALL_TYPE_VT_RX = 6;
+  /**
+   * Video telephony (audio two way / video inactive)
+   * TBD phase 2?
+   */
+  const unsigned short CALL_TYPE_VT_NODIR = 7;
+  /**
+   * VideoShare (video two way)
+   * TBD phase 2?
+   */
+  const unsigned short CALL_TYPE_VS = 8;
+  /**
+   * VideoShare (video TX one way)
+   * TBD phase 2?
+   */
+  const unsigned short CALL_TYPE_VS_TX = 9;
+  /**
+   * VideoShare (video RX one way)
+   * TBD phase 2?
+   */
+  const unsigned short CALL_TYPE_VS_RX = 10;
+
   readonly attribute unsigned long defaultServiceId;
 
   /**
@@ -228,9 +277,13 @@ interface nsITelephonyService : nsISupports
 
   /**
    * Functionality for making and managing phone calls.
+   * @param type
+   *        The call type, one of nsITelephonyService:CALL_TYPE_* values.
    */
   void dial(in unsigned long clientId, in DOMString number,
-            in boolean isEmergency, in nsITelephonyDialCallback callback);
+            in boolean isEmergency,
+            in unsigned short type,
+            in nsITelephonyDialCallback callback);
 
   void sendTones(in unsigned long clientId, in DOMString dtmfChars,
                  in unsigned long pauseDuration, in unsigned long toneDuration,
@@ -241,6 +294,7 @@ interface nsITelephonyService : nsISupports
 
   void answerCall(in unsigned long clientId,
                   in unsigned long callIndex,
+                  in unsigned short type,
                   in nsITelephonyCallback callback);
   void rejectCall(in unsigned long clientId,
                   in unsigned long callIndex,
@@ -285,6 +339,18 @@ interface nsITelephonyService : nsISupports
    * Otherwise, callback.notifyError() will be called.
    */
   void cancelUSSD(in unsigned long cliendId, in nsITelephonyCallback callback);
+
+  /**
+   * To retrieve the video provider call instance.
+   * @param clientId
+   *        The client id
+   * @param callIndex
+   *        The call index
+   * @param callback
+   *        Result will be return via this callback
+   */
+  nsIVideoCallProvider getVideoCallProvider(in unsigned long clientId,
+                                            in unsigned long callIndex);
 
   attribute bool hacMode;
   attribute bool microphoneMuted;

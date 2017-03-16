@@ -31,6 +31,8 @@ class TelephonyDialCallback;
 } // namespace telephony
 
 class OwningTelephonyCallOrTelephonyCallGroup;
+class DOMVideoCallProvider;
+
 enum class TtyMode: uint32_t;
 
 class Telephony final : public DOMEventTargetHelper,
@@ -57,6 +59,7 @@ class Telephony final : public DOMEventTargetHelper,
   RefPtr<CallsList> mCallsList;
 
   RefPtr<TelephonyCallGroup> mGroup;
+  mutable RefPtr<DOMVideoCallProvider> mLoopbackProvider;
 
   RefPtr<Promise> mReadyPromise;
 
@@ -86,6 +89,11 @@ public:
   already_AddRefed<Promise>
   Dial(const nsAString& aNumber, const Optional<uint32_t>& aServiceId,
        ErrorResult& aRv);
+
+  already_AddRefed<Promise>
+  DialVT(const nsAString& aNumber, const uint16_t& aType,
+         const Optional<uint32_t>& aServiceId,
+         ErrorResult& aRv);
 
   already_AddRefed<Promise>
   DialEmergency(const nsAString& aNumber, const Optional<uint32_t>& aServiceId,
@@ -153,6 +161,9 @@ public:
   already_AddRefed<Promise>
   HangUpAllCalls(const Optional<uint32_t>& aServiceId, ErrorResult& aRv);
 
+  already_AddRefed<DOMVideoCallProvider>
+  GetLoopbackProvider() const;
+
   IMPL_EVENT_HANDLER(incoming)
   IMPL_EVENT_HANDLER(callschanged)
   IMPL_EVENT_HANDLER(remoteheld)
@@ -214,7 +225,7 @@ private:
 
   already_AddRefed<Promise>
   DialInternal(uint32_t aServiceId, const nsAString& aNumber, bool aEmergency,
-               ErrorResult& aRv);
+               ErrorResult& aRv, uint16_t aType=nsITelephonyService::CALL_TYPE_VOICE_N_VIDEO);
 
   already_AddRefed<TelephonyCallId>
   CreateCallId(nsITelephonyCallInfo *aInfo);
@@ -231,6 +242,9 @@ private:
              uint32_t aCallIndex,
              TelephonyCallState aState,
              TelephonyCallVoiceQuality aVoiceQuality,
+             uint16_t aVideoCallState = nsITelephonyCallInfo::STATE_AUDIO_ONLY,
+             uint32_t aCapabilities = nsITelephonyCallInfo::CAPABILITY_SUPPORTS_NONE,
+             uint32_t aRadioTech = nsITelephonyCallInfo::RADIO_TECH_CS,
              bool aEmergency = false,
              bool aConference = false,
              bool aSwitchable = true,

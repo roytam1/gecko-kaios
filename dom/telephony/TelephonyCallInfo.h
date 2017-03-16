@@ -25,13 +25,15 @@ public:
                     uint32_t aCallIndex,
                     uint16_t aCallState,
                     uint16_t aVoiceQuality,
+                    uint32_t aCapabilities,
+                    uint16_t aVideoCallState,
                     const nsAString& aDisconnectedReason,
 
                     const nsAString& aNumber,
                     uint16_t aNumberPresentation,
                     const nsAString& aName,
                     uint16_t aNamePresentation,
-
+                    uint32_t aRadioTech,
                     bool aIsOutgoing,
                     bool aIsEmergency,
                     bool aIsConference,
@@ -49,12 +51,15 @@ private:
   uint32_t mCallIndex;
   uint16_t mCallState;
   uint16_t mVoiceQuality;
+  uint32_t mCapabilities;
+  uint16_t mVideoCallState;
   nsString mDisconnectedReason;
 
   nsString mNumber;
   uint16_t mNumberPresentation;
   nsString mName;
   uint16_t mNamePresentation;
+  uint32_t mRadioTech;
 
   bool mIsOutgoing;
   bool mIsEmergency;

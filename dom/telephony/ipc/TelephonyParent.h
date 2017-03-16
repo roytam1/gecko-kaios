@@ -38,6 +38,12 @@ protected:
   virtual bool
   DeallocPTelephonyRequestParent(PTelephonyRequestParent* aActor) override;
 
+  virtual PVideoCallProviderParent*
+  AllocPVideoCallProviderParent(const uint32_t& clientId, const uint32_t& callIndex) override;
+
+  virtual bool
+  DeallocPVideoCallProviderParent(PVideoCallProviderParent* aActor) override;
+
   virtual bool
   Recv__delete__() override;
 

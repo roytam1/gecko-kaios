@@ -16,12 +16,14 @@ TelephonyCallInfo::TelephonyCallInfo(uint32_t aClientId,
                                      uint32_t aCallIndex,
                                      uint16_t aCallState,
                                      uint16_t aVoiceQuality,
+                                     uint32_t aCapabilities,
+                                     uint16_t aVideoCallState,
                                      const nsAString& aDisconnectedReason,
                                      const nsAString& aNumber,
                                      uint16_t aNumberPresentation,
                                      const nsAString& aName,
                                      uint16_t aNamePresentation,
-
+                                     uint32_t aRadioTech,
                                      bool aIsOutgoing,
                                      bool aIsEmergency,
                                      bool aIsConference,
@@ -32,13 +34,15 @@ TelephonyCallInfo::TelephonyCallInfo(uint32_t aClientId,
     mCallIndex(aCallIndex),
     mCallState(aCallState),
     mVoiceQuality(aVoiceQuality),
+    mCapabilities(aCapabilities),
+    mVideoCallState(aVideoCallState),
     mDisconnectedReason(aDisconnectedReason),
 
     mNumber(aNumber),
     mNumberPresentation(aNumberPresentation),
     mName(aName),
     mNamePresentation(aNamePresentation),
-
+    mRadioTech(aRadioTech),
     mIsOutgoing(aIsOutgoing),
     mIsEmergency(aIsEmergency),
     mIsConference(aIsConference),
@@ -150,6 +154,24 @@ NS_IMETHODIMP
 TelephonyCallInfo::GetIsConferenceParent(bool* aIsConferenceParent)
 {
   *aIsConferenceParent = mIsConferenceParent;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TelephonyCallInfo::GetCapabilities(uint32_t *aCapabilities) {
+  *aCapabilities = mCapabilities;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TelephonyCallInfo::GetVideoCallState(uint16_t *aVideoCallState) {
+  *aVideoCallState = mVideoCallState;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TelephonyCallInfo::GetRadioTech(uint32_t *aRadioTech) {
+  *aRadioTech = mRadioTech;
   return NS_OK;
 }
 

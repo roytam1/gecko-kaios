@@ -7,10 +7,12 @@
 #include "TelephonyChild.h"
 
 #include "mozilla/dom/telephony/TelephonyDialCallback.h"
+#include "mozilla/dom/videocallprovider/VideoCallProviderChild.h"
 #include "mozilla/UniquePtr.h"
 #include "TelephonyIPCService.h"
 
 USING_TELEPHONY_NAMESPACE
+USING_VIDEOCALLPROVIDER_NAMESPACE
 
 /*******************************************************************************
  * TelephonyChild
@@ -44,6 +46,21 @@ TelephonyChild::AllocPTelephonyRequestChild(const IPCTelephonyRequest& aRequest)
 bool
 TelephonyChild::DeallocPTelephonyRequestChild(PTelephonyRequestChild* aActor)
 {
+  delete aActor;
+  return true;
+}
+
+PVideoCallProviderChild*
+TelephonyChild::AllocPVideoCallProviderChild(const uint32_t& clientId, const uint32_t& callIndex)
+{
+  NS_NOTREACHED("No one should be allocating PVideoCallProviderChild actors");
+  return nullptr;
+}
+
+bool
+TelephonyChild::DeallocPVideoCallProviderChild(PVideoCallProviderChild* aActor)
+{
+  // To release a child.
   delete aActor;
   return true;
 }

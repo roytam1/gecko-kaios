@@ -556,6 +556,7 @@ WEBIDL_FILES = [
     'TCPSocketEvent.webidl',
     'Telephony.webidl',
     'TelephonyCall.webidl',
+    'TelephonyCallCapabilities.webidl',
     'TelephonyCallGroup.webidl',
     'TelephonyCallId.webidl',
     'Text.webidl',
@@ -590,6 +591,7 @@ WEBIDL_FILES = [
     'URLSearchParams.webidl',
     'USSDSession.webidl',
     'ValidityState.webidl',
+    'VideoCallProvider.webidl',
     'VideoPlaybackQuality.webidl',
     'VideoStreamTrack.webidl',
     'VideoTrack.webidl',
@@ -853,6 +855,12 @@ GENERATED_EVENTS_WEBIDL_FILES = [
     'UDPMessageEvent.webidl',
     'UserProximityEvent.webidl',
     'USSDReceivedEvent.webidl',
+    'VideoCallCameraCapabilitiesChangeEvent.webidl',
+    'VideoCallPeerDimensionsEvent.webidl',
+    'VideoCallQualityEvent.webidl',
+    'VideoCallSessionChangeEvent.webidl',
+    'VideoCallSessionModifyRequestEvent.webidl',
+    'VideoCallSessionModifyResponseEvent.webidl',
 ]
 
 if CONFIG['MOZ_WEBRTC']:

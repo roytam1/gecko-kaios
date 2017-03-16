@@ -17,6 +17,7 @@ EXPORTS.mozilla.dom += [
     'MMICall.h',
     'Telephony.h',
     'TelephonyCall.h',
+    'TelephonyCallCapabilities.h',
     'TelephonyCallGroup.h',
     'TelephonyCallId.h',
     'USSDSession.h'
@@ -42,6 +43,7 @@ UNIFIED_SOURCES += [
     'Telephony.cpp',
     'TelephonyCall.cpp',
     'TelephonyCallback.cpp',
+    'TelephonyCallCapabilities.cpp',
     'TelephonyCallGroup.cpp',
     'TelephonyCallId.cpp',
     'TelephonyCallInfo.cpp',

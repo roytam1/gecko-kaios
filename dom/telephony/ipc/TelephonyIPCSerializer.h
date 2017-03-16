@@ -38,12 +38,15 @@ struct ParamTraits<nsITelephonyCallInfo*>
     uint32_t callIndex;
     uint16_t callState;
     uint16_t voiceQuality;
+    uint32_t capabilities;
+    uint16_t videoCallState;
     nsString disconnectedReason;
 
     nsString number;
     uint16_t numberPresentation;
     nsString name;
     uint16_t namePresentation;
+    uint32_t radioTech;
 
     bool isOutgoing;
     bool isEmergency;
@@ -56,12 +59,15 @@ struct ParamTraits<nsITelephonyCallInfo*>
     aParam->GetCallIndex(&callIndex);
     aParam->GetCallState(&callState);
     aParam->GetVoiceQuality(&voiceQuality);
+    aParam->GetCapabilities(&capabilities);
+    aParam->GetVideoCallState(&videoCallState);
     aParam->GetDisconnectedReason(disconnectedReason);
 
     aParam->GetNumber(number);
     aParam->GetNumberPresentation(&numberPresentation);
     aParam->GetName(name);
     aParam->GetNamePresentation(&namePresentation);
+    aParam->GetRadioTech(&radioTech);
 
     aParam->GetIsOutgoing(&isOutgoing);
     aParam->GetIsEmergency(&isEmergency);
@@ -74,12 +80,15 @@ struct ParamTraits<nsITelephonyCallInfo*>
     WriteParam(aMsg, callIndex);
     WriteParam(aMsg, callState);
     WriteParam(aMsg, voiceQuality);
+    WriteParam(aMsg, capabilities);
+    WriteParam(aMsg, videoCallState);
     WriteParam(aMsg, disconnectedReason);
 
     WriteParam(aMsg, number);
     WriteParam(aMsg, numberPresentation);
     WriteParam(aMsg, name);
     WriteParam(aMsg, namePresentation);
+    WriteParam(aMsg, radioTech);
 
     WriteParam(aMsg, isOutgoing);
     WriteParam(aMsg, isEmergency);
@@ -106,12 +115,15 @@ struct ParamTraits<nsITelephonyCallInfo*>
     uint32_t callIndex;
     uint16_t callState;
     uint16_t voiceQuality;
+    uint32_t capabilities;
+    uint16_t videoCallState;
     nsString disconnectedReason;
 
     nsString number;
     uint16_t numberPresentation;
     nsString name;
     uint16_t namePresentation;
+    uint32_t radioTech;
 
     bool isOutgoing;
     bool isEmergency;
@@ -125,12 +137,15 @@ struct ParamTraits<nsITelephonyCallInfo*>
           ReadParam(aMsg, aIter, &callIndex) &&
           ReadParam(aMsg, aIter, &callState) &&
           ReadParam(aMsg, aIter, &voiceQuality) &&
+          ReadParam(aMsg, aIter, &capabilities) &&
+          ReadParam(aMsg, aIter, &videoCallState) &&
           ReadParam(aMsg, aIter, &disconnectedReason) &&
 
           ReadParam(aMsg, aIter, &number) &&
           ReadParam(aMsg, aIter, &numberPresentation) &&
           ReadParam(aMsg, aIter, &name) &&
           ReadParam(aMsg, aIter, &namePresentation) &&
+          ReadParam(aMsg, aIter, &radioTech) &&
 
           ReadParam(aMsg, aIter, &isOutgoing) &&
           ReadParam(aMsg, aIter, &isEmergency) &&
@@ -146,13 +161,15 @@ struct ParamTraits<nsITelephonyCallInfo*>
                               callIndex,
                               callState,
                               voiceQuality,
+                              capabilities,
+                              videoCallState,
                               disconnectedReason,
 
                               number,
                               numberPresentation,
                               name,
                               namePresentation,
-
+                              radioTech,
                               isOutgoing,
                               isEmergency,
                               isConference,

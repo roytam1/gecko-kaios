@@ -787,7 +787,7 @@ TelephonyService.prototype = {
    *
    * @see 3GPP TS 22.030 Figure 3.5.3.2
    */
-  dial: function(aClientId, aNumber, aIsDialEmergency, aCallback) {
+  dial: function(aClientId, aNumber, aIsDialEmergency, aType, aCallback) {
     if (DEBUG) debug("Dialing " + (aIsDialEmergency ? "emergency " : "")
                      + aNumber + ", clientId: " + aClientId);
 
@@ -1889,7 +1889,7 @@ TelephonyService.prototype = {
     this._sendToRilWorker(aClientId, "stopTone");
   },
 
-  answerCall: function(aClientId, aCallIndex, aCallback) {
+  answerCall: function(aClientId, aCallIndex, aType, aCallback) {
     let call = this._currentCalls[aClientId][aCallIndex];
     if (!call || call.state != nsITelephonyService.CALL_STATE_INCOMING) {
       aCallback.notifyError(RIL.GECKO_ERROR_GENERIC_FAILURE);
@@ -2281,6 +2281,11 @@ TelephonyService.prototype = {
       }
       aCallback(aResponse);
     });
+  },
+
+  getVideoCallProvider: function(aClientId, aCallIndex) {
+    // TODO dummy api
+    return null;
   },
 
   get hacMode() {

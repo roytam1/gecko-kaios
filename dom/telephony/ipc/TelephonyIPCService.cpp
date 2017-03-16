@@ -14,6 +14,11 @@
 
 USING_TELEPHONY_NAMESPACE
 using namespace mozilla::dom;
+USING_VIDEOCALLPROVIDER_NAMESPACE
+
+#include <android/log.h>
+#undef LOG
+#define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "TelephonyIPCService" , ## args)
 
 namespace {
 
@@ -23,6 +28,9 @@ const char* kObservedPrefs[] = {
   kPrefDefaultServiceId,
   nullptr
 };
+
+const uint32_t CLIENT_ID_FAKE = 1000;
+const uint32_t CALL_INDEX_FAKE = 1000;
 
 uint32_t
 getDefaultServiceId()
@@ -45,7 +53,9 @@ NS_IMPL_ISUPPORTS(TelephonyIPCService,
                   nsIObserver)
 
 TelephonyIPCService::TelephonyIPCService()
+  : mLoopbackProvider(nullptr)
 {
+  LOG("constructor");
   // Deallocated in ContentChild::DeallocPTelephonyChild().
   mPTelephonyChild = new TelephonyChild(this);
   ContentChild::GetSingleton()->SendPTelephonyConstructor(mPTelephonyChild);
@@ -56,6 +66,9 @@ TelephonyIPCService::TelephonyIPCService()
 
 TelephonyIPCService::~TelephonyIPCService()
 {
+  LOG("deconstructor");
+  CleanupVideocallProviders();
+
   if (mPTelephonyChild) {
     mPTelephonyChild->Send__delete__(mPTelephonyChild);
     mPTelephonyChild = nullptr;
@@ -63,11 +76,30 @@ TelephonyIPCService::~TelephonyIPCService()
 }
 
 void
+TelephonyIPCService::CleanupVideocallProviders()
+{
+  CleanupLoopbackProvider();
+}
+
+void
+TelephonyIPCService::CleanupLoopbackProvider()
+{
+  if (mLoopbackProvider) {
+    mLoopbackProvider->Shutdown();
+    mLoopbackProvider = nullptr;
+  }
+}
+
+void
 TelephonyIPCService::NoteActorDestroyed()
 {
+  LOG("NoteActorDestroyed");
   MOZ_ASSERT(mPTelephonyChild);
 
   mPTelephonyChild = nullptr;
+
+  MOZ_ASSERT(mLoopbackProvider);
+  mLoopbackProvider = nullptr;
 }
 
 /*
@@ -166,15 +198,17 @@ TelephonyIPCService::EnumerateCalls(nsITelephonyListener *aListener)
 NS_IMETHODIMP
 TelephonyIPCService::Dial(uint32_t aClientId, const nsAString& aNumber,
                           bool aIsEmergency,
+                          uint16_t aType,
                           nsITelephonyDialCallback *aCallback)
 {
   nsCOMPtr<nsITelephonyCallback> callback = do_QueryInterface(aCallback);
   return SendRequest(nullptr, callback,
-                     DialRequest(aClientId, nsString(aNumber), aIsEmergency));
+                     DialRequest(aClientId, aType, nsString(aNumber), aIsEmergency));
 }
 
 NS_IMETHODIMP
 TelephonyIPCService::AnswerCall(uint32_t aClientId, uint32_t aCallIndex,
+                                uint16_t aType,
                                 nsITelephonyCallback *aCallback)
 {
   if (!mPTelephonyChild) {
@@ -182,7 +216,7 @@ TelephonyIPCService::AnswerCall(uint32_t aClientId, uint32_t aCallIndex,
     return NS_ERROR_FAILURE;
   }
 
-  return SendRequest(nullptr, aCallback, AnswerCallRequest(aClientId, aCallIndex));
+  return SendRequest(nullptr, aCallback, AnswerCallRequest(aClientId, aCallIndex, aType));
 }
 
 NS_IMETHODIMP
@@ -328,6 +362,73 @@ TelephonyIPCService::CancelUSSD(uint32_t aClientId,
 {
   return SendRequest(nullptr, aCallback, CancelUSSDRequest(aClientId));
 }
+
+NS_IMETHODIMP
+TelephonyIPCService::GetVideoCallProvider(uint32_t aClientId, uint32_t aCallIndex,
+                                          nsIVideoCallProvider **aProvider)
+{
+  LOG("GetVideoCallProvider, clientId: %d, callIndex: %d", aClientId, aCallIndex);
+  if ( CLIENT_ID_FAKE == aClientId && CALL_INDEX_FAKE == aCallIndex) {
+    return GetLoopbackProvider(aProvider);
+  } else {
+    RefPtr<VideoCallProviderChild> child =
+        new VideoCallProviderChild(aClientId, aCallIndex);
+
+    mPTelephonyChild->SendPVideoCallProviderConstructor(child, CLIENT_ID_FAKE, CALL_INDEX_FAKE);
+    mLoopbackProvider = child;
+
+    child.forget(aProvider);
+  }
+
+  return NS_OK;
+}
+
+nsresult
+TelephonyIPCService::GetLoopbackProvider(nsIVideoCallProvider **aProvider)
+{
+  if (!mLoopbackProvider) {
+    if (!mPTelephonyChild) {
+      NS_WARNING("TelephonyService used after shutdown has begun!");
+      return NS_ERROR_FAILURE;
+    }
+
+    LOG("new VideoCallProviderChild");
+    RefPtr<VideoCallProviderChild> child =
+        new VideoCallProviderChild(CLIENT_ID_FAKE, CALL_INDEX_FAKE);
+
+    mPTelephonyChild->SendPVideoCallProviderConstructor(child, CLIENT_ID_FAKE, CALL_INDEX_FAKE);
+    mLoopbackProvider = child;
+
+  }
+
+  RefPtr<nsIVideoCallProvider> provider(mLoopbackProvider);
+  provider.forget(aProvider);
+  return NS_OK;
+}
+
+void
+TelephonyIPCService::RemoveVideoCallProvider(nsITelephonyCallInfo *aInfo)
+{
+  if (!aInfo) {
+    return;
+  }
+
+  uint16_t state;
+  aInfo->GetCallState(&state);
+  if (state == nsITelephonyService::CALL_STATE_DISCONNECTED) {
+    uint32_t clientId;
+    uint32_t callIndex;
+    aInfo->GetClientId(&clientId);
+    aInfo->GetCallIndex(&callIndex);
+    RemoveVideoCallProvider(clientId, callIndex);
+  }
+}
+
+void
+TelephonyIPCService::RemoveVideoCallProvider(uint32_t aClientId, uint32_t aCallIndex)
+{
+}
+
 
 NS_IMETHODIMP
 TelephonyIPCService::GetHacMode(bool* aEnabled)

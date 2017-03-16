@@ -24,6 +24,9 @@
 #define USING_TELEPHONY_NAMESPACE \
   using namespace mozilla::dom::telephony;
 
+#define USING_VIDEOCALLPROVIDER_NAMESPACE \
+  using namespace mozilla::dom::videocallprovider;
+
 namespace mozilla {
 namespace dom {
 

@@ -27,13 +27,43 @@ interface Telephony : EventTarget {
    */
 
   /**
+   * The call types
+   */
+  const unsigned short CALL_TYPE_VOICE_N_VIDEO = 1;
+  const unsigned short CALL_TYPE_VOICE = 2;
+  const unsigned short CALL_TYPE_VIDEO_N_VOICE = 3;
+  const unsigned short CALL_TYPE_VT = 4;
+  const unsigned short CALL_TYPE_VT_TX = 5;
+  const unsigned short CALL_TYPE_VT_RX = 6;
+  const unsigned short CALL_TYPE_VT_NODIR = 7;
+  const unsigned short CALL_TYPE_VS = 8;
+  const unsigned short CALL_TYPE_VS_TX = 9;
+  const unsigned short CALL_TYPE_VS_RX = 10;
+
+  /**
    * Make a phone call or send the mmi code depending on the number provided.
    *
    * TelephonyCall - for call setup
    * MMICall - for MMI code
+   * @deprecated
    */
   [Throws]
   Promise<(TelephonyCall or MMICall)> dial(DOMString number, optional unsigned long serviceId);
+
+  /**
+   * Make a phone call with specific type or send the mmi code depending on the number provided.
+   * @param type
+   *        The call type you are going to dial.
+   *        One of Telephony.CALL_TYPE_* values.
+   * TelephonyCall - for call setup
+   * MMICall - for MMI code
+   * ETA: 3/24
+   * TODO rename to dial() once we have removed original dial method.
+   *
+   */
+  [Throws]
+  Promise<(TelephonyCall or MMICall)> dialVT(DOMString number, unsigned short type,
+                                             optional unsigned long serviceId);
 
   [Throws]
   Promise<TelephonyCall> dialEmergency(DOMString number, optional unsigned long serviceId);
@@ -44,18 +74,18 @@ interface Telephony : EventTarget {
   [NewObject]
   Promise<void> hangUpAllCalls(optional unsigned long serviceId);
 
-/**
-  * Send a series of DTMF tones.
-  *
-  * @param tones
-  *    DTMF chars.
-  * @param pauseDuraton (ms) [optional]
-  *    Time to wait before sending tones. Default value is 3000 ms.
-  * @param toneDuration (ms) [optional]
-  *    Duration of each tone. Default value is 70 ms.
-  * @param serviceId [optional]
-  *    Default value is as user setting dom.telephony.defaultServiceId.
-  */
+  /**
+   * Send a series of DTMF tones.
+   *
+   * @param tones
+   *    DTMF chars.
+   * @param pauseDuraton (ms) [optional]
+   *    Time to wait before sending tones. Default value is 3000 ms.
+   * @param toneDuration (ms) [optional]
+   *    Duration of each tone. Default value is 70 ms.
+   * @param serviceId [optional]
+   *    Default value is as user setting dom.telephony.defaultServiceId.
+   */
   [Throws]
   Promise<void> sendTones(DOMString tones, optional unsigned long pauseDuration = 3000, optional unsigned long toneDuration = 70, optional unsigned long serviceId);
 
@@ -70,6 +100,12 @@ interface Telephony : EventTarget {
   [Throws,
    CheckAllPermissions="audio-channel-telephony"]
   void ownAudioChannel();
+
+  /**
+   * Test purpose.
+   * To test loopback mode, please setup preference telephony.vt.loopback.enabled properly.
+   */
+  readonly attribute VideoCallProvider? loopbackProvider;
 
   [Throws]
   attribute boolean hacMode;

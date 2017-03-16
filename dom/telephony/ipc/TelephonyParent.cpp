@@ -6,8 +6,10 @@
 
 #include "mozilla/dom/telephony/TelephonyParent.h"
 #include "nsServiceManagerUtils.h"
+#include "mozilla/dom/videocallprovider/VideoCallProviderParent.h"
 
 USING_TELEPHONY_NAMESPACE
+USING_VIDEOCALLPROVIDER_NAMESPACE
 
 /*******************************************************************************
  * TelephonyParent
@@ -57,7 +59,7 @@ TelephonyParent::RecvPTelephonyRequestConstructor(PTelephonyRequestParent* aActo
     case IPCTelephonyRequest::TDialRequest: {
       const DialRequest& request = aRequest.get_DialRequest();
       service->Dial(request.clientId(), request.number(),
-                    request.isEmergency(), actor->GetDialCallback());
+                    request.isEmergency(), request.type(), actor->GetDialCallback());
       return true;
     }
 
@@ -105,7 +107,7 @@ TelephonyParent::RecvPTelephonyRequestConstructor(PTelephonyRequestParent* aActo
 
     case IPCTelephonyRequest::TAnswerCallRequest: {
       const AnswerCallRequest& request = aRequest.get_AnswerCallRequest();
-      service->AnswerCall(request.clientId(), request.callIndex(), actor->GetCallback());
+      service->AnswerCall(request.clientId(), request.callIndex(), request.type(), actor->GetCallback());
       return true;
     }
 
@@ -172,6 +174,25 @@ TelephonyParent::DeallocPTelephonyRequestParent(PTelephonyRequestParent* aActor)
 {
   // TelephonyRequestParent is refcounted, must not be freed manually.
   static_cast<TelephonyRequestParent*>(aActor)->Release();
+  return true;
+}
+
+PVideoCallProviderParent*
+TelephonyParent::AllocPVideoCallProviderParent(const uint32_t& aClientId,
+                                               const uint32_t& aCallindex)
+{
+  LOG("AllocPVideoCallProviderParent");
+  RefPtr<VideoCallProviderParent> parent = new VideoCallProviderParent(aClientId, aCallindex);
+  parent->AddRef();
+
+  return parent;
+}
+
+bool
+TelephonyParent::DeallocPVideoCallProviderParent(PVideoCallProviderParent* aActor)
+{
+  LOG("DeallocPVideoCallProviderParent");
+  static_cast<VideoCallProviderParent*>(aActor)->Release();
   return true;
 }
 

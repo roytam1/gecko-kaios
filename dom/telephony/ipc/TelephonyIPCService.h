@@ -8,11 +8,14 @@
 #define mozilla_dom_telephony_TelephonyIPCService_h
 
 #include "mozilla/dom/telephony/TelephonyCommon.h"
+#include "mozilla/dom/videocallprovider/VideoCallProviderChild.h"
 #include "mozilla/Attributes.h"
 #include "nsIObserver.h"
 #include "nsITelephonyService.h"
 
 BEGIN_TELEPHONY_NAMESPACE
+
+USING_VIDEOCALLPROVIDER_NAMESPACE
 
 class IPCTelephonyRequest;
 class PTelephonyChild;
@@ -41,6 +44,14 @@ private:
   nsresult SendRequest(nsITelephonyListener *aListener,
                        nsITelephonyCallback *aCallback,
                        const IPCTelephonyRequest& aRequest);
+
+  nsresult GetLoopbackProvider(nsIVideoCallProvider **aProvider);
+  void RemoveVideoCallProvider(nsITelephonyCallInfo *aInfo);
+  void RemoveVideoCallProvider(uint32_t aClientId, uint32_t aCallIndex);
+  void CleanupVideocallProviders();
+  void CleanupLoopbackProvider();
+
+  RefPtr<VideoCallProviderChild> mLoopbackProvider;
 };
 
 END_TELEPHONY_NAMESPACE

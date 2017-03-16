@@ -34,6 +34,13 @@ protected:
   virtual bool
   DeallocPTelephonyRequestChild(PTelephonyRequestChild* aActor) override;
 
+  virtual PVideoCallProviderChild*
+  AllocPVideoCallProviderChild(const uint32_t& clientId,
+                               const uint32_t& callIndex) override;
+
+  virtual bool
+  DeallocPVideoCallProviderChild(PVideoCallProviderChild* aActor) override;
+
   virtual bool
   RecvNotifyCallStateChanged(nsTArray<nsITelephonyCallInfo*>&& aAllInfo) override;
 

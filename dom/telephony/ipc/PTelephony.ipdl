@@ -7,6 +7,7 @@
 include protocol PContent;
 include protocol PTelephonyRequest;
 include TelephonyTypes;
+include protocol PVideoCallProvider;
 
 using nsTelephonyCallInfo from "mozilla/dom/telephony/TelephonyIPCSerializer.h";
 
@@ -22,6 +23,7 @@ struct EnumerateCallsRequest
 struct DialRequest
 {
   uint32_t clientId;
+  uint16_t type;
   nsString number;
   bool isEmergency;
 };
@@ -67,6 +69,7 @@ struct AnswerCallRequest
 {
   uint32_t clientId;
   uint32_t callIndex;
+  uint16_t type;
 };
 
 struct HangUpAllCallsRequest
@@ -129,6 +132,7 @@ union IPCTelephonyRequest
 sync protocol PTelephony {
   manager PContent;
   manages PTelephonyRequest;
+  manages PVideoCallProvider;
 
 child:
   async NotifyCallStateChanged(nsTelephonyCallInfo[] aAllInfo);
@@ -156,6 +160,8 @@ parent:
    * Sent when the child makes an asynchronous request to the parent.
    */
   async PTelephonyRequest(IPCTelephonyRequest request);
+
+  async PVideoCallProvider(uint32_t clientId, uint32_t callIndex);
 
   async RegisterListener();
 
