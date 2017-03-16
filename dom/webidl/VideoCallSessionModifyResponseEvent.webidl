@@ -23,13 +23,23 @@ enum VideoCallSessionStatus {
 interface VideoCallSessionModifyResponseEvent : Event
 {
   readonly attribute VideoCallSessionStatus status;
+<<<<<<< 345fcb382607a7e75422c685e975bdd39b97ad8a
   readonly attribute any request;
   readonly attribute any response;
+=======
+  readonly attribute VideoCallProfile? request;
+  readonly attribute VideoCallProfile? response;
+>>>>>>> vt initial version
 };
 
 dictionary VideoCallSessionModifyResponseEventInit : EventInit
 {
   VideoCallSessionStatus status = "unknown";
+<<<<<<< 345fcb382607a7e75422c685e975bdd39b97ad8a
   any request = null;
   any response = null;
+=======
+  VideoCallProfile? request = null;
+  VideoCallProfile? response = null;
+>>>>>>> vt initial version
 };
