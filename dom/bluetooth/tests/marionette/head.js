@@ -407,8 +407,8 @@ function waitForAdapterEvent(aAdapter, aEventName) {
  *        The BluetoothAdapter you want to use.
  * @param aStateChangesInOrder
  *        An array which contains an expected order of BluetoothAdapterState.
- *        Example 1: [enabling, enabled]
- *        Example 2: [disabling, disabled]
+ *        Example 1: ["enabling", "enabled"]
+ *        Example 2: ["disabling", "disabled"]
  *
  * @return A deferred promise.
  */
@@ -672,9 +672,6 @@ function waitForSpecifiedDevicesFound(aDiscoveryHandle, aRemoteAddresses) {
 
   let devicesArray = [];
   aDiscoveryHandle.ondevicefound = function onDeviceFound(aEvent) {
-    ok(aEvent instanceof BluetoothDeviceEvent,
-      "aEvent should be a BluetoothDeviceEvent");
-
     if (aRemoteAddresses.indexOf(aEvent.device.address) != -1) {
       devicesArray.push(aEvent);
     }
@@ -908,6 +905,53 @@ function waitForManagerInit(aManager) {
       deferred.resolve();
     }
   }
+
+  return deferred.promise;
+}
+
+/**
+ * Wait for 'onconnectionstatechanged' events for state changes of BluetoothGatt
+ * with specified order.
+ *
+ * Resolve if those expected events occur in order. Never reject.
+ *
+ * Fulfill params: (none)
+ *
+ * @param aGatt
+ *        The BluetoothGatt you want to use.
+ * @param aStateChangesInOrder
+ *        An array which contains an expected order of BluetoothConnectionState.
+ *        Example 1: ["connecting", "connected"]
+ *        Example 2: ["disconnecting", "disconnected"]
+ *
+ * @return A deferred promise.
+ */
+function waitForGattConnectionStateChanged(aGatt, aStateChangesInOrder) {
+  let deferred = Promise.defer();
+
+  let stateIndex = 0;
+  let prevStateIndex = 0;
+  let statesArray = [];
+  aGatt.onconnectionstatechanged = function() {
+    log("  'connectionState' changed to " + aGatt.connectionState);
+
+    // Received state change order may differ from expected one even though
+    // state changes in expected order, because the value of connectionState may
+    // change again before we receive prior 'onconnectionstatechanged' event.
+    let stateIndex = aStateChangesInOrder.indexOf(aGatt.connectionState);
+    if (stateIndex >= prevStateIndex && stateIndex + 1 > statesArray.length) {
+      statesArray.push(aGatt.connectionState);
+      prevStateIndex = stateIndex;
+
+      if (statesArray.length == aStateChangesInOrder.length) {
+        aGatt.onconnectionstatechanged  = null;
+        ok(true, "BluetoothGatt event 'onconnectionstatechanged' got.");
+        deferred.resolve();
+      }
+    } else {
+      ok(false, "The order of 'onconnectionstatechanged' events is unexpected.");
+    }
+  };
 
   return deferred.promise;
 }
