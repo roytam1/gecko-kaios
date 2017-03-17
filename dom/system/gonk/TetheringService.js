@@ -152,8 +152,9 @@ function TetheringService() {
     internalInterface: DEFAULT_WIFI_INTERFACE_NAME
   };
 
-  gNetworkService.createNetwork(DEFAULT_3G_INTERFACE_NAME, function () {
-    debug("Create a default Network interface: " + DEFAULT_3G_INTERFACE_NAME);
+  gNetworkService.createNetwork(DEFAULT_3G_INTERFACE_NAME, Ci.nsINetworkInfo.NETWORK_TYPE_UNKNOWN,
+    function () {
+      debug("Create a default Network interface: " + DEFAULT_3G_INTERFACE_NAME);
   });
 
   this.tetheringSettings = {};

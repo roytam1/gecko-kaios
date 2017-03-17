@@ -57,6 +57,7 @@ dictionary NetworkCommandOptions
   long dns2_long;                     // for "ifc_configure".
 
   long mtu;                           // for "setMtu".
+  long networkType;                   // for "createNetwork", "destroyNetwork".
 };
 
 /**

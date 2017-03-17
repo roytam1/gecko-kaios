@@ -108,6 +108,7 @@ public:
     COPY_OPT_STRING_FIELD(mGateway, EmptyString())
     COPY_SEQUENCE_FIELD(mGateways, nsString)
     COPY_OPT_STRING_FIELD(mIfname, EmptyString())
+    COPY_OPT_FIELD(mNetworkType, -1)
     COPY_OPT_STRING_FIELD(mIp, EmptyString())
     COPY_OPT_FIELD(mPrefixLength, 0)
     COPY_OPT_STRING_FIELD(mMode, EmptyString())
@@ -162,6 +163,7 @@ public:
   nsString mGateway;
   nsTArray<nsString> mGateways;
   nsString mIfname;
+  long mNetworkType;
   nsString mIp;
   uint32_t mPrefixLength;
   nsString mMode;

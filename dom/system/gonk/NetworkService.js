@@ -806,10 +806,11 @@ NetworkService.prototype = {
     });
   },
 
-  createNetwork: function(aInterfaceName, aCallback) {
+  createNetwork: function(aInterfaceName, aNetworkType, aCallback) {
     let params = {
       cmd: "createNetwork",
-      ifname: aInterfaceName
+      ifname: aInterfaceName,
+      networktype: aNetworkType
     };
 
     this.controlMessage(params, function(aResult) {
@@ -817,10 +818,11 @@ NetworkService.prototype = {
     });
   },
 
-  destroyNetwork: function(aInterfaceName, aCallback) {
+  destroyNetwork: function(aInterfaceName, aNetworkType, aCallback) {
     let params = {
       cmd: "destroyNetwork",
-      ifname: aInterfaceName
+      ifname: aInterfaceName,
+      networktype: aNetworkType
     };
 
     this.controlMessage(params, function(aResult) {

@@ -437,7 +437,7 @@ NetworkManager.prototype = {
     switch (extNetworkInfo.state) {
       case Ci.nsINetworkInfo.NETWORK_STATE_CONNECTED:
 
-        this._createNetwork(extNetworkInfo.name)
+        this._createNetwork(extNetworkInfo.name, extNetworkInfo.type)
           // Remove pre-created default route and let setAndConfigureActive()
           // to set default route only on preferred network
           .then(() => this._removeDefaultRoute(extNetworkInfo))
@@ -556,7 +556,7 @@ NetworkManager.prototype = {
               }
             }
           })
-          .then(() => this._destroyNetwork(extNetworkInfo.name))
+          .then(() => this._destroyNetwork(extNetworkInfo.name, extNetworkInfo.type))
           .then(() => {
             // Notify outer modules like MmsService to start the transaction after
             // the configuration of the network interface is done.
@@ -1129,9 +1129,9 @@ NetworkManager.prototype = {
     });
   },
 
-  _createNetwork: function(aInterfaceName) {
+  _createNetwork: function(aInterfaceName, aNetworkType) {
     return new Promise((aResolve, aReject) => {
-      gNetworkService.createNetwork(aInterfaceName, (aSuccess) => {
+      gNetworkService.createNetwork(aInterfaceName, aNetworkType, (aSuccess) => {
         if (!aSuccess) {
           aReject("createNetwork failed");
           return;
@@ -1141,9 +1141,9 @@ NetworkManager.prototype = {
     });
   },
 
-  _destroyNetwork: function(aInterfaceName) {
+  _destroyNetwork: function(aInterfaceName, aNetworkType) {
     return new Promise((aResolve, aReject) => {
-      gNetworkService.destroyNetwork(aInterfaceName, (aSuccess) => {
+      gNetworkService.destroyNetwork(aInterfaceName, aNetworkType, (aSuccess) => {
         if (!aSuccess) {
           debug("destroyNetwork failed")
         }

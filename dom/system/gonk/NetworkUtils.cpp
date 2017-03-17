@@ -14,6 +14,7 @@
  */
 
 #include "NetworkUtils.h"
+#include "nsINetworkInterface.h"
 
 #include "mozilla/Snprintf.h"
 #include "SystemProperty.h"
@@ -1543,9 +1544,8 @@ void NetworkUtils::setIpv6Enabled(CommandChain* aChain,
                                   NetworkResultOptions& aResult,
                                   bool aEnabled)
 {
-  // rmnetxxxx (ex: rmnet_data0) interface should be handled by RIL, not here.
-  if (!strncmp(GET_CHAR(mIfname), "rmnet", 5)) {
-    NU_DBG("%s : ignore interface - %s", __FUNCTION__, GET_CHAR(mIfname));
+  if (nsINetworkInfo::NETWORK_TYPE_WIFI != GET_FIELD(mNetworkType)) {
+    NU_DBG("%s : ignore network type = %ld", __FUNCTION__, GET_FIELD(mNetworkType));
     next(aChain, false, aResult);
     return;
   }
@@ -3161,6 +3161,7 @@ void NetworkUtils::dumpParams(NetworkParams& aOptions, const char* aType)
 #ifdef _DEBUG
   NU_DBG("Dump params:");
   NU_DBG("     ifname: %s", GET_CHAR(mIfname));
+  NU_DBG("     networktype %ld", GET_FIELD(mNetworkType));
   NU_DBG("     ip: %s", GET_CHAR(mIp));
   NU_DBG("     link: %s", GET_CHAR(mLink));
   NU_DBG("     prefix: %s", GET_CHAR(mPrefix));

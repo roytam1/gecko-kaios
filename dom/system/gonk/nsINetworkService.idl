@@ -201,7 +201,7 @@ interface nsISetInterfaceConfigCallback : nsISupports
 /**
  * Provide network services.
  */
-[scriptable, uuid(d9ecd234-a65d-11e6-80f5-76304dec7eb7)]
+[scriptable, uuid(fe48783b-9b33-4bcc-8941-898aefe562fa)]
 interface nsINetworkService : nsISupports
 {
   const long MODIFY_ROUTE_ADD    = 0;
@@ -577,10 +577,14 @@ interface nsINetworkService : nsISupports
    * @param interfaceName
    *        The network interface name which we want to create network for.
    *
+   * @param networkType
+   *        The network type.
+   *
    * @param callback
    *        Callback to notify the result of creating network.
    */
   void createNetwork(in DOMString interfaceName,
+                     in long networkType,
                      in nsINativeCommandCallback callback);
 
   /**
@@ -589,10 +593,14 @@ interface nsINetworkService : nsISupports
    * @param interfaceName
    *        The network interface name of the network we want to destroy.
    *
+   * @param networkType
+   *        The network type.
+   *
    * @param callback
    *        Callback to notify the result of destroying network.
    */
   void destroyNetwork(in DOMString interfaceName,
+                      in long networkType,
                       in nsINativeCommandCallback callback);
 
   /**
