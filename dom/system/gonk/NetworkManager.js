@@ -1191,12 +1191,11 @@ NetworkManager.prototype = {
 
       gNetworkService.setDefaultRoute(networkInfo.name, gateways.length, gateways,
                                       (aSuccess) => {
-        if (!aSuccess) {
-          gNetworkService.destroyNetwork(networkInfo.name, function() {
-            aReject("setDefaultRoute failed");
-          });
-          return;
-        }
+        // For IPv4 type, we might need to trigger destroyNetwork if failure on
+        // setDefaultRoute, however, IPv6 strictly inhibits using not link-local
+        // addresses as nexthop address, that will result in failure via
+        // setDefaultRoute with none-link-local address. Kernel will add routing
+        // after receiving RA by itself.
         this.setNetworkProxy(aNetwork);
         aResolve();
       });
