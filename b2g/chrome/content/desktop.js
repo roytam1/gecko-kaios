@@ -16,7 +16,22 @@ GlobalSimulatorScreen.height = 540;
  * Set debug mode or not.
  * Use function logger() to log.
  */
-Services.prefs.setBoolPref('browser.dom.window.dump.enabled', false);
+const DEBUG = false;
+const BAR_TYPE = false;
+
+Services.prefs.setBoolPref('browser.dom.window.dump.enabled', DEBUG);
+
+if (BAR_TYPE) {
+  Services.prefs.setBoolPref('device.capability.flip', false);
+  Services.prefs.setBoolPref('device.capability.endcall-key', false);
+  Services.prefs.setBoolPref('device.capability.volume-key', false);
+} else {
+  Services.prefs.setBoolPref('device.capability.flip', true);
+  Services.prefs.setBoolPref('device.capability.endcall-key', true);
+  Services.prefs.setBoolPref('device.capability.volume-key', true);
+}
+
+Services.prefs.setCharPref("b2g.reload_key", '{ "key": 116, "shift": false, "ctrl": false, "alt": false, "meta": false }');
 
 /**
  * Dispatch events to content window
@@ -24,8 +39,10 @@ Services.prefs.setBoolPref('browser.dom.window.dump.enabled', false);
 function controlEventFactory(element, eventDetail){
 
   const keg = new contentWindow.KeyboardEventGenerator();
+  let timer = 0;
   element.addEventListener('mousedown', function(evt) {
-    logger('[DEBUG] mousedown:', eventDetail);
+    logger('mousedown: evt, activeElement', eventDetail, contentWindow.document.activeElement);
+    timer = Date.now();
 
     // prevent from grabbing input focus in contentWindow
     evt.preventDefault();
@@ -34,11 +51,16 @@ function controlEventFactory(element, eventDetail){
     contentWindow.document.activeElement.focus();
 
     keg.generate(new contentWindow.KeyboardEvent('keydown', eventDetail));
+  });
+
+  element.addEventListener('mouseup', function(evt) {
+    logger('mouseup: evt, activeElement', eventDetail, contentWindow.document.activeElement);
+    logger('mouse press interval(ms):', Date.now() - timer);
+
     keg.generate(new contentWindow.KeyboardEvent('keyup', eventDetail));
   });
 
 }
-
 
 function setupControls() {
   contentWindow = shell.contentBrowser.contentWindow;
@@ -71,11 +93,15 @@ function setupControls() {
     'hash-anchor': { key: '#', keyCode: 163 }
   };
 
+  // simulate endcall as backspace for bartype
+  if (!Services.prefs.getBoolPref('device.capability.endcall-key')) {
+    controlEventMap['endcall-anchor'] = { key: 'Backspace', keyCode: 8 };
+  }
+
   Object.keys(controlEventMap).forEach( id => {
     const elem = document.getElementById(id);
     controlEventFactory(elem, controlEventMap[id]);
   });
-
 }
 
 function setupStorage() {
