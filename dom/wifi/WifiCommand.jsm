@@ -131,6 +131,10 @@ this.WifiCommand = function(aControlMessage, aInterface, aSdkVersion) {
                      });
   };
 
+  command.autoScanMode = function (scanInterval, callback) {
+    doBooleanCommand("AUTOSCAN periodic:" + scanInterval, "OK", callback);
+  };
+
   command.doSetScanMode = function (setActive, callback) {
     doBooleanCommand(setActive ?
                      "DRIVER SCAN-ACTIVE" :

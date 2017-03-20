@@ -210,6 +210,14 @@ interface MozWifiManager : EventTarget {
   DOMRequest setPowerSavingMode(boolean enabled);
 
   /**
+   * Turn on/off open network notification.
+   * @param enable true or false.
+   * onsuccess: Successfully turn on/off open network notification.
+   * onerror: Failed to turn on/off open network notification.
+   */
+  DOMRequest setOpenNetworkNotify(boolean enable);
+
+  /**
    * Given a network, configure using static IP instead of running DHCP
    * @param network A network object with the SSID of the network to set static ip.
    * @param info info should have following field:
@@ -284,6 +292,11 @@ interface MozWifiManager : EventTarget {
   readonly attribute boolean enabled;
 
   /**
+   * Returns whether or not openNetworkNotify is currently enabled.
+   */
+  readonly attribute boolean openNetworkNotify;
+
+  /**
    * Returns the MAC address of the wifi adapter.
    */
   readonly attribute DOMString macAddress;
@@ -348,4 +361,10 @@ interface MozWifiManager : EventTarget {
    * of wifi stations connected to wifi hotspot every 5 seconds.
    */
   attribute EventHandler onstationinfoupdate;
+
+  /**
+   * An event listener that is called with notification about the open
+   * wifi network available.
+   */
+  attribute EventHandler onopennetworknotification;
 };

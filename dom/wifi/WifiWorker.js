@@ -975,6 +975,9 @@ var WifiManager = (function() {
     manager.setScanInterval(
       parseInt(libcutils.property_get("ro.moz.wifi.scan_interval", "15"), 10),
       function(success) {});
+    manager.autoScanMode(
+      parseInt(libcutils.property_get("ro.moz.wifi.scan_interval", "15"), 10),
+      function(ok) {});
     manager.setPowerMode("AUTO", function(ok) {});
     manager.setSuspendOptimizations(requestOptimizationMode === 0,
       function(ok) {});
@@ -1492,6 +1495,7 @@ var WifiManager = (function() {
                               ? wifiCommand.getConnectionInfoICS
                               : wifiCommand.getConnectionInfoGB;
   manager.setScanInterval = wifiCommand.setScanInterval;
+  manager.autoScanMode = wifiCommand.autoScanMode;
   manager.handleScreenStateChanged = handleScreenStateChanged;
 
   manager.ensureSupplicantDetached = aCallback => {
@@ -1669,6 +1673,87 @@ var WifiManager = (function() {
   }
 
   return manager;
+})();
+
+var WifiNotificationController = (function() {
+  var notificationController = {};
+
+  const NUM_SCANS_BEFORE_ACTUALLY_SCANNING = 3;
+  const NOTIFICATION_REPEAT_DELAY_MS = 900 * 1000;
+  var notificationEnabled = true;
+  var notificationRepeatTime = 0;
+  var numScansSinceNetworkStateChange = 0;
+
+  notificationController.setNotificationEnabled = setNotificationEnabled;
+  notificationController.checkAndSetNotification = checkAndSetNotification;
+  notificationController.resetNotification = resetNotification;
+
+  function setNotificationEnabled(enable) {
+    debug("setNotificationEnabled: " + enable);
+    notificationEnabled = enable;
+    resetNotification();
+  }
+
+  function checkAndSetNotification(results) {
+    if (!notificationEnabled) return;
+    if (!WifiManager.enabled) return;
+    if (WifiNetworkInterface.info.state ==
+      Ci.nsINetworkInfo.NETWORK_STATE_DISCONNECTED) {
+      if (results) {
+        let numOpenNetworks = 0;
+        let lines = results.split("\n");
+        for (let i = 1; i < lines.length; ++i) {
+          let match = /([\S]+)\s+([\S]+)\s+([\S]+)\s+(\[[\S]+\])?\s(.*)/.exec(lines[i]);
+          let flags = match[4];
+          if (flags !== null && flags == "[ESS]") {
+            numOpenNetworks++;
+          }
+        }
+
+        if (numOpenNetworks > 0) {
+          if (++numScansSinceNetworkStateChange > NUM_SCANS_BEFORE_ACTUALLY_SCANNING) {
+            setNotificationVisible(true);
+          }
+          return;
+        }
+      }
+    }
+    // No open networks in range, remove the notification
+    setNotificationVisible(false);
+  }
+
+  function setNotificationVisible(visible) {
+    debug("setNotificationVisible: visible = " + visible);
+    if (visible) {
+      let now = Date.now();
+      debug("now = " + now + " , notificationRepeatTime = " + notificationRepeatTime);
+      // Not enough time has passed to show the notification again
+      if (now < notificationRepeatTime) return;
+      notificationRepeatTime = now + NOTIFICATION_REPEAT_DELAY_MS;
+      notify("opennetworknotification", {enabled: true});
+    } else {
+      notify("opennetworknotification", {enabled: false});
+    }
+  }
+
+  function resetNotification() {
+    notificationRepeatTime = 0;
+    numScansSinceNetworkStateChange = 0;
+    setNotificationVisible(false);
+  }
+
+  function notify(eventName, eventObject) {
+    var handler = notificationController["on" + eventName];
+    if (!handler) {
+      return;
+    }
+    if (!eventObject) {
+      eventObject = ({});
+    }
+    handler.call(eventObject);
+  }
+
+  return notificationController;
 })();
 
 // Get unique key for a network, now the key is created by escape(SSID)+Security.
@@ -1975,6 +2060,7 @@ function WifiWorker() {
                     "WifiManager:associate", "WifiManager:forget",
                     "WifiManager:wps", "WifiManager:getState",
                     "WifiManager:setPowerSavingMode",
+                    "WifiManager:setOpenNetworkNotify",
                     "WifiManager:setHttpProxy",
                     "WifiManager:setStaticIpMode",
                     "WifiManager:importCert",
@@ -2194,6 +2280,8 @@ function WifiWorker() {
     // defined in getter function of WifiManager.enabled. It implies that
     // we are ready to accept dom request from applications.
     WifiManager.state = "DISCONNECTED";
+    // wifi enabled and reset open network notification.
+    WifiNotificationController.resetNotification();
     self._reloadConfiguredNetworks(function(ok) {
       // Prime this.networks.
       if (!ok)
@@ -2225,6 +2313,8 @@ function WifiWorker() {
     WifiManager.state = "UNINITIALIZED";
     debug("Supplicant died!");
 
+    // wifi disabled and reset open network notification.
+    WifiNotificationController.resetNotification();
     // Notify everybody, even if they didn't ask us to come up.
     self._fireEvent("wifiDown", {});
     self.requestDone();
@@ -2411,8 +2501,8 @@ function WifiWorker() {
         WifiNetworkInterface.info.prefixLengths = [];
         WifiNetworkInterface.info.gateways = [];
         WifiNetworkInterface.info.dnses = [];
-
-
+        // wifi disconnected and reset open network notification.
+        WifiNotificationController.resetNotification();
         break;
       case "WPS_TIMEOUT":
         self._fireEvent("onwpstimeout", {});
@@ -2463,7 +2553,8 @@ function WifiWorker() {
       WifiNetworkInterface.info.dnses.push(this.info.dns2_str);
     }
     gNetworkManager.updateNetworkInterface(WifiNetworkInterface);
-
+    // wifi connected and reset open network notification.
+    WifiNotificationController.resetNotification();
     self.ipAddress = this.info.ipaddr_str;
 
     // We start the connection information timer when we associate, but
@@ -2485,13 +2576,14 @@ function WifiWorker() {
       }
     });
 
-    if (self.wantScanResults.length === 0) {
-      debug("Scan results available, but we don't need them");
-      return;
-    }
-
-    debug("Scan results are available! Asking for them.");
     WifiManager.getScanResults(function(r) {
+      // Check any open network and notify to user.
+      WifiNotificationController.checkAndSetNotification(r);
+
+      if (self.wantScanResults.length === 0) {
+        debug("Scan results available, but we don't need them");
+        return;
+      }
       // Failure.
       if (!r) {
         self.wantScanResults.forEach(function(callback) { callback(null) });
@@ -2564,6 +2656,10 @@ function WifiWorker() {
 
   WifiManager.onstationinfoupdate = function() {
     self._fireEvent("stationinfoupdate", { station: this.station });
+  };
+
+  WifiNotificationController.onopennetworknotification = function() {
+    self._fireEvent("opennetworknotification", { enabled: this.enabled });
   };
 
   WifiManager.onstopconnectioninfotimer = function() {
@@ -3089,6 +3185,9 @@ WifiWorker.prototype = {
         break;
       case "WifiManager:setPowerSavingMode":
         this.setPowerSavingMode(msg);
+        break;
+      case "WifiManager:setOpenNetworkNotify":
+        this.setOpenNetworkNotify(msg);
         break;
       case "WifiManager:setHttpProxy":
         this.setHttpProxy(msg);
@@ -3720,6 +3819,13 @@ WifiWorker.prototype = {
         self._sendMessage(message, false, "Set power saving mode failed", msg);
       }
     });
+  },
+
+  setOpenNetworkNotify: function(msg) {
+    const message = "WifiManager:setOpenNetworkNotify:Return";
+    let enabled = msg.data;
+    WifiNotificationController.setNotificationEnabled(enabled);
+    this._sendMessage(message, true, true, msg);
   },
 
   setHttpProxy: function(msg) {
