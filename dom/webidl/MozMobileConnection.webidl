@@ -9,7 +9,7 @@ enum MobilePreferredNetworkType {"wcdma/gsm", "gsm", "wcdma", "wcdma/gsm-auto",
                                  "cdma/evdo", "cdma", "evdo",
                                  "wcdma/gsm/cdma/evdo", "lte/cdma/evdo",
                                  "lte/wcdma/gsm", "lte/wcdma/gsm/cdma/evdo",
-                                 "lte", "lte/wcdma"};
+                                 "lte", "lte/wcdma", "lte/gsm"};
 enum MobileRoamingMode {"home", "affiliated", "any"};
 
 [Pref="dom.mobileconnection.enabled"]
