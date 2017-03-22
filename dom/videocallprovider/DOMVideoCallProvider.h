@@ -50,10 +50,10 @@ public:
   SetCamera(const Optional<nsAString>& aCamera, ErrorResult& aRv);
 
   already_AddRefed<Promise>
-  GetPreviewStream(const mozilla::dom::SurfaceConfiguration& aOptions, ErrorResult& aRv);
+  GetPreviewStream(const SurfaceConfiguration& aOptions, ErrorResult& aRv);
 
   already_AddRefed<Promise>
-  GetDisplayStream(const mozilla::dom::SurfaceConfiguration& aOptions, ErrorResult& aRv);
+  GetDisplayStream(const SurfaceConfiguration& aOptions, ErrorResult& aRv);
 
   already_AddRefed<Promise>
   SetOrientation(uint16_t aOrientation, ErrorResult& aRv);
@@ -81,21 +81,25 @@ public:
 
   // Class API
   void
-  SetPreviewSurface(android::sp<android::IGraphicBufferProducer>& aProducer);
-  void
-  SetDisplaySurface(android::sp<android::IGraphicBufferProducer>& aProducer);
-  bool
-  IsValidSurfaceSize(const mozilla::dom::SurfaceSize& aSize);
-  bool
-  IsValidSurfaceSize(const uint32_t aWidth, uint32_t aHeight);
+  SetSurface(const int16_t aType, android::sp<android::IGraphicBufferProducer>& aProducer);
 
-  void Shutdown();
+  void
+  SetSurfaceSize(const int16_t aType, const uint32_t aWidth, const uint16_t aHeight);
+
+  void
+  Shutdown();
 
 private:
   ~DOMVideoCallProvider();
 
+  already_AddRefed<Promise>
+  GetStream(const int16_t aType, const SurfaceConfiguration& aOptions, ErrorResult& aRv);
+
   nsresult
   DispatchSessionModifyRequestEvent(const nsAString& aType, DOMVideoCallProfile* aRequest);
+
+  bool
+  IsValidSurfaceSize(const uint32_t aWidth, const uint32_t aHeight);
 
   nsresult
   DispatchSessionModifyResponseEvent(const nsAString& aType,

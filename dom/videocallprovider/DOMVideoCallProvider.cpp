@@ -23,8 +23,8 @@ using mozilla::ErrorResult;
 namespace mozilla {
 namespace dom {
 
-const int16_t CALLBACK_TYPE_DISPLAY = 0;
-const int16_t CALLBACK_TYPE_PREVIEW = 1;
+const int16_t TYPE_DISPLAY = 0;
+const int16_t TYPE_PREVIEW = 1;
 
 class SurfaceControlBack : public IDOMSurfaceControlCallback
 {
@@ -77,11 +77,12 @@ void
 SurfaceControlBack::setProducer(android::sp<android::IGraphicBufferProducer> aProducer)
 {
   LOG("setProducer, mType: %d", mType);
-  if (CALLBACK_TYPE_DISPLAY == mType) {
-    mProvider->SetDisplaySurface(aProducer);
-  } else {
-    mProvider->SetPreviewSurface(aProducer);
+  mProvider->SetSurface(mType, aProducer);
+
+  if (aProducer == nullptr) {
+    return;
   }
+  mProvider->SetSurfaceSize(mType, mWidth, mHeight);
 }
 
 void
@@ -134,7 +135,7 @@ DOMVideoCallProvider::DisconnectFromOwner()
   LOG("DisconnectFromOwner");
   DOMEventTargetHelper::DisconnectFromOwner();
   // Event listeners can't be handled anymore, so we can shutdown
-  // the MobileConnection.
+  // the DOMVideoCallProvider.
   Shutdown();
 }
 
@@ -206,10 +207,25 @@ DOMVideoCallProvider::SetCamera(const Optional<nsAString>& aCamera, ErrorResult&
 }
 
 already_AddRefed<Promise>
-DOMVideoCallProvider::GetPreviewStream(const SurfaceConfiguration& aInitialConfig,
+DOMVideoCallProvider::GetPreviewStream(const SurfaceConfiguration& aOptions,
     ErrorResult& aRv)
 {
   LOG("GetPreviewStream");
+  return GetStream(TYPE_PREVIEW, aOptions, aRv);
+}
+
+already_AddRefed<Promise>
+DOMVideoCallProvider::GetDisplayStream(const SurfaceConfiguration& aOptions,
+    ErrorResult& aRv)
+{
+  LOG("GetDisplayStream");
+  return GetStream(TYPE_DISPLAY, aOptions, aRv);
+}
+
+already_AddRefed<Promise>
+DOMVideoCallProvider::GetStream(const int16_t aType, const SurfaceConfiguration& aOptions, ErrorResult& aRv)
+{
+  LOG("GetStream, type: %d", aType);
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetOwner());
   if (!global) {
     aRv.Throw(NS_ERROR_FAILURE);
@@ -222,40 +238,36 @@ DOMVideoCallProvider::GetPreviewStream(const SurfaceConfiguration& aInitialConfi
     return nullptr;
   }
 
+  if (!IsValidSurfaceSize(aOptions.mPreviewSize.mWidth, aOptions.mPreviewSize.mHeight)) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return nullptr;
+  }
+
   RefPtr<DOMVideoCallProvider> provider = this;
-  mPreviewCallback = new SurfaceControlBack(provider, CALLBACK_TYPE_PREVIEW, aInitialConfig);
-  mPreviewControl = new nsDOMSurfaceControl(aInitialConfig, promise, GetOwner(), mPreviewCallback);
+  SurfaceControlBack* callback = new SurfaceControlBack(provider, aType, aOptions);
+  RefPtr<nsDOMSurfaceControl> control = new nsDOMSurfaceControl(aOptions, promise, GetOwner(), callback);
+
+
+  if (aType == TYPE_DISPLAY) {
+    mDisplayCallback = callback;
+    mDisplayControl = control;
+  } else {
+    mPreviewCallback = callback;
+    mPreviewControl = control;
+  }
 
   return promise.forget();
 }
 
-already_AddRefed<Promise>
-DOMVideoCallProvider::GetDisplayStream(const SurfaceConfiguration& aInitialConfig,
-    ErrorResult& aRv)
+bool
+DOMVideoCallProvider::IsValidSurfaceSize(const uint32_t aWidth, const uint32_t aHeight)
 {
-  LOG("GetDisplayStream");
-  nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetOwner());
-  if (!global) {
-    aRv.Throw(NS_ERROR_FAILURE);
-    return nullptr;
+  // width/height must have values, otherwise UI may display improperly.
+  if (aWidth <= 0 || aHeight <= 0) {
+    return false;
+  } else {
+    return true;
   }
-
-  RefPtr<Promise> promise = Promise::Create(global, aRv);
-  if (aRv.Failed()) {
-    aRv.Throw(aRv.StealNSResult());
-    return nullptr;
-  }
-
-  if (!IsValidSurfaceSize(aInitialConfig.mPreviewSize)) {
-    aRv.Throw(NS_ERROR_FAILURE);
-    return nullptr;
-  }
-
-  RefPtr<DOMVideoCallProvider> provider = this;
-  mDisplayCallback = new SurfaceControlBack(provider, CALLBACK_TYPE_DISPLAY, aInitialConfig);
-  mDisplayControl = new nsDOMSurfaceControl(aInitialConfig, promise, GetOwner(), mDisplayCallback);
-
-  return promise.forget();
 }
 
 already_AddRefed<Promise>
@@ -437,33 +449,29 @@ DOMVideoCallProvider::DispatchVideoQualityChangeEvent(const nsAString& aType, co
 }
 
 void
-DOMVideoCallProvider::SetPreviewSurface(android::sp<android::IGraphicBufferProducer>& aProducer)
+DOMVideoCallProvider::SetSurface(const int16_t aType, android::sp<android::IGraphicBufferProducer>& aProducer)
 {
-  LOG("SetPreviewSurface: %p", aProducer.get());
-  mProvider->SetPreviewSurface(aProducer);
+  LOG("SetSurface, type: %d, surface: %p", aType, aProducer.get());
+  if (aType == TYPE_DISPLAY) {
+    mProvider->SetDisplaySurface(aProducer);
+  } else {
+    mProvider->SetPreviewSurface(aProducer);
+  }
 }
 
 void
-DOMVideoCallProvider::SetDisplaySurface(android::sp<android::IGraphicBufferProducer>& aProducer)
+DOMVideoCallProvider::SetSurfaceSize(const int16_t aType, const uint32_t aWidth, const uint16_t aHeight)
 {
-  LOG("SetDisplaySurface: %p", aProducer.get());
-  mProvider->SetDisplaySurface(aProducer);
-}
 
-bool
-DOMVideoCallProvider::IsValidSurfaceSize(const mozilla::dom::SurfaceSize& aSize)
-{
-  return IsValidSurfaceSize(aSize.mWidth, aSize.mHeight);
-}
-
-bool
-DOMVideoCallProvider::IsValidSurfaceSize(const uint32_t aWidth, const uint32_t aHeight)
-{
-  // width/height must have values, otherwise UI may display improperly.
-  if (aWidth <= 0 || aHeight <= 0) {
-    return false;
+  RefPtr<nsDOMSurfaceControl> control;
+  if (aType == TYPE_DISPLAY) {
+    control = mDisplayControl;
   } else {
-    return true;
+    control = mPreviewControl;
+  }
+
+  if (!control) {
+    return;
   }
 }
 
