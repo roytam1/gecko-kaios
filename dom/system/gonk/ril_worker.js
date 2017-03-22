@@ -1215,9 +1215,11 @@ RilObject.prototype = {
   getSignalStrength: function() {
     this.context.Buf.simpleRequest(REQUEST_SIGNAL_STRENGTH);
   },
+
   getIMEI: function(options) {
     this.context.Buf.simpleRequest(REQUEST_GET_IMEI, options);
   },
+
   getDeviceIdentity: function() {
     this.deviceIdentities || this.context.Buf.simpleRequest(REQUEST_DEVICE_IDENTITY);
   },
