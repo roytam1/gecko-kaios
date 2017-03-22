@@ -355,7 +355,8 @@ nsTextInputSelectionImpl::ScrollSelectionIntoView(int16_t aType, int16_t aRegion
   if (!mFrameSelection) 
     return NS_ERROR_FAILURE; 
 
-  return mFrameSelection->ScrollSelectionIntoView(aType, aRegion, aFlags);
+  RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
+  return frameSelection->ScrollSelectionIntoView(aType, aRegion, aFlags);
 }
 
 NS_IMETHODIMP
@@ -364,7 +365,8 @@ nsTextInputSelectionImpl::RepaintSelection(int16_t type)
   if (!mFrameSelection)
     return NS_ERROR_FAILURE;
 
-  return mFrameSelection->RepaintSelection(type);
+  RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
+  return frameSelection->RepaintSelection(type);
 }
 
 NS_IMETHODIMP
@@ -373,7 +375,8 @@ nsTextInputSelectionImpl::RepaintSelection(nsPresContext* aPresContext, Selectio
   if (!mFrameSelection)
     return NS_ERROR_FAILURE;
 
-  return mFrameSelection->RepaintSelection(aSelectionType);
+  RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
+  return frameSelection->RepaintSelection(aSelectionType);
 }
 
 NS_IMETHODIMP
@@ -460,48 +463,60 @@ NS_IMETHODIMP
 nsTextInputSelectionImpl::PhysicalMove(int16_t aDirection, int16_t aAmount,
                                        bool aExtend)
 {
-  if (mFrameSelection)
-    return mFrameSelection->PhysicalMove(aDirection, aAmount, aExtend);
+  if (mFrameSelection) {
+    RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
+    return frameSelection->PhysicalMove(aDirection, aAmount, aExtend);
+  }
   return NS_ERROR_NULL_POINTER;
 }
 
 NS_IMETHODIMP
 nsTextInputSelectionImpl::CharacterMove(bool aForward, bool aExtend)
 {
-  if (mFrameSelection)
-    return mFrameSelection->CharacterMove(aForward, aExtend);
+  if (mFrameSelection) {
+    RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
+    return frameSelection->CharacterMove(aForward, aExtend);
+  }
   return NS_ERROR_NULL_POINTER;
 }
 
 NS_IMETHODIMP
 nsTextInputSelectionImpl::CharacterExtendForDelete()
 {
-  if (mFrameSelection)
-    return mFrameSelection->CharacterExtendForDelete();
+  if (mFrameSelection) {
+    RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
+    return frameSelection->CharacterExtendForDelete();
+  }
   return NS_ERROR_NULL_POINTER;
 }
 
 NS_IMETHODIMP
 nsTextInputSelectionImpl::CharacterExtendForBackspace()
 {
-  if (mFrameSelection)
-    return mFrameSelection->CharacterExtendForBackspace();
+  if (mFrameSelection) {
+    RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
+    return frameSelection->CharacterExtendForBackspace();
+  }
   return NS_ERROR_NULL_POINTER;
 }
 
 NS_IMETHODIMP
 nsTextInputSelectionImpl::WordMove(bool aForward, bool aExtend)
 {
-  if (mFrameSelection)
-    return mFrameSelection->WordMove(aForward, aExtend);
+  if (mFrameSelection) {
+    RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
+    return frameSelection->WordMove(aForward, aExtend);
+  }
   return NS_ERROR_NULL_POINTER;
 }
 
 NS_IMETHODIMP
 nsTextInputSelectionImpl::WordExtendForDelete(bool aForward)
 {
-  if (mFrameSelection)
-    return mFrameSelection->WordExtendForDelete(aForward);
+  if (mFrameSelection) {
+    RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
+    return frameSelection->WordExtendForDelete(aForward);
+  }
   return NS_ERROR_NULL_POINTER;
 }
 
@@ -510,7 +525,8 @@ nsTextInputSelectionImpl::LineMove(bool aForward, bool aExtend)
 {
   if (mFrameSelection)
   {
-    nsresult result = mFrameSelection->LineMove(aForward, aExtend);
+    RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
+    nsresult result = frameSelection->LineMove(aForward, aExtend);
     if (NS_FAILED(result))
       result = CompleteMove(aForward,aExtend);
     return result;
@@ -522,8 +538,10 @@ nsTextInputSelectionImpl::LineMove(bool aForward, bool aExtend)
 NS_IMETHODIMP
 nsTextInputSelectionImpl::IntraLineMove(bool aForward, bool aExtend)
 {
-  if (mFrameSelection)
-    return mFrameSelection->IntraLineMove(aForward, aExtend);
+  if (mFrameSelection) {
+    RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
+    return frameSelection->IntraLineMove(aForward, aExtend);
+  }
   return NS_ERROR_NULL_POINTER;
 }
 
@@ -535,7 +553,8 @@ nsTextInputSelectionImpl::PageMove(bool aForward, bool aExtend)
   // and to remain relative position of the caret in view. see Bug 4302.
   if (mScrollFrame)
   {
-    mFrameSelection->CommonPageMove(aForward, aExtend, mScrollFrame);
+    RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
+    frameSelection->CommonPageMove(aForward, aExtend, mScrollFrame);
   }
   // After ScrollSelectionIntoView(), the pending notifications might be
   // flushed and PresShell/PresContext/Frames may be dead. See bug 418470.
@@ -563,8 +582,11 @@ nsTextInputSelectionImpl::CompleteScroll(bool aForward)
 NS_IMETHODIMP
 nsTextInputSelectionImpl::CompleteMove(bool aForward, bool aExtend)
 {
+  NS_ENSURE_STATE(mFrameSelection);
+  RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
+
   // grab the parent / root DIV for this text widget
-  nsIContent* parentDIV = mFrameSelection->GetLimiter();
+  nsIContent* parentDIV = frameSelection->GetLimiter();
   if (!parentDIV)
     return NS_ERROR_UNEXPECTED;
 
@@ -590,7 +612,7 @@ nsTextInputSelectionImpl::CompleteMove(bool aForward, bool aExtend)
     }
   }
 
-  mFrameSelection->HandleClick(parentDIV, offset, offset, aExtend,
+  frameSelection->HandleClick(parentDIV, offset, offset, aExtend,
                                false, hint);
 
   // if we got this far, attempt to scroll no matter what the above result is
@@ -645,8 +667,10 @@ nsTextInputSelectionImpl::ScrollCharacter(bool aRight)
 NS_IMETHODIMP
 nsTextInputSelectionImpl::SelectAll()
 {
-  if (mFrameSelection)
-    return mFrameSelection->SelectAll();
+  if (mFrameSelection) {
+    RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
+    return frameSelection->SelectAll();
+  }
   return NS_ERROR_NULL_POINTER;
 }
 
