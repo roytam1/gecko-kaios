@@ -4460,15 +4460,11 @@ RilObject.prototype[REQUEST_SET_CALL_WAITING] = function REQUEST_SET_CALL_WAITIN
 RilObject.prototype[REQUEST_SMS_ACKNOWLEDGE] = null;
 RilObject.prototype[REQUEST_GET_IMEI] = function REQUEST_GET_IMEI(length, options) {
   let newIMEI = this.context.Buf.readString();
-
-  this.context.debug("REQUEST_GET_IMEI newIMEI:" + newIMEI);
+  if (DEBUG) {
+    this.context.debug("REQUEST_GET_IMEI newIMEI:" + newIMEI);
+  }
   if (!this.deviceIdentities) {
-    this.deviceIdentities = {
-      imei: null,
-      imeisv: null,
-      esn: null,
-      meid: null,
-    };
+    this.deviceIdentities = {};
   }
   if (newIMEI != this.deviceIdentities.imei) {
     this.deviceIdentities.imei = newIMEI;
