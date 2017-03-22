@@ -29,7 +29,8 @@ const int16_t CALLBACK_TYPE_PREVIEW = 1;
 class SurfaceControlBack : public IDOMSurfaceControlCallback
 {
 public:
-  SurfaceControlBack(RefPtr<DOMVideoCallProvider> aProvider, int16_t aType);
+  SurfaceControlBack(RefPtr<DOMVideoCallProvider> aProvider, int16_t aType,
+      const SurfaceConfiguration& aConfig);
   ~SurfaceControlBack() { }
   virtual void OnProducerCreated(
     android::sp<android::IGraphicBufferProducer> aProducer) override;
@@ -40,14 +41,19 @@ private:
   android::sp<android::IGraphicBufferProducer> mProducer;
   RefPtr<DOMVideoCallProvider> mProvider;
   int16_t mType;
+  uint32_t mWidth;
+  uint32_t mHeight;
 
   void setProducer(android::sp<android::IGraphicBufferProducer> aProducer);
 };
 
-SurfaceControlBack::SurfaceControlBack(RefPtr<DOMVideoCallProvider> aProvider, int16_t aType)
+SurfaceControlBack::SurfaceControlBack(RefPtr<DOMVideoCallProvider> aProvider, int16_t aType,
+      const SurfaceConfiguration& aConfig)
   : mProducer(nullptr),
     mProvider(aProvider),
-    mType(aType)
+    mType(aType),
+    mWidth(aConfig.mPreviewSize.mWidth),
+    mHeight(aConfig.mPreviewSize.mHeight)
 {
 }
 
@@ -217,7 +223,7 @@ DOMVideoCallProvider::GetPreviewStream(const SurfaceConfiguration& aInitialConfi
   }
 
   RefPtr<DOMVideoCallProvider> provider = this;
-  mPreviewCallback = new SurfaceControlBack(provider, CALLBACK_TYPE_PREVIEW);
+  mPreviewCallback = new SurfaceControlBack(provider, CALLBACK_TYPE_PREVIEW, aInitialConfig);
   mPreviewControl = new nsDOMSurfaceControl(aInitialConfig, promise, GetOwner(), mPreviewCallback);
 
   return promise.forget();
@@ -240,8 +246,13 @@ DOMVideoCallProvider::GetDisplayStream(const SurfaceConfiguration& aInitialConfi
     return nullptr;
   }
 
+  if (!IsValidSurfaceSize(aInitialConfig.mPreviewSize)) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return nullptr;
+  }
+
   RefPtr<DOMVideoCallProvider> provider = this;
-  mDisplayCallback = new SurfaceControlBack(provider, CALLBACK_TYPE_DISPLAY);
+  mDisplayCallback = new SurfaceControlBack(provider, CALLBACK_TYPE_DISPLAY, aInitialConfig);
   mDisplayControl = new nsDOMSurfaceControl(aInitialConfig, promise, GetOwner(), mDisplayCallback);
 
   return promise.forget();
@@ -437,6 +448,23 @@ DOMVideoCallProvider::SetDisplaySurface(android::sp<android::IGraphicBufferProdu
 {
   LOG("SetDisplaySurface: %p", aProducer.get());
   mProvider->SetDisplaySurface(aProducer);
+}
+
+bool
+DOMVideoCallProvider::IsValidSurfaceSize(const mozilla::dom::SurfaceSize& aSize)
+{
+  return IsValidSurfaceSize(aSize.mWidth, aSize.mHeight);
+}
+
+bool
+DOMVideoCallProvider::IsValidSurfaceSize(const uint32_t aWidth, const uint32_t aHeight)
+{
+  // width/height must have values, otherwise UI may display improperly.
+  if (aWidth <= 0 || aHeight <= 0) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 // nsIVideoCallCallback

@@ -23,6 +23,7 @@ class nsDOMSurfaceControl;
 namespace dom {
 
 struct SurfaceConfiguration;
+struct SurfaceSize;
 class Promise;
 class SurfaceControlBack;
 
@@ -79,8 +80,14 @@ public:
   IMPL_EVENT_HANDLER(changevideoquality)
 
   // Class API
-  void SetPreviewSurface(android::sp<android::IGraphicBufferProducer>& aProducer);
-  void SetDisplaySurface(android::sp<android::IGraphicBufferProducer>& aProducer);
+  void
+  SetPreviewSurface(android::sp<android::IGraphicBufferProducer>& aProducer);
+  void
+  SetDisplaySurface(android::sp<android::IGraphicBufferProducer>& aProducer);
+  bool
+  IsValidSurfaceSize(const mozilla::dom::SurfaceSize& aSize);
+  bool
+  IsValidSurfaceSize(const uint32_t aWidth, uint32_t aHeight);
 
   void Shutdown();
 
