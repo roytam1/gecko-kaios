@@ -151,7 +151,7 @@ VideoCallProviderParent::OnHandleCallSessionEvent(int16_t aEvent)
 }
 
 NS_IMETHODIMP
-VideoCallProviderParent::OnChangePeerDimensions(uint32_t aWidth, uint32_t aHeight)
+VideoCallProviderParent::OnChangePeerDimensions(uint16_t aWidth, uint16_t aHeight)
 {
   LOG("OnChangePeerDimensions");
   return SendNotifyChangePeerDimensions(aWidth, aHeight) ? NS_OK

@@ -84,7 +84,7 @@ public:
   SetSurface(const int16_t aType, android::sp<android::IGraphicBufferProducer>& aProducer);
 
   void
-  SetSurfaceSize(const int16_t aType, const uint32_t aWidth, const uint16_t aHeight);
+  SetSurfaceSize(const int16_t aType, const uint16_t aWidth, const uint16_t aHeight);
 
   void
   Shutdown();
@@ -99,7 +99,7 @@ private:
   DispatchSessionModifyRequestEvent(const nsAString& aType, DOMVideoCallProfile* aRequest);
 
   bool
-  IsValidSurfaceSize(const uint32_t aWidth, const uint32_t aHeight);
+  IsValidSurfaceSize(const uint16_t aWidth, const uint16_t aHeight);
 
   nsresult
   DispatchSessionModifyResponseEvent(const nsAString& aType,

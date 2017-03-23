@@ -41,8 +41,8 @@ private:
   android::sp<android::IGraphicBufferProducer> mProducer;
   RefPtr<DOMVideoCallProvider> mProvider;
   int16_t mType;
-  uint32_t mWidth;
-  uint32_t mHeight;
+  uint16_t mWidth;
+  uint16_t mHeight;
 
   void setProducer(android::sp<android::IGraphicBufferProducer> aProducer);
 };
@@ -260,7 +260,7 @@ DOMVideoCallProvider::GetStream(const int16_t aType, const SurfaceConfiguration&
 }
 
 bool
-DOMVideoCallProvider::IsValidSurfaceSize(const uint32_t aWidth, const uint32_t aHeight)
+DOMVideoCallProvider::IsValidSurfaceSize(const uint16_t aWidth, const uint16_t aHeight)
 {
   // width/height must have values, otherwise UI may display improperly.
   if (aWidth <= 0 || aHeight <= 0) {
@@ -460,7 +460,7 @@ DOMVideoCallProvider::SetSurface(const int16_t aType, android::sp<android::IGrap
 }
 
 void
-DOMVideoCallProvider::SetSurfaceSize(const int16_t aType, const uint32_t aWidth, const uint16_t aHeight)
+DOMVideoCallProvider::SetSurfaceSize(const int16_t aType, const uint16_t aWidth, const uint16_t aHeight)
 {
 
   RefPtr<nsDOMSurfaceControl> control;
@@ -497,7 +497,7 @@ DOMVideoCallProvider::OnHandleCallSessionEvent(int16_t event)
 }
 
 NS_IMETHODIMP
-DOMVideoCallProvider::OnChangePeerDimensions(uint32_t width, uint32_t height)
+DOMVideoCallProvider::OnChangePeerDimensions(uint16_t width, uint16_t height)
 {
   return NS_OK;
 }

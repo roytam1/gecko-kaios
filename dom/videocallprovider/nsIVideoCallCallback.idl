@@ -92,8 +92,8 @@ interface nsIVideoCallCallback : nsISupports
    * @param height
    *        The updated peer video height
    */
-  void onChangePeerDimensions(in unsigned long width,
-                              in unsigned long height);
+  void onChangePeerDimensions(in unsigned short width,
+                              in unsigned short height);
 
   /**
    * Called when current capabilities have changed.
