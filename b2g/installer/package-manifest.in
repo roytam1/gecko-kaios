@@ -430,6 +430,8 @@
 #ifdef MOZ_SECUREELEMENT
 @RESPATH@/components/ACEService.js
 @RESPATH@/components/ACEService.manifest
+@RESPATH@/components/EseConnector.js
+@RESPATH@/components/EseConnector.manifest
 @RESPATH@/components/GPAccessRulesManager.js
 @RESPATH@/components/GPAccessRulesManager.manifest
 @RESPATH@/components/SecureElement.js

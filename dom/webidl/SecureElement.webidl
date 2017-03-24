@@ -63,6 +63,42 @@ interface SEReader {
    */
   [Throws]
   Promise<void> closeAll();
+
+  /**
+   * This method resets the physical interface of the Secure Element. The enabling process of the
+   * physical interface MUST be replayed. If the physical interface does not support or allow
+   * the operation, this method MUST fail with SEUnsupportedException. error.
+   */
+  [Throws]
+  Promise<void> reset();
+
+  /**
+   * Loader service is used to update applets within secure element. The loader service application
+   * receives applet binary from specific server, the binary is saved to the LsScriptFile file using
+   * device storage APIs. LsExecuteScript API notified NFC hal layer where to get the applet,
+   * and starts applet upgrade. The upgrade report is saved in the LsResponseFile file.
+   *
+   * @param LsScriptFile
+   *     File name for where the applet is stored.
+   *
+   * @param LsResponseFile
+   *     File name for where the upgrade report is stored.
+   *
+   * @return the promise is resolved or rejected with the new created
+   * SEResponse object.
+   */
+  [Throws]
+  Promise<SEResponse> lsExecuteScript(DOMString LsScriptFile, DOMString LsResponseFile);
+
+  /**
+   * Get applets version
+   *
+   *
+   * @return the promise is resolved or rejected with the new created
+   * SEResponse object.
+   */
+  [Throws]
+  Promise<SEResponse> lsGetVersion();
 };
 
 [Pref="dom.secureelement.enabled",
@@ -76,6 +112,11 @@ interface SESession {
 
   // Status of current session
   readonly attribute boolean isClosed;
+
+  // This attribute MUST return the historical bytes provided by the
+  // physical interface of the Secure Element or null if the interface
+  // does not provide it.
+  Promise<SEResponse> getAtr();
 
   /**
    * Opens a communication logical channel to an application on Secure Element identified by the AID.

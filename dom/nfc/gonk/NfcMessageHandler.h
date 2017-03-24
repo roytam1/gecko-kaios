@@ -38,6 +38,26 @@ private:
   bool TransceiveRequest(android::Parcel& aParcel, const CommandOptions& options);
   bool TransceiveResponse(const android::Parcel& aParcel, EventOptions& aOptions);
 
+  bool OpenConnectionRequest(android::Parcel& aParcel, const CommandOptions& aOptions);
+  bool OpenConnectionResponse(const android::Parcel& aParcel, EventOptions& aOptions);
+
+  bool TransmitRequest(android::Parcel& aParcel, const CommandOptions& aOptions);
+  bool TransmitResponse(const android::Parcel& aParcel, EventOptions& aOptions);
+
+  bool CloseConnectionRequest(android::Parcel& aParcel, const CommandOptions& aOptions);
+  bool CloseConnectionResponse(const android::Parcel& aParcel, EventOptions& aOptions);
+
+  bool ResetSecureElementRequest(android::Parcel& aParcel, const CommandOptions& aOptions);
+  bool ResetSecureElementResponse(const android::Parcel& aParcel, EventOptions& aOptions);
+
+  bool GetAtrRequest(android::Parcel& aParcel, const CommandOptions& aOptions);
+  bool GetAtrResponse(const android::Parcel& aParcel, EventOptions& aOptions);
+
+  bool LsExecuteScriptRequest(android::Parcel& aParcel, const CommandOptions& aOptions);
+  bool LsExecuteScriptResponse(const android::Parcel& aParcel, EventOptions& aOptions);
+  bool LsGetVersionRequest(android::Parcel& aParcel, const CommandOptions& aOptions);
+  bool LsGetVersionResponse(const android::Parcel& aParcel, EventOptions& aOptions);
+
   bool ProcessNotification(int32_t aType, const android::Parcel& aParcel, EventOptions& aOptions);
   bool InitializeNotification(const android::Parcel& aParcel, EventOptions& aOptions);
   bool TechDiscoveredNotification(const android::Parcel& aParcel, EventOptions& aOptions);

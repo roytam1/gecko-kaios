@@ -38,6 +38,36 @@ interface nsISEChannelCallback : nsISupports
                                   in DOMString data);
 
   /**
+   * Callback function to notify on successfully reset the secure element.
+   *
+   */
+  void notifyResetSecureElementSuccess();
+
+  /**
+   * Callback function to notify the atr(answer to reset) of secure element.
+   *
+   * @param data
+   *        Response's data
+   */
+  void notifyGetAtrSuccess(in jsval data);
+
+  /**
+   * Callback function to notify the upgrade applets result.
+   *
+   * @param data
+   *        Response's data
+   */
+  void notifyLsExecuteScriptSuccess(in jsval data);
+
+  /**
+   * Callback function to notify the get version result.
+   *
+   * @param data
+   *        Response's data
+   */
+  void notifyLsGetVersionSuccess(in jsval data);
+
+  /**
    * Callback function to notify error
    *
    * @param error
@@ -107,6 +137,38 @@ interface nsISecureElementConnector : nsISupports
     */
    void closeChannel(in long channel,
                      in nsISEChannelCallback callback);
+
+   /**
+    * Reset the secure element
+    *
+    * @param callback
+    *        callback to notify the result of the operation.
+    */
+   void resetSecureElement(in nsISEChannelCallback callback);
+
+   /**
+    * Get answer to reset the secure element response.
+    *
+    * @param callback
+    *        callback to notify the result of the operation.
+    */
+   void getAtr(in nsISEChannelCallback callback);
+
+   /**
+    * Loader service execute script.
+    *
+    * @param callback
+    *        callback to notify the result of the operation.
+    */
+   void lsExecuteScript(in jsval data, in nsISEChannelCallback callback);
+
+   /**
+    * Loader service get version.
+    *
+    * @param callback
+    *        callback to notify the result of the operation.
+    */
+   void lsGetVersion(in jsval data, in nsISEChannelCallback callback);
 
    /**
     * Register a Secure Element listener

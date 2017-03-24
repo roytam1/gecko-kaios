@@ -32,6 +32,12 @@ XPCOMUtils.defineLazyGetter(this, "SE", () => {
   return obj;
 });
 
+XPCOMUtils.defineLazyGetter(this, "NFC", function () {
+  let obj = {};
+  Cu.import("resource://gre/modules/nfc_consts.js", obj);
+  return obj;
+});
+
 // set to true in se_consts.js to see debug messages
 var DEBUG = SE.DEBUG_SE;
 function debug(s) {
@@ -44,7 +50,12 @@ const SE_IPC_SECUREELEMENT_MSG_NAMES = [
   "SE:GetSEReaders",
   "SE:OpenChannel",
   "SE:CloseChannel",
-  "SE:TransmitAPDU"
+  "SE:TransmitAPDU",
+  "SE:GetAtr",
+  "SE:ResetSecureElement",
+  "SE:LsExecuteScript",
+  "SE:LsGetVersion",
+  "NFC:ChangeRFState"
 ];
 
 const SECUREELEMENTMANAGER_CONTRACTID =
@@ -69,11 +80,19 @@ XPCOMUtils.defineLazyGetter(this, "UiccConnector", () => {
   return uiccClass ? uiccClass.getService(Ci.nsISecureElementConnector) : null;
 });
 
+XPCOMUtils.defineLazyGetter(this, "EseConnector", () => {
+  let eseClass = Cc["@mozilla.org/secureelement/connector/ese;1"];
+  return eseClass ? eseClass.getService(Ci.nsISecureElementConnector) : null;
+});
+
+const gSecureElementType = libcutils.property_get("ro.moz.nfc.secureelementtype", SE.TYPE_ESE);
+
 function getConnector(type) {
   switch (type) {
     case SE.TYPE_UICC:
       return UiccConnector;
     case SE.TYPE_ESE:
+      return EseConnector;
     default:
       debug("Unsupported SEConnector : " + type);
       return null;
@@ -197,7 +216,6 @@ XPCOMUtils.defineLazyGetter(this, "gMap", function() {
  */
 function SecureElementManager() {
   this._registerMessageListeners();
-  this._registerSEListeners();
   Services.obs.addObserver(this, NS_XPCOM_SHUTDOWN_OBSERVER_ID, false);
   this._acEnforcer =
     Cc["@mozilla.org/secureelement/access-control/ace;1"]
@@ -248,16 +266,18 @@ SecureElementManager.prototype = {
   },
 
   _registerSEListeners: function() {
-    let connector = getConnector(SE.TYPE_UICC);
+    debug("_registerSEListeners");
+    let connector = getConnector(gSecureElementType);
     if (!connector) {
       return;
     }
 
-    this._sePresence[SE.TYPE_UICC] = false;
+    this._sePresence[gSecureElementType] = false;
     connector.registerListener(this);
   },
 
   _unregisterSEListeners: function() {
+    debug("_unregisterSEListeners");
     Object.keys(this._sePresence).forEach((type) => {
       let connector = getConnector(type);
       if (connector) {
@@ -280,6 +300,10 @@ SecureElementManager.prototype = {
   },
 
   _canOpenChannel: function(appId, type) {
+    if (!this._sePresence[type]) {
+      debug("can't open channel when SE is not presented");
+      return;
+    }
     let opened = gMap.getChannelCountByAppIdType(appId, type);
     let limit = SE.MAX_CHANNELS_ALLOWED_PER_SESSION;
     // UICC basic channel is not accessible see comment in se_consts.js
@@ -353,7 +377,7 @@ SecureElementManager.prototype = {
       callback({ error: SE.ERROR_NOTPRESENT });
       return;
     }
-
+    dump("_handleTransmit: " + channel.channelNumber + "=" + JSON.stringify(msg.apdu));
     // Bug 1137533 - ACE GPAccessRulesManager APDU filters
     connector.exchangeAPDU(channel.channelNumber, msg.apdu.cla, msg.apdu.ins,
                            msg.apdu.p1, msg.apdu.p2,
@@ -404,6 +428,97 @@ SecureElementManager.prototype = {
     });
   },
 
+  _handleResetSecureElement: function(msg, callback) {
+    let connector = getConnector(gSecureElementType);
+    if (!connector) {
+      debug("No SE connector available");
+      callback({ error: SE.ERROR_NOTPRESENT });
+      return;
+    }
+
+    connector.resetSecureElement({
+      notifyResetSecureElementSuccess: () => {
+        debug("resetSecureElement successfully");
+        callback({ error: SE.ERROR_NONE });
+      },
+
+      notifyError: (reason) => {
+        debug("Failed to reset secure element" + ", reason: "+ reason);
+        callback({ error: SE.ERROR_BADSTATE, reason: reason });
+      }
+    });
+  },
+
+  _handleGetAtr: function(msg, callback) {
+    let connector = getConnector(gSecureElementType);
+    if (!connector) {
+      debug("No SE connector available");
+      callback({ error: SE.ERROR_NOTPRESENT });
+      return;
+    }
+
+    connector.getAtr({
+      notifyGetAtrSuccess: (response) => {
+        debug("_handleGetAtr: " + JSON.stringify(response));
+        callback({
+          error: SE.ERROR_NONE,
+          response: response
+        });
+      },
+
+      notifyError: (reason) => {
+        debug("Failed to reset secure element" + ", reason: "+ reason);
+        callback({ error: SE.ERROR_BADSTATE, reason: reason });
+      }
+    });
+  },
+
+  _handleLsExecuteScript: function(msg, callback) {
+    let connector = getConnector(gSecureElementType);
+    if (!connector) {
+      debug("No SE connector available");
+      callback({ error: SE.ERROR_NOTPRESENT });
+      return;
+    }
+
+    connector.lsExecuteScript(msg, {
+      notifyLsExecuteScriptSuccess: (response) => {
+        callback({
+          error: SE.ERROR_NONE,
+          response: response
+        });
+      },
+
+      notifyError: (reason) => {
+        debug("Failed to do loader service" + ", reason: "+ reason);
+        callback({ error: SE.ERROR_BADSTATE, reason: reason });
+      }
+    });
+  },
+
+  _handleLsGetVersion: function(msg, callback) {
+    let connector = getConnector(gSecureElementType);
+    if (!connector) {
+      debug("No SE connector available");
+      callback({ error: SE.ERROR_NOTPRESENT });
+      return;
+    }
+
+    connector.lsGetVersion(msg, {
+      notifyLsGetVersionSuccess: (response) => {
+        callback({
+          error: SE.ERROR_NONE,
+          response: response
+        });
+      },
+
+      notifyError: (reason) => {
+        debug("Failed to get loader service version" + ", reason: "+ reason);
+        callback({ error: SE.ERROR_BADSTATE, reason: reason });
+      }
+    });
+  },
+
   _handleGetSEReadersRequest: function(msg, target, callback) {
     gMap.registerSecureElementTarget(msg.appId, target);
     let readers = Object.keys(this._sePresence).map(type => {
@@ -449,9 +564,27 @@ SecureElementManager.prototype = {
 
   _isValidMessage: function(msg) {
     let appIdValid = gMap.isAppIdRegistered(msg.data.appId);
-    return msg.name === "SE:GetSEReaders" ? true : appIdValid;
+
+    let isValidMsg = false;
+    if (SE_IPC_SECUREELEMENT_MSG_NAMES.indexOf(msg.name) !== -1) {
+      isValidMsg = true;
+    }
+
+    debug("_isValidMessage: msg " + isValidMsg + " appid " + appIdValid);
+    return isValidMsg ? true : appIdValid;
   },
 
+  _handleRFStateChange: function(data) {
+    debug("_handleRFStateChange: " + JSON.stringify(data));
+    if (data.rfState === NFC.NFC_RF_STATE_IDLE) {
+      // TODO, handle screen off case.
+      //this._unregisterSEListeners();
+    } else if (data.rfState === NFC.NFC_RF_STATE_LISTEN || data.rfState === NFC.NFC_RF_STATE_DISCOVERY) {
+      this._registerSEListeners();
+    } else {
+      debug("Unknow RF state " + data.rfState);
+    }
+  },
   /**
    * nsIMessageListener interface methods.
    */
@@ -463,6 +596,10 @@ SecureElementManager.prototype = {
     if (msg.name === "child-process-shutdown") {
       this._handleChildProcessShutdown(msg.target);
       return null;
+    }
+    if (msg.name === "NFC:ChangeRFState" && !msg.target.assertPermission("nfc-manager")) {
+      debug("Received " + msg.name + " from a content process without nfc-manager permissions");
+      return;
     }
 
     if (SE_IPC_SECUREELEMENT_MSG_NAMES.indexOf(msg.name) !== -1) {
@@ -495,6 +632,21 @@ SecureElementManager.prototype = {
         break;
       case "SE:TransmitAPDU":
         this._handleTransmit(msg.data, callback);
+        break;
+      case "SE:ResetSecureElement":
+        this._handleResetSecureElement(msg.data, callback);
+        break;
+      case "SE:GetAtr":
+        this._handleGetAtr(msg.data, callback);
+        break;
+      case "SE:LsExecuteScript":
+        this._handleLsExecuteScript(msg.data, callback);
+        break;
+      case "SE:LsGetVersion":
+        this._handleLsGetVersion(msg.data, callback);
+        break;
+      case "NFC:ChangeRFState":
+        this._handleRFStateChange(msg.data);
         break;
     }
     return null;

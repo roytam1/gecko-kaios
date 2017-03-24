@@ -16,7 +16,7 @@
 /* Copyright © 2013, Deutsche Telekom, Inc. */
 
 // Set to true to debug all NFC layers
-this.DEBUG_ALL = false;
+this.DEBUG_ALL = true;
 
 // Set individually to debug specific layers
 this.DEBUG_CONTENT_HELPER = DEBUG_ALL || false;

@@ -26,6 +26,9 @@ XPCOMUtils.defineLazyServiceGetter(this, "gSettingsService",
                                    "@mozilla.org/settingsService;1",
                                    "nsISettingsService");
 
+XPCOMUtils.defineLazyModuleGetter(this, "SEUtils",
+                                  "resource://gre/modules/SEUtils.jsm");
+
 XPCOMUtils.defineLazyGetter(this, "NFC", function () {
   let obj = {};
   Cu.import("resource://gre/modules/nfc_consts.js", obj);
@@ -89,7 +92,14 @@ const NfcRequestType = {
   WRITE_NDEF: "writeNDEF",
   MAKE_READ_ONLY: "makeReadOnly",
   FORMAT: "format",
-  TRANSCEIVE: "transceive"
+  TRANSCEIVE: "transceive",
+  OPENCONNECTION: "openConnection",
+  TRANSMIT: "transmit",
+  CLOSECONNECTION: "closeConnection",
+  RESETSECUREELEMENT: "resetSecureElement",
+  GETATR: "getAtr",
+  LSEXECUTESCRIPT: "lsExecuteScript",
+  LSGETVERSION: "lsGetVersion",
 };
 
 const CommandMsgTable = {};
@@ -99,6 +109,13 @@ CommandMsgTable["NFC:WriteNDEF"] = NfcRequestType.WRITE_NDEF;
 CommandMsgTable["NFC:MakeReadOnly"] = NfcRequestType.MAKE_READ_ONLY;
 CommandMsgTable["NFC:Format"] = NfcRequestType.FORMAT;
 CommandMsgTable["NFC:Transceive"] = NfcRequestType.TRANSCEIVE;
+CommandMsgTable["NFC:OpenConnection"] = NfcRequestType.OPENCONNECTION;
+CommandMsgTable["NFC:Transmit"] = NfcRequestType.TRANSMIT;
+CommandMsgTable["NFC:CloseConnection"] = NfcRequestType.CLOSECONNECTION;
+CommandMsgTable["NFC:ResetSecureElement"] = NfcRequestType.RESETSECUREELEMENT;
+CommandMsgTable["NFC:GetAtr"] = NfcRequestType.GETATR;
+CommandMsgTable["NFC:LsExecuteScript"] = NfcRequestType.LSEXECUTESCRIPT;
+CommandMsgTable["NFC:LsGetVersion"] = NfcRequestType.LSGETVERSION;
 
 // Should be consistent with NfcResponseType defined in NfcOptions.webidl.
 const NfcResponseType = {
@@ -108,6 +125,13 @@ const NfcResponseType = {
   MAKE_READ_ONLY_RSP: "makeReadOnlyRsp",
   FORMAT_RSP: "formatRsp",
   TRANSCEIVE_RSP: "transceiveRsp",
+  OPENCONNECTION_RSP: "openConnectionRsp",
+  TRANSMIT_RSP: "transmitRsp",
+  CLOSECONNECTION_RSP: "closeConnectionRsp",
+  RESETSECUREELEMENT_RSP: "resetSecureElementRsp",
+  GETATR_RSP: "getAtrRsp",
+  LSEXECUTESCRIPT_RSP: "lsExecuteScriptRsp",
+  LSGETVERSION_RSP: "lsGetVersionRsp"
 };
 
 const EventMsgTable = {};
@@ -117,6 +141,13 @@ EventMsgTable[NfcResponseType.WRITE_NDEF_RSP] = "NFC:WriteNDEFResponse";
 EventMsgTable[NfcResponseType.MAKE_READ_ONLY_RSP] = "NFC:MakeReadOnlyResponse";
 EventMsgTable[NfcResponseType.FORMAT_RSP] = "NFC:FormatResponse";
 EventMsgTable[NfcResponseType.TRANSCEIVE_RSP] = "NFC:TransceiveResponse";
+EventMsgTable[NfcResponseType.OPENCONNECTION_RSP] = "NFC:OpenConnectionResponse";
+EventMsgTable[NfcResponseType.TRANSMIT_RSP] = "NFC:TransmitResponse";
+EventMsgTable[NfcResponseType.CLOSECONNECTION_RSP] = "NFC:CloseConnectionResponse";
+EventMsgTable[NfcResponseType.RESETSECUREELEMENT_RSP] = "NFC:ResetSecureElementResponse";
+EventMsgTable[NfcResponseType.GETATR_RSP] = "NFC:GetAtrResponse";
+EventMsgTable[NfcResponseType.LSEXECUTESCRIPT_RSP] = "NFC:LsExecuteScriptResponse";
+EventMsgTable[NfcResponseType.LSGETVERSION_RSP] = "NFC:LsGetVersionResponse";
 
 // Should be consistent with NfcNotificationType defined in NfcOptions.webidl.
 const NfcNotificationType = {
@@ -526,9 +557,11 @@ Nfc.prototype = {
   classID:   NFC_CID,
   classInfo: XPCOMUtils.generateCI({classID: NFC_CID,
                                     classDescription: "Nfc",
-                                    interfaces: [Ci.nsINfcService]}),
+                                    interfaces: [Ci.nsINfcService,
+                                    Ci.nsISecureElementService]}),
 
-  QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver, Ci.nsINfcGonkEventListener]),
+  QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver, Ci.nsINfcGonkEventListener,
+                                         Ci.nsISecureElementService]),
 
   rfState: NFC.NFC_RF_STATE_IDLE,
 
@@ -563,6 +596,9 @@ Nfc.prototype = {
    * Shutdown NFC service
    */
   shutdownNfcService : function shutdownNfcService() {
+    // TODO
+    debug("Debug mode, don't shutting down Nfc Service");
+    return;
     debug("Shutting down Nfc Service");
 
     this.nfcService.shutdown();
@@ -708,6 +744,27 @@ Nfc.prototype = {
       case NfcResponseType.TRANSCEIVE_RSP:
         this.sendNfcResponse(message);
         break;
+      case NfcResponseType.OPENCONNECTION_RSP:
+        this.openConnectionResponse(message);
+        break;
+      case NfcResponseType.TRANSMIT_RSP:
+        this.transmitResponse(message);
+        break;
+      case NfcResponseType.CLOSECONNECTION_RSP:
+        this.closeConnectionResponse(message);
+        break;
+      case NfcResponseType.RESETSECUREELEMENT_RSP:
+        this.resetSecureElementResponse(message);
+        break;
+      case NfcResponseType.GETATR_RSP:
+        this.getAtrResponse(message);
+        break;
+      case NfcResponseType.LSEXECUTESCRIPT_RSP:
+        this.lsExecuteScriptResponse(message);
+        break;
+      case NfcResponseType.LSGETVERSION_RSP:
+        this.lsGetVersionResponse(message);
+        break;
       default:
         throw new Error("Don't know about this message type: " + message.type);
     }
@@ -739,6 +796,8 @@ Nfc.prototype = {
   receiveMessage: function receiveMessage(message) {
     // Return early if we don't need the NFC Service. We won't start
     // the NFC daemon here.
+    DEBUG && debug("Received message from content process: " + JSON.stringify(message));
+
     switch (message.name) {
       case "NFC:QueryInfo":
         return {rfState: this.rfState};
@@ -817,6 +876,318 @@ Nfc.prototype = {
     if (this.nfcService) {
       this.shutdownNfcService();
     }
+  },
+
+  /**
+   * nsISecureElementService interface methods.
+   */
+
+  _getRandomId: function() {
+    return Cc["@mozilla.org/uuid-generator;1"]
+             .getService(Ci.nsIUUIDGenerator).generateUUID().toString();
+  },
+
+  _hexStringToUint8Array: function _hexStringToUint8Array(hexStr) {
+    if (typeof hexStr !== "string" || hexStr.length % 2 !== 0) {
+      return [];
+    }
+
+    let array = new Uint8Array(hexStr.length/2);
+    let index = 0;
+    let len = hexStr.length;
+    for (let i = 0; i < len; i += 2) {
+      array[index++] = parseInt(hexStr.substr(i, 2), 16);
+    }
+
+    return array;
+  },
+
+
+  openConnection: function openConnection(callback) {
+    let command = CommandMsgTable["NFC:OpenConnection"];
+    if (!command) {
+      debug("Unknown message");
+      return;
+    }
+
+    let message = {
+      requestId: this._getRandomId(),
+    };
+
+    this.targetsByRequestId[message.requestId] = callback;
+
+    debug("OpenConnection: send command to nfcd " + JSON.stringify(message));
+    this.sendToNfcService(command, message);
+  },
+
+  openConnectionResponse: function openConnection(message) {
+    let callback = this.getTargetByRequestId(message.requestId);
+    if (!callback) {
+      debug("openConnectionResponse: can't find callback");
+      return;
+    }
+
+    if (message.errorMsg) {
+      debug("openConnectionResponse: receive error from nfcd:" + message.errorMsg);
+      callback.notifyError(message.errorMsg);
+      return;
+    }
+
+    debug("OpenConnectionResponse: receive from nfcd " + JSON.stringify(message));
+    callback.notifyOpenConnectionSuccess(message.handle);
+  },
+
+  transmit: function transmit(handle, data, callback) {
+    let command = CommandMsgTable["NFC:Transmit"];
+    if (!command) {
+      debug("Unknown message");
+      return;
+    }
+
+    let buffer = this._hexStringToUint8Array(data);
+    let message = {
+      requestId: this._getRandomId(),
+      handle: handle,
+      apduCommand: buffer
+    };
+
+    this.targetsByRequestId[message.requestId] = callback;
+    debug("Transmit: send command to nfcd " + JSON.stringify(message));
+    this.sendToNfcService(command, message);
+  },
+
+  transmitResponse: function transmitResponse(message) {
+    let callback = this.getTargetByRequestId(message.requestId);
+    if (!callback) {
+      debug("TransmitResponse: can't find callback");
+      return;
+    }
+
+    if (message.errorMsg) {
+      debug("TransmitResponse: receive error from nfcd " + message.errorMsg);
+      callback.notifyError(message.errorMsg);
+      return;
+    }
+
+    if (!message.apduResponse) {
+      debug("TransmitResponse: no valid response from eSE");
+      callback.notifyError("No valid response from eSE");
+      return;
+    }
+    debug("TransmitResponse:" + JSON.stringify(message.apduResponse));
+    callback.notifyTransmitResponse(message.apduResponse);
+  },
+
+  closeConnection: function closeConnection(handle, callback) {
+    let command = CommandMsgTable["NFC:CloseConnection"];
+    if (!command) {
+      debug("Unknown message");
+      return null;
+    }
+
+    let message = {
+      requestId: this._getRandomId(),
+      handle: handle
+    };
+
+    this.targetsByRequestId[message.requestId] = callback;
+
+    debug("closeConnection: send message to nfcd " + JSON.stringify(message));
+    this.sendToNfcService(command, message);
+  },
+
+  closeConnectionResponse: function closeConnectionResponse(message) {
+    let callback = this.getTargetByRequestId(message.requestId);
+    if (!callback) {
+      debug("closeConnectionResponse: can't find callback");
+      return;
+    }
+
+    if (message.errorMsg) {
+      debug("closeConnectionResponse: receive error from nfcd " + message.errorMsg);
+      callback.notifyError(message.errorMsg);
+      return;
+    }
+
+    debug("closeConnectionResponse: receive message from nfcd " + JSON.stringify(message));
+    callback.notifyCloseChannelSuccess();
+  },
+
+  resetSecureElement: function(handle, callback) {
+    let command = CommandMsgTable["NFC:ResetSecureElement"];
+    if (!command) {
+      debug("Unknown message");
+      return null;
+    }
+
+    let message = {
+      requestId: this._getRandomId(),
+      handle: handle
+    };
+
+    this.targetsByRequestId[message.requestId] = callback;
+
+    debug("resetSecureElement: send message to nfcd " + JSON.stringify(message));
+    this.sendToNfcService(command, message);
+  },
+
+  resetSecureElementResponse: function resetSecureElement(message)
+  {
+    let callback = this.getTargetByRequestId(message.requestId);
+    if (!callback) {
+      debug("resetSecureElementResponse: can't find callback");
+      return;
+    }
+
+    if (message.errorMsg) {
+      debug("resetSecureElementResponse: receive error from nfcd " + message.errorMsg);
+      callback.notifyError(message.errorMsg);
+      return;
+    }
+
+    debug("resetSecureElementResponse: receive message from nfcd " + JSON.stringify(message));
+    callback.notifyResetSecureElementSuccess();
+  },
+
+  getAtr: function(handle, callback) {
+    let command = CommandMsgTable["NFC:GetAtr"];
+    if (!command) {
+      debug("Unknown message");
+      return null;
+    }
+
+    let message = {
+      requestId: this._getRandomId(),
+      handle: handle
+    };
+
+    this.targetsByRequestId[message.requestId] = callback;
+
+    debug("getAtr: send message to nfcd " + JSON.stringify(message));
+    this.sendToNfcService(command, message);
+
+  },
+
+  getAtrResponse: function getAtrResponse(message)
+  {
+    let callback = this.getTargetByRequestId(message.requestId);
+    if (!callback) {
+      debug("getAtrResponse: can't find callback");
+      return;
+    }
+
+    if (message.errorMsg) {
+      debug("resetSecureElementResponse: receive error from nfcd " + message.errorMsg);
+      callback.notifyError(message.errorMsg);
+      return;
+    }
+
+    if (!message.response) {
+      debug("resetSecureElementResponse: no valid response from eSE");
+      callback.notifyError("No valid response from eSE");
+      return;
+    }
+
+    debug("getAtrResponse: receive message from nfcd " + JSON.stringify(message));
+    callback.notifyGetAtrSuccess(message.response);
+  },
+
+  lsExecuteScript: function(msg, callback) {
+    let command = CommandMsgTable["NFC:LsExecuteScript"];
+    if (!command) {
+      debug("Unknown message");
+      return null;
+    }
+
+    let message = {
+      requestId: this._getRandomId(),
+      lsScriptFile: msg.appletScriptFile,
+      lsResponseFile: msg.responseFile,
+      uniqueApplicationID: msg.uniqueAppID
+    };
+
+    this.targetsByRequestId[message.requestId] = callback;
+
+    debug("lsExecuteScript: send message to nfcd " + JSON.stringify(message));
+    this.sendToNfcService(command, message);
+
+  },
+
+  lsExecuteScriptResponse: function getAtrResponse(message)
+  {
+    let callback = this.getTargetByRequestId(message.requestId);
+    if (!callback) {
+      debug("lsExecuteScriptResponse: can't find callback");
+      return;
+    }
+
+    if (message.errorMsg) {
+      debug("lsExecuteScriptResponse: receive error from nfcd " + message.errorMsg);
+      callback.notifyError(message.errorMsg);
+      return;
+    }
+
+    if (!message.response) {
+      debug("lsExecuteScriptResponse: no valid response from eSE " + JSON.stringify(message));
+      callback.notifyError("No valid response from eSE");
+      return;
+    }
+
+    debug("lsExecuteScriptResponse: receive message from nfcd " + JSON.stringify(message));
+    callback.notifyLsExecuteScriptSuccess(message.response);
+  },
+
+  lsGetVersion: function(msg, callback) {
+    let command = CommandMsgTable["NFC:LsGetVersion"];
+    if (!command) {
+      debug("Unknown message");
+      return null;
+    }
+
+    let message = {
+      requestId: this._getRandomId(),
+    };
+
+    this.targetsByRequestId[message.requestId] = callback;
+
+    debug("lsGetVersion: send message to nfcd " + JSON.stringify(message));
+    this.sendToNfcService(command, message);
+
+  },
+
+  lsGetVersionResponse: function getAtrResponse(message)
+  {
+    let callback = this.getTargetByRequestId(message.requestId);
+    if (!callback) {
+      debug("lsGetVersionResponse: can't find callback");
+      return;
+    }
+
+    if (message.errorMsg) {
+      debug("lsGetVersionResponse: receive error from nfcd " + message.errorMsg);
+      callback.notifyError(message.errorMsg);
+      return;
+    }
+
+    if (!message.response) {
+      debug("lsGetVersionResponse: no valid response from eSE " + JSON.stringify(message));
+      callback.notifyError("No valid response from eSE");
+      return;
+    }
+
+
+    debug("lsGetVersionResponse: receive message from nfcd " + JSON.stringify(message));
+    callback.notifyLsGetVersionSuccess(message.response);
+  },
+
+  registerListener: function registerListener(listener) {
+    // TODO, wait for integration
+    debug("register listener");
+  },
+
+  unregisterListener: function unregisterListener(listener) {
+    // TODO, wait for integration.
+    debug("unregister listener");
   }
 };
 

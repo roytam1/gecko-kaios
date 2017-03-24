@@ -314,6 +314,14 @@ public:
         Uint8Array::Create(cx, mEvent.mResponse.Length(), mEvent.mResponse.Elements()));
     }
 
+    COPY_OPT_FIELD(mHandle, -1)
+
+    if (mEvent.mApduResponse.Length() > 0) {
+      event.mApduResponse.Construct();
+      event.mApduResponse.Value().Init(
+        Uint8Array::Create(cx, mEvent.mApduResponse.Length(), mEvent.mApduResponse.Elements()));
+    }
+
 #undef COPY_FIELD
 #undef COPY_OPT_FIELD
 

@@ -17,7 +17,14 @@ enum NfcRequestType {
   "writeNDEF",
   "makeReadOnly",
   "format",
-  "transceive"
+  "transceive",
+  "openConnection",
+  "transmit",
+  "closeConnection",
+  "resetSecureElement",
+  "getAtr",
+  "lsExecuteScript",
+  "lsGetVersion"
 };
 
 /**
@@ -30,6 +37,13 @@ enum NfcResponseType {
   "makeReadOnlyRsp",
   "formatRsp",
   "transceiveRsp",
+  "openConnectionRsp",
+  "transmitRsp",
+  "closeConnectionRsp",
+  "resetSecureElementRsp",
+  "getAtrRsp",
+  "lsExecuteScriptRsp",
+  "lsGetVersionRsp"
 };
 
 /**
@@ -68,6 +82,13 @@ dictionary NfcCommandOptions
 
   NFCTechType technology;
   Uint8Array command;
+
+  long handle;
+  Uint8Array apduCommand;
+
+  DOMString lsScriptFile;
+  DOMString lsResponseFile;
+  Uint8Array uniqueApplicationID;
 };
 
 dictionary NfcEventOptions
@@ -102,4 +123,7 @@ dictionary NfcEventOptions
 
   // Tag transceive response data
   Uint8Array response;
+
+  long handle;
+  Uint8Array apduResponse;
 };

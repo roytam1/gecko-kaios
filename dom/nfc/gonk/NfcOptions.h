@@ -50,38 +50,53 @@ struct CommandOptions
       mCommand.AppendElements(currentValue.Data(), currentValue.Length());
     }
 
-    if (!aOther.mRecords.WasPassed()) {
-      return;
+    if (aOther.mRecords.WasPassed()) {
+      mozilla::dom::Sequence<mozilla::dom::MozNDEFRecordOptions> const & currentValue = aOther.mRecords.InternalValue();
+      int count = currentValue.Length();
+      for (int32_t i = 0; i < count; i++) {
+        NDEFRecordStruct record;
+        record.mTnf = currentValue[i].mTnf;
+
+        if (currentValue[i].mType.WasPassed() &&
+            !currentValue[i].mType.Value().IsNull()) {
+          const dom::Uint8Array& type = currentValue[i].mType.Value().Value();
+          type.ComputeLengthAndData();
+          record.mType.AppendElements(type.Data(), type.Length());
+        }
+
+        if (currentValue[i].mId.WasPassed() &&
+            !currentValue[i].mId.Value().IsNull()) {
+          const dom::Uint8Array& id = currentValue[i].mId.Value().Value();
+          id.ComputeLengthAndData();
+          record.mId.AppendElements(id.Data(), id.Length());
+        }
+
+        if (currentValue[i].mPayload.WasPassed() &&
+            !currentValue[i].mPayload.Value().IsNull()) {
+          const dom::Uint8Array& payload = currentValue[i].mPayload.Value().Value();
+          payload.ComputeLengthAndData();
+          record.mPayload.AppendElements(payload.Data(), payload.Length());
+        }
+
+        mRecords.AppendElement(record);
+      }
     }
 
-    mozilla::dom::Sequence<mozilla::dom::MozNDEFRecordOptions> const & currentValue = aOther.mRecords.InternalValue();
-    int count = currentValue.Length();
-    for (int32_t i = 0; i < count; i++) {
-      NDEFRecordStruct record;
-      record.mTnf = currentValue[i].mTnf;
+    COPY_OPT_FIELD(mHandle, -1);
 
-      if (currentValue[i].mType.WasPassed() &&
-          !currentValue[i].mType.Value().IsNull()) {
-        const dom::Uint8Array& type = currentValue[i].mType.Value().Value();
-        type.ComputeLengthAndData();
-        record.mType.AppendElements(type.Data(), type.Length());
-      }
+    if (aOther.mApduCommand.WasPassed()) {
+      dom::Uint8Array const & value = aOther.mApduCommand.InternalValue();
+      value.ComputeLengthAndData();
+      mApduCommand.AppendElements(value.Data(), value.Length());
+    }
 
-      if (currentValue[i].mId.WasPassed() &&
-          !currentValue[i].mId.Value().IsNull()) {
-        const dom::Uint8Array& id = currentValue[i].mId.Value().Value();
-        id.ComputeLengthAndData();
-        record.mId.AppendElements(id.Data(), id.Length());
-      }
+    COPY_OPT_FIELD(mLsScriptFile, EmptyString());
+    COPY_OPT_FIELD(mLsResponseFile, EmptyString());
 
-      if (currentValue[i].mPayload.WasPassed() &&
-          !currentValue[i].mPayload.Value().IsNull()) {
-        const dom::Uint8Array& payload = currentValue[i].mPayload.Value().Value();
-        payload.ComputeLengthAndData();
-        record.mPayload.AppendElements(payload.Data(), payload.Length());
-      }
-
-      mRecords.AppendElement(record);
+    if (aOther.mUniqueApplicationID.WasPassed()) {
+      dom::Uint8Array const & value = aOther.mUniqueApplicationID.InternalValue();
+      value.ComputeLengthAndData();
+      mUniqueApplicationID.AppendElements(value.Data(), value.Length());
     }
 
 #undef COPY_FIELD
@@ -97,6 +112,13 @@ struct CommandOptions
   nsTArray<NDEFRecordStruct> mRecords;
   int32_t mTechnology;
   nsTArray<uint8_t> mCommand;
+
+  int32_t mHandle;
+  nsTArray<uint8_t> mApduCommand;
+
+  nsString mLsScriptFile;
+  nsString mLsResponseFile;
+  nsTArray<uint8_t> mUniqueApplicationID;
 };
 
 struct EventOptions
@@ -133,6 +155,9 @@ struct EventOptions
   nsTArray<uint8_t> mAid;
   nsTArray<uint8_t> mPayload;
   nsTArray<uint8_t> mResponse;
+
+  int32_t mHandle;
+  nsTArray<uint8_t> mApduResponse;
 };
 
 } // namespace mozilla

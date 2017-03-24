@@ -25,6 +25,7 @@ bool
 NfcMessageHandler::Marshall(Parcel& aParcel, const CommandOptions& aOptions)
 {
   bool result;
+  NMH_LOG("Marshall type %d\n", (int)aOptions.mType);
   switch (aOptions.mType) {
     case NfcRequestType::ChangeRFState:
       result = ChangeRFStateRequest(aParcel, aOptions);
@@ -44,6 +45,27 @@ NfcMessageHandler::Marshall(Parcel& aParcel, const CommandOptions& aOptions)
     case NfcRequestType::Transceive:
       result = TransceiveRequest(aParcel, aOptions);
       break;
+    case NfcRequestType::OpenConnection:
+      result = OpenConnectionRequest(aParcel, aOptions);
+      break;
+    case NfcRequestType::Transmit:
+      result = TransmitRequest(aParcel, aOptions);
+      break;
+    case NfcRequestType::CloseConnection:
+      result = CloseConnectionRequest(aParcel, aOptions);
+      break;
+    case NfcRequestType::ResetSecureElement:
+      result = ResetSecureElementRequest(aParcel, aOptions);
+      break;
+    case NfcRequestType::GetAtr:
+      result = GetAtrRequest(aParcel, aOptions);
+      break;
+    case NfcRequestType::LsExecuteScript:
+      result = LsExecuteScriptRequest(aParcel, aOptions);
+      break;
+    case NfcRequestType::LsGetVersion:
+      result = LsGetVersionRequest(aParcel, aOptions);
+      break;
     default:
       result = false;
       break;
@@ -59,7 +81,7 @@ NfcMessageHandler::Unmarshall(const Parcel& aParcel, EventOptions& aOptions)
   int32_t type = aParcel.readInt32();
   bool isNtf = type >> 31;
   int32_t msgType = type & ~(1 << 31);
-
+  NMH_LOG("Unmarshall type %d isNtf %d", type, isNtf);
   return isNtf ? ProcessNotification(msgType, aParcel, aOptions) :
                  ProcessResponse(msgType, aParcel, aOptions);
 }
@@ -83,6 +105,27 @@ NfcMessageHandler::ProcessResponse(int32_t aType, const Parcel& aParcel, EventOp
       break;
     case NfcResponseType::TransceiveRsp:
       result = TransceiveResponse(aParcel, aOptions);
+      break;
+    case NfcResponseType::OpenConnectionRsp:
+      result = OpenConnectionResponse(aParcel, aOptions);
+      break;
+    case NfcResponseType::TransmitRsp:
+      result = TransmitResponse(aParcel, aOptions);
+      break;
+    case NfcResponseType::CloseConnectionRsp:
+      result = CloseConnectionResponse(aParcel, aOptions);
+      break;
+    case NfcResponseType::ResetSecureElementRsp:
+      result = ResetSecureElementResponse(aParcel, aOptions);
+      break;
+    case NfcResponseType::GetAtrRsp:
+      result = GetAtrResponse(aParcel, aOptions);
+      break;
+    case NfcResponseType::LsExecuteScriptRsp:
+      result = LsExecuteScriptResponse(aParcel, aOptions);
+      break;
+    case NfcResponseType::LsGetVersionRsp:
+      result = LsGetVersionResponse(aParcel, aOptions);
       break;
     default:
       result = false;
@@ -383,6 +426,198 @@ NfcMessageHandler::WriteNDEFMessage(Parcel& aParcel, const CommandOptions& aOpti
 bool
 NfcMessageHandler::ReadTransceiveResponse(const Parcel& aParcel, EventOptions& aOptions)
 {
+  uint32_t length = aParcel.readInt32();
+
+  aOptions.mResponse.AppendElements(
+    static_cast<const uint8_t*>(aParcel.readInplace(length)), length);
+
+  return true;
+}
+
+bool
+NfcMessageHandler::OpenConnectionRequest(Parcel& aParcel, const CommandOptions& aOptions)
+{
+  aParcel.writeInt32(static_cast<int32_t>(NfcRequestType::OpenConnection));
+  mRequestIdQueue.AppendElement(aOptions.mRequestId);
+  return true;
+}
+
+bool
+NfcMessageHandler::OpenConnectionResponse(const Parcel& aParcel, EventOptions& aOptions)
+{
+  aOptions.mErrorCode = aParcel.readInt32();
+  NS_ENSURE_TRUE(!mRequestIdQueue.IsEmpty(), false);
+  aOptions.mRequestId = mRequestIdQueue[0];
+  mRequestIdQueue.RemoveElementAt(0);
+  aOptions.mHandle = aParcel.readInt32();
+  return true;
+}
+
+bool
+NfcMessageHandler::TransmitRequest(Parcel& aParcel, const CommandOptions& aOptions)
+{
+  aParcel.writeInt32(static_cast<int32_t>(NfcRequestType::Transmit));
+  aParcel.writeInt32(aOptions.mHandle);
+
+  uint32_t length = aOptions.mApduCommand.Length();
+  aParcel.writeInt32(length);
+
+  void* data = aParcel.writeInplace(length);
+  memcpy(data, aOptions.mApduCommand.Elements(), length);
+
+  mRequestIdQueue.AppendElement(aOptions.mRequestId);
+  return true;
+}
+
+bool
+NfcMessageHandler::TransmitResponse(const Parcel& aParcel, EventOptions& aOptions)
+{
+  aOptions.mErrorCode = aParcel.readInt32();
+  NS_ENSURE_TRUE(!mRequestIdQueue.IsEmpty(), false);
+  aOptions.mRequestId = mRequestIdQueue[0];
+  mRequestIdQueue.RemoveElementAt(0);
+  aOptions.mHandle = aParcel.readInt32();
+
+  uint32_t length = aParcel.readInt32();
+
+  aOptions.mApduResponse.AppendElements(
+    static_cast<const uint8_t*>(aParcel.readInplace(length)), length);
+
+  return true;
+}
+
+bool
+NfcMessageHandler::CloseConnectionRequest(Parcel& aParcel, const CommandOptions& aOptions)
+{
+  aParcel.writeInt32(static_cast<int32_t>(NfcRequestType::CloseConnection));
+  aParcel.writeInt32(aOptions.mHandle);
+  mRequestIdQueue.AppendElement(aOptions.mRequestId);
+  return true;
+}
+
+bool
+NfcMessageHandler::CloseConnectionResponse(const Parcel& aParcel, EventOptions& aOptions)
+{
+  aOptions.mErrorCode = aParcel.readInt32();
+  NS_ENSURE_TRUE(!mRequestIdQueue.IsEmpty(), false);
+  aOptions.mRequestId = mRequestIdQueue[0];
+  mRequestIdQueue.RemoveElementAt(0);
+  return true;
+}
+
+bool
+NfcMessageHandler::ResetSecureElementRequest(Parcel& aParcel, const CommandOptions& aOptions)
+{
+  aParcel.writeInt32(static_cast<int32_t>(NfcRequestType::ResetSecureElement));
+  aParcel.writeInt32(aOptions.mHandle);
+  mRequestIdQueue.AppendElement(aOptions.mRequestId);
+  return true;
+}
+
+bool
+NfcMessageHandler::ResetSecureElementResponse(const Parcel& aParcel, EventOptions& aOptions)
+{
+  aOptions.mErrorCode = aParcel.readInt32();
+  NS_ENSURE_TRUE(!mRequestIdQueue.IsEmpty(), false);
+  aOptions.mRequestId = mRequestIdQueue[0];
+  mRequestIdQueue.RemoveElementAt(0);
+  aOptions.mHandle = aParcel.readInt32();
+  return true;
+}
+
+bool
+NfcMessageHandler::GetAtrRequest(Parcel& aParcel, const CommandOptions& aOptions)
+{
+  aParcel.writeInt32(static_cast<int32_t>(NfcRequestType::GetAtr));
+  aParcel.writeInt32(aOptions.mHandle);
+  mRequestIdQueue.AppendElement(aOptions.mRequestId);
+  return true;
+}
+
+bool
+NfcMessageHandler::GetAtrResponse(const Parcel& aParcel, EventOptions& aOptions)
+{
+  aOptions.mErrorCode = aParcel.readInt32();
+  NS_ENSURE_TRUE(!mRequestIdQueue.IsEmpty(), false);
+  aOptions.mRequestId = mRequestIdQueue[0];
+  mRequestIdQueue.RemoveElementAt(0);
+  aOptions.mHandle = aParcel.readInt32();
+
+  uint32_t length = aParcel.readInt32();
+
+  aOptions.mResponse.AppendElements(
+    static_cast<const uint8_t*>(aParcel.readInplace(length)), length);
+
+  return true;
+}
+
+status_t WriteString16(Parcel &p, const char16_t* str, size_t len) {
+  if (str == nullptr)
+    return p.writeInt32(-1);
+
+  status_t err = p.writeInt32(len);
+  if (err == NO_ERROR) {
+    len *= sizeof(char16_t);
+    uint8_t* data = (uint8_t*) p.writeInplace(len + sizeof(char16_t));
+    if (data) {
+      memcpy(data, str, len);
+      *reinterpret_cast<char16_t*>(data + len) = 0;
+      return NO_ERROR;
+    }
+    err = p.errorCheck();
+  }
+  return err;
+}
+
+bool
+NfcMessageHandler::LsExecuteScriptRequest(Parcel& aParcel, const CommandOptions& aOptions)
+{
+  aParcel.writeInt32(static_cast<int32_t>(NfcRequestType::LsExecuteScript));
+  WriteString16(aParcel, aOptions.mLsScriptFile.get(), aOptions.mLsScriptFile.Length());
+  WriteString16(aParcel, aOptions.mLsResponseFile.get(), aOptions.mLsResponseFile.Length());
+
+  uint32_t length = aOptions.mUniqueApplicationID.Length();
+  aParcel.writeInt32(length);
+
+  void* data = aParcel.writeInplace(length);
+  memcpy(data, aOptions.mUniqueApplicationID.Elements(), length);
+
+  mRequestIdQueue.AppendElement(aOptions.mRequestId);
+  return true;
+}
+
+bool
+NfcMessageHandler::LsExecuteScriptResponse(const Parcel& aParcel, EventOptions& aOptions)
+{
+  aOptions.mErrorCode = aParcel.readInt32();
+  NS_ENSURE_TRUE(!mRequestIdQueue.IsEmpty(), false);
+  aOptions.mRequestId = mRequestIdQueue[0];
+  mRequestIdQueue.RemoveElementAt(0);
+
+  uint32_t length = aParcel.readInt32();
+
+  aOptions.mResponse.AppendElements(
+    static_cast<const uint8_t*>(aParcel.readInplace(length)), length);
+
+  return true;
+}
+
+bool
+NfcMessageHandler::LsGetVersionRequest(Parcel& aParcel, const CommandOptions& aOptions)
+{
+  aParcel.writeInt32(static_cast<int32_t>(NfcRequestType::LsGetVersion));
+  mRequestIdQueue.AppendElement(aOptions.mRequestId);
+  return true;
+}
+
+bool
+NfcMessageHandler::LsGetVersionResponse(const Parcel& aParcel, EventOptions& aOptions)
+{
+  aOptions.mErrorCode = aParcel.readInt32();
+  NS_ENSURE_TRUE(!mRequestIdQueue.IsEmpty(), false);
+  aOptions.mRequestId = mRequestIdQueue[0];
+  mRequestIdQueue.RemoveElementAt(0);
+
   uint32_t length = aParcel.readInt32();
 
   aOptions.mResponse.AppendElements(

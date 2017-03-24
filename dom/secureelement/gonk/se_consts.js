@@ -16,7 +16,7 @@
 /* Copyright © 2014, Deutsche Telekom, Inc. */
 
 // Set to true to debug SecureElement (SE) stack
-this.DEBUG_ALL = false;
+this.DEBUG_ALL = true;
 
 // Set individually to debug specific layers
 this.DEBUG_CONNECTOR = DEBUG_ALL || false;
