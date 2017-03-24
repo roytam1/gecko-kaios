@@ -38,7 +38,7 @@
 
 #define ENSURE_BLUETOOTH_IS_ENABLED(runnable, result)                  \
   do {                                                                 \
-    if (!IsEnabled()) {                                                \
+    if (!IsEnabled() || !sBtCoreInterface) {                           \
       DispatchReplyError(runnable,                                     \
         NS_LITERAL_STRING("Bluetooth is not enabled"));                \
       return result;                                                   \
@@ -47,7 +47,7 @@
 
 #define ENSURE_BLUETOOTH_IS_ENABLED_VOID(runnable)                     \
   do {                                                                 \
-    if (!IsEnabled()) {                                                \
+    if (!IsEnabled() || !sBtCoreInterface) {                           \
       DispatchReplyError(runnable,                                     \
         NS_LITERAL_STRING("Bluetooth is not enabled"));                \
       return;                                                          \
@@ -225,6 +225,8 @@ BluetoothServiceBluedroid::StopGonkBluetooth()
     BluetoothService::AcknowledgeToggleBt(false);
     return NS_OK;
   }
+
+  NS_ENSURE_TRUE(sBtCoreInterface, NS_ERROR_FAILURE);
 
   sBtCoreInterface->Disable(new DisableResultHandler());
 
