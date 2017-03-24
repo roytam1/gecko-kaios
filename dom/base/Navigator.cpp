@@ -50,6 +50,9 @@
 #include "mozilla/dom/Voicemail.h"
 #include "mozilla/dom/TVManager.h"
 #include "mozilla/dom/SoftkeyManager.h"
+#ifdef HAS_KOOST_MODULES
+#include "mozilla/dom/VolumeManager.h"
+#endif
 #include "mozilla/dom/VRDevice.h"
 #include "mozilla/dom/FlipManager.h"
 #include "mozilla/dom/workers/RuntimeService.h"
@@ -230,6 +233,9 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Navigator)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mDeviceStorageAreaListener)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPresentation)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mVRGetDevicesPromises)
+#ifdef HAS_KOOST_MODULES
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mVolumeManager)
+#endif
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE_SCRIPT_OBJECTS
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
@@ -386,6 +392,12 @@ Navigator::Invalidate()
   }
 
   mVRGetDevicesPromises.Clear();
+
+#ifdef HAS_KOOST_MODULES
+  if (mVolumeManager) {
+    mVolumeManager = nullptr;
+  }
+#endif
 }
 
 //*****************************************************************************
@@ -2903,5 +2915,20 @@ Navigator::LargeTextEnabled()
   return Preferences::GetBool("ui.largeText.enabled", false);
 }
 
+#ifdef HAS_KOOST_MODULES
+VolumeManager*
+Navigator::GetVolumeManager(ErrorResult& aRv)
+{
+  if (!mVolumeManager) {
+    if (!mWindow) {
+      aRv.Throw(NS_ERROR_UNEXPECTED);
+      return nullptr;
+    }
+    mVolumeManager = VolumeManager::GetInstance(mWindow);
+  }
+
+  return mVolumeManager;
+}
+#endif
 } // namespace dom
 } // namespace mozilla

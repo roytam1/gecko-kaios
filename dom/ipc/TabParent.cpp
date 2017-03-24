@@ -22,6 +22,7 @@
 #include "mozilla/dom/Event.h"
 #include "mozilla/dom/indexedDB/ActorsParent.h"
 #include "mozilla/dom/SoftkeyManager.h"
+#include "mozilla/dom/VolumeManager.h"
 #include "mozilla/plugins/PluginWidgetParent.h"
 #include "mozilla/EventStateManager.h"
 #include "mozilla/gfx/2D.h"
@@ -3327,6 +3328,21 @@ TabParent::RecvGetTabCount(uint32_t* aValue)
   NS_ENSURE_SUCCESS(rv, false);
 
   *aValue = tabCount;
+  return true;
+}
+
+bool
+TabParent::RecvRequestVolumeChange(const bool& aUp)
+{
+  VolumeManager::DispatchEvent(mFrameElement,
+    aUp ? VolumeManager::VOLUME_UP : VolumeManager::VOLUME_DOWN);
+  return true;
+}
+
+bool
+TabParent::RecvRequestVolumeShow()
+{
+  VolumeManager::DispatchEvent(mFrameElement, VolumeManager::VOLUME_SHOW);
   return true;
 }
 

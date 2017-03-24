@@ -592,6 +592,7 @@ WEBIDL_FILES = [
     'VideoStreamTrack.webidl',
     'VideoTrack.webidl',
     'VideoTrackList.webidl',
+    'VolumeManager.webidl',
     'VRDevice.webidl',
     'VTTCue.webidl',
     'VTTRegion.webidl',

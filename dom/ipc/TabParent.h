@@ -427,6 +427,9 @@ public:
   virtual bool
   RecvClearNativeTouchSequence(const uint64_t& aObserverId) override;
 
+  virtual bool RecvRequestVolumeChange(const bool& aUp) override;
+  virtual bool RecvRequestVolumeShow() override;
+
   void SendMouseEvent(const nsAString& aType, float aX, float aY,
                       int32_t aButton, int32_t aClickCount,
                       int32_t aModifiers, bool aIgnoreRootScrollFrame);

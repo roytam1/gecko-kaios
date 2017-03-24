@@ -105,6 +105,9 @@ class Presentation;
 class LegacyMozTCPSocket;
 class FlipManager;
 class SoftkeyManager;
+#ifdef HAS_KOOST_MODULES
+class VolumeManager;
+#endif
 
 namespace time {
 class TimeManager;
@@ -271,6 +274,9 @@ public:
                             ErrorResult& aRv);
   bool MozHasPendingMessage(const nsAString& aType, ErrorResult& aRv);
   void MozSetMessageHandlerPromise(Promise& aPromise, ErrorResult& aRv);
+#ifdef HAS_KOOST_MODULES
+  VolumeManager* GetVolumeManager(ErrorResult& aRv);
+#endif
 
 #ifdef MOZ_B2G
   already_AddRefed<Promise> GetMobileIdAssertion(const MobileIdOptions& options,
@@ -425,6 +431,9 @@ private:
   RefPtr<Presentation> mPresentation;
 
   nsTArray<RefPtr<Promise> > mVRGetDevicesPromises;
+#ifdef HAS_KOOST_MODULES
+  RefPtr<VolumeManager> mVolumeManager;
+#endif
 };
 
 } // namespace dom

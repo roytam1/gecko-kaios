@@ -515,3 +515,10 @@ partial interface Navigator {
   [Throws, Pref="dom.flip.enabled", CheckAnyPermissions="flip", AvailableIn=CertifiedApps]
   readonly attribute boolean flipOpened;
 };
+
+#ifdef HAS_KOOST_MODULES
+partial interface Navigator {
+  [Throws, CheckAnyPermissions="volumemanager", AvailableIn=CertifiedApps]
+  readonly attribute VolumeManager volumeManager;
+};
+#endif
