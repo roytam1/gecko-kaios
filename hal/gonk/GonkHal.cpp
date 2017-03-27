@@ -893,6 +893,11 @@ GetCurrentPowerSupplyStatus(hal::PowerSupplyStatus* aPowerSupplyStatus)
         continue;
       }
 
+      // Don't update powerSupplyOnline bitmask if power supply is offline.
+      if (!atoi(powerOnline)) {
+        continue;
+      }
+
       UpdatePowerSupplyType(powerType, powerSupplyOnline);
     }
 
