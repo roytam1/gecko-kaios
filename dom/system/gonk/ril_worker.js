@@ -1849,7 +1849,7 @@ RilObject.prototype = {
     this.context.Buf.simpleRequest(REQUEST_DATA_CALL_LIST, options);
   },
 
-  _attachDataRegistration: false,
+  _attachDataRegistration: {},
   /**
    * Manually attach/detach data registration.
    *
@@ -1857,12 +1857,14 @@ RilObject.prototype = {
    *        Boolean value indicating attach or detach.
    */
   setDataRegistration: function(options) {
-    this._attachDataRegistration = options.attach;
+    this._attachDataRegistration.attach = options.attach;
 
     if (RILQUIRKS_DATA_REGISTRATION_ON_DEMAND) {
-      let request = options.attach ? RIL_REQUEST_GPRS_ATTACH :
-                                     RIL_REQUEST_GPRS_DETACH;
-      this.context.Buf.simpleRequest(request, options);
+      let Buf = this.context.Buf;
+      Buf.newParcel(REQUEST_ALLOW_DATA, options);
+      Buf.writeInt32(1);
+      Buf.writeInt32(options.attach ? 1 : 0);
+      Buf.sendParcel();
       return;
     } else if (RILQUIRKS_SUBSCRIPTION_CONTROL && options.attach) {
       this.context.Buf.simpleRequest(REQUEST_SET_DATA_SUBSCRIPTION, options);
@@ -5157,11 +5159,21 @@ RilObject.prototype[REQUEST_NV_WRITE_CDMA_PRL] = null;
 RilObject.prototype[REQUEST_NV_RESET_CONFIG] = null;
 RilObject.prototype[REQUEST_SET_UICC_SUBSCRIPTION] = function REQUEST_SET_UICC_SUBSCRIPTION(length, options) {
   // Resend data subscription after uicc subscription.
-  if (this._attachDataRegistration) {
+  if (this._attachDataRegistration.attach) {
     this.setDataRegistration({attach: true});
   }
 };
-RilObject.prototype[REQUEST_ALLOW_DATA] = null;
+RilObject.prototype[REQUEST_ALLOW_DATA] = function REQUEST_ALLOW_DATA(length, options) {
+  if (options.errorMsg) {
+    this._attachDataRegistration.result = false;
+  } else {
+    this._attachDataRegistration.result = true;
+  }
+
+  if (options.rilMessageType) {
+    this.sendChromeMessage(options);
+  }
+};
 RilObject.prototype[REQUEST_GET_HARDWARE_CONFIG] = null;
 RilObject.prototype[REQUEST_SIM_AUTHENTICATION] = null;
 RilObject.prototype[REQUEST_GET_DC_RT_INFO] = null;
@@ -5177,16 +5189,6 @@ RilObject.prototype[REQUEST_SET_DATA_SUBSCRIPTION] = function REQUEST_SET_DATA_S
 };
 RilObject.prototype[REQUEST_GET_UNLOCK_RETRY_COUNT] = function REQUEST_GET_UNLOCK_RETRY_COUNT(length, options) {
   options.retryCount = length ? this.context.Buf.readInt32List()[0] : -1;
-  this.sendChromeMessage(options);
-};
-RilObject.prototype[RIL_REQUEST_GPRS_ATTACH] = function RIL_REQUEST_GPRS_ATTACH(length, options) {
-  if (!options.rilMessageType) {
-    // The request was made by ril_worker itself. Don't report.
-    return;
-  }
-  this.sendChromeMessage(options);
-};
-RilObject.prototype[RIL_REQUEST_GPRS_DETACH] = function RIL_REQUEST_GPRS_DETACH(length, options) {
   this.sendChromeMessage(options);
 };
 RilObject.prototype[UNSOLICITED_RESPONSE_RADIO_STATE_CHANGED] = function UNSOLICITED_RESPONSE_RADIO_STATE_CHANGED() {
@@ -5224,6 +5226,10 @@ RilObject.prototype[UNSOLICITED_RESPONSE_RADIO_STATE_CHANGED] = function UNSOLIC
     this.getVoiceRadioTechnology();
   }
 
+  if (newState != GECKO_RADIOSTATE_ENABLED) {
+    this._attachDataRegistration.result = false;
+  }
+
   if ((this.radioState == GECKO_RADIOSTATE_UNKNOWN ||
        this.radioState == GECKO_RADIOSTATE_DISABLED) &&
        newState == GECKO_RADIOSTATE_ENABLED) {
@@ -5233,9 +5239,12 @@ RilObject.prototype[UNSOLICITED_RESPONSE_RADIO_STATE_CHANGED] = function UNSOLIC
     }
     this.getBasebandVersion();
     this.updateCellBroadcastConfig();
-    if ((RILQUIRKS_DATA_REGISTRATION_ON_DEMAND ||
-         RILQUIRKS_SUBSCRIPTION_CONTROL) &&
-        this._attachDataRegistration) {
+
+    if (RILQUIRKS_DATA_REGISTRATION_ON_DEMAND &&
+      !this._attachDataRegistration.result) {
+      this.setDataRegistration({attach: this._attachDataRegistration.attach});
+    } else if (RILQUIRKS_SUBSCRIPTION_CONTROL &&
+      this._attachDataRegistration.attach) {
       this.setDataRegistration({attach: true});
     }
 
