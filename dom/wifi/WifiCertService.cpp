@@ -49,6 +49,7 @@ public:
     mResult.mStatus = 0;
     mResult.mUsageFlag = 0;
     mResult.mNickname = aCertNickname;
+    mResult.mDuplicated = 0;
   }
 
 private:
@@ -293,6 +294,7 @@ private:
     // Import certificate, duplicated nickname will cause error.
     SECStatus srv = CERT_AddTempCertToPerm(aCert, nickname, nullptr);
     if (srv != SECSuccess) {
+      mResult.mDuplicated = 1;
       return MapSECStatus(srv);
     }
 
@@ -315,6 +317,7 @@ public:
     mResult.mStatus = 0;
     mResult.mUsageFlag = 0;
     mResult.mNickname = aCertNickname;
+    mResult.mDuplicated = 0;
   }
 
 private:

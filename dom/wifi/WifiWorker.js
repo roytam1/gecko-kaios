@@ -3777,7 +3777,11 @@ WifiWorker.prototype = {
           usage: usageArray
         }, msg);
       } else {
-        self._sendMessage(message, false, "Import Cert failed", msg);
+        if (data.duplicated) {
+          self._sendMessage(message, false, "Import duplicate certificate", msg);
+        } else {
+          self._sendMessage(message, false, "Import damaged certificate", msg);
+        }
       }
     });
   },

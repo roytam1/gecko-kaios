@@ -35,4 +35,5 @@ dictionary WifiCertServiceResultOptions
   unsigned short  usageFlag = 0;  // usage flag of certificate, the flag is defined
                                   // in nsIWifiCertService.idl
   DOMString       nickname = "";  // nickname of certificate of the request.
+  long            duplicated = 0; // duplicated flag of certificate.
 };
