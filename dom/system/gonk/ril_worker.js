@@ -1862,7 +1862,11 @@ RilObject.prototype = {
     if (RILQUIRKS_DATA_REGISTRATION_ON_DEMAND) {
       let request = options.attach ? RIL_REQUEST_GPRS_ATTACH :
                                      RIL_REQUEST_GPRS_DETACH;
-      this.context.Buf.simpleRequest(request, options);
+      let Buf = this.context.Buf;
+      Buf.newParcel(REQUEST_ALLOW_DATA, options);
+      Buf.writeInt32(1);
+      Buf.writeInt32(options.attach ? 1 : 0);
+      Buf.sendParcel();
       return;
     } else if (RILQUIRKS_SUBSCRIPTION_CONTROL && options.attach) {
       this.context.Buf.simpleRequest(REQUEST_SET_DATA_SUBSCRIPTION, options);
@@ -5161,7 +5165,9 @@ RilObject.prototype[REQUEST_SET_UICC_SUBSCRIPTION] = function REQUEST_SET_UICC_S
     this.setDataRegistration({attach: true});
   }
 };
-RilObject.prototype[REQUEST_ALLOW_DATA] = null;
+RilObject.prototype[REQUEST_ALLOW_DATA] = function REQUEST_ALLOW_DATA(length, options) {
+  this.sendChromeMessage(options);
+};
 RilObject.prototype[REQUEST_GET_HARDWARE_CONFIG] = null;
 RilObject.prototype[REQUEST_SIM_AUTHENTICATION] = null;
 RilObject.prototype[REQUEST_GET_DC_RT_INFO] = null;
