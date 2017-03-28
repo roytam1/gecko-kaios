@@ -159,6 +159,10 @@ this.REQUEST_SET_DATA_SUBSCRIPTION = 130;
 // Mozilla specific parcel type.
 this.REQUEST_GET_UNLOCK_RETRY_COUNT = 150;
 
+// Fugu specific parcel types.
+this.RIL_REQUEST_GPRS_ATTACH = 5018;
+this.RIL_REQUEST_GPRS_DETACH = 5019;
+
 // Galaxy S2 specific parcel type.
 this.REQUEST_DIAL_EMERGENCY_CALL = 10016;
 
