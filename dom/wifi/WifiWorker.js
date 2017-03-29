@@ -1353,7 +1353,8 @@ var WifiManager = (function() {
     function hasValidProperty(name) {
       return ((name in config) &&
                config[name] != null &&
-               (["password", "wep_key0", "psk"].indexOf(name) === -1 ||
+               (["password", "psk"].indexOf(name) === -1 ||
+                wepKeyList.indexOf(name) === -1 ||
                 config[name] !== '*'));
     }
 
@@ -1827,6 +1828,7 @@ Network.api = {
   psk: "rw",
   identity: "rw",
   wep: "rw",
+  keyIndex: "rw",
   hidden: "rw",
   eap: "rw",
   pin: "rw",
@@ -1877,6 +1879,22 @@ function isWepHexKey(s) {
   return !/[^a-fA-F0-9]/.test(s);
 }
 
+const wepKeyList = ["wep_key0", "wep_key1", "wep_key2", "wep_key3"];
+function isInWepKeyList(name) {
+  for (let i = 0; i < wepKeyList.length; i++) {
+    if (!(wepKeyList[i] in name)) {
+      continue;
+    }
+
+    if (!name[wepKeyList[i]]) {
+      continue;
+    }
+
+    return true;
+  }
+
+  return false;
+}
 
 var WifiNetworkInterface = {
 
@@ -2024,13 +2042,13 @@ function WifiWorker() {
     var ssid = dequote(net.ssid);
     var mode = net.mode;
     var frequency = net.frequency;
-    var security = (net.key_mgmt === "NONE" && net.wep_key0) ? ["WEP"] :
+    var security = (net.key_mgmt === "NONE" && isInWepKeyList(net)) ? ["WEP"] :
                    (net.key_mgmt && net.key_mgmt !== "NONE") ? [net.key_mgmt.split(" ")[0]] :
                    [];
     var password;
     if (("psk" in net && net.psk) ||
         ("password" in net && net.password) ||
-        ("wep_key0" in net && net.wep_key0)) {
+        isInWepKeyList(net)) {
       password = "*";
     }
 
@@ -2115,7 +2133,10 @@ function WifiWorker() {
     checkAssign("identity", false);
     checkAssign("password", true);
     if (wep && net.wep && net.wep != '*') {
-      configured.wep_key0 = net.wep_key0 = isWepHexKey(net.wep) ? net.wep : quote(net.wep);
+      net.keyIndex = net.keyIndex || 0;
+      configured["wep_key" + net.keyIndex] = net["wep_key" + net.keyIndex]
+        = isWepHexKey(net.wep) ? net.wep : quote(net.wep);
+      configured.wep_tx_keyidx = net.wep_tx_keyidx = net.keyIndex;
       configured.auth_alg = net.auth_alg = "OPEN SHARED";
     }
 
@@ -2518,7 +2539,7 @@ function WifiWorker() {
             // is a password that we're hiding.
             if (("psk" in known && known.psk) ||
                 ("password" in known && known.password) ||
-                ("wep_key0" in known && known.wep_key0)) {
+                isInWepKeyList(known)) {
               network.password = "*";
             }
           }

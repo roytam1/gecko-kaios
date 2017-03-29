@@ -42,6 +42,7 @@ dictionary NetworkProperties {
   long relSignalStrength;
   DOMString psk;
   DOMString wep;
+  long keyIndex;
   DOMString wep_key0;
   DOMString wep_key1;
   DOMString wep_key2;
@@ -81,6 +82,7 @@ interface MozWifiNetwork {
            attribute long? relSignalStrength;
            attribute DOMString? psk;
            attribute DOMString? wep;
+           attribute long? keyIndex;
            attribute DOMString? wep_key0;
            attribute DOMString? wep_key1;
            attribute DOMString? wep_key2;
