@@ -1465,9 +1465,6 @@ void NetworkUtils::addDefaultRouteToNetwork(CommandChain* aChain,
     {
       NS_ConvertUTF16toUTF8 reason(aResult.mResultReason);
       NU_DBG("addDefaultRouteToNetwork's reason: %s", reason.get());
-      if (aError && !reason.EqualsASCII("addRoute() failed (File exists)")) {
-        return aOriginalCallback(aChain, aError, aResult);
-      }
 
       GET_FIELD(mLoopIndex)++;
       return addDefaultRouteToNetwork(aChain, aOriginalCallback, aResult);
