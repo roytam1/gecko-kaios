@@ -1220,6 +1220,10 @@ RilObject.prototype = {
     this.context.Buf.simpleRequest(REQUEST_GET_IMEI, options);
   },
 
+  getIMEISV: function() {
+    this.context.Buf.simpleRequest(REQUEST_GET_IMEISV);
+  },
+
   getDeviceIdentity: function() {
     this.deviceIdentities || this.context.Buf.simpleRequest(REQUEST_DEVICE_IDENTITY);
   },
