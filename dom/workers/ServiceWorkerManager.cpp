@@ -1605,7 +1605,8 @@ ServiceWorkerManager::LoadRegistration(
     // If active worker script matches our expectations for a "current worker",
     // then we are done.
     if (registration->GetActive() &&
-        registration->GetActive()->ScriptSpec() == aRegistration.currentWorkerURL()) {
+        registration->GetActive()->ScriptSpec() == aRegistration.currentWorkerURL() &&
+        registration->GetActive()->CacheName() == aRegistration.cacheName()) {
       // No needs for updates.
       return;
     }
