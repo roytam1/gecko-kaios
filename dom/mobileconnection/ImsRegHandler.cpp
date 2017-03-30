@@ -13,12 +13,45 @@ using mozilla::dom::mobileconnection::ImsRegCallback;
 namespace mozilla {
 namespace dom {
 
+class ImsRegHandler::Listener final : public nsIImsRegListener
+{
+  ImsRegHandler* mImsRegHandler;
+
+public:
+  NS_DECL_ISUPPORTS
+  NS_FORWARD_SAFE_NSIIMSREGLISTENER(mImsRegHandler)
+
+  explicit Listener(ImsRegHandler* aImsRegHandler)
+    : mImsRegHandler(aImsRegHandler)
+  {
+    MOZ_ASSERT(mImsRegHandler);
+  }
+
+  void Disconnect()
+  {
+    MOZ_ASSERT(mImsRegHandler);
+    mImsRegHandler = nullptr;
+  }
+
+private:
+  ~Listener()
+  {
+    MOZ_ASSERT(!mImsRegHandler);
+  }
+};
+
+NS_IMPL_ISUPPORTS(ImsRegHandler::Listener, nsIImsRegListener)
+
 NS_IMPL_ADDREF_INHERITED(ImsRegHandler, DOMEventTargetHelper)
 NS_IMPL_RELEASE_INHERITED(ImsRegHandler, DOMEventTargetHelper)
 
 NS_IMPL_CYCLE_COLLECTION_CLASS(ImsRegHandler)
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(ImsRegHandler, DOMEventTargetHelper)
+  // Don't traverse mListener because it doesn't keep any reference to
+  // ImsRegHandler but a raw pointer instead. Neither does mImsRegHandler
+  // because it's an xpcom service owned object and is only released at shutting
+  // down.
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mHandler)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mDeviceConfig)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
@@ -62,7 +95,8 @@ ImsRegHandler::ImsRegHandler(nsPIDOMWindowInner *aWindow, nsIImsRegHandler *aHan
   free(bearers);
   mDeviceConfig = new ImsDeviceConfiguration(GetOwner(), supportedBearers);
 
-  mHandler->RegisterListener(this);
+  mListener = new Listener(this);
+  mHandler->RegisterListener(mListener);
 }
 
 ImsRegHandler::~ImsRegHandler()
@@ -75,15 +109,23 @@ ImsRegHandler::DisconnectFromOwner()
 {
   DOMEventTargetHelper::DisconnectFromOwner();
   // Event listeners can't be handled anymore, so we can shutdown
-  // the MobileConnection.
+  // the ImsRegHandler.
   Shutdown();
 }
 
 void
 ImsRegHandler::Shutdown()
 {
+  if(mListener) {
+    if (mHandler) {
+      mHandler->UnregisterListener(mListener);
+    }
+
+    mListener->Disconnect();
+    mListener = nullptr;
+  }
+
   if (mHandler) {
-    mHandler->UnregisterListener(this);
     mHandler = nullptr;
   }
 }

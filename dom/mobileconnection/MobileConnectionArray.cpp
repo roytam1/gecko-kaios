@@ -14,6 +14,7 @@
 #include "ipc/MobileConnectionIPCService.h"
 #if defined(MOZ_WIDGET_GONK) && defined(MOZ_B2G_RIL)
 #include "nsIGonkMobileConnectionService.h"
+#include "nsIGonkImsRegService.h"
 #endif
 #include "nsXULAppAPI.h" // For XRE_GetProcessType()
 
@@ -127,12 +128,16 @@ NS_CreateImsRegService()
 {
   nsCOMPtr<nsIImsRegService> service;
 
-  if (XRE_GetProcessType() == GeckoProcessType_Content) {
-    // Could be nullptr if the IMS feature is not enabled by the device.
+  // Could be nullptr if the IMS feature is not enabled by the device.
+  if (XRE_IsContentProcess()) {
     service = mozilla::dom::mobileconnection::ImsRegIPCService::GetSingleton();
-  }
+  } else {
   // Note: Gonk implementation is provided by OEM Vendor by replacing the
   //       XPCOM component of nsIImsRegService with bundle in parent process.
+#if defined(MOZ_WIDGET_GONK) && defined(MOZ_B2G_RIL)
+    service = do_GetService(GONK_IMSREGSERVICE_CONTRACTID);
+#endif
+  }
 
   return service.forget();
 }

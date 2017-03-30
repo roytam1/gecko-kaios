@@ -76,6 +76,7 @@ IPDL_SOURCES += [
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk' and CONFIG['MOZ_B2G_RIL']:
     XPIDL_SOURCES += [
+        'gonk/nsIGonkImsRegService.idl',
         'gonk/nsIGonkMobileConnectionService.idl',
         'gonk/nsIMobileConnectionMessenger.idl',
     ]

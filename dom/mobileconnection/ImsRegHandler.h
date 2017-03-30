@@ -21,6 +21,16 @@ class Promise;
 class ImsRegHandler final : public DOMEventTargetHelper
                           , private nsIImsRegListener
 {
+  /**
+   * Class ImsRegHandler doesn't actually expose
+   * nsIImsRegListener. Instead, it owns an
+   * nsIImsRegListener derived instance mListener and passes it to
+   * nsIImsRegService. The onreceived events are first delivered to
+   * mListener and then forwarded to its owner, ImsRegHandler. See also bug
+   * 775997 comment #51.
+   */
+  class Listener;
+
 public:
   NS_DECL_ISUPPORTS_INHERITED
   NS_DECL_NSIIMSREGLISTENER
@@ -69,6 +79,7 @@ private:
   UpdateCapability(int16_t aCapability, const nsAString& aReason);
 
   nsCOMPtr<nsIImsRegHandler> mHandler;
+  RefPtr<Listener> mListener;
 
   RefPtr<ImsDeviceConfiguration> mDeviceConfig;
   Nullable<ImsCapability> mCapability;
