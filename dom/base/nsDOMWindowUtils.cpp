@@ -1812,6 +1812,19 @@ nsDOMWindowUtils::DispatchDOMEventViaPresShell(nsIDOMNode* aTarget,
 
   targetDoc->FlushPendingNotifications(Flush_Layout);
 
+  if (WidgetKeyboardEvent* event = internalEvent->AsKeyboardEvent()) {
+    // Supposely DOMEvent does not contain a widget (because it is a DOMEvent,
+    // not WidgetEvent).
+    // mozbrowserbeforekeydown and mozbrowserbeforekeyup will not be dispatched
+    // if the widget of event is null. However, when dispatching a
+    // mozbrowserafterkeydown/mozbrowserafterkeyup through TabParent, we
+    // explicitly assign a widget to the afterkey event.
+    // Without assigning widget to a keyboard event here, results in blocking
+    // beforekey event, but dispatching actual key event, and dispatching
+    // afterkey event if the event target is a remote iframe.
+    event->mWidget = GetWidget();
+  }
+
   nsEventStatus status = nsEventStatus_eIgnore;
   targetShell->HandleEventWithTarget(internalEvent, nullptr, content, &status);
   *aRetVal = (status != nsEventStatus_eConsumeNoDefault);
