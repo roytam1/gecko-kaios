@@ -217,10 +217,16 @@ if test -n "$gonkdir" ; then
         AC_SUBST(MOZ_AUDIO_OFFLOAD)
         AC_DEFINE(MOZ_AUDIO_OFFLOAD)
         MOZ_B2G_CAMERA=1
-        MOZ_B2G_BT=1
-        MOZ_B2G_BT_BLUEDROID=1
-        if test -d "$gonkdir/system/bluetoothd"; then
-            MOZ_B2G_BT_DAEMON=1
+        if test -d "$gonkdir/system/bt"; then
+            MOZ_B2G_BT=1
+            MOZ_B2G_BT_BLUEDROID=1
+            if test -d "$gonkdir/system/bluetoothd"; then
+                MOZ_B2G_BT_DAEMON=1
+            fi
+        elif test -d "$gonkdir/external/bluetooth/bluez"; then
+            GONK_INCLUDES="$GONK_INCLUDES -I$gonkdir/external/dbus -I$gonkdir/external/bluetooth/bluez/lib"
+            MOZ_B2G_BT=1
+            MOZ_B2G_BT_BLUEZ=1
         fi
         MOZ_NFC=1
         MOZ_RTSP=1
