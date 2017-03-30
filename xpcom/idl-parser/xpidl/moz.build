@@ -8,18 +8,12 @@ PYTHON_UNIT_TESTS += [
     'runtests.py',
 ]
 
-GENERATED_FILES += [
-    ('xpidllex.py', 'xpidlyacc.py'),
-]
-
-GENERATED_FILES[('xpidllex.py', 'xpidlyacc.py')].script = 'header.py:main'
-
 SDK_FILES.bin += [
-    '!xpidllex.py',
-    '!xpidlyacc.py',
     'header.py',
     'typelib.py',
     'xpidl.py',
+    'xpidllex.py',
+    'xpidlyacc.py',
 ]
 
 SDK_FILES.bin.ply += [
