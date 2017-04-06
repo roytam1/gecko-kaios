@@ -71,7 +71,7 @@ this.PermissionsTable =  { geolocation: {
                            },
                            contacts: {
                              app: DENY_ACTION,
-                             privileged: PROMPT_ACTION,
+                             privileged: ALLOW_ACTION,
                              certified: ALLOW_ACTION,
                              access: ["read", "write", "create"]
                            },
