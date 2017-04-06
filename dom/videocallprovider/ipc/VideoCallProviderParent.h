@@ -1,6 +1,10 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* (c) 2017 KAI OS TECHNOLOGIES (HONG KONG) LIMITED All rights reserved. This
+ * file or any portion thereof may not be reproduced or used in any manner
+ * whatsoever without the express written permission of KAI OS TECHNOLOGIES
+ * (HONG KONG) LIMITED. KaiOS is the trademark of KAI OS TECHNOLOGIES (HONG KONG)
+ * LIMITED or its affiliate company and may be registered in some jurisdictions.
+ * All other trademarks are the property of their respective owners.
+ */
 
 #ifndef mozilla_dom_videocallprovider_VideoCallProviderParent_h__
 #define mozilla_dom_videocallprovider_VideoCallProviderParent_h__
@@ -36,10 +40,12 @@ protected:
   RecvSetCamera(const int16_t& cameraId) override;
 
   virtual bool
-  RecvSetPreviewSurface() override;
+  RecvSetPreviewSurface(const uint16_t& aWidth,
+                        const uint16_t& aHeight) override;
 
   virtual bool
-  RecvSetDisplaySurface() override;
+  RecvSetDisplaySurface(const uint16_t& aWidth,
+                        const uint16_t& aHeight) override;
 
   virtual bool
   RecvSetDeviceOrientation(const uint16_t& aOrientation) override;

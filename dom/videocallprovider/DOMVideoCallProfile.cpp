@@ -1,34 +1,23 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* (c) 2017 KAI OS TECHNOLOGIES (HONG KONG) LIMITED All rights reserved. This
+ * file or any portion thereof may not be reproduced or used in any manner
+ * whatsoever without the express written permission of KAI OS TECHNOLOGIES
+ * (HONG KONG) LIMITED. KaiOS is the trademark of KAI OS TECHNOLOGIES (HONG KONG)
+ * LIMITED or its affiliate company and may be registered in some jurisdictions.
+ * All other trademarks are the property of their respective owners.
+ */
 
 #include "DOMVideoCallProfile.h"
-#include "nsPIDOMWindow.h"
 
-using namespace mozilla::dom;
+namespace mozilla {
+namespace dom {
 
-NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(DOMVideoCallProfile, mWindow)
+// nsIVideoCallProfile
+NS_IMPL_ISUPPORTS(DOMVideoCallProfile, nsIVideoCallProfile)
 
-NS_IMPL_CYCLE_COLLECTING_ADDREF(DOMVideoCallProfile)
-NS_IMPL_CYCLE_COLLECTING_RELEASE(DOMVideoCallProfile)
-
-NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(DOMVideoCallProfile)
-  NS_WRAPPERCACHE_INTERFACE_MAP_ENTRY
-  NS_INTERFACE_MAP_ENTRY(nsISupports)
-  NS_INTERFACE_MAP_ENTRY(nsIVideoCallProfile)
-NS_INTERFACE_MAP_END
-
-DOMVideoCallProfile::DOMVideoCallProfile(nsPIDOMWindowInner* aWindow)
-  : mWindow(aWindow)
-  , mQuality(VideoCallQuality::Unknown)
-  , mState(VideoCallState::Audio_only)
-{
-}
-
-DOMVideoCallProfile::DOMVideoCallProfile(uint16_t aQuality, uint16_t aState)
-  : mWindow(nullptr)
-  , mQuality(static_cast<VideoCallQuality>(aQuality))
-  , mState(static_cast<VideoCallState>(aState))
+DOMVideoCallProfile::DOMVideoCallProfile(VideoCallQuality aQuality,
+                                         VideoCallState aState)
+  : mQuality(aQuality)
+  , mState(aState)
 {
 }
 
@@ -44,14 +33,6 @@ DOMVideoCallProfile::Update(nsIVideoCallProfile* aProfile)
   mState = static_cast<VideoCallState>(state);
 }
 
-JSObject*
-DOMVideoCallProfile::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
-{
-  return VideoCallProfileBinding::Wrap(aCx, this, aGivenProto);
-}
-
-// nsIVideoCallProfile
-
 NS_IMETHODIMP
 DOMVideoCallProfile::GetQuality(uint16_t *aQuality)
 {
@@ -65,3 +46,6 @@ DOMVideoCallProfile::GetState(uint16_t *aState)
   *aState = static_cast<uint16_t>(mState);
   return NS_OK;
 }
+
+} // namespace mozilla
+} // namespace dom

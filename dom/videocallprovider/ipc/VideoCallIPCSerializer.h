@@ -1,6 +1,10 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* (c) 2017 KAI OS TECHNOLOGIES (HONG KONG) LIMITED All rights reserved. This
+ * file or any portion thereof may not be reproduced or used in any manner
+ * whatsoever without the express written permission of KAI OS TECHNOLOGIES
+ * (HONG KONG) LIMITED. KaiOS is the trademark of KAI OS TECHNOLOGIES (HONG KONG)
+ * LIMITED or its affiliate company and may be registered in some jurisdictions.
+ * All other trademarks are the property of their respective owners.
+ */
 
 #ifndef mozilla_dom_videocallprovider_videocallprovideripcserializer_h__
 #define mozilla_dom_videocallprovider_videocallprovideripcserializer_h__
@@ -8,9 +12,12 @@
 #include "ipc/IPCMessageUtils.h"
 #include "mozilla/dom/DOMVideoCallCameraCapabilities.h"
 #include "mozilla/dom/DOMVideoCallProfile.h"
+#include "mozilla/dom/VideoCallProviderBinding.h"
 #include "nsIVideoCallProvider.h"
 #include "nsIVideoCallCallback.h"
 
+using mozilla::dom::VideoCallQuality;
+using mozilla::dom::VideoCallState;
 using mozilla::dom::DOMVideoCallProfile;
 using mozilla::dom::DOMVideoCallCameraCapabilities;
 
@@ -69,7 +76,8 @@ struct ParamTraits<nsIVideoCallProfile*>
       return false;
     }
 
-    *aResult = new DOMVideoCallProfile(quality, state);
+    *aResult = new DOMVideoCallProfile(static_cast<VideoCallQuality>(quality),
+                                       static_cast<VideoCallState>(state));
     // We release this ref after receiver finishes processing.
     NS_ADDREF(*aResult);
 
@@ -98,7 +106,7 @@ struct ParamTraits<nsIVideoCallCameraCapabilities*>
     uint16_t width;
     uint16_t height;
     bool zoomSupported;
-    uint16_t maxZoom;
+    float maxZoom;
 
     aParam->GetWidth(&width);
     aParam->GetHeight(&height);
@@ -128,7 +136,7 @@ struct ParamTraits<nsIVideoCallCameraCapabilities*>
     uint16_t width;
     uint16_t height;
     bool zoomSupported;
-    uint16_t maxZoom;
+    float maxZoom;
 
     if (!(ReadParam(aMsg, aIter, &width) &&
           ReadParam(aMsg, aIter, &height) &&

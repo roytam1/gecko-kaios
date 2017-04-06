@@ -1,6 +1,10 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* (c) 2017 KAI OS TECHNOLOGIES (HONG KONG) LIMITED All rights reserved. This
+ * file or any portion thereof may not be reproduced or used in any manner
+ * whatsoever without the express written permission of KAI OS TECHNOLOGIES
+ * (HONG KONG) LIMITED. KaiOS is the trademark of KAI OS TECHNOLOGIES (HONG KONG)
+ * LIMITED or its affiliate company and may be registered in some jurisdictions.
+ * All other trademarks are the property of their respective owners.
+ */
 
 #ifndef mozilla_dom_domvideocallprovider_h__
 #define mozilla_dom_domvideocallprovider_h__
@@ -23,9 +27,11 @@ class nsDOMSurfaceControl;
 namespace dom {
 
 struct SurfaceConfiguration;
-struct SurfaceSize;
+
+class DOMVideoCallProfile;
 class Promise;
 class SurfaceControlBack;
+
 
 class DOMVideoCallProvider final : public DOMEventTargetHelper
                                  , private nsIVideoCallCallback
@@ -62,12 +68,12 @@ public:
   SetZoom(float aZoom, ErrorResult& aRv);
 
   already_AddRefed<Promise>
-  SendSessionModifyRequest(DOMVideoCallProfile& aFrom,
-                           DOMVideoCallProfile& aTo,
+  SendSessionModifyRequest(const VideoCallProfile& aFrom,
+                           const VideoCallProfile& aTo,
                            ErrorResult& aRv);
 
   already_AddRefed<Promise>
-  SendSessionModifyResponse(DOMVideoCallProfile& aResponse, ErrorResult& aRv);
+  SendSessionModifyResponse(const VideoCallProfile& aResponse, ErrorResult& aRv);
 
   already_AddRefed<Promise>
   RequestCameraCapabilities(ErrorResult& aRv);
@@ -81,10 +87,10 @@ public:
 
   // Class API
   void
-  SetSurface(const int16_t aType, android::sp<android::IGraphicBufferProducer>& aProducer);
-
+  SetSurface(const int16_t type, android::sp<android::IGraphicBufferProducer>& aProducer,
+             const uint16_t aWidth, const uint16_t aHeight);
   void
-  SetSurfaceSize(const int16_t aType, const uint16_t aWidth, const uint16_t aHeight);
+  SetDataSourceSize(const int16_t aType, const uint16_t aWidth, const uint16_t aHeight);
 
   void
   Shutdown();
@@ -95,17 +101,27 @@ private:
   already_AddRefed<Promise>
   GetStream(const int16_t aType, const SurfaceConfiguration& aOptions, ErrorResult& aRv);
 
-  nsresult
-  DispatchSessionModifyRequestEvent(const nsAString& aType, DOMVideoCallProfile* aRequest);
-
   bool
   IsValidSurfaceSize(const uint16_t aWidth, const uint16_t aHeight);
+
+  bool
+  ValidOrientation(uint16_t aOrientation);
+
+  bool
+  ValidZoom(uint16_t aZoom);
+
+  nsresult
+  DispatchSessionModifyRequestEvent(const nsAString& aType, nsIVideoCallProfile *request);
 
   nsresult
   DispatchSessionModifyResponseEvent(const nsAString& aType,
                                      const uint16_t aStatus,
                                      DOMVideoCallProfile* aRequest,
                                      DOMVideoCallProfile* aResponse);
+
+  nsresult
+  ConvertToJsValue(nsIVideoCallProfile *aProfile, JS::Rooted<JS::Value>* jsResult);
+
 
   nsresult
   DispatCallSessionEvent(const nsAString& aType, const int16_t aEvent);
@@ -117,18 +133,18 @@ private:
    * TODO
    */
   nsresult
-  DispatchCameraCapabilitiesEvent(const nsAString& aType);
+  DispatchCameraCapabilitiesEvent(const nsAString& aType, nsIVideoCallCameraCapabilities* capabilities);
 
   nsresult
-  DispatchVideoQualityChangeEvent(const nsAString& aType, const VideoCallQuality aQuality);
+  DispatchVideoQualityChangeEvent(const nsAString& aType, const uint16_t aQuality);
 
-  uint32_t mClientId;
-  uint32_t mCallIndex;
-  nsString mcamera;
+  nsString mCamera;
   uint16_t mOrientation;
   float mZoom;
+  float mMaxZoom;
+  bool mZoomSupported;
 
-  RefPtr<nsIVideoCallProvider> mProvider;
+  nsCOMPtr<nsIVideoCallProvider> mProvider;
   RefPtr<nsDOMSurfaceControl> mDisplayControl;
   RefPtr<nsDOMSurfaceControl> mPreviewControl;
   SurfaceControlBack* mDisplayCallback;

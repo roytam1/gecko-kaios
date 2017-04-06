@@ -1,36 +1,21 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* (c) 2017 KAI OS TECHNOLOGIES (HONG KONG) LIMITED All rights reserved. This
+ * file or any portion thereof may not be reproduced or used in any manner
+ * whatsoever without the express written permission of KAI OS TECHNOLOGIES
+ * (HONG KONG) LIMITED. KaiOS is the trademark of KAI OS TECHNOLOGIES (HONG KONG)
+ * LIMITED or its affiliate company and may be registered in some jurisdictions.
+ * All other trademarks are the property of their respective owners.
+ */
 
 #include "DOMVideoCallCameraCapabilities.h"
-#include "nsPIDOMWindow.h"
 
 using namespace mozilla::dom;
 
-NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(DOMVideoCallCameraCapabilities, mWindow)
+// nsIVideoCallCameraCapabilities
+NS_IMPL_ISUPPORTS(DOMVideoCallCameraCapabilities, nsIVideoCallCameraCapabilities)
 
-NS_IMPL_CYCLE_COLLECTING_ADDREF(DOMVideoCallCameraCapabilities)
-NS_IMPL_CYCLE_COLLECTING_RELEASE(DOMVideoCallCameraCapabilities)
-
-NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(DOMVideoCallCameraCapabilities)
-  NS_WRAPPERCACHE_INTERFACE_MAP_ENTRY
-  NS_INTERFACE_MAP_ENTRY(nsISupports)
-  NS_INTERFACE_MAP_ENTRY(nsIVideoCallCameraCapabilities)
-NS_INTERFACE_MAP_END
-
-DOMVideoCallCameraCapabilities::DOMVideoCallCameraCapabilities(nsPIDOMWindowInner* aWindow)
-  : mWindow(aWindow)
-  , mWidth(0)
-  , mHeight(0)
-  , mZoomSupported(false)
-  , mMaxZoom(0)
-{
-}
-
-DOMVideoCallCameraCapabilities::DOMVideoCallCameraCapabilities(uint16_t aWidth, uint16_t aHeight, bool aZoomSupported,
-                                                               uint16_t aMaxZoom)
-  : mWindow(nullptr)
-  , mWidth(aWidth)
+DOMVideoCallCameraCapabilities::DOMVideoCallCameraCapabilities(uint16_t aWidth, uint16_t aHeight,
+                                                               bool aZoomSupported, float aMaxZoom)
+  : mWidth(aWidth)
   , mHeight(aHeight)
   , mZoomSupported(aZoomSupported)
   , mMaxZoom(aMaxZoom)
@@ -44,12 +29,6 @@ DOMVideoCallCameraCapabilities::Update(nsIVideoCallCameraCapabilities* aCapabili
   aCapabilities->GetHeight(&mHeight);
   aCapabilities->GetZoomSupported(&mZoomSupported);
   aCapabilities->GetMaxZoom(&mMaxZoom);
-}
-
-JSObject*
-DOMVideoCallCameraCapabilities::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
-{
-  return VideoCallCameraCapabilitiesBinding::Wrap(aCx, this, aGivenProto);
 }
 
 // nsIVideoCallCameraCapabilities
@@ -76,7 +55,7 @@ DOMVideoCallCameraCapabilities::GetZoomSupported(bool *aZoomSupported)
 }
 
 NS_IMETHODIMP
-DOMVideoCallCameraCapabilities::GetMaxZoom(uint16_t *aMaxZoom)
+DOMVideoCallCameraCapabilities::GetMaxZoom(float *aMaxZoom)
 {
   *aMaxZoom = mMaxZoom;
   return NS_OK;

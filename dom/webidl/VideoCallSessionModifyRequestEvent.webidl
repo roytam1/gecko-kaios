@@ -7,10 +7,10 @@
 [Constructor(DOMString type, optional VideoCallSessionModifyRequestEventInit eventInitDict)]
 interface VideoCallSessionModifyRequestEvent : Event
 {
-  readonly attribute VideoCallProfile? request;
+  readonly attribute any request;
 };
 
 dictionary VideoCallSessionModifyRequestEventInit : EventInit
 {
-  VideoCallProfile? request = null;
+  any request = null;
 };

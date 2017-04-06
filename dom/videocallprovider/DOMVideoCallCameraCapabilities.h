@@ -1,78 +1,41 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* (c) 2017 KAI OS TECHNOLOGIES (HONG KONG) LIMITED All rights reserved. This
+ * file or any portion thereof may not be reproduced or used in any manner
+ * whatsoever without the express written permission of KAI OS TECHNOLOGIES
+ * (HONG KONG) LIMITED. KaiOS is the trademark of KAI OS TECHNOLOGIES (HONG KONG)
+ * LIMITED or its affiliate company and may be registered in some jurisdictions.
+ * All other trademarks are the property of their respective owners.
+ */
 
 #ifndef mozilla_dom_domvideocallcameracapabilities_h__
 #define mozilla_dom_domvideocallcameracapabilities_h__
 
-#include "mozilla/dom/VideoCallProviderBinding.h"
 #include "nsIVideoCallProvider.h"
 #include "nsIVideoCallCallback.h"
-#include "nsWrapperCache.h"
-
-class nsPIDOMWindowInner;
 
 namespace mozilla {
 namespace dom {
 
 class DOMVideoCallCameraCapabilities final : public nsIVideoCallCameraCapabilities
-                                           , public nsWrapperCache
 {
 public:
+  NS_DECL_ISUPPORTS
   NS_DECL_NSIVIDEOCALLCAMERACAPABILITIES
-  NS_DECL_CYCLE_COLLECTING_ISUPPORTS
-  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(DOMVideoCallCameraCapabilities)
 
-  explicit DOMVideoCallCameraCapabilities(nsPIDOMWindowInner* aWindow);
-
-  DOMVideoCallCameraCapabilities(uint16_t aWidth, uint16_t aHeight, bool aZoomSupported, uint16_t aMaxZoom);
+  DOMVideoCallCameraCapabilities(uint16_t aWidth, uint16_t aHeight, bool aZoomSupported, float aMaxZoom);
 
   void
   Update(nsIVideoCallCameraCapabilities* aCapabilities);
 
-  nsPIDOMWindowInner*
-  GetParentObject() const
-  {
-    return mWindow;
-  }
-
-  virtual JSObject*
-  WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
-
-  // WebIDL interface
-  uint16_t
-  Width() const
-  {
-    return mWidth;
-  }
-
-  uint16_t
-  Height() const
-  {
-    return mHeight;
-  }
-
-  bool
-  ZoomSupported() const
-  {
-    return mZoomSupported;
-  }
-
-  uint16_t
-  MaxZoom() const
-  {
-    return mMaxZoom;
-  }
-
 private:
+  DOMVideoCallCameraCapabilities() {}
+
   ~DOMVideoCallCameraCapabilities() {}
 
 private:
-  nsCOMPtr<nsPIDOMWindowInner> mWindow;
   uint16_t mWidth;
   uint16_t mHeight;
   bool mZoomSupported;
-  uint16_t mMaxZoom;
+  float mMaxZoom;
 };
 
 } // dom

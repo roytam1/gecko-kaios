@@ -1,6 +1,10 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this file,
- * You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* (c) 2017 KAI OS TECHNOLOGIES (HONG KONG) LIMITED All rights reserved. This
+ * file or any portion thereof may not be reproduced or used in any manner
+ * whatsoever without the express written permission of KAI OS TECHNOLOGIES
+ * (HONG KONG) LIMITED. KaiOS is the trademark of KAI OS TECHNOLOGIES (HONG KONG)
+ * LIMITED or its affiliate company and may be registered in some jurisdictions.
+ * All other trademarks are the property of their respective owners.
+ */
 
 #include "mozilla/dom/videocallprovider/VideoCallProviderParent.h"
 
@@ -57,17 +61,19 @@ VideoCallProviderParent::RecvSetCamera(const int16_t& aCameraId)
 }
 
 bool
-VideoCallProviderParent::RecvSetPreviewSurface()
+VideoCallProviderParent::RecvSetPreviewSurface(const uint16_t& aWidth,
+                                               const uint16_t& aHeight)
 {
-  LOG("RecvSetPreviewSurface");
+  LOG("RecvSetPreviewSurface aWidth: %d, aHeight: %d", aWidth, aHeight);
   // set preview surface via mHandler
   return true;
 }
 
 bool
-VideoCallProviderParent::RecvSetDisplaySurface()
+VideoCallProviderParent::RecvSetDisplaySurface(const uint16_t& aWidth,
+                                               const uint16_t& aHeight)
 {
-  LOG("RecvSetDisplaySurface");
+  LOG("RecvSetDisplaySurface aWidth: %d, aHeight: %d", aWidth, aHeight);
   // set display surface via mHandler
   return true;
 }
@@ -96,7 +102,17 @@ bool
 VideoCallProviderParent::RecvSendSessionModifyRequest(const nsVideoCallProfile& aFromProfile,
                                                       const nsVideoCallProfile& aToProfile)
 {
-  LOG("RecvSendSessionModifyRequest");
+  uint16_t fromState;
+  uint16_t fromQuality;
+  aFromProfile->GetState(&fromState);
+  aFromProfile->GetQuality(&fromQuality);
+
+  uint16_t toState;
+  uint16_t toQuality;
+  aToProfile->GetState(&toState);
+  aToProfile->GetQuality(&toQuality);
+
+  LOG("RecvSendSessionModifyRequest, from (quality: %d, state: %d) to {quality: %d, state: %d}", fromQuality, fromState, toQuality, toState);
   if (mProvider) {
     mProvider->SendSessionModifyRequest(aFromProfile, aToProfile);
   }
@@ -106,7 +122,12 @@ VideoCallProviderParent::RecvSendSessionModifyRequest(const nsVideoCallProfile& 
 bool
 VideoCallProviderParent::RecvSendSessionModifyResponse(const nsVideoCallProfile& aResponse)
 {
-  LOG("RecvSendSessionModifyResponse");
+  uint16_t state;
+  uint16_t quality;
+  aResponse->GetState(&state);
+  aResponse->GetQuality(&quality);
+
+  LOG("RecvSendSessionModifyResponse, {quality: %d, state: %d}", quality, state);
   if (mProvider) {
     mProvider->SendSessionModifyResponse(aResponse);
   }

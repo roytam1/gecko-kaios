@@ -11,21 +11,24 @@ interface VideoCallProvider : EventTarget {
    * @param camera
    *        one of the camera identifiers returned by CameraManager::getListOfCameras()
    *        To close camera if parameter camera is not given.
-   * ETA 3/3
    */
   [Throws]
   Promise<void> setCamera(optional DOMString camera);
 
   /**
    * To get preview media stream.
-   # ETA 3/3
+   * Please alays provide initialConfiguration so that system can render data properly.
+   * @param initialConfiguration
+   *        To specify UI's width/height for proper rendering.
    */
   [Throws]
   Promise<SurfaceControl> getPreviewStream(optional SurfaceConfiguration initialConfiguration);
 
   /**
    * To get display media stream.
-   * ETA 3/3
+   * Please alays provide initialConfiguration so that system can render data properly.
+   * @param initialConfiguration
+   *        To specify UI's width/height for proper rendering.
    */
   [Throws]
   Promise<SurfaceControl> getDisplayStream(optional SurfaceConfiguration initialConfiguration);
@@ -34,14 +37,13 @@ interface VideoCallProvider : EventTarget {
    * To specify device orientation.
    * @param orientation
    *        current device's orientation, one of values 0, 90, 180 and 270.
-   * ETA TBD
    */
   [Throws]
   Promise<void> setOrientation(unsigned short orientation);
 
   /**
    * To zoom in, zoom out the camera.
-   * ETA TBD
+   * TBD
    */
   [Throws]
   Promise<void> setZoom(float zoom);
@@ -55,10 +57,9 @@ interface VideoCallProvider : EventTarget {
    *        current video call state
    * @param to
    *         the requested video call
-   * ETA TBD
    */
   [Throws]
-  Promise<void> sendSessionModifyRequest(VideoCallProfile from, VideoCallProfile to);
+  Promise<void> sendSessionModifyRequest(optional VideoCallProfile from, optional VideoCallProfile to);
 
   /**
    * To response a media session modification.
@@ -66,15 +67,13 @@ interface VideoCallProvider : EventTarget {
    * TelephonyCall::onstatechange().
    * @param response
    *        The response video call profile.
-   * ETA TBD
    */
   [Throws]
-  Promise<void> sendSessionModifyResponse(VideoCallProfile response);
+  Promise<void> sendSessionModifyResponse(optional VideoCallProfile response);
 
   /**
    * To know current camera's capabilities.
    * The result will be notified via onchangecameracapabilities event.
-   * ETA TBD
    */
   [Throws]
   Promise<void> requestCameraCapabilities();
@@ -82,7 +81,6 @@ interface VideoCallProvider : EventTarget {
   /**
    * When receiving remote session modification request.
    * Please refer VideoCallSessionModifyRequestEvent for event structure.
-   * ETA TBD
    */
   attribute EventHandler onsessionmodifyrequest;
 
@@ -144,16 +142,8 @@ enum VideoCallState
 /**
  * To describe video call detail.
  */
-interface VideoCallProfile
+dictionary VideoCallProfile
 {
-  readonly attribute VideoCallQuality quality;
-  readonly attribute VideoCallState state;
-};
-
-interface VideoCallCameraCapabilities
-{
-  readonly attribute unsigned short width;
-  readonly attribute unsigned short height;
-  readonly attribute boolean zoomSupported;
-  readonly attribute unsigned short maxZoom;
+  VideoCallState state;
+  VideoCallQuality quality;
 };
