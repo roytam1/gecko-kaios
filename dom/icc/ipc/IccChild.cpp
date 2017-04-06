@@ -295,6 +295,18 @@ IccChild::MatchMvno(uint32_t aMvnoType,
 }
 
 NS_IMETHODIMP
+IccChild::GetIccAuthentication(uint32_t aAppType,
+                               uint32_t aAuthType,
+                               const nsAString& aData,
+                               nsIIccCallback* aRequestReply)
+{
+  return SendRequest(GetIccAuthenticationRequest(aAppType, aAuthType,
+                                                nsAutoString(aData)),
+                                                aRequestReply)
+    ? NS_OK : NS_ERROR_FAILURE;
+}
+
+NS_IMETHODIMP
 IccChild::GetServiceStateEnabled(uint32_t aService,
                                  nsIIccCallback* aRequestReply)
 {

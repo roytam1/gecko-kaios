@@ -44,6 +44,11 @@ struct IccReplyUpdateContact
   IccContactData contact;
 };
 
+struct IccReplyAuthResponse
+{
+  nsString data;
+};
+
 union IccReply
 {
   // Success
@@ -52,6 +57,7 @@ union IccReply
   IccReplyCardLockRetryCount;
   IccReplyReadContacts;
   IccReplyUpdateContact;
+  IccReplyAuthResponse;
   // Error
   IccReplyError;
   IccReplyCardLockError;

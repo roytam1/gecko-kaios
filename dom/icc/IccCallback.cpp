@@ -292,6 +292,13 @@ IccCallback::NotifyUpdatedIccContact(nsIIccContact* aContact)
   return NotifySuccess(jsResult);
 }
 
+NS_IMETHODIMP
+IccCallback::NotifyAuthResponse(const nsAString & aData)
+{
+  // Not been published yet.
+  return NS_OK;
+}
+
 } // namespace icc
 } // namespace dom
 } // namespace mozilla
