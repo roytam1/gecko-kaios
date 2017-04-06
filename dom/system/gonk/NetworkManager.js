@@ -662,6 +662,11 @@ NetworkManager.prototype = {
     this._preferredNetworkType = val;
   },
 
+  _wifiCaptivePortalLanding: false,
+  get wifiCaptivePortalLanding() {
+    return this._wifiCaptivePortalLanding;
+  },
+
   _activeNetwork: null,
 
   get activeNetworkInfo() {
@@ -1363,6 +1368,17 @@ var CaptivePortalDetectionHelper = (function() {
     _ongoingInterface = null;
   };
 
+  let _sendNotification = function(landing) {
+    if (landing == NetworkManager.prototype._wifiCaptivePortalLanding) {
+      return;
+    }
+    NetworkManager.prototype._wifiCaptivePortalLanding = landing;
+    let propBag = Cc["@mozilla.org/hash-property-bag;1"].
+      createInstance(Ci.nsIWritablePropertyBag);
+    propBag.setProperty("landing", landing);
+    Services.obs.notifyObservers(propBag, "wifi-captive-portal-result", null);
+  };
+
   return {
     EVENT_CONNECT: EVENT_CONNECT,
     EVENT_DISCONNECT: EVENT_DISCONNECT,
@@ -1372,9 +1388,8 @@ var CaptivePortalDetectionHelper = (function() {
           // perform captive portal detection on wifi interface
           if (_available && network &&
               network.type == Ci.nsINetworkInfo.NETWORK_TYPE_WIFI) {
-            _performDetection(network.name, function() {
-              // TODO: bug 837600
-              // We can disconnect wifi in here if user abort the login procedure.
+            _performDetection(network.name, function(success) {
+              _sendNotification(success);
             });
           }
 
@@ -1383,6 +1398,7 @@ var CaptivePortalDetectionHelper = (function() {
           if (_available &&
               network.type == Ci.nsINetworkInfo.NETWORK_TYPE_WIFI) {
             _abort(network.name);
+            _sendNotification(false);
           }
           break;
       }

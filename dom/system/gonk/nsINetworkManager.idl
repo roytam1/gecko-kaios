@@ -10,7 +10,7 @@ interface nsINetworkInterface;
 /**
  * Manage network interfaces.
  */
-[scriptable, uuid(1ba9346b-53b5-4660-9dc6-58f0b258d0a6)]
+[scriptable, uuid(a890fa34-2550-4dd0-9ddd-0dc37dbde249)]
 interface nsINetworkManager : nsISupports
 {
   /**
@@ -132,4 +132,12 @@ interface nsINetworkManager : nsISupports
    */
   jsval removeHostRoute(in nsINetworkInfo network,
                         in DOMString host);
+
+  /**
+   * The WIFI captive portal landing status.
+   *
+   * When this changes, the 'wifi-captive-portal-result' observer
+   * notification is dispatched.
+   */
+  readonly attribute boolean wifiCaptivePortalLanding;
 };
