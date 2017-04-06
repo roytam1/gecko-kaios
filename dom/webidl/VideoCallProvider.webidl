@@ -11,36 +11,24 @@ interface VideoCallProvider : EventTarget {
    * @param camera
    *        one of the camera identifiers returned by CameraManager::getListOfCameras()
    *        To close camera if parameter camera is not given.
-<<<<<<< 345fcb382607a7e75422c685e975bdd39b97ad8a
-=======
-   * ETA 3/3
->>>>>>> vt initial version
    */
   [Throws]
   Promise<void> setCamera(optional DOMString camera);
 
   /**
    * To get preview media stream.
-<<<<<<< 345fcb382607a7e75422c685e975bdd39b97ad8a
    * Please alays provide initialConfiguration so that system can render data properly.
    * @param initialConfiguration
    *        To specify UI's width/height for proper rendering.
-=======
-   # ETA 3/3
->>>>>>> vt initial version
    */
   [Throws]
   Promise<SurfaceControl> getPreviewStream(optional SurfaceConfiguration initialConfiguration);
 
   /**
    * To get display media stream.
-<<<<<<< 345fcb382607a7e75422c685e975bdd39b97ad8a
    * Please alays provide initialConfiguration so that system can render data properly.
    * @param initialConfiguration
    *        To specify UI's width/height for proper rendering.
-=======
-   * ETA 3/3
->>>>>>> vt initial version
    */
   [Throws]
   Promise<SurfaceControl> getDisplayStream(optional SurfaceConfiguration initialConfiguration);
@@ -49,21 +37,13 @@ interface VideoCallProvider : EventTarget {
    * To specify device orientation.
    * @param orientation
    *        current device's orientation, one of values 0, 90, 180 and 270.
-<<<<<<< 345fcb382607a7e75422c685e975bdd39b97ad8a
-=======
-   * ETA TBD
->>>>>>> vt initial version
    */
   [Throws]
   Promise<void> setOrientation(unsigned short orientation);
 
   /**
    * To zoom in, zoom out the camera.
-<<<<<<< 345fcb382607a7e75422c685e975bdd39b97ad8a
    * TBD
-=======
-   * ETA TBD
->>>>>>> vt initial version
    */
   [Throws]
   Promise<void> setZoom(float zoom);
@@ -77,16 +57,9 @@ interface VideoCallProvider : EventTarget {
    *        current video call state
    * @param to
    *         the requested video call
-<<<<<<< 345fcb382607a7e75422c685e975bdd39b97ad8a
    */
   [Throws]
   Promise<void> sendSessionModifyRequest(optional VideoCallProfile from, optional VideoCallProfile to);
-=======
-   * ETA TBD
-   */
-  [Throws]
-  Promise<void> sendSessionModifyRequest(VideoCallProfile from, VideoCallProfile to);
->>>>>>> vt initial version
 
   /**
    * To response a media session modification.
@@ -94,24 +67,13 @@ interface VideoCallProvider : EventTarget {
    * TelephonyCall::onstatechange().
    * @param response
    *        The response video call profile.
-<<<<<<< 345fcb382607a7e75422c685e975bdd39b97ad8a
    */
   [Throws]
   Promise<void> sendSessionModifyResponse(optional VideoCallProfile response);
-=======
-   * ETA TBD
-   */
-  [Throws]
-  Promise<void> sendSessionModifyResponse(VideoCallProfile response);
->>>>>>> vt initial version
 
   /**
    * To know current camera's capabilities.
    * The result will be notified via onchangecameracapabilities event.
-<<<<<<< 345fcb382607a7e75422c685e975bdd39b97ad8a
-=======
-   * ETA TBD
->>>>>>> vt initial version
    */
   [Throws]
   Promise<void> requestCameraCapabilities();
@@ -119,10 +81,6 @@ interface VideoCallProvider : EventTarget {
   /**
    * When receiving remote session modification request.
    * Please refer VideoCallSessionModifyRequestEvent for event structure.
-<<<<<<< 345fcb382607a7e75422c685e975bdd39b97ad8a
-=======
-   * ETA TBD
->>>>>>> vt initial version
    */
   attribute EventHandler onsessionmodifyrequest;
 
@@ -184,23 +142,8 @@ enum VideoCallState
 /**
  * To describe video call detail.
  */
-<<<<<<< 345fcb382607a7e75422c685e975bdd39b97ad8a
 dictionary VideoCallProfile
 {
   VideoCallState state;
   VideoCallQuality quality;
-=======
-interface VideoCallProfile
-{
-  readonly attribute VideoCallQuality quality;
-  readonly attribute VideoCallState state;
-};
-
-interface VideoCallCameraCapabilities
-{
-  readonly attribute unsigned short width;
-  readonly attribute unsigned short height;
-  readonly attribute boolean zoomSupported;
-  readonly attribute unsigned short maxZoom;
->>>>>>> vt initial version
 };
