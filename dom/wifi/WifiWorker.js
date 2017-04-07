@@ -663,7 +663,8 @@ var WifiManager = (function() {
 
         dhcpInfo = data.info;
         debug('dhcpRequestGen: ' + dhcpRequestGen + ', gen: ' + gen);
-        if (!dhcpInfo) {
+        // Only handle dhcp timeout case in COMPLETED state.
+        if (!dhcpInfo && manager.state === "COMPLETED"){
           if (gen + 1 < dhcpRequestGen) {
             debug('Do not bother younger DHCP request.');
             return;
@@ -688,7 +689,7 @@ var WifiManager = (function() {
 
   var driverEventMap = { STOPPED: "driverstopped", STARTED: "driverstarted", HANGED: "driverhung" };
 
-  manager.getNetworkId = function (ssid, callback) {
+  manager.getNetworkId = function (networkKey, callback) {
     manager.getConfiguredNetworks(function(networks) {
       if (!networks) {
         debug("Unable to get configured networks");
@@ -696,12 +697,8 @@ var WifiManager = (function() {
       }
       for (let net in networks) {
         let network = networks[net];
-        // Trying to get netId from
-        // 1. network matching SSID if SSID is provided.
-        // 2. current network if no SSID is provided, it's not guaranteed that
-        //    current network matches requested SSID.
-        if ((!ssid && network.status === "CURRENT") ||
-            (ssid && network.ssid && ssid === dequote(network.ssid))) {
+        // Get netId from comparing networkKey.
+        if (networkKey === getNetworkKey(network)) {
           return callback(net);
         }
       }
@@ -736,33 +733,12 @@ var WifiManager = (function() {
     });
   }
 
-  manager.isWepNetwork = function (ssid, callback) {
-    wifiCommand.listNetworks(function (reply) {
-      var lines = reply ? reply.split("\n") : [];
-      if (lines.length <= 1) {
-        // We need to make sure we call the callback even if there are no
-        // configured networks.
-        debug("Can't find configured networks");
-        callback(false);
-        return;
+  manager.isWepNetwork = function (netId, callback) {
+    wifiCommand.getNetworkVariable(netId, "auth_alg", function(auth_alg) {
+      if (auth_alg === "OPEN SHARED") {
+        return callback(true);
       }
-
-      for (var n = 1; n < lines.length; ++n) {
-        if (lines[n].indexOf(ssid)) {
-          var result = lines[n].split("\t");
-          var netId = parseInt(result[0], 10);
-          break;
-        } else {
-          continue;
-        }
-      }
-      wifiCommand.getNetworkVariable(netId, "auth_alg", function(auth_alg) {
-        if (auth_alg === "OPEN SHARED") {
-          callback(true);
-        } else {
-          callback(false);
-        }
-      });
+      callback(false);
     });
   }
 
@@ -942,7 +918,9 @@ var WifiManager = (function() {
     }
     if (eventData.indexOf("CTRL-EVENT-ASSOC-REJECT") === 0 &&
         !manager.wpsStarted) {
-      notify("networkdisable", {reason: "DISABLED_ASSOCIATION_REJECTION"});
+      var token = event.split(" ")[1];
+      var bssid = token.split("=")[1];
+      notify("networkdisable", {reason: "DISABLED_ASSOCIATION_REJECTION", bssid: bssid});
       return true;
     }
     if (eventData.indexOf("WPS-TIMEOUT") === 0) {
@@ -2237,15 +2215,15 @@ function WifiWorker() {
         WifiManager.dhcpFailuresCount++;
         if (WifiManager.dhcpFailuresCount >= MAX_RETRIES_ON_DHCP_FAILURE) {
           WifiManager.clearDisableReasonCounter(function(){});
-          WifiManager.isWepNetwork(WifiManager.connectionInfo.ssid, function(ok) {
-            self.handleNetworkConnectionFailure(WifiManager.connectionInfo.ssid, function(netId) {
+          WifiManager.isWepNetwork(configNetwork.netId, function(ok) {
+            self.handleNetworkConnectionFailure(configNetwork.netId, function() {
               if (ok) {
-                self.handleWrongPassword(netId);
+                self.handleWrongPassword(configNetwork.netId);
                 self._fireEvent("onauthenticationfailed",
-                  {network: netToDOM(self.currentNetwork)});
+                  {network: netToDOM(configNetwork)});
               } else {
                 self._fireEvent("ondhcpfailed",
-                  {network: netToDOM(self.currentNetwork)});
+                  {network: netToDOM(configNetwork)});
               }
             });
           });
@@ -2259,8 +2237,8 @@ function WifiWorker() {
         WifiManager.authenticationFailuresCount++;
         if (WifiManager.authenticationFailuresCount >= MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
           WifiManager.clearDisableReasonCounter(function(){});
-          self.handleNetworkConnectionFailure(WifiManager.connectionInfo.ssid, function(netId) {
-            self.handleWrongPassword(netId);
+          self.handleNetworkConnectionFailure(configNetwork.netId, function() {
+            self.handleWrongPassword(configNetwork.netId);
             self._fireEvent("onauthenticationfailed",
               {network: netToDOM(configNetwork)});
           });
@@ -2278,16 +2256,18 @@ function WifiWorker() {
         WifiManager.associationRejectCount++;
         if (WifiManager.associationRejectCount >= MAX_RETRIES_ON_ASSOCIATION_REJECT) {
           WifiManager.clearDisableReasonCounter(function(){});
-          WifiManager.isWepNetwork(WifiManager.connectionInfo.ssid, function(ok) {
-            self.handleNetworkConnectionFailure(WifiManager.connectionInfo.ssid, function(netId) {
-              if (ok) {
-                self.handleWrongPassword(netId);
-                self._fireEvent("onauthenticationfailed",
-                  {network: netToDOM(self.currentNetwork)});
-              } else {
-                self._fireEvent("onassociationreject",
-                  {network: netToDOM(self.currentNetwork)});
-              }
+          self.bssidToNetwork(this.bssid, function(network) {
+            WifiManager.isWepNetwork(network.netId, function(ok) {
+              self.handleNetworkConnectionFailure(network.netId, function() {
+                if (ok) {
+                  self.handleWrongPassword(network.netId);
+                  self._fireEvent("onauthenticationfailed",
+                    {network: netToDOM(configNetwork)});
+                } else {
+                  self._fireEvent("onassociationreject",
+                    {network: netToDOM(configNetwork)});
+                }
+              });
             });
           });
         }
@@ -2321,10 +2301,7 @@ function WifiWorker() {
             ssid: quote(WifiManager.connectionInfo.ssid),
             mode: MODE_ESS,
             frequency: 0};
-        WifiManager.getNetworkConfiguration(self.currentNetwork, function (){
-          // Notify again because we get complete network information.
-          self._fireEvent("onconnecting", { network: netToDOM(self.currentNetwork) });
-        });
+        self._fireEvent("onconnecting", { network: netToDOM(self.currentNetwork) });
         break;
       case "ASSOCIATED":
         if (!self.currentNetwork) {
@@ -2729,36 +2706,60 @@ WifiWorker.prototype = {
     return airplaneMode;
   },
 
-  handleNetworkConnectionFailure: function(ssid, callback) {
-    let self = this;
+  bssidToNetwork: function(bssid, callback) {
+    let bssidReject = bssid;
+    WifiManager.getScanResults(function(r) {
+      if (!r) {
+        return callback(false);
+      }
+      WifiManager.getConfiguredNetworks(function(networks) {
+        if (!networks) {
+          debug("Unable to get configured networks");
+          return callback(false);
+        }
+        let lines = r.split("\n");
+        for (let i = 1; i < lines.length; ++i) {
+          // bssid / frequency / signal level / flags / ssid
+          var match = /([\S]+)\s+([\S]+)\s+([\S]+)\s+(\[[\S]+\])?\s(.*)/.exec(lines[i]);
+          if (match && match[5]) {
+            let ssid = match[5],
+                bssid = match[1],
+                frequency = match[2],
+                signalLevel = match[3],
+                flags = match[4];
+            let network = new ScanResult(ssid, bssid, frequency, flags, signalLevel);
+            if (bssid === bssidReject) {
+              let networkKeyReject = getNetworkKey(network);
+              for (let net in networks) {
+                let networkKey = getNetworkKey(networks[net]);
+                if (networkKey === networkKeyReject) {
+                  return callback(networks[net]);
+                }
+              }
+              return callback(false);
+            }
+          }
+        }
+        return callback(false);
+      });
+    });
+  },
+
+  handleNetworkConnectionFailure: function(netId, callback) {
     // We may fail to establish the connection, re-enable the
     // rest of our networks.
     if (this._needToEnableNetworks) {
       this._enableAllNetworks(function(){});
       this._needToEnableNetworks = false;
     }
-
-    if (!ssid && self.currentNetwork && self.currentNetwork.ssid) {
-      ssid = dequote(self.currentNetwork.ssid);
+    if (netId >= 0) {
+      WifiManager.disableNetwork(netId, function() {
+        debug("disable network - id: " + netId);
+        if (callback) {
+          callback(true);
+        }
+      });
     }
-
-    WifiManager.getNetworkId(ssid, function(netId) {
-      // Trying to get netId from current network.
-      if (netId === null &&
-          self.currentNetwork && self.currentNetwork.ssid &&
-          dequote(self.currentNetwork.ssid) == ssid &&
-          typeof self.currentNetwork.netId !== "undefined") {
-        netId = self.currentNetwork.netId;
-      }
-      if (netId >= 0) {
-        WifiManager.disableNetwork(netId, function() {
-          debug("disable network - ssid: " + ssid + " id: " + netId);
-          if (callback) {
-            callback(netId);
-          }
-        });
-      }
-    });
   },
 
   handleWrongPassword: function(netId) {
@@ -3555,7 +3556,7 @@ WifiWorker.prototype = {
       // forgetting the network. It would cause the network unable to connect
       // subsequently. Aside from preventing the racing forget/associate, we
       // also try to disable network prior to updating the network.
-      WifiManager.getNetworkId(dequote(configured.ssid), function(netId) {
+      WifiManager.getNetworkId(networkKey, function(netId) {
         if (netId) {
           WifiManager.disableNetwork(netId, function() {
             connectToNetwork();
