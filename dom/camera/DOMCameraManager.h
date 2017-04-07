@@ -27,6 +27,8 @@
 #include <android/native_window.h>
 #include <ui/GraphicBufferMapper.h>
 #include <system/graphics.h>
+class ITestDataSource;
+class ITestDataSourceResolutionResultListener;
 #endif
 class nsPIDOMWindowInner;
 
@@ -43,8 +45,6 @@ namespace mozilla {
 typedef nsTArray<nsWeakPtr> CameraControls;
 typedef nsClassHashtable<nsUint64HashKey, CameraControls> WindowTable;
 
-typedef nsTArray<nsWeakPtr> SurfaceControls;
-typedef nsClassHashtable<nsUint64HashKey, SurfaceControls> SurfaceWindowTable;
 class DOMSurfaceControlCallback;
 
 class nsDOMCameraManager final
@@ -89,8 +89,10 @@ public:
             mozilla::ErrorResult& aRv);
   void GetListOfCameras(nsTArray<nsString>& aList, mozilla::ErrorResult& aRv);
   already_AddRefed<mozilla::dom::Promise>
-  GetSurface(const mozilla::dom::SurfaceConfiguration& aOptions, mozilla::ErrorResult& aRv);
-
+  GetPreviewStream(const mozilla::dom::SurfaceConfiguration& aOptions, mozilla::ErrorResult& aRv);
+  already_AddRefed<mozilla::dom::Promise>
+  GetDisplayStream(const mozilla::dom::SurfaceConfiguration& aOptions, mozilla::ErrorResult& aRv);
+  
   nsPIDOMWindowInner* GetParentObject() const { return mWindow; }
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
@@ -100,14 +102,12 @@ public:
 
 #ifdef FEED_TEST_DATA_TO_PRODUCER
   //VT test functions and variables
-  nsresult TestSurfaceInput();//Test function to feed image data to the created surface.
-  virtual nsresult TestSurfaceInputImpl();
-  android::sp<ANativeWindow> mTestANativeWindow;
-  unsigned char* mTestImage;
-  unsigned char* mTestImage2;
-  int mTestImageIndex;
-  bool mIsTestRunning;
-  android::sp<android::IGraphicBufferProducer> mProducer;
+  bool IsPreviewSurfaceNow() {return (mTestSurfaceCount == 0);}
+  ITestDataSource* mTestDataSource;
+  RefPtr<mozilla::nsDOMSurfaceControl> mDisplayControl;
+  RefPtr<mozilla::nsDOMSurfaceControl> mPreviewControl;
+  ITestDataSourceResolutionResultListener* mResolutionResultListener;
+  uint32_t mTestSurfaceCount;
 #endif
 
 protected:
@@ -131,7 +131,6 @@ protected:
    * so it is not otherwise protected.
    */
   static ::WindowTable* sActiveWindows;
-  static ::SurfaceWindowTable* sSurfaceActiveWindows;
 };
 
 #endif // DOM_CAMERA_DOMCAMERAMANAGER_H

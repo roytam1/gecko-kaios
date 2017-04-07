@@ -74,6 +74,7 @@ public:
   enum UserContext
   {
     kInCreateSurface,
+    kInSetDataSourceSize,
     kInDestroySurface,
     kInStartPreview,
     kInGetGraphicBufferProducer,

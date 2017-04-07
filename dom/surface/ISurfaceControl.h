@@ -36,6 +36,18 @@ public:
     uint32_t  width;
     uint32_t  height;
 
+    Size() 
+      : width(0)
+      , height(0)
+    {
+    }
+
+    Size(const Size& aSize) 
+      : width(aSize.width)
+      , height(aSize.height)
+    {
+    }
+
     bool Equals(const Size& aSize) const
     {
       return width == aSize.width && height == aSize.height;
@@ -53,6 +65,7 @@ public:
   //      this value indicates that the process has begun successfully);
   //  - NS_ERROR_INVALID_ARG if one or more arguments is invalid;
   //  - NS_ERROR_FAILURE if an asynchronous method could not be dispatched.
+  virtual nsresult SetDataSourceSize(const ISurfaceControl::Size& aSize) = 0;
   virtual nsresult Start(const Configuration* aInitialConfig = nullptr) = 0;
   virtual nsresult Stop() = 0;
   virtual nsresult StartPreview() = 0;

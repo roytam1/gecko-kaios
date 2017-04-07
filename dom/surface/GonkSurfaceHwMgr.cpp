@@ -43,13 +43,6 @@ NS_IMPL_ISUPPORTS0(GonkSurfaceHardware);
 NS_IMPL_ISUPPORTS0(android::Surface);
 #endif
 
-#if defined(MOZ_WIDGET_GONK) && ANDROID_VERSION >= 23
-// We hard-code user id here to adapt to AOSP's multi-user support check for any
-// request to connect to Camera Service, as we only support single user at the moment
-#define DEFAULT_USER_ID           0
-#define CAMERASERVICE_POLL_DELAY  500000
-#endif
-
 GonkSurfaceHardware::GonkSurfaceHardware(mozilla::nsGonkSurfaceControl* aTarget)
   : mClosing(false)
   , mTarget(aTarget)
@@ -82,12 +75,10 @@ GonkSurfaceHardware::Init()
   GonkBufferQueue::createBufferQueue(&producer, &consumer);
   static_cast<GonkBufferQueueProducer*>(producer.get())->setSynchronousMode(false);
   mNativeWindow = new GonkNativeWindow(consumer, GonkSurfaceHardware::MIN_UNDEQUEUED_BUFFERS);
-  //mCamera->setPreviewTarget(producer);
 
   mGraphicBufferProducer = producer;
 #else
   mNativeWindow = new GonkNativeWindow();
-  //mCamera->setPreviewTexture(mNativeWindow);
 #endif
   mNativeWindow->setNewFrameCallback(this);
 
@@ -120,11 +111,6 @@ GonkSurfaceHardware::Close()
   }
 
   mClosing = true;
-  /*
-  if (mCamera.get()) {
-    mCamera->stopPreview();
-    mCamera->disconnect();
-  }*/
   mGraphicBufferProducer.clear();
 #ifdef MOZ_WIDGET_GONK
   if (mNativeWindow.get()) {

@@ -241,6 +241,33 @@ SurfaceControlImpl::RemoveListener(SurfaceControlListener* aListener)
 }
 
 
+nsresult 
+SurfaceControlImpl::SetDataSourceSize(const ISurfaceControl::Size& aSize)
+{
+  class Message : public ControlMessage
+  {
+  public:
+    Message(SurfaceControlImpl* aSurfaceControl,
+            SurfaceControlListener::UserContext aContext,
+            const ISurfaceControl::Size& aSize)
+      : ControlMessage(aSurfaceControl, aContext)
+      , mSize(aSize)
+    {
+    }
+
+    nsresult
+    RunImpl() override
+    {
+      return mSurfaceControl->SetDataSourceSizeImpl(mSize);
+    }
+
+  protected:
+    ISurfaceControl::Size mSize;
+  };
+
+  return Dispatch(new Message(this, SurfaceControlListener::kInSetDataSourceSize, aSize));
+}
+
 nsresult
 SurfaceControlImpl::Start(const Configuration* aConfig)
 {

@@ -61,12 +61,6 @@ static const int32_t kAutoFocusCompleteTimeoutLimit = 3;
 
 // Construct nsGonkSurfaceControl on the main thread.
 nsGonkSurfaceControl::nsGonkSurfaceControl()
-#ifdef FEED_TEST_DATA_TO_PRODUCER
-  : mTestImage(NULL)
-  , mTestImage2(NULL)
-  , mTestImageIndex(0)
-  , mIsTestRunning(false)
-#endif
 {
   // Constructor runs on the main thread...
   mImageContainer = LayerManager::CreateImageContainer();
@@ -90,13 +84,6 @@ nsGonkSurfaceControl::Initialize()
 
 nsGonkSurfaceControl::~nsGonkSurfaceControl()
 {
-  if (mTestImage) {
-    delete [] mTestImage;
-  }
-
-  if (mTestImage2) {
-    delete [] mTestImage2;
-  }
 }
 
 nsresult
@@ -105,6 +92,23 @@ nsGonkSurfaceControl::SetConfigurationInternal(const Configuration& aConfig)
   mCurrentConfiguration.mPreviewSize.width = aConfig.mPreviewSize.width;
   mCurrentConfiguration.mPreviewSize.height = aConfig.mPreviewSize.height;
 
+  return NS_OK;
+}
+
+nsresult 
+nsGonkSurfaceControl::SetDataSourceSizeImpl(const ISurfaceControl::Size& aSize)
+{
+  MOZ_ASSERT(NS_GetCurrentThread() == mSurfaceThread);
+
+  return SetDataSourceSizeInternal(aSize);
+}
+
+nsresult 
+nsGonkSurfaceControl::SetDataSourceSizeInternal(const ISurfaceControl::Size& aSize)
+{
+  //Update display configuration.
+  mCurrentConfiguration.mPreviewSize.width = aSize.width;
+  mCurrentConfiguration.mPreviewSize.height = aSize.height;
   return NS_OK;
 }
 
@@ -152,11 +156,6 @@ nsGonkSurfaceControl::StartInternal(const Configuration* aInitialConfig)
 nsresult
 nsGonkSurfaceControl::StopInternal()
 {
-#ifdef FEED_TEST_DATA_TO_PRODUCER
-  //Stop test if any
-  mIsTestRunning = false;
-#endif
-
   // release the surface handle
   if (mSurfaceHw.get()){
      mSurfaceHw->Close();
@@ -202,163 +201,8 @@ nsGonkSurfaceControl::StartPreviewImpl()
   if (NS_SUCCEEDED(rv)) {
     OnPreviewStateChange(SurfaceControlListener::kPreviewStarted);
   }
-
-#ifdef FEED_TEST_DATA_TO_PRODUCER
-  char prop[128];
-    if (property_get("vt.surface.test", prop, NULL) != 0) {
-      if (strcmp(prop, "1") == 0) {
-        TestSurfaceInput();
-      }
-  }
-#endif
-
   return rv;
 }
-
-#ifdef FEED_TEST_DATA_TO_PRODUCER
-bool getYUVData(const char *path,unsigned char * pYUVData,int size){
-    FILE *fp = fopen(path,"rb");
-    if(fp == NULL){
-        return false;
-    }
-    fread(pYUVData,size,1,fp);
-    fclose(fp);
-    return true;
-}
-
-nsresult
-nsGonkSurfaceControl::TestSurfaceInput()
-{
-
-  MOZ_ASSERT(NS_GetCurrentThread() == mSurfaceThread);
-
-  if (mSurfaceHw == NULL) {
-    return NS_ERROR_FAILURE;
-  }
-
-  if (mTestANativeWindow == NULL) {
-    android::sp<IGraphicBufferProducer> producer = mSurfaceHw->GetGraphicBufferProducer();
-    if (producer != NULL) {
-      mTestANativeWindow = new android::Surface(producer, /*controlledByApp*/ true);
-
-          native_window_set_buffer_count(
-                  mTestANativeWindow.get(),
-                  8);
-    } else {
-      return NS_ERROR_FAILURE;
-    }
-  }
-
-  //Prepare test data
-  if (!mTestImage) {
-    int size = mCurrentConfiguration.mPreviewSize.width * mCurrentConfiguration.mPreviewSize.height  * 1.5;
-    mTestImage = new unsigned char[size];
-
-    const char *path = "/mnt/media_rw/sdcard/tulips_yuv420_prog_planar_qcif.yuv";
-    bool getResult = getYUVData(path, mTestImage, size);//get yuv data from file;
-    if (!getResult) {
-      memset(mTestImage, 120, size);
-    }
-  }
-
-
-  if (!mTestImage2) {
-    int size = mCurrentConfiguration.mPreviewSize.width * mCurrentConfiguration.mPreviewSize.height  * 1.5;
-    mTestImage2 = new unsigned char[size];
-
-    const char *path = "/mnt/media_rw/sdcard/tulips_yvu420_inter_planar_qcif.yuv";
-    bool getResult = getYUVData(path, mTestImage2, size);//get yuv data from file;
-    if (!getResult) {
-      memset(mTestImage2, 60, size);
-    }
-  }
-
-  mIsTestRunning = true;
-
-  /**
-   * If we're already on the surface thread, call
-   * TestSurfaceInputImpl() directly, so that it executes
-   * synchronously.  Some callers require this so that changes
-   * take effect immediately before we can proceed.
-   */
-  if (NS_GetCurrentThread() != mSurfaceThread) {
-    nsCOMPtr<nsIRunnable> testSurfaceInputTask =
-      NS_NewRunnableMethod(this, &nsGonkSurfaceControl::TestSurfaceInputImpl);
-    return mSurfaceThread->Dispatch(testSurfaceInputTask, NS_DISPATCH_NORMAL);
-  }
-
-  return TestSurfaceInputImpl();
-}
-
-nsresult
-nsGonkSurfaceControl::TestSurfaceInputImpl()
-{
-
-  if (!mIsTestRunning) {
-    return NS_OK;
-  }
-
-  int err;
-  int cropWidth = mCurrentConfiguration.mPreviewSize.width;
-  int cropHeight = mCurrentConfiguration.mPreviewSize.height;
-
-  int halFormat = HAL_PIXEL_FORMAT_YCrCb_420_SP;
-  int bufWidth = (cropWidth + 1) & ~1;
-  int bufHeight = (cropHeight + 1) & ~1;
-
-  native_window_set_usage(
-    mTestANativeWindow.get(),
-    GRALLOC_USAGE_SW_READ_NEVER | GRALLOC_USAGE_SW_WRITE_OFTEN
-    | GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_EXTERNAL_DISP);
-
-
-  native_window_set_scaling_mode(
-    mTestANativeWindow.get(),
-    NATIVE_WINDOW_SCALING_MODE_SCALE_TO_WINDOW);
-
-  native_window_set_buffers_geometry(
-    mTestANativeWindow.get(),
-    bufWidth,
-    bufHeight,
-    halFormat);
-
-  ANativeWindowBuffer *buf;
-
-  if ((err = native_window_dequeue_buffer_and_wait(mTestANativeWindow.get(),
-          &buf)) != 0) {
-      return NS_OK;
-  }
-
-  GraphicBufferMapper &mapper = GraphicBufferMapper::get();
-
-  android::Rect bounds(cropWidth, cropHeight);
-
-  void *dst;
-  mapper.lock(buf->handle, GRALLOC_USAGE_SW_WRITE_OFTEN, bounds, &dst);
-
-  if (mTestImageIndex == 0) {
-    mTestImageIndex = 1;
-    memcpy(dst, mTestImage, cropWidth * cropHeight * 1.5);
-  } else {
-    mTestImageIndex = 0;
-    memcpy(dst, mTestImage2, cropWidth * cropHeight * 1.5);
-  }
-
-  mapper.unlock(buf->handle);
-
-  err = mTestANativeWindow->queueBuffer(mTestANativeWindow.get(), buf, -1);
-
-  buf = NULL;
-
-  //Next round
-  usleep(100000);
-  nsCOMPtr<nsIRunnable> testSurfaceInputTask =
-    NS_NewRunnableMethod(this, &nsGonkSurfaceControl::TestSurfaceInputImpl);
-  mSurfaceThread->Dispatch(testSurfaceInputTask, NS_DISPATCH_NORMAL);
-
-  return NS_OK;
-}
-#endif
 
 void
 nsGonkSurfaceControl::OnNewPreviewFrame(layers::TextureClient* aBuffer)
@@ -369,14 +213,6 @@ nsGonkSurfaceControl::OnNewPreviewFrame(layers::TextureClient* aBuffer)
   IntSize picSize(mCurrentConfiguration.mPreviewSize.width,
                   mCurrentConfiguration.mPreviewSize.height);
   frame->AdoptData(aBuffer, picSize);
-/*
-  if (mCapturePoster.exchange(false)) {
-    CreatePoster(frame,
-                 mCurrentConfiguration.mPreviewSize.width,
-                 mCurrentConfiguration.mPreviewSize.height,
-                 mVideoRotation);
-    return;
-  }*/
 
   OnNewPreviewFrame(frame, mCurrentConfiguration.mPreviewSize.width,
                     mCurrentConfiguration.mPreviewSize.height);

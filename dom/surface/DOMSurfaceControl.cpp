@@ -293,6 +293,21 @@ nsDOMSurfaceControl::TrackCreated(TrackID aTrackID) {
   NotifyTrackAdded(track);
 }
 
+
+void 
+nsDOMSurfaceControl::SetDataSourceSize(uint32_t aWidth, uint32_t aHeight)
+{
+  //Set the display size to ISurfaceControl.
+  //Convert dom::SurfaceSize to ISurfaceControl::Size
+  ISurfaceControl::Size surfaceControlSize;
+  surfaceControlSize.width = aWidth;
+  surfaceControlSize.height = aHeight;
+  nsresult rv = mSurfaceControl->SetDataSourceSize(surfaceControlSize);
+  if (NS_FAILED(rv)) {
+    //Print warning log.
+  }
+}
+
 #define THROW_IF_NO_SURFACECONTROL(...)                                          \
   do {                                                                          \
     if (!mSurfaceControl) {                                                      \
@@ -448,4 +463,10 @@ nsDOMSurfaceControl::OnUserError(SurfaceControlListener::UserContext aContext, n
   }
 
   promise->MaybeReject(aError);
+}
+
+dom::SurfaceConfiguration* 
+nsDOMSurfaceControl::GetConfiguration()
+{
+  return mCurrentConfiguration;
 }

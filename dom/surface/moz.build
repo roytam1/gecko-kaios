@@ -8,13 +8,18 @@ EXPORTS += [
     'DOMSurfaceControl.h'
 ]
 
+EXPORTS.mozilla += [
+    'IDOMSurfaceControlCallback.h'
+]
+
 UNIFIED_SOURCES += [
     'DOMSurfaceControl.cpp',
     'DOMSurfaceControlListener.cpp',
     'GonkSurfaceControl.cpp',
     'GonkSurfaceHwMgr.cpp',
     'GonkSurfaceManager.cpp',
-    'SurfaceControlImpl.cpp'
+    'SurfaceControlImpl.cpp',
+    'TestDataSourceCamera.cpp'
 ]
 
 LOCAL_INCLUDES += [

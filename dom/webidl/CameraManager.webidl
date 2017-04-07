@@ -79,6 +79,8 @@ interface CameraManager
   sequence<DOMString> getListOfCameras();
 
   [Throws]
-  Promise<SurfaceControl> getSurface(optional SurfaceConfiguration initialConfiguration);
+  Promise<SurfaceControl> getPreviewStream(optional SurfaceConfiguration initialConfiguration);
 
+  [Throws]
+  Promise<SurfaceControl> getDisplayStream(optional SurfaceConfiguration initialConfiguration);
 };

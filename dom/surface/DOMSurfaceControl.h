@@ -59,6 +59,9 @@ public:
 
   void Shutdown();
 
+  void SetDataSourceSize(uint32_t aWidth, uint32_t aHeight);
+  dom::SurfaceConfiguration* GetConfiguration();
+  
   nsPIDOMWindowInner* GetParentObject() const { return mWindow; }
 
   MediaStream* GetCameraStream() const override;
@@ -112,7 +115,7 @@ protected:
   RefPtr<dom::Promise>                        mGetSurfacePromise;
 
   // Surface event listener; we only need this weak reference so that
-  //  we can remove the listener from the camera when we're done
+  //  we can remove the listener from the surface when we're done
   //  with it.
   DOMSurfaceControlListener* mListener;
 

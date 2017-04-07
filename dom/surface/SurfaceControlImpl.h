@@ -35,6 +35,7 @@ public:
   virtual void RemoveListener(SurfaceControlListener* aListener) override;
 
   // See ISurfaceControl.h for these methods' return values.
+  virtual nsresult SetDataSourceSize(const ISurfaceControl::Size& aSize) override;
   virtual nsresult Start(const Configuration* aConfig = nullptr) override;
   virtual nsresult Stop() override;
   virtual nsresult StartPreview() override;
@@ -81,6 +82,7 @@ protected:
   //      initialized;
   //  - NS_ERROR_NOT_IMPLEMENTED if the method is not implemented;
   //  - NS_ERROR_FAILURE on general failures.
+  virtual nsresult SetDataSourceSizeImpl(const ISurfaceControl::Size& aSize) = 0;
   virtual nsresult StartImpl(const Configuration* aConfig = nullptr) = 0;
   virtual nsresult StopImpl() = 0;
   virtual nsresult StartPreviewImpl() = 0;

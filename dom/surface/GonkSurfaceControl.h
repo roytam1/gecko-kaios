@@ -25,8 +25,6 @@
 #include <system/window.h>
 #include <utils/StrongPointer.h>
 
-#define FEED_TEST_DATA_TO_PRODUCER
-
 class nsITimer;
 
 namespace mozilla {
@@ -53,11 +51,13 @@ protected:
   nsresult Initialize();
   nsresult SetConfigurationInternal(const Configuration& aConfig);
 
+  nsresult SetDataSourceSizeInternal(const ISurfaceControl::Size& aSize);
   nsresult StartInternal(const Configuration* aInitialConfig);
   nsresult StopInternal();
   nsresult StartPreviewInternal();
 
   // See SurfaceControlImpl.h for these methods' return values.
+  virtual nsresult SetDataSourceSizeImpl(const ISurfaceControl::Size& aSize) override;
   virtual nsresult StartImpl(const Configuration* aInitialConfig = nullptr) override;
   virtual nsresult StopImpl() override;
   virtual nsresult StartPreviewImpl() override;
@@ -71,16 +71,6 @@ protected:
 private:
   nsGonkSurfaceControl(const nsGonkSurfaceControl&) = delete;
   nsGonkSurfaceControl& operator=(const nsGonkSurfaceControl&) = delete;
-
-#ifdef FEED_TEST_DATA_TO_PRODUCER
-  nsresult TestSurfaceInput();//Test function to feed image data to the created surface.
-  virtual nsresult TestSurfaceInputImpl();
-  android::sp<ANativeWindow> mTestANativeWindow;
-  unsigned char* mTestImage;
-  unsigned char* mTestImage2;
-  int mTestImageIndex;
-  bool mIsTestRunning;
-#endif
 };
 
 // camera driver callbacks
