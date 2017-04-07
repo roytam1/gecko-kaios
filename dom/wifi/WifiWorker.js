@@ -119,6 +119,10 @@ XPCOMUtils.defineLazyServiceGetter(this, "gMobileConnectionService",
 XPCOMUtils.defineLazyModuleGetter(this, "PhoneNumberUtils",
                                   "resource://gre/modules/PhoneNumberUtils.jsm");
 
+XPCOMUtils.defineLazyServiceGetter(this, "gIccService",
+                                   "@mozilla.org/icc/iccservice;1",
+                                   "nsIIccService");
+
 // A note about errors and error handling in this file:
 // The libraries that we use in this file are intended for C code. For
 // C code, it is natural to return -1 for errors and 0 for success.
@@ -803,6 +807,12 @@ var WifiManager = (function() {
           notify("networkdisable",
             {reason: "DISABLED_AUTHENTICATION_FAILURE", eapMethod: "PEAP"});
           return true;
+        } else if (requestName.startsWith("IDENTITY")) {
+          simIdentityRequest(requestName);
+          return true;
+        } else if (requestName.startsWith("SIM")) {
+          simAuthRequest(requestName);
+          return true;
         }
         debug("couldn't identify request type - " + event);
         return true;
@@ -1050,6 +1060,7 @@ var WifiManager = (function() {
   manager.stopSupplicantCallback = null;
   manager.lastKnownCountryCode = null;
   manager.clearDisableReasonCounter(function(){});
+  manager.telephonyServiceId = 0;
 
   manager.__defineGetter__("enabled", function() {
     switch (manager.state) {
@@ -1061,6 +1072,220 @@ var WifiManager = (function() {
         return true;
     }
   });
+
+  // EAP-SIM: convert string from hex to base64.
+  function gsmHexToBase64(hex) {
+    let octects = String.fromCharCode(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) {
+      octects += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    }
+    return btoa(octects);
+  }
+
+  // EAP-AKA: convert string from hex to base64.
+  function umtsHexToBase64(rand, authn) {
+    let octects = String.fromCharCode(rand.length / 2);
+    for (let i = 0; i < rand.length; i += 2) {
+      octects += String.fromCharCode(parseInt(rand.substr(i, 2), 16));
+    }
+    octects += String.fromCharCode(authn.length / 2);
+    for (let i = 0; i < authn.length; i += 2) {
+      octects += String.fromCharCode(parseInt(authn.substr(i, 2), 16));
+    }
+    return btoa(octects);
+  }
+
+  // EAP-SIM/AKA: convert string from base64 to byte.
+  function base64Tobytes(str) {
+    let octects = atob(str.replace(/-/g, "+").replace(/_/g, "/"));
+    return octects;
+  }
+
+  // EAP-SIM/AKA: convert string from byte to hex.
+  function bytesToHex(str, from, len) {
+    let hexs = "";
+    for (let i = 0; i < len; i++) {
+      hexs += ("0" + str.charCodeAt(from + i).toString(16)).substr(-2);
+    }
+    return hexs;
+  }
+
+  function simIdentityRequest(requestName) {
+    let networkId = -2;
+    let match =
+      /IDENTITY-([0-9]+):Identity needed for SSID (.+)/.exec(requestName);
+    let eapMethod = 1;
+
+    if (match) {
+      try {
+        networkId = parseInt(match[1]);
+      } catch (e) {
+        networkId = -1;
+      }
+    } else {
+      debug("didn't find SSID " + requestName);
+    }
+
+    // For SIM & AKA/AKA' EAP method Only, get identity from ICC
+    let icc = gIccService.getIccByServiceId(manager.telephonyServiceId);
+    if (!icc || !icc.imsi || !icc.iccInfo || !icc.iccInfo.mcc || 
+      !icc.iccInfo.mnc) {
+      debug("SIM is not ready or iccInfo is invalid");
+      manager.disableNetwork(networkId, function(){});
+      return;
+    }
+
+    // imsi, mcc, mnc
+    let imsi = icc.imsi;
+    let mcc = icc.iccInfo.mcc;
+    let mnc = icc.iccInfo.mnc;
+    if(mnc.length === 2) {
+      mnc = "0" + mnc;
+    }
+
+    wifiCommand.getNetworkVariable(networkId, "eap", function(eap) {
+      if (eap == "SIM") {
+        eapMethod = 1;
+      } else if ( eap == "AKA") {
+        eapMethod = 0;
+      }
+      let identity = eapMethod +
+        imsi + "@wlan.mnc" + mnc + ".mcc" + mcc + ".3gppnetwork.org";
+      debug("identity = " + identity);
+      wifiCommand.simIdentityResponse(networkId, identity, function(){});
+    });
+  }
+
+  function simAuthRequest(requestName) {
+    let matchGsm =
+      /SIM-([0-9]*):GSM-AUTH((:[0-9a-f]+)+) needed for SSID (.+)/.exec(requestName);
+    let matchUmts =
+      /SIM-([0-9]*):UMTS-AUTH:([0-9a-f]+):([0-9a-f]+) needed for SSID (.+)/.exec(requestName);
+    let icc = gIccService.getIccByServiceId(manager.telephonyServiceId);
+    // EAP-SIM
+    if (matchGsm) {
+      let networdId = parseInt(matchGsm[1]);
+      let data = matchGsm[2].split(":");
+      let authResponse = "";
+      let count = 0;
+
+      for (let value in data) {
+        let challenge = data[value];
+        if (!challenge.length) {
+          continue;
+        }
+        let base64Challenge = gsmHexToBase64(challenge);
+        debug("base64Challenge = " + base64Challenge);
+
+        // Try USIM first for authentication.
+        icc.getIccAuthentication(Ci.nsIIcc.APPTYPE_USIM, Ci.nsIIcc.AUTHTYPE_EAP_SIM, base64Challenge, {
+          notifyAuthResponse: function(iccResponse) {
+            debug("Receive USIM iccResponse: " + iccResponse);
+            iccResponseReady(iccResponse);
+          },
+          notifyError: function(aErrorMsg) {
+            debug("Receive USIM iccResponse error: " + aErrorMsg);
+            // In case of failure, retry as a simple SIM.
+            icc.getIccAuthentication(Ci.nsIIcc.APPTYPE_SIM, Ci.nsIIcc.AUTHTYPE_EAP_SIM, base64Challenge, {
+              notifyAuthResponse: function(iccResponse) {
+                debug("Receive SIM iccResponse: " + iccResponse);
+                iccResponseReady(iccResponse);
+              },
+              notifyError: function(aErrorMsg) {
+                debug("Receive SIM iccResponse error: " + aErrorMsg);
+                wifiCommand.simAuthFailedResponse(networdId, function(){});
+              },
+            });
+          },
+        });
+      }
+
+      function iccResponseReady(iccResponse) {
+        if (!iccResponse || iccResponse.length <= 4) {
+          debug("bad response - " + iccResponse);
+          wifiCommand.simAuthFailedResponse(networdId, function(){});
+          return;
+        }
+        let result = base64Tobytes(iccResponse);
+        let sres_len = result.charCodeAt(0);
+        let sres = bytesToHex(result, 1, sres_len);
+        let kc_offset = 1 + sres_len;
+        let kc_len = result.charCodeAt(kc_offset);
+        if (sres_len >= result.length ||
+          kc_offset >= result.length ||
+          kc_offset + kc_len > result.length) {
+          debug("malfomed response - " + iccResponse);
+          wifiCommand.simAuthFailedResponse(networdId, function(){});
+          return;
+        }
+        let kc = bytesToHex(result, 1 + kc_offset, kc_len);
+        debug("kc:" + kc + ", sres:" + sres);
+        authResponse = authResponse + ":" + kc + ":" + sres;
+        count++;
+        if (count == 3) {
+          debug("Supplicant Response -" + authResponse);
+          wifiCommand.simAuthResponse(networdId, "GSM-AUTH", authResponse, function(){});
+        }
+      }
+
+    // EAP-AKA
+    } else if (matchUmts) {
+      let networdId = parseInt(matchUmts[1]);
+      let rand = matchUmts[2];
+      let authn = matchUmts[3];
+
+      if (rand == null || authn == null) {
+        debug("null rand or authn");
+        return;
+      }
+      let base64Challenge = umtsHexToBase64(rand, authn);
+      debug("base64Challenge = " + base64Challenge);
+
+      icc.getIccAuthentication(Ci.nsIIcc.APPTYPE_USIM, Ci.nsIIcc.AUTHTYPE_EAP_AKA, base64Challenge, {
+        notifyAuthResponse: function(iccResponse) {
+          debug("Receive iccResponse: " + iccResponse);
+          iccResponseReady(iccResponse);
+        },
+        notifyError: function(aErrorMsg) {
+          debug("Receive iccResponse error: " + aErrorMsg);
+        },
+      });
+
+      function iccResponseReady(iccResponse) {
+        if (!iccResponse || iccResponse.length <= 4) {
+          debug("bad response - " + iccResponse);
+          wifiCommand.simAuthFailedResponse(networdId, function(){});
+          return;
+        }
+        let result = base64Tobytes(iccResponse);
+        let tag = result.charCodeAt(0);
+        if (tag == 0xdb) {
+          debug("successful 3G authentication ");
+          let res_len = result.charCodeAt(1);
+          let res = bytesToHex(result, 2, res_len);
+          let ck_len = result.charCodeAt(res_len + 2);
+          let ck = bytesToHex(result, res_len + 3, ck_len);
+          let ik_len = result.charCodeAt(res_len + ck_len + 3);
+          let ik = bytesToHex(result, res_len + ck_len + 4, ik_len);
+          debug("ik:" + ik + " ck:" + ck + " res:" + res);
+          let authResponse = ":" + ik + ":" + ck + ":" + res;
+          wifiCommand.simAuthResponse(networdId, "UMTS-AUTH", authResponse, function(){});
+        } else if (tag == 0xdc) {
+          debug("synchronisation failure");
+          let auts_len = result.charCodeAt(1);
+          let auts = bytesToHex(result, 2, auts_len);
+          debug("auts:" + auts);
+          let authResponse = ":" + auts;
+          wifiCommand.simAuthResponse(networdId, "UMTS-AUTS", authResponse, function(){});
+        } else {
+          debug("bad authResponse - unknown tag = " + tag);
+          wifiCommand.umtsAuthFailedResponse(networdId, function(){});
+        }
+      }
+    } else {
+      debug("couldn't parse SIM auth request - " + requestName);
+    }
+  }
 
   var waitForTerminateEventTimer = null;
   function cancelWaitForTerminateEventTimer() {
@@ -1506,6 +1731,7 @@ var WifiManager = (function() {
   manager.setPowerMode = (sdkVersion >= 16)
                          ? wifiCommand.setPowerModeJB
                          : wifiCommand.setPowerModeICS;
+  manager.setExternalSim = wifiCommand.setExternalSim;
   manager.getHttpProxyNetwork = getHttpProxyNetwork;
   manager.setHttpProxy = setHttpProxy;
   manager.configureHttpProxy = configureHttpProxy;
@@ -2333,6 +2559,8 @@ function WifiWorker() {
       self.requestDone();
     });
 
+    // Use external processing for SIM/USIM operations.
+    WifiManager.setExternalSim("1", function(ok) {});
   };
 
   WifiManager.onsupplicantlost = function() {
@@ -2746,15 +2974,15 @@ function WifiWorker() {
       if (aName !== SETTINGS_TELEPHONY_DEFAULT_SERVICE_ID) {
         return;
       }
-      self._telephonyDefaultServiceId = aResult || 0;
+      WifiManager.telephonyServiceId = aResult || 0;
       gMobileConnectionService
-        .getItemByServiceId(self._telephonyDefaultServiceId).registerListener(self);
+        .getItemByServiceId(WifiManager.telephonyServiceId).registerListener(self);
     },
     handleError: function handleError(aErrorMessage) {
       debug("Error reading the 'SETTINGS_TELEPHONY_DEFAULT_SERVICE_ID'.");
-      self._telephonyDefaultServiceId = 0;
+      WifiManager.telephonyServiceId = 0;
       gMobileConnectionService
-        .getItemByServiceId(self._telephonyDefaultServiceId).registerListener(self);
+        .getItemByServiceId(WifiManager.telephonyServiceId).registerListener(self);
     }
   };
 
@@ -2840,8 +3068,6 @@ WifiWorker.prototype = {
 
   _airplaneMode: false,
   _airplaneMode_status: null,
-
-  _telephonyDefaultServiceId: 0,
 
   _needToEnableNetworks: false,
   tetheringSettings: {},
@@ -4255,7 +4481,7 @@ WifiWorker.prototype = {
         wifiCertService.shutdown();
       });
       gMobileConnectionService
-        .getItemByServiceId(this._telephonyDefaultServiceId).unregisterListener(this);
+        .getItemByServiceId(WifiManager.telephonyServiceId).unregisterListener(this);
       break;
 
     case kScreenStateChangedTopic:
@@ -4279,12 +4505,12 @@ WifiWorker.prototype = {
         updateDebug();
         break;
       case SETTINGS_TELEPHONY_DEFAULT_SERVICE_ID:
-        if (this._telephonyDefaultServiceId != aResult) {
+        if (WifiManager.telephonyServiceId != aResult) {
           gMobileConnectionService
-            .getItemByServiceId(this._telephonyDefaultServiceId).unregisterListener(this);
-          this._telephonyDefaultServiceId = aResult;
+            .getItemByServiceId(WifiManager.telephonyServiceId).unregisterListener(this);
+          WifiManager.telephonyServiceId = aResult;
           gMobileConnectionService
-            .getItemByServiceId(this._telephonyDefaultServiceId).registerListener(this);
+            .getItemByServiceId(WifiManager.telephonyServiceId).registerListener(this);
         }
         break;
       case SETTINGS_AIRPLANE_MODE:

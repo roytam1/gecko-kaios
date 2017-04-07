@@ -123,6 +123,26 @@ this.WifiCommand = function(aControlMessage, aInterface, aSdkVersion) {
     doBooleanCommand("REASSOCIATE", "OK", callback);
   };
 
+  command.setExternalSim = function (value, callback) {
+    doBooleanCommand("SET external_sim " + value, "OK", callback);
+  };
+
+  command.simIdentityResponse = function (id, response, callback) {
+    doBooleanCommand("CTRL-RSP-IDENTITY-" + id + ":" + response, "OK", callback);
+  };
+
+  command.simAuthResponse = function (id, type, response, callback) {
+    doBooleanCommand("CTRL-RSP-SIM-" + id + ":" + type + response, "OK", callback);
+  };
+
+  command.simAuthFailedResponse = function (id, callback) {
+    doBooleanCommand("CTRL-RSP-SIM-" + id + ":GSM-FAIL", "OK", callback);
+  };
+
+  command.umtsAuthFailedResponse = function (id, callback) {
+    deBooleanCommand("CTRL-RSP-SIM-" + id + ":UMTS-FAIL", "OK", callback);
+  };
+
   command.setBackgroundScan = function (enable, callback) {
     doBooleanCommand("SET pno " + (enable ? "1" : "0"),
                      "OK",
