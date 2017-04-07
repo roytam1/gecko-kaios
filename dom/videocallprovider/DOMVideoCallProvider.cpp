@@ -614,12 +614,11 @@ DOMVideoCallProvider::SetSurface(const int16_t aType, android::sp<android::IGrap
 void
 DOMVideoCallProvider::SetDataSourceSize(const int16_t aType, const uint16_t aWidth, const uint16_t aHeight)
 {
-  // TODO: uncomment when API get ready
-  // if (aType == TYPE_DISPLAY) {
-  //   mDisplayControl->SetDataSourceSize(aWidth, aHeight);
-  // } else {
-  //   mPreviewControl->SetDataSourceSize(aWidth, aHeight);
-  // }
+  if (aType == TYPE_DISPLAY) {
+    mDisplayControl->SetDataSourceSize(aWidth, aHeight);
+  } else {
+    mPreviewControl->SetDataSourceSize(aWidth, aHeight);
+  }
 }
 
 // nsIVideoCallCallback
