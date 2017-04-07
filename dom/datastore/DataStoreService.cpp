@@ -1102,8 +1102,9 @@ DataStoreService::CheckPermission(nsIPrincipal* aPrincipal)
     return false;
   }
 
-  // Only support DataStore API for certified apps for now.
-  return status == nsIPrincipal::APP_STATUS_CERTIFIED;
+  // Support DataStore API for certified and privileged apps for now.
+  return (status == nsIPrincipal::APP_STATUS_CERTIFIED) ||
+         (status == nsIPrincipal::APP_STATUS_PRIVILEGED);
 }
 
 NS_IMETHODIMP
