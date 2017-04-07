@@ -1910,6 +1910,7 @@ TelephonyService.prototype = {
   },
 
   rejectCall: function(aClientId, aCallIndex, aCallback) {
+    if (DEBUG) debug("rejectCall aCallIndex : " + aCallIndex);
     if (this._isCdmaClient(aClientId)) {
       this._hangUpBackground(aClientId, aCallback);
       return;
@@ -1992,11 +1993,9 @@ TelephonyService.prototype = {
     // the parent call, we send 'parentId' to RIL.
     aCallIndex = this._currentCalls[aClientId][aCallIndex].parentId || aCallIndex;
 
+    if (DEBUG) debug("hangUpCall aCallIndex : " + aCallIndex);
+
     let call = this._currentCalls[aClientId][aCallIndex];
-    if (call.state === nsITelephonyService.CALL_STATE_HELD) {
-      this._hangUpBackground(aClientId, aCallback);
-      return;
-    }
 
     // After hangup a single call, gecko has to resume the held call or conference.
     if (!call.isConference) {
@@ -2211,6 +2210,7 @@ TelephonyService.prototype = {
   },
 
   hangUpConference: function(aClientId, aCallback) {
+    if (DEBUG) debug("hangUpConference");
     // In cdma, ril only maintains one call index.
     if (this._isCdmaClient(aClientId)) {
       this._sendToRilWorker(aClientId, "hangUpCall",
