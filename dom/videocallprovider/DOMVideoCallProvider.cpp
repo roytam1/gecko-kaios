@@ -188,6 +188,7 @@ DOMVideoCallProvider::DOMVideoCallProvider(nsPIDOMWindowInner *aWindow, nsIVideo
   LOG("constructor");
   mProvider->RegisterCallback(this);
 #ifdef FEED_TEST_DATA_TO_PRODUCER
+  char prop[128];
   if (property_get("vt.surface.test", prop, NULL) != 0) {
     if (strcmp(prop, "1") == 0) {
       mIsLoopback = true;
