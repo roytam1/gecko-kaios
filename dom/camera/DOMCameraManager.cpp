@@ -96,7 +96,6 @@ void DOMSurfaceControlCallback::OnProducerCreated(android::sp<android::IGraphicB
                                                                 mDOMCameraManager->mDisplayControl->GetConfiguration()->mPreviewSize.mHeight);
         }
 
-        mDOMCameraManager->mTestDataSource->Start();
         mDOMCameraManager->mTestSurfaceCount ++; //Add counter after we set the correct surface producer.
       }
     }

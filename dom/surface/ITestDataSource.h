@@ -18,13 +18,16 @@
 #define DOM_SURFACE_ITESTDATASOURCE_H
 
 #include <gui/IGraphicBufferProducer.h>
+#include "DOMSurfaceControl.h"
+
+
 
 class ITestDataSourceResolutionResultListener
 {
 public:
-  virtual void SetPreviewSurfaceControl(nsDOMSurfaceControl* aPreviewSurfaceControl) = 0;
+  virtual void SetPreviewSurfaceControl(mozilla::nsDOMSurfaceControl* aPreviewSurfaceControl) = 0;
 
-  virtual void SetDisplaySurfaceControl(nsDOMSurfaceControl* aDisplaySurfaceControl) = 0;
+  virtual void SetDisplaySurfaceControl(mozilla::nsDOMSurfaceControl* aDisplaySurfaceControl) = 0;
 
   virtual void onChangeCameraCapabilities(unsigned int  aResultWidth,
                                           unsigned int  aResultHeight) = 0;
@@ -43,7 +46,6 @@ public:
   virtual void SetDisplaySurface(android::sp<android::IGraphicBufferProducer>& aProducer,
                          uint32_t aPreferWidth,
                          uint32_t aPreferHeight) = 0;                       
-  virtual void Start() = 0;
   virtual void Stop() = 0;
 
   ITestDataSource() {}

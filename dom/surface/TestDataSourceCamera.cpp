@@ -94,6 +94,15 @@ TestDataSourceCamera::SetPreviewSurface(android::sp<android::IGraphicBufferProdu
   } else {
     MY_LOG("SetPreviewSurface without valid camera");
   }
+
+  //Start preview
+  if ((mCamera != NULL) && !mPreviewStarted) {
+    SetCameraParameters();
+    MY_LOG("startPreview");
+    mCamera->startPreview();
+    mPreviewStarted = true;
+  }
+
 }
 
 void 
@@ -101,12 +110,28 @@ TestDataSourceCamera::SetDisplaySurface(android::sp<android::IGraphicBufferProdu
                                         uint32_t aPreferWidth,
                                         uint32_t aPreferHeight)
 {
-  MY_LOG("SetDisplaySurface aPreferWidth:%d, aPreferHeight:%d, mResultPreviewWidth:%d, mResultPreviewHeight:%d", 
-    aPreferWidth, aPreferHeight, mResultPreviewWidth, mResultPreviewHeight);
+  MY_LOG("SetDisplaySurface aPreferWidth:%d, aPreferHeight:%d, mResultDisplayWidth:%d, mResultDisplayHeight:%d", 
+    aPreferWidth, aPreferHeight, mResultDisplayWidth, mResultDisplayHeight);
   //Do nothing, since we are TestDataSource"Camera", can only open 1 camera a time.
   mFakeImageProducer = aProducer;
   if(mTestDataSourceResolutionResultListener) {
-    mTestDataSourceResolutionResultListener->onChangePeerDimensions(176, 144);
+    mTestDataSourceResolutionResultListener->onChangePeerDimensions(mResultDisplayWidth, mResultDisplayHeight);
+  }
+
+  //Start sending fake images.
+  if ((mFakeImageProducer != NULL) && !mDisplayStarted) {
+    if (mFakeImageFeederLooper == NULL) {
+      mFakeImageFeederLooper = new ALooper;MY_LOG("line:%d", __LINE__);
+      mFakeImageFeeder = new FakeImageFeeder(this);MY_LOG("line:%d", __LINE__);
+      mFakeImageFeederLooper->registerHandler(mFakeImageFeeder);MY_LOG("line:%d", __LINE__);
+      mFakeImageFeederLooper->setName("FakeImageLooper");MY_LOG("line:%d", __LINE__);
+      mFakeImageFeederLooper->start(  
+         false, // runOnCallingThread  
+         false, // canCallJava  
+         ANDROID_PRIORITY_AUDIO);
+    }
+    StartFakeImage();
+    mDisplayStarted = true;
   }
 }
 
@@ -132,41 +157,18 @@ TestDataSourceCamera::SetCameraParameters()
   }
 }
 
-void TestDataSourceCamera::Start()
-{
-  MY_LOG("Start");
-  if (mCamera != NULL && !mPreviewStarted) {
-    SetCameraParameters();
-    MY_LOG("startPreview");
-    mCamera->startPreview();
-    mPreviewStarted = true;
-  }
-
-  if (mFakeImageProducer != NULL) {
-    if (mFakeImageFeederLooper == NULL) {
-      mFakeImageFeederLooper = new ALooper;MY_LOG("line:%d", __LINE__);
-      mFakeImageFeeder = new FakeImageFeeder(this);MY_LOG("line:%d", __LINE__);
-      mFakeImageFeederLooper->registerHandler(mFakeImageFeeder);MY_LOG("line:%d", __LINE__);
-      mFakeImageFeederLooper->setName("FakeImageLooper");MY_LOG("line:%d", __LINE__);
-      mFakeImageFeederLooper->start(  
-         false, // runOnCallingThread  
-         false, // canCallJava  
-         ANDROID_PRIORITY_AUDIO);
-    }
-    StartFakeImage();
-  }
-}
-
 void TestDataSourceCamera::Stop()
 {
   MY_LOG("Stop");
   //Stop Preview
   if (mCamera != NULL) {
     mCamera->stopPreview();
+    mPreviewStarted = false;
   }
 
   //Stop Display
   mIsTestRunning = false;
+  mDisplayStarted = false;
 }
 
 TestDataSourceCamera::~TestDataSourceCamera()

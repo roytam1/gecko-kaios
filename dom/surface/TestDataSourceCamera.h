@@ -18,6 +18,7 @@
 #define DOM_SURFACE_TESTDATASOURCECAMERA_H
 
 #include "ITestDataSource.h"
+#include "nsIVideoCallProvider.h"
 #include <binder/IMemory.h>
 #include <utils/threads.h>
 #include <camera/Camera.h>
@@ -40,7 +41,6 @@ public:
   virtual void SetDisplaySurface(android::sp<android::IGraphicBufferProducer>& aProducer,
                                  uint32_t aPreferWidth,
                                  uint32_t aPreferHeight);
-  virtual void Start();
   virtual void Stop();
 
 private:
