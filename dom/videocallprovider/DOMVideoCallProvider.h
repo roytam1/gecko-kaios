@@ -18,6 +18,12 @@
 
 class nsPIDOMWindowInner;
 
+#define FEED_TEST_DATA_TO_PRODUCER
+#ifdef FEED_TEST_DATA_TO_PRODUCER
+class ITestDataSource;
+class ITestDataSourceResolutionResultListener;
+#endif
+
 namespace mozilla {
 
 class ErrorResult;
@@ -148,6 +154,12 @@ private:
   RefPtr<nsDOMSurfaceControl> mPreviewControl;
   SurfaceControlBack* mDisplayCallback;
   SurfaceControlBack* mPreviewCallback;
+
+#ifdef FEED_TEST_DATA_TO_PRODUCER
+  ITestDataSourceResolutionResultListener* mResolutionResultListener;
+  ITestDataSource* mTestDataSource;
+  bool mIsLoopback;
+#endif  
 };
 
 } // namespace dom
