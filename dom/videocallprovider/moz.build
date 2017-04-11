@@ -16,6 +16,7 @@ EXPORTS.mozilla.dom += [
     'DOMVideoCallCameraCapabilities.h',
     'DOMVideoCallProfile.h',
     'DOMVideoCallProvider.h',
+    'test/FakeVideoCallProvider.h'
 ]
 
 EXPORTS.mozilla.dom.videocallprovider += [
@@ -29,7 +30,8 @@ UNIFIED_SOURCES += [
     'DOMVideoCallProfile.cpp',
     'DOMVideoCallProvider.cpp',
     'ipc/VideoCallProviderChild.cpp',
-    'ipc/VideoCallProviderParent.cpp'
+    'ipc/VideoCallProviderParent.cpp',
+    'test/FakeVideoCallProvider.cpp'
 ]
 
 IPDL_SOURCES += [

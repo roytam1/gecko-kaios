@@ -38,6 +38,12 @@
 #endif
 #include "nsXULAppAPI.h" // For XRE_GetProcessType()
 
+#define FEED_TEST_DATA_TO_PRODUCER
+#ifdef FEED_TEST_DATA_TO_PRODUCER 
+#include <cutils/properties.h>
+#include "mozilla/dom/FakeVideoCallProvider.h"
+#endif
+
 #include <android/log.h>
 #undef LOG
 #define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "Telephony" , ## args)
@@ -677,8 +683,18 @@ Telephony::GetLoopbackProvider() const
       return provider.forget();
   } else {
     LOG("return new provider");
-    nsCOMPtr<nsIVideoCallProvider> handler;
-    mService->GetVideoCallProvider(1000, 1000, getter_AddRefs(handler));
+    nsCOMPtr<nsIVideoCallProvider> handler;    
+#ifdef FEED_TEST_DATA_TO_PRODUCER 
+    char prop[128];
+    if ((property_get("vt.loopback", prop, NULL) != 0) && 
+        (strcmp(prop, "1") == 0)) {
+      handler = new FakeVideoCallProvider();
+    } else {
+#endif
+      mService->GetVideoCallProvider(1000, 1000, getter_AddRefs(handler));
+#ifdef FEED_TEST_DATA_TO_PRODUCER
+    }
+#endif
     // if fail to acquire nsIVideoCallProvider, return nullptr
     mLoopbackProvider = new DOMVideoCallProvider(GetOwner(), handler);
     RefPtr<DOMVideoCallProvider> provider = mLoopbackProvider;

@@ -20,14 +20,14 @@
 #include "mozilla/dom/VideoCallSessionModifyResponseEvent.h"
 #include "nsIVideoCallProvider.h"
 
-#ifdef FEED_TEST_DATA_TO_PRODUCER
-#include <cutils/properties.h>
-#include "TestDataSourceCamera.h"
-#endif
-
 #include <android/log.h>
 #undef LOG
 #define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "DOMVideoCallProvider" , ## args)
+
+#define FEED_TEST_DATA_TO_PRODUCER
+#ifdef FEED_TEST_DATA_TO_PRODUCER 
+#include <cutils/properties.h>
+#endif
 
 using mozilla::ErrorResult;
 
@@ -38,50 +38,6 @@ const int16_t TYPE_DISPLAY = 0;
 const int16_t TYPE_PREVIEW = 1;
 
 const int16_t ROTATE_ANGLE = 90;
-
-#ifdef FEED_TEST_DATA_TO_PRODUCER
-class TestDataSourceResolutionResultListener : public ITestDataSourceResolutionResultListener
-{
-public:
-  TestDataSourceResolutionResultListener()
-    : ITestDataSourceResolutionResultListener()
-  {
-  }
-
-  virtual void SetPreviewSurfaceControl(nsDOMSurfaceControl* aPreviewSurfaceControl)
-  {
-    mPreviewSurfaceControl = aPreviewSurfaceControl;
-  }
-
-  virtual void SetDisplaySurfaceControl(nsDOMSurfaceControl* aDisplaySurfaceControl)
-  {
-    mDisplaySurfaceControl = aDisplaySurfaceControl;
-  }
-
-  virtual void onChangeCameraCapabilities(unsigned int aResultWidth,
-                                          unsigned int aResultHeight)
-  {
-    if (mPreviewSurfaceControl) {
-      mPreviewSurfaceControl->SetDataSourceSize(aResultWidth, aResultHeight);
-    }
-  }
-
-  virtual void onChangePeerDimensions(unsigned int aResultWidth,
-                                      unsigned int aResultHeight)
-  {
-     if (mDisplaySurfaceControl) {
-      mDisplaySurfaceControl->SetDataSourceSize(aResultWidth, aResultHeight);
-    }   
-  }
-
-protected:
-  virtual ~TestDataSourceResolutionResultListener() { }
-
-private:
-  nsDOMSurfaceControl* mPreviewSurfaceControl;
-  nsDOMSurfaceControl* mDisplaySurfaceControl;
-};
-#endif
 
 class SurfaceControlBack : public IDOMSurfaceControlCallback
 {
@@ -178,39 +134,16 @@ DOMVideoCallProvider::DOMVideoCallProvider(nsPIDOMWindowInner *aWindow, nsIVideo
   , mPreviewControl(nullptr)
   , mDisplayCallback(nullptr)
   , mPreviewCallback(nullptr)
-#ifdef FEED_TEST_DATA_TO_PRODUCER
-  , mResolutionResultListener(NULL)
-  , mTestDataSource(NULL)
-  , mIsLoopback(false)
-#endif
 {
   MOZ_ASSERT(mProvider);
   LOG("constructor");
   mProvider->RegisterCallback(this);
-#ifdef FEED_TEST_DATA_TO_PRODUCER
-  char prop[128];
-  if (property_get("vt.surface.test", prop, NULL) != 0) {
-    if (strcmp(prop, "1") == 0) {
-      mIsLoopback = true;
-    }
-  }
-#endif
 }
 
 DOMVideoCallProvider::~DOMVideoCallProvider()
 {
   LOG("deconstructor");
   Shutdown();
-
-#ifdef FEED_TEST_DATA_TO_PRODUCER
-  if (mTestDataSource) {
-    delete mTestDataSource;
-  }
-
-  if (mResolutionResultListener) {
-    delete mResolutionResultListener;
-  }
-#endif
 }
 
 void
@@ -249,16 +182,19 @@ DOMVideoCallProvider::Shutdown()
   }
 
   if (mProvider) {
+#ifdef FEED_TEST_DATA_TO_PRODUCER 
+    char prop[128];
+    if ((property_get("vt.loopback", prop, NULL) != 0) && 
+        (strcmp(prop, "1") == 0)) {
+      android::sp<android::IGraphicBufferProducer> nullProducer;
+      mProvider->SetPreviewSurface(nullProducer, 0, 0);
+      mProvider->SetDisplaySurface(nullProducer, 0, 0);
+    }
+#endif
     mProvider->UnregisterCallback(this);
     mProvider = nullptr;
     LOG("null pointer mProvider");
   }
-
-#ifdef FEED_TEST_DATA_TO_PRODUCER 
-  if (mTestDataSource) {
-    mTestDataSource->Stop();
-  }
-#endif
 }
 
 JSObject*
@@ -346,35 +282,9 @@ DOMVideoCallProvider::GetStream(const int16_t aType, const SurfaceConfiguration&
   if (aType == TYPE_DISPLAY) {
     mDisplayCallback = callback;
     mDisplayControl = control;
-
-#ifdef FEED_TEST_DATA_TO_PRODUCER
-    if(mIsLoopback) {
-      if (mResolutionResultListener == NULL) {
-        mResolutionResultListener = new TestDataSourceResolutionResultListener();
-      }
-
-      if (mTestDataSource == NULL) {
-        mTestDataSource = new TestDataSourceCamera(mResolutionResultListener);
-      }
-      mResolutionResultListener->SetDisplaySurfaceControl(mDisplayControl);
-    }
-#endif
   } else {
     mPreviewCallback = callback;
     mPreviewControl = control;
-
-#ifdef FEED_TEST_DATA_TO_PRODUCER
-    if(mIsLoopback) {
-      if (mResolutionResultListener == NULL) {
-        mResolutionResultListener = new TestDataSourceResolutionResultListener();
-      }
-
-      if (mTestDataSource == NULL) {
-        mTestDataSource = new TestDataSourceCamera(mResolutionResultListener);
-      }
-      mResolutionResultListener->SetPreviewSurfaceControl(mPreviewControl);
-    }
-#endif
   }
 
   return promise.forget();
@@ -711,18 +621,8 @@ DOMVideoCallProvider::SetSurface(const int16_t aType, android::sp<android::IGrap
   LOG("SetDisplaySurface, type: %d, producer: %p", aType, aProducer.get());
   if (aType == TYPE_DISPLAY) {
     mProvider->SetDisplaySurface(aProducer, aWidth, aHeight);
-#ifdef FEED_TEST_DATA_TO_PRODUCER 
-    if (mIsLoopback && mTestDataSource) {
-      mTestDataSource->SetDisplaySurface(aProducer, aWidth, aHeight);
-    }
-#endif
   } else {
     mProvider->SetPreviewSurface(aProducer, aWidth, aHeight);
-#ifdef FEED_TEST_DATA_TO_PRODUCER 
-    if (mIsLoopback && mTestDataSource) {
-      mTestDataSource->SetPreviewSurface(aProducer, aWidth, aHeight);
-    }
-#endif
   }
 }
 
