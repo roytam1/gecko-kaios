@@ -91,11 +91,6 @@ SurfaceControlBack::setProducer(android::sp<android::IGraphicBufferProducer> aPr
 {
   LOG("setProducer, mType: %d", mType);
   mProvider->SetSurface(mType, aProducer, mWidth, mHeight);
-
-  if (aProducer == nullptr) {
-    return;
-  }
-  mProvider->SetDataSourceSize(mType, mWidth, mHeight);
 }
 
 void
