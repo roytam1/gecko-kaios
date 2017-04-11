@@ -9,6 +9,9 @@
 
 #include "mozilla/dom/PServiceWorkerManagerParent.h"
 
+// Service Worker Manager chrome process will be the first registed Actor always.
+#define SWM_CHROME_PARENT_ID 1
+
 namespace mozilla {
 
 class PrincipalOriginAttributes;

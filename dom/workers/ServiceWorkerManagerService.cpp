@@ -174,10 +174,10 @@ ServiceWorkerManagerService::PropagateRegistration(
     RefPtr<ServiceWorkerManagerParent> parent = iter.Get()->GetKey();
     MOZ_ASSERT(parent);
 
-    if (parent->ID() != aParentID) {
+    if (aParentID != SWM_CHROME_PARENT_ID && parent->ID() == SWM_CHROME_PARENT_ID) {
       Unused << parent->SendNotifyRegister(aData);
 #ifdef DEBUG
-    } else {
+    } else if (parent->ID() == aParentID) {
       parentFound = true;
 #endif
     }
@@ -260,11 +260,11 @@ ServiceWorkerManagerService::PropagateUnregister(
     RefPtr<ServiceWorkerManagerParent> parent = iter.Get()->GetKey();
     MOZ_ASSERT(parent);
 
-    if (parent->ID() != aParentID) {
+    if (aParentID != SWM_CHROME_PARENT_ID && parent->ID() == SWM_CHROME_PARENT_ID) {
       nsString scope(aScope);
       Unused << parent->SendNotifyUnregister(aPrincipalInfo, scope);
 #ifdef DEBUG
-    } else {
+    } else if (parent->ID() == aParentID) {
       parentFound = true;
 #endif
     }
