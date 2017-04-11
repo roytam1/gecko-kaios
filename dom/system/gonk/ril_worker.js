@@ -5320,7 +5320,9 @@ RilObject.prototype[UNSOLICITED_RESPONSE_NEW_SMS_ON_SIM] = function UNSOLICITED_
     });
 };
 RilObject.prototype[UNSOLICITED_ON_USSD] = function UNSOLICITED_ON_USSD() {
-  let [typeCode, message] = this.context.Buf.readStringList();
+  let strings =  this.context.Buf.readStringList();
+  let typeCode = strings[0];
+  let message = strings[1] || "";
   if (DEBUG) {
     this.context.debug("On USSD. Type Code: " + typeCode + " Message: " + message);
   }
