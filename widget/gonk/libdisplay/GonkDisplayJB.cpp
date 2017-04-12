@@ -176,6 +176,11 @@ GonkDisplayJB::GonkDisplayJB()
             mExtFBDevice = nullptr;
         }
     }
+
+    if (!mExtFBDevice) {
+        // Set mExtFBEnabled to false if no support externl screen.
+        mExtFBEnabled = false;
+    }
 }
 
 GonkDisplayJB::~GonkDisplayJB()
