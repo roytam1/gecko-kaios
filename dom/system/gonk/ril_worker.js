@@ -38,12 +38,14 @@
 
 /* global BufObject */
 /* global TelephonyRequestQueue */
+/* global SimAuthRequestQueue*/
 
 "use strict";
 
 importScripts("ril_consts.js");
 importScripts("resource://gre/modules/workers/require.js");
 importScripts("ril_worker_buf_object.js");
+importScripts("ril_worker_icc_auth_request_queue.js");
 importScripts("ril_worker_telephony_request_queue.js");
 
 // set to true in ril_consts.js to see debug messages
@@ -98,6 +100,7 @@ function RilObject(aContext) {
   this.context = aContext;
 
   this.telephonyRequestQueue = new TelephonyRequestQueue(this);
+  this.simAuthRequestQueue = new SimAuthRequestQueue(this);
   this.currentConferenceState = CALL_STATE_UNKNOWN;
   this._pendingSentSmsMap = {};
   this.pendingNetworkType = {};
@@ -801,6 +804,45 @@ RilObject.prototype = {
       ICCContactHelper.addICCContact(
         this.appType, options.contactType, contact, options.pin2, onsuccess, onerror);
     }
+  },
+
+  /**
+   * Get icc sim challenge.
+   * @param appType The app type
+   * @param authType The authType
+   * @param data The data
+   */
+  getIccAuthentication: function(options) {
+    // We should use record helper to process according to options.appType.
+    options.aid = this._getAidByAppType(options.appType);
+    // To put request into queue.
+    this._simAuthentication(options);
+  },
+
+  _getAidByAppType: function(appType) {
+    switch(appType) {
+      case CARD_APPTYPE_SIM:
+      case CARD_APPTYPE_USIM:
+        return this.context.SimRecordHelper.aid;
+      case CARD_APPTYPE_RUIM:
+      case CARD_APPTYPE_CSIM:
+        return this.context.RuimRecordHelper.aid;
+      case CARD_APPTYPE_ISIM:
+        return this.context.ISimRecordHelper.aid;
+    }
+
+    return this.aid;
+  },
+
+  _simAuthentication: function(options, aid) {
+    this.simAuthRequestQueue.push(REQUEST_SIM_AUTHENTICATION, () => {
+      let Buf = this.context.Buf;
+      Buf.newParcel(REQUEST_SIM_AUTHENTICATION, options);
+      Buf.writeInt32(options.authType);
+      Buf.writeString(options.data);
+      Buf.writeString(options.aid);
+      Buf.sendParcel();
+    });
   },
 
   /**
@@ -3949,6 +3991,10 @@ RilObject.prototype = {
     if (this.telephonyRequestQueue.isValidRequest(request_type)) {
       this.telephonyRequestQueue.pop(request_type);
     }
+
+    if (this.simAuthRequestQueue.isValidRequest(request_type)) {
+      this.simAuthRequestQueue.pop(request_type);
+    }
   }
 };
 
@@ -5058,7 +5104,24 @@ RilObject.prototype[REQUEST_ALLOW_DATA] = function REQUEST_ALLOW_DATA(length, op
   }
 };
 RilObject.prototype[REQUEST_GET_HARDWARE_CONFIG] = null;
-RilObject.prototype[REQUEST_SIM_AUTHENTICATION] = null;
+RilObject.prototype[REQUEST_SIM_AUTHENTICATION] = function REQUEST_SIM_AUTHENTICATION(length, options) {
+  if (options.errorMsg) {
+    this.sendChromeMessage(options);
+    return;
+  }
+
+  let Buf = this.context.Buf;
+  options.sw1 = Buf.readInt32();
+  options.sw2 = Buf.readInt32();
+  options.responseData = Buf.readString();
+  if (DEBUG) {
+    this.context.debug("Setting return values for RIL[REQUEST_SIM_AUTHENTICATION]: [" +
+      options.sw1 + "," +
+      options.sw2 + ", " +
+      options.responseData + "]");
+  }
+  this.sendChromeMessage(options);
+};
 RilObject.prototype[REQUEST_GET_DC_RT_INFO] = null;
 RilObject.prototype[REQUEST_SET_DC_RT_INFO_RATE] = null;
 RilObject.prototype[REQUEST_SET_DATA_PROFILE] = null;

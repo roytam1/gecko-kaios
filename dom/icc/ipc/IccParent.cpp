@@ -182,6 +182,8 @@ IccParent::RecvPIccRequestConstructor(PIccRequestParent* aActor,
       return actor->DoRequest(aRequest.get_ReadContactsRequest());
     case IccRequest::TUpdateContactRequest:
       return actor->DoRequest(aRequest.get_UpdateContactRequest());
+    case IccRequest::TGetIccAuthenticationRequest:
+      return actor->DoRequest(aRequest.get_GetIccAuthenticationRequest());
     default:
       MOZ_CRASH("Received invalid request type!");
   }
@@ -349,6 +351,15 @@ IccRequestParent::DoRequest(const UpdateContactRequest& aRequest)
                                           this));
 }
 
+bool
+IccRequestParent::DoRequest(const GetIccAuthenticationRequest& aRequest)
+{
+  return NS_SUCCEEDED(mIcc->GetIccAuthentication(aRequest.appType(),
+                                                 aRequest.authType(),
+                                                 aRequest.data(),
+                                                 this));
+}
+
 nsresult
 IccRequestParent::SendReply(const IccReply& aReply)
 {
@@ -422,6 +433,12 @@ IccRequestParent::NotifyUpdatedIccContact(nsIIccContact* aContact)
   IccIPCUtils::GetIccContactDataFromIccContact(aContact, contactData);
 
   return SendReply(IccReplyUpdateContact(contactData));
+}
+
+NS_IMETHODIMP
+IccRequestParent::NotifyAuthResponse(const nsAString & aData)
+{
+  return SendReply(IccReplyAuthResponse(nsAutoString(aData)));
 }
 
 } // namespace icc

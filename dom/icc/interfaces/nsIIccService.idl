@@ -25,7 +25,7 @@ interface nsIIccListener : nsISupports
 /**
  * A callback interface for handling asynchronous response.
  */
-[scriptable, uuid(b7b0623f-fb2c-4cec-b0dc-00ac2fe7b296)]
+[scriptable, uuid(7ab4b4ed-0199-4177-9e58-df95831d58d0)]
 interface nsIIccCallback : nsISupports
 {
   /**
@@ -86,6 +86,13 @@ interface nsIIccCallback : nsISupports
    *        The number of remaining retries. -1 if unknown.
    */
   void notifyCardLockError(in DOMString aErrorMsg, in long aRetryCount);
+
+  /**
+   * Callback function to notify auth response data
+   * @param aData
+   *        The response of authentication.
+   */
+  void notifyAuthResponse(in DOMString aData);
 };
 
 [scriptable, uuid(6136acab-b50e-494a-a86d-df392a032897)]
@@ -160,7 +167,7 @@ NS_CreateIccService();
 /**
  * XPCOM component that provides the access to the selected ICC.
  */
-[scriptable, uuid(641df892-f722-11e6-bc64-92361f002671)]
+[scriptable, uuid(dea568b7-d19b-4977-845c-8e2c3a0c165c)]
 interface nsIIcc : nsISupports
 {
   /**
@@ -265,6 +272,23 @@ interface nsIIcc : nsISupports
   const unsigned long CONTACT_TYPE_ADN = 0;
   const unsigned long CONTACT_TYPE_FDN = 1;
   const unsigned long CONTACT_TYPE_SDN = 2;
+
+  /**
+   * UICC application types.
+   */
+  const unsigned long APPTYPE_UNKNOWN = 0;
+  const unsigned long APPTYPE_SIM = 1;
+  const unsigned long APPTYPE_USIM = 2;
+  const unsigned long APPTYPE_RUIM = 3;
+  const unsigned long APPTYPE_CSIM = 4;
+  const unsigned long APPTYPE_ISIM = 5;
+
+  /**
+   * Authentication types for UICC challenge.
+   * See RFC 4186 for more detail.
+   */
+  const unsigned long AUTHTYPE_EAP_SIM = 128;
+  const unsigned long AUTHTYPE_EAP_AKA = 129;
 
   /**
    * Called to register icc-related changes.
@@ -545,4 +569,21 @@ interface nsIIcc : nsISupports
                       in nsIIccContact aContact,
                       in DOMString aPin2,
                       in nsIIccCallback aCallback);
+
+  /**
+   * @param aAppType
+   *        Possible values are one of APPTYPE_***.
+   * @param aAuthType
+   *        Possible values are one of AUTHTYPE_EAP_AKA or AUTHTYPE_EAP_SIM.
+   * @param aData
+   *        The authentication challenge data, encoded by base64.
+   * @param aCallback
+   *        An instance of nsIIccCallback:
+   *        nsIIccCallback::notifyAuthResponse() if success.
+   *        nsIIccCallback::notifyError(), otherwise.
+   */
+  void getIccAuthentication(in unsigned long aAppType,
+                            in unsigned long aAuthType,
+                            in DOMString aData,
+                            in nsIIccCallback aCallback);
 };
