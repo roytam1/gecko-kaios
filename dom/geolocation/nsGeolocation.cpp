@@ -1719,13 +1719,20 @@ Geolocation::ClearWatch(int32_t aWatchId)
 
   // make sure we also search through the pending requests lists for
   // watches to clear...
+  bool isPendingReq = false;
   for (uint32_t i = 0, length = mPendingRequests.Length(); i < length; ++i) {
     if (mPendingRequests[i]->IsWatch() &&
         (mPendingRequests[i]->WatchId() == aWatchId)) {
       mPendingRequests[i]->Shutdown();
       mPendingRequests.RemoveElementAt(i);
+      isPendingReq = true;
       break;
     }
+  }
+
+  // Restore mClearedWatchIDs if aWatchId doesn't correspond to any previous ids
+  if (!isPendingReq) {
+    mClearedWatchIDs.RemoveElement(aWatchId);
   }
 
   return NS_OK;
