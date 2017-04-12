@@ -360,7 +360,12 @@ BrowserElementChild.prototype = {
           return;
         }
 
-        docShell.contentViewer.pausePainting();
+        // Calls to pausePainting should be the same with calls to resumePainting,
+        // if pausePainting is called more than resumePainting, process stays
+        // pausing on paint. See bug 9277.
+        if (this._paintFrozenTimer === null) {
+          docShell.contentViewer.pausePainting();
+        }
 
         this._paintFrozenTimer && this._paintFrozenTimer.cancel();
         this._paintFrozenTimer = new Timer(this, 3000, Ci.nsITimer.TYPE_ONE_SHOT);
