@@ -116,9 +116,6 @@ private:
   bool
   DoRequest(const UpdateContactRequest& aRequest);
 
-  bool
-  DoRequest(const GetIccAuthenticationRequest& aRequest);
-
   nsresult
   SendReply(const IccReply& aReply);
 

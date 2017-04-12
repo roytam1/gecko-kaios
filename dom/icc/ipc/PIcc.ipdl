@@ -72,13 +72,6 @@ struct UpdateContactRequest
   IccContactData contact;
 };
 
-struct GetIccAuthenticationRequest
-{
-  uint32_t appType;
-  uint32_t authType;
-  nsString data;
-};
-
 union IccRequest
 {
   GetCardLockEnabledRequest;
@@ -90,7 +83,6 @@ union IccRequest
   GetServiceStateEnabledRequest;
   ReadContactsRequest;
   UpdateContactRequest;
-  GetIccAuthenticationRequest;
 };
 
 sync protocol PIcc

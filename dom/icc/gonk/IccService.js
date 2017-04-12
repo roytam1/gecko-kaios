@@ -770,21 +770,6 @@ Icc.prototype = {
       aCallback.notifyUpdatedIccContact(new IccContact(aResponse.contact));
     });
   },
-
-  getIccAuthentication: function(aAppType, aAuthType, aData, aCallback) {
-    this._radioInterface.sendWorkerMessage("getIccAuthentication",
-                                           { appType: aAppType,
-                                             authType: aAuthType,
-                                             data: aData },
-                                           (aResponse) => {
-      if (aResponse.errorMsg) {
-        aCallback.notifyError(aResponse.errorMsg);
-        return;
-      }
-
-      aCallback.notifyAuthResponse(aResponse.responseData);
-    });
-  },
 };
 
 this.NSGetFactory = XPCOMUtils.generateNSGetFactory([IccService]);
