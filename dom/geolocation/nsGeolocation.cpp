@@ -597,12 +597,10 @@ nsGeolocationRequest::SetTimeoutTimer()
 {
   StopTimeoutTimer();
 
-  int32_t timeout;
+  uint32_t timeout;
   if (mOptions && (timeout = mOptions->mTimeout) != 0) {
 
-    if (timeout < 0) {
-      timeout = 0;
-    } else if (timeout < 10) {
+    if (timeout < 10) {
       timeout = 10;
     }
 
