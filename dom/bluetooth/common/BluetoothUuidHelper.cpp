@@ -10,7 +10,9 @@
 #include "BluetoothAvrcpManager.h"
 #include "BluetoothHfpManager.h"
 #include "BluetoothHidManager.h"
+#include "BluetoothMapSmsManager.h"
 #include "BluetoothOppManager.h"
+#include "BluetoothPbapManager.h"
 
 USING_BLUETOOTH_NAMESPACE
 
@@ -51,6 +53,10 @@ BluetoothUuidHelper::GetBluetoothServiceClass(uint16_t aServiceUuid)
     case BluetoothServiceClass::HEADSET_AG:
     case BluetoothServiceClass::HID:
     case BluetoothServiceClass::OBJECT_PUSH:
+    case BluetoothServiceClass::PBAP_PCE:
+    case BluetoothServiceClass::PBAP_PSE:
+    case BluetoothServiceClass::MAP_MAS:
+    case BluetoothServiceClass::MAP_MNS:
       retValue = (BluetoothServiceClass)aServiceUuid;
   }
   return retValue;
@@ -77,6 +83,15 @@ BluetoothUuidHelper::GetBluetoothProfileManager(uint16_t aServiceUuid)
       break;
     case BluetoothServiceClass::OBJECT_PUSH:
       profile = BluetoothOppManager::Get();
+      break;
+    case BluetoothServiceClass::PBAP_PSE:
+      profile = BluetoothPbapManager::Get();
+      break;
+    case BluetoothServiceClass::MAP_MAS:
+      profile = BluetoothMapSmsManager::Get();
+      break;
+    case BluetoothServiceClass::MAP_MNS:
+      profile = BluetoothMapSmsManager::Get();
       break;
     default:
       profile = nullptr;
