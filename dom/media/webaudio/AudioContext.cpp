@@ -16,6 +16,7 @@
 #include "mozilla/dom/HTMLMediaElement.h"
 #include "mozilla/dom/OfflineAudioContextBinding.h"
 #include "mozilla/dom/Promise.h"
+#include "nsMemoryPressure.h"
 
 #include "AudioBuffer.h"
 #include "AudioBufferSourceNode.h"
@@ -1113,6 +1114,12 @@ AudioContext::GetBasicWaveFormCache()
     mBasicWaveFormCache = new BasicWaveFormCache(SampleRate());
   }
   return mBasicWaveFormCache;
+}
+
+void
+AudioContext::RequestCleanAfterRelease()
+{
+  NS_DispatchMemoryPressure(MemPressure_New);
 }
 
 BasicWaveFormCache::BasicWaveFormCache(uint32_t aSampleRate)

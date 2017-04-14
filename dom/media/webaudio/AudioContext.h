@@ -307,6 +307,8 @@ public:
 
   BasicWaveFormCache* GetBasicWaveFormCache();
 
+  void RequestCleanAfterRelease();
+
   IMPL_EVENT_HANDLER(mozinterruptbegin)
   IMPL_EVENT_HANDLER(mozinterruptend)
 

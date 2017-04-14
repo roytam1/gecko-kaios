@@ -90,6 +90,14 @@ interface AudioContext : EventTarget {
     [NewObject, Throws]
     PeriodicWave createPeriodicWave(Float32Array real, Float32Array imag);
 
+    // see https://bugzilla.kaiostech.com/show_bug.cgi?id=10234#c2
+    // Please call requestCleanAfterRelease before set AudioContext instance to null,
+    // this ensures the underneath audio resources will be released quickly.
+    // e.g.
+    // context = new AudioContext('ringer');
+    // context.requestCleanAfterRelease();
+    // context = null;
+    void requestCleanAfterRelease();
 };
 
 // Mozilla extensions
