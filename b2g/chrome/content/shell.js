@@ -522,6 +522,11 @@ var shell = {
 
   handleEvent: function shell_handleEvent(evt) {
     function checkReloadKey() {
+      // 'b2g.reload_key' is only defined for Graphene.
+      if (!AppConstants.MOZ_GRAPHENE) {
+        return false;
+      }
+
       if (evt.type !== 'keyup') {
         return false;
       }
