@@ -360,6 +360,11 @@ interface MozInputContext: EventTarget {
   readonly attribute boolean isFromApp;
 
   /**
+   * True if "ime_default_softkey_bar" is true in caller's manifest.
+   */
+  readonly attribute boolean defaultSoftkeyBar;
+
+  /**
    * Get the whole text content of the input field.
    * @return DOMString
    */
@@ -549,7 +554,7 @@ interface MozInputContext: EventTarget {
  CheckAnyPermissions="input"]
 interface MozInputContextSelectionChangeEventDetail {
   /**
-   * Indicate whether or not the change is due to our own action from, 
+   * Indicate whether or not the change is due to our own action from,
    * for example, sendKey() call.
    *
    * Note: this property is untrustworthy because it would still be true even
@@ -573,7 +578,7 @@ interface MozInputContextSelectionChangeEventDetail {
  CheckAnyPermissions="input"]
 interface MozInputContextSurroundingTextChangeEventDetail {
   /**
-   * Indicate whether or not the change is due to our own action from, 
+   * Indicate whether or not the change is due to our own action from,
    * for example, sendKey() call.
    *
    * Note: this property is untrustworthy because it would still be true even
