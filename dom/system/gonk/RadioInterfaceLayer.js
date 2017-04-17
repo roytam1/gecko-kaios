@@ -63,6 +63,8 @@ const HW_DEFAULT_CLIENT_ID = 0;
 const NETWORK_TYPE_WIFI        = Ci.nsINetworkInfo.NETWORK_TYPE_WIFI;
 const NETWORK_TYPE_MOBILE      = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE;
 
+const INVALID_UPTIME = undefined;
+
 // set to true in ril_consts.js to see debug messages
 var DEBUG = RIL.DEBUG_RIL;
 
@@ -928,8 +930,16 @@ RadioInterface.prototype = {
   setClockByNitz: function(message) {
     // To set the system clock time. Note that there could be a time diff
     // between when the NITZ was received and when the time is actually set.
+    let systemUpTime = this._getSystemUpTime();
+    let upTimeDiff = systemUpTime ?
+                     systemUpTime - message.receiveTimeInMS :
+                     -1;
+    if (upTimeDiff < 0) {
+      this.debug("setClockByNitz upTimeDiff is invalid, skip!");
+      return;
+    }
     gTimeService.set(
-      message.networkTimeInMS + (Date.now() - message.receiveTimeInMS));
+      message.networkTimeInMS + upTimeDiff);
   },
 
   /**
@@ -1158,9 +1168,6 @@ RadioInterface.prototype = {
         break;
       case kSysClockChangeObserverTopic:
         let offset = parseInt(data, 10);
-        if (this._lastNitzMessage) {
-          this._lastNitzMessage.receiveTimeInMS += offset;
-        }
         this._sntp.updateOffset(offset);
         break;
       case kNetworkConnStateChangedTopic:
@@ -1337,6 +1344,18 @@ RadioInterface.prototype = {
     } else {
       this.workerMessenger.send(rilMessageType, message);
     }
+  },
+
+  _getSystemUpTime: function() {
+    let upTime;
+    try {
+      upTime = gTimeService.elapsedRealtime;
+    } catch (e) {
+      this.debug("_getSystemUpTime error: " + e);
+      upTime = INVALID_UPTIME;
+    }
+
+    return upTime;
   },
 };
 

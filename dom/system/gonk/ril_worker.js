@@ -5337,6 +5337,7 @@ RilObject.prototype[UNSOLICITED_ON_USSD] = function UNSOLICITED_ON_USSD() {
 RilObject.prototype[UNSOLICITED_ON_USSD_REQUEST] = null;
 RilObject.prototype[UNSOLICITED_NITZ_TIME_RECEIVED] = function UNSOLICITED_NITZ_TIME_RECEIVED() {
   let dateString = this.context.Buf.readString();
+  let receiveTimeInMS = this.context.Buf.readInt64();
 
   // The data contained in the NITZ message is
   // in the form "yy/mm/dd,hh:mm:ss(+/-)tz,dt"
@@ -5344,8 +5345,6 @@ RilObject.prototype[UNSOLICITED_NITZ_TIME_RECEIVED] = function UNSOLICITED_NITZ_
   // See also bug 714352 - Listen for NITZ updates from rild.
 
   if (DEBUG) this.context.debug("DateTimeZone string " + dateString);
-
-  let now = Date.now();
 
   let year = parseInt(dateString.substr(0, 2), 10);
   let month = parseInt(dateString.substr(3, 2), 10);
@@ -5370,7 +5369,7 @@ RilObject.prototype[UNSOLICITED_NITZ_TIME_RECEIVED] = function UNSOLICITED_NITZ_
                           networkTimeInMS          : timeInMS,
                           networkTimeZoneInMinutes : -(tz * 15),
                           networkDSTInHr           : dst,
-                          receiveTimeInMS          : now});
+                          receiveTimeInMS          : receiveTimeInMS});
 };
 
 RilObject.prototype[UNSOLICITED_SIGNAL_STRENGTH] = function UNSOLICITED_SIGNAL_STRENGTH(length) {
