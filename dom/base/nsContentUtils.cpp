@@ -7662,7 +7662,7 @@ nsContentUtils::SendKeyEvent(nsIWidget* aWidget,
                                aModifiers, aAdditionalFlags, aDefaultActionTaken);
 }
 
-NS_IMETHODIMP
+nsresult
 nsContentUtils::SendKeyEventByKeyName(nsIWidget* aWidget,
                                       const nsAString& aType,
                                       const nsAString& aKeyName,
