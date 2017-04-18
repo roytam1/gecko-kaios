@@ -71,7 +71,7 @@ PushNotifier::NotifySubscriptionChange(const nsACString& aScope,
 {
   nsresult rv;
   if (ShouldNotifyObservers(aPrincipal)) {
-    rv = NotifySubscriptionChangeObservers(aScope);
+    rv = NotifySubscriptionChangeObservers(aScope, aPrincipal);
     if (NS_WARN_IF(NS_FAILED(rv))) {
       return rv;
     }
@@ -113,7 +113,7 @@ PushNotifier::NotifyPush(const nsACString& aScope, nsIPrincipal* aPrincipal,
 {
   nsresult rv;
   if (ShouldNotifyObservers(aPrincipal)) {
-    rv = NotifyPushObservers(aScope, aData);
+    rv = NotifyPushObservers(aScope, aPrincipal, aData);
     if (NS_WARN_IF(NS_FAILED(rv))) {
       return rv;
     }
@@ -266,19 +266,23 @@ PushNotifier::NotifyErrorWorkers(const nsACString& aScope,
 
 nsresult
 PushNotifier::NotifyPushObservers(const nsACString& aScope,
+                                  nsIPrincipal* aPrincipal,
                                   const Maybe<nsTArray<uint8_t>>& aData)
 {
-  nsCOMPtr<nsIPushMessage> message = nullptr;
+  nsCOMPtr<nsIPushData> data;
   if (aData) {
-    message = new PushMessage(aData.ref());
+    data = new PushData(aData.ref());
   }
+  nsCOMPtr<nsIPushMessage> message = new PushMessage(aPrincipal, data);
   return DoNotifyObservers(message, OBSERVER_TOPIC_PUSH, aScope);
 }
 
 nsresult
-PushNotifier::NotifySubscriptionChangeObservers(const nsACString& aScope)
+PushNotifier::NotifySubscriptionChangeObservers(const nsACString& aScope,
+                                                nsIPrincipal* aPrincipal)
 {
-  return DoNotifyObservers(nullptr, OBSERVER_TOPIC_SUBSCRIPTION_CHANGE, aScope);
+  return DoNotifyObservers(aPrincipal, OBSERVER_TOPIC_SUBSCRIPTION_CHANGE,
+                           aScope);
 }
 
 nsresult
@@ -327,25 +331,25 @@ PushNotifier::ShouldNotifyWorkers(nsIPrincipal* aPrincipal)
          Preferences::GetBool("dom.push.testing.notifyWorkers", true);
 }
 
-PushMessage::PushMessage(const nsTArray<uint8_t>& aData)
+PushData::PushData(const nsTArray<uint8_t>& aData)
   : mData(aData)
 {}
 
-PushMessage::~PushMessage()
+PushData::~PushData()
 {}
 
-NS_IMPL_CYCLE_COLLECTION_0(PushMessage)
+NS_IMPL_CYCLE_COLLECTION_0(PushData)
 
-NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(PushMessage)
-  NS_INTERFACE_MAP_ENTRY_AMBIGUOUS(nsISupports, nsIPushMessage)
-  NS_INTERFACE_MAP_ENTRY(nsIPushMessage)
+NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(PushData)
+  NS_INTERFACE_MAP_ENTRY_AMBIGUOUS(nsISupports, nsIPushData)
+  NS_INTERFACE_MAP_ENTRY(nsIPushData)
 NS_INTERFACE_MAP_END
 
-NS_IMPL_CYCLE_COLLECTING_ADDREF(PushMessage)
-NS_IMPL_CYCLE_COLLECTING_RELEASE(PushMessage)
+NS_IMPL_CYCLE_COLLECTING_ADDREF(PushData)
+NS_IMPL_CYCLE_COLLECTING_RELEASE(PushData)
 
 nsresult
-PushMessage::EnsureDecodedText()
+PushData::EnsureDecodedText()
 {
   if (mData.IsEmpty() || !mDecodedText.IsEmpty()) {
     return NS_OK;
@@ -363,7 +367,7 @@ PushMessage::EnsureDecodedText()
 }
 
 NS_IMETHODIMP
-PushMessage::Text(nsAString& aText)
+PushData::Text(nsAString& aText)
 {
   nsresult rv = EnsureDecodedText();
   if (NS_WARN_IF(NS_FAILED(rv))) {
@@ -374,8 +378,8 @@ PushMessage::Text(nsAString& aText)
 }
 
 NS_IMETHODIMP
-PushMessage::Json(JSContext* aCx,
-                  JS::MutableHandle<JS::Value> aResult)
+PushData::Json(JSContext* aCx,
+               JS::MutableHandle<JS::Value> aResult)
 {
   nsresult rv = EnsureDecodedText();
   if (NS_WARN_IF(NS_FAILED(rv))) {
@@ -390,11 +394,10 @@ PushMessage::Json(JSContext* aCx,
 }
 
 NS_IMETHODIMP
-PushMessage::Binary(uint32_t* aDataLen, uint8_t** aData)
+PushData::Binary(uint32_t* aDataLen, uint8_t** aData)
 {
-  if (!aDataLen || !aData) {
-    return NS_ERROR_INVALID_ARG;
-  }
+  NS_ENSURE_ARG_POINTER(aDataLen && aData);
+
   *aData = nullptr;
   if (mData.IsEmpty()) {
     *aDataLen = 0;
@@ -408,6 +411,44 @@ PushMessage::Binary(uint32_t* aDataLen, uint8_t** aData)
   memcpy(data, mData.Elements(), length * sizeof(uint8_t));
   *aDataLen = length;
   *aData = data;
+  return NS_OK;
+}
+
+PushMessage::PushMessage(nsIPrincipal* aPrincipal, nsIPushData* aData)
+  : mPrincipal(aPrincipal)
+  , mData(aData)
+{}
+
+PushMessage::~PushMessage()
+{}
+
+NS_IMPL_CYCLE_COLLECTION(PushMessage, mPrincipal, mData)
+
+NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(PushMessage)
+  NS_INTERFACE_MAP_ENTRY_AMBIGUOUS(nsISupports, nsIPushMessage)
+  NS_INTERFACE_MAP_ENTRY(nsIPushMessage)
+NS_INTERFACE_MAP_END
+
+NS_IMPL_CYCLE_COLLECTING_ADDREF(PushMessage)
+NS_IMPL_CYCLE_COLLECTING_RELEASE(PushMessage)
+
+NS_IMETHODIMP
+PushMessage::GetPrincipal(nsIPrincipal** aPrincipal)
+{
+  NS_ENSURE_ARG_POINTER(aPrincipal);
+
+  nsCOMPtr<nsIPrincipal> principal = mPrincipal;
+  principal.forget(aPrincipal);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+PushMessage::GetData(nsIPushData** aData)
+{
+  NS_ENSURE_ARG_POINTER(aData);
+
+  nsCOMPtr<nsIPushData> data = mData;
+  data.forget(aData);
   return NS_OK;
 }
 
