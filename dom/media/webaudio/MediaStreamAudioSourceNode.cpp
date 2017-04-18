@@ -127,10 +127,11 @@ MediaStreamAudioSourceNode::AttachToFirstTrack(const RefPtr<DOMMediaStream>& aMe
 void
 MediaStreamAudioSourceNode::NotifyTrackAdded(const RefPtr<MediaStreamTrack>& aTrack)
 {
-  if (mInputTrack) {
+  if (mInputTrack == aTrack) {
     return;
   }
 
+  DetachFromTrack();
   AttachToTrack(aTrack);
 }
 
