@@ -9,12 +9,18 @@
 #define TIMESERVICE_CONTRACTID "@mozilla.org/time/timeservice;1"
 %}
 
-[scriptable, builtinclass, uuid(1fc7fde2-0090-11e2-bdd6-0fea4b9f41f8)]
+[scriptable, builtinclass, uuid(7b3937f4-afa8-4cfd-b67e-5b8419d027e0)]
 interface nsITimeService : nsISupports
 {
-  /* Set the system time.
+  /**
+   * Set the system time.
    *
    * The |aTimeInMS| argument is the time in milliseconds since the epoch.
    */
   void set(in int64_t aTimeInMS);
+
+  /**
+   * Milliseconds since boot, including time spent in sleep.
+   */
+  readonly attribute unsigned long long elapsedRealtime;
 };

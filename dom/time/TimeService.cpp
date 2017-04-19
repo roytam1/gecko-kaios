@@ -7,6 +7,7 @@
 #include "base/basictypes.h"
 #include "jsapi.h"
 #include "mozilla/ClearOnShutdown.h"
+#include "mozilla/FileUtils.h"
 #include "mozilla/Hal.h"
 #include "TimeService.h"
 
@@ -32,6 +33,37 @@ TimeService::GetInstance()
 NS_IMETHODIMP
 TimeService::Set(int64_t aTimeInMS) {
   hal::AdjustSystemClock(aTimeInMS - (JS_Now() / PR_USEC_PER_MSEC));
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TimeService::GetElapsedRealtime(uint64_t* aElapsedRealtime) {
+  nsTArray<uint64_t> result;
+
+  if (getSysUptime(result) != NS_OK) {
+    *aElapsedRealtime = 0;
+    return NS_ERROR_FAILURE;
+  }
+
+  *aElapsedRealtime = result.ElementAt(0);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TimeService::getSysUptime(nsTArray<uint64_t>& aResult) {
+  char uptimeInfo[32];
+  bool success = ReadSysFile("/proc/uptime", uptimeInfo, sizeof(uptimeInfo));
+
+  if (!success) {
+    return NS_ERROR_FAILURE;
+  }
+
+  char *s = strtok(uptimeInfo, " ");
+  while (s != nullptr) {
+    aResult.AppendElement(atof(s) * 1000);
+    s = strtok(nullptr, " ");
+  }
+
   return NS_OK;
 }
 

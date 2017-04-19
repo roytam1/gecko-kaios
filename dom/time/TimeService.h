@@ -29,6 +29,8 @@ private:
   virtual ~TimeService() {};
 
   static StaticRefPtr<TimeService> sSingleton;
+
+  nsresult getSysUptime(nsTArray<uint64_t>& aResult);
 };
 
 } // namespace time
