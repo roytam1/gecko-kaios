@@ -160,7 +160,8 @@ Components.utils.import('resource://gre/modules/ctypes.jsm');
   let product_device = null;
   let build_number = null;
   if (isGonk) {
-    hardware_info = libcutils.property_get('ro.hardware');
+    hardware_info = libcutils.property_get('ro.product.model.name') ||
+                    libcutils.property_get('ro.hardware');
     firmware_revision = libcutils.property_get('ro.firmware_revision');
     product_manufacturer = libcutils.property_get('ro.product.manufacturer');
     product_model = libcutils.property_get('ro.product.model');
