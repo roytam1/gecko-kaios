@@ -810,7 +810,7 @@ NetworkService.prototype = {
     let params = {
       cmd: "createNetwork",
       ifname: aInterfaceName,
-      networktype: aNetworkType
+      networkType: aNetworkType
     };
 
     this.controlMessage(params, function(aResult) {
@@ -822,7 +822,7 @@ NetworkService.prototype = {
     let params = {
       cmd: "destroyNetwork",
       ifname: aInterfaceName,
-      networktype: aNetworkType
+      networkType: aNetworkType
     };
 
     this.controlMessage(params, function(aResult) {
