@@ -685,7 +685,7 @@ child:
     /**
      * Send a Push error message to all service worker clients in the child.
      */
-    async PushError(nsCString scope, nsString message, uint32_t flags);
+    async PushError(nsCString scope, nsString message, uint32_t flags, Principal principal);
 
     /**
      * Windows specific: associate this content process with the browsers

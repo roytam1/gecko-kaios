@@ -51,7 +51,7 @@ public:
   nsresult NotifySubscriptionChangeWorkers(const nsACString& aScope,
                                            nsIPrincipal* aPrincipal);
   void NotifyErrorWorkers(const nsACString& aScope, const nsAString& aMessage,
-                          uint32_t aFlags);
+                          uint32_t aFlags, nsIPrincipal* aPrincipal);
 
 protected:
   virtual ~PushNotifier();

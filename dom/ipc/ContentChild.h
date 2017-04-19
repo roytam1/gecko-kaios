@@ -557,7 +557,7 @@ public:
 
   virtual bool
   RecvPushError(const nsCString& aScope, const nsString& aMessage,
-                const uint32_t& aFlags) override;
+                const uint32_t& aFlags, const IPC::Principal& aPrincipal) override;
 
   // Get the directory for IndexedDB files. We query the parent for this and
   // cache the value

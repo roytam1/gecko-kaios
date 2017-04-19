@@ -3376,7 +3376,7 @@ ContentChild::RecvPushSubscriptionChange(const nsCString& aScope,
 
 bool
 ContentChild::RecvPushError(const nsCString& aScope, const nsString& aMessage,
-                            const uint32_t& aFlags)
+                            const uint32_t& aFlags, const IPC::Principal& aPrincipal)
 {
 #ifndef MOZ_SIMPLEPUSH
   nsCOMPtr<nsIPushNotifier> pushNotifierIface =
@@ -3386,7 +3386,7 @@ ContentChild::RecvPushError(const nsCString& aScope, const nsString& aMessage,
   }
   PushNotifier* pushNotifier =
     static_cast<PushNotifier*>(pushNotifierIface.get());
-  pushNotifier->NotifyErrorWorkers(aScope, aMessage, aFlags);
+  pushNotifier->NotifyErrorWorkers(aScope, aMessage, aFlags, aPrincipal);
 #endif
   return true;
 }

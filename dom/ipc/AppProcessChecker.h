@@ -102,6 +102,13 @@ AssertAppPrincipal(mozilla::dom::PContentParent* aParent,
                    nsIPrincipal* aPrincipal);
 
 /**
+ * Check if the specified principal is matching this content process.
+ */
+bool
+CheckAppPrincipal(mozilla::dom::PContentParent* aParent,
+                  nsIPrincipal* aPrincipal);
+
+/**
  * Check if the specified principal is valid, and return the saved permission
  * value for permission `aPermission' on that principal.
  * See nsIPermissionManager.idl for possible return values.

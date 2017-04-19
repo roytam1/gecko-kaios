@@ -18,6 +18,7 @@
 #include "mozilla/dom/BodyUtil.h"
 #include "mozilla/dom/ContentParent.h"
 #include "nsXPCOMStrings.h"
+#include "mozilla/AppProcessChecker.h"
 
 namespace mozilla {
 namespace dom {
@@ -90,7 +91,7 @@ PushNotifier::NotifyError(const nsACString& aScope, nsIPrincipal* aPrincipal,
 {
   if (ShouldNotifyWorkers(aPrincipal)) {
     // For service worker subscriptions, report the error to all clients.
-    NotifyErrorWorkers(aScope, aMessage, aFlags);
+    NotifyErrorWorkers(aScope, aMessage, aFlags, aPrincipal);
     return NS_OK;
   }
   // For system subscriptions, log the error directly to the browser console.
@@ -139,14 +140,12 @@ PushNotifier::NotifyPushWorkers(const nsACString& aScope,
 
   if (XRE_IsParentProcess()) {
     // We're in the parent. Broadcast the event
-    // to the content processes with same scope.
-    nsAutoCString nScope(aScope);
+    // to the content processes matching the principal.
     bool ok = true;
     nsTArray<ContentParent*> contentActors;
     ContentParent::GetAll(contentActors);
     for (uint32_t i = 0; i < contentActors.Length(); ++i) {
-      const nsString nAppManifestURL = contentActors[i]->AppManifestURL();
-      if (!nAppManifestURL.Find(nScope.get())) {
+      if (CheckAppPrincipal(contentActors[i], aPrincipal)) {
         if (aData) {
           ok &= contentActors[i]->SendPushWithData(PromiseFlatCString(aScope),
             IPC::Principal(aPrincipal), PromiseFlatString(aMessageId), aData.ref());
@@ -183,19 +182,18 @@ PushNotifier::NotifySubscriptionChangeWorkers(const nsACString& aScope,
 
   if (XRE_IsParentProcess()) {
     // We're in the parent. Broadcast the event
-    // to the content processes with same scope.
+    // to the content processes matching the principal.
     bool ok = true;
-    nsAutoCString nScope(aScope);
     nsTArray<ContentParent*> contentActors;
     ContentParent::GetAll(contentActors);
     for (uint32_t i = 0; i < contentActors.Length(); ++i) {
-      const nsString nAppManifestURL = contentActors[i]->AppManifestURL();
-      if (!nAppManifestURL.Find(nScope.get())) {
+      if (CheckAppPrincipal(contentActors[i], aPrincipal)) {
         ok &= contentActors[i]->SendPushSubscriptionChange(
-        PromiseFlatCString(aScope), IPC::Principal(aPrincipal));
+          PromiseFlatCString(aScope), IPC::Principal(aPrincipal));
         return ok ? NS_OK : NS_ERROR_FAILURE;
       }
     }
+
   }
   // Notify the worker from the current process.
   RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
@@ -213,24 +211,23 @@ PushNotifier::NotifySubscriptionChangeWorkers(const nsACString& aScope,
 void
 PushNotifier::NotifyErrorWorkers(const nsACString& aScope,
                                  const nsAString& aMessage,
-                                 uint32_t aFlags)
+                                 uint32_t aFlags,
+                                 nsIPrincipal* aPrincipal)
 {
   AssertIsOnMainThread();
 
   if (XRE_IsParentProcess()) {
     // We're in the parent. Broadcast the event
-    // to the content processes with same scope.
-    nsAutoCString nScope(aScope);
+    // to the content processes matching the principal.
     nsTArray<ContentParent*> contentActors;
     ContentParent::GetAll(contentActors);
     if (!contentActors.IsEmpty()) {
       // At least one content process active.
       for (uint32_t i = 0; i < contentActors.Length(); ++i) {
-        const nsString nAppManifestURL = contentActors[i]->AppManifestURL();
-        if (!nAppManifestURL.Find(nScope.get())) {
+        if (CheckAppPrincipal(contentActors[i], aPrincipal)) {
           Unused << NS_WARN_IF(
             !contentActors[i]->SendPushError(PromiseFlatCString(aScope),
-              PromiseFlatString(aMessage), aFlags));
+              PromiseFlatString(aMessage), aFlags, IPC::Principal(aPrincipal)));
           return;
         }
       }

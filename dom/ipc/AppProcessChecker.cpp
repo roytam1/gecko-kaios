@@ -270,6 +270,35 @@ AssertAppPrincipal(PContentParent* aActor,
   return false;
 }
 
+bool
+CheckAppPrincipal(PContentParent* aActor,
+                  nsIPrincipal* aPrincipal)
+{
+  if (!aPrincipal) {
+    NS_WARNING("Principal is invalid, return false");
+    return false;
+  }
+
+  uint32_t principalAppId = aPrincipal->GetAppId();
+  bool inIsolatedBrowser = aPrincipal->GetIsInIsolatedMozBrowserElement();
+
+  // Check if the permission's appId matches a child we manage.
+  nsTArray<TabContext> contextArray =
+    static_cast<ContentParent*>(aActor)->GetManagedTabContext();
+  for (uint32_t i = 0; i < contextArray.Length(); ++i) {
+    if (contextArray[i].OwnOrContainingAppId() == principalAppId) {
+      // If the child only runs isolated browser content and the principal
+      // claims it's not in an isolated browser element, it's lying.
+      if (!contextArray[i].IsIsolatedMozBrowserElement() || inIsolatedBrowser) {
+        return true;
+      }
+      break;
+    }
+  }
+
+  return false;
+}
+
 already_AddRefed<nsIPrincipal>
 GetAppPrincipal(uint32_t aAppId)
 {
@@ -410,6 +439,13 @@ AssertAppPrincipal(mozilla::dom::PContentParent* aActor,
                    nsIPrincipal* aPrincipal)
 {
   return true;
+}
+
+bool
+CheckAppPrincipal(mozilla::dom::PContentParent* aActor,
+                  nsIPrincipal* aPrincipal)
+{
+  return false;
 }
 
 uint32_t
