@@ -368,33 +368,21 @@ this.Keyboard = {
     let appManifest = msg.target.appManifestURL;
     msg.data.isFromApp = appManifest !== '' ? true : false;
 
-    function sendNotify(self, msg) {
-      // Notify the current active input app to gain focus.
-      self.forwardEvent('Keyboard:Focus', msg);
+    // Notify the current active input app to gain focus.
+    this.forwardEvent('Keyboard:Focus', msg);
 
-      // Notify System app, used also to render value selectors for now;
-      // that's why we need the info about choices / min / max here as well...
-      self.sendToSystem('System:Focus', msg.data);
+    // Notify System app, used also to render value selectors for now;
+    // that's why we need the info about choices / min / max here as well...
+    this.sendToSystem('System:Focus', msg.data);
 
-      // XXX: To be removed when content migrate away from mozChromeEvents.
-      SystemAppProxy.dispatchEvent({
-        type: 'inputmethod-contextchange',
-        inputType: msg.data.inputType,
-        value: msg.data.value,
-        choices: JSON.stringify(msg.data.choices),
-        min: msg.data.min,
-        max: msg.data.max
-      });
-    }
-
-    if (!appManifest || !appManifest.length) {
-      sendNotify(this, msg);
-      return;
-    }
-
-    appsService.getManifestFor(appManifest).then((manifest) => {
-      msg.data.defaultSoftkeyBar = manifest.ime_default_softkey_bar === true;
-      sendNotify(this, msg);
+    // XXX: To be removed when content migrate away from mozChromeEvents.
+    SystemAppProxy.dispatchEvent({
+      type: 'inputmethod-contextchange',
+      inputType: msg.data.inputType,
+      value: msg.data.value,
+      choices: JSON.stringify(msg.data.choices),
+      min: msg.data.min,
+      max: msg.data.max
     });
   },
 
@@ -410,7 +398,6 @@ this.Keyboard = {
     }
 
     msg.data.isFromApp = null;
-    msg.data.defaultSoftkeyBar = null;
 
     // unset formMM
     this.formMM = null;
@@ -429,17 +416,9 @@ this.Keyboard = {
     if (newEventName === 'Keyboard:GetContext:Result:OK') {
       let appManifest = msg.target.appManifestURL;
       msg.data.isFromApp = appManifest !== '' ? true : false;
-
-      if (!appManifest || !appManifest.length) {
-        this.sendToKeyboard(newEventName, msg.data);
-        return;
-      }
-
-      appsService.getManifestFor(appManifest).then((manifest) => {
-        msg.data.defaultSoftkeyBar = manifest.ime_default_softkey_bar === true;
-        this.sendToKeyboard(newEventName, msg.data);
-      });
     }
+
+    this.sendToKeyboard(newEventName, msg.data);
   },
 
   setSelectedOption: function keyboardSetSelectedOption(msg) {

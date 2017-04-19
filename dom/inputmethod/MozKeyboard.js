@@ -822,7 +822,6 @@ function MozInputContext(data) {
     inputMode: data.inputMode,
     lang: data.lang,
     isFromApp: data.isFromApp,
-    defaultSoftkeyBar: data.defaultSoftkeyBar,
     selectionStart: data.selectionStart,
     selectionEnd: data.selectionEnd,
     text: data.value
@@ -1001,10 +1000,6 @@ MozInputContext.prototype = {
 
   get isFromApp() {
     return this._context.isFromApp;
-  },
-
-  get defaultSoftkeyBar() {
-    return this._context.defaultSoftkeyBar;
   },
 
   getText: function ic_getText(offset, length) {
