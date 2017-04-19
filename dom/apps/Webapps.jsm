@@ -4164,8 +4164,8 @@ this.DOMApplicationRegistry = {
         manifestURL:  aNewApp.manifestURL
       });
       if (removeApp) {
-        this.broadcastMessage("Webapps:Uninstall:Broadcast:Return:OK", aOldApp);
-        this.broadcastMessage("Webapps:RemoveApp", { id: aId });
+        MessageBroadcaster.broadcastMessage("Webapps:Uninstall:Broadcast:Return:OK", aOldApp);
+        MessageBroadcaster.broadcastMessage("Webapps:RemoveApp", { id: aId });
       }
     });
     AppDownloadManager.remove(aNewApp.manifestURL);
