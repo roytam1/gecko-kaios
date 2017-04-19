@@ -1572,7 +1572,7 @@ MmsService.prototype = {
 
   _updateDebugFlag: function() {
     try {
-      DEBUG = Services.prefs.getBoolPref(kPrefMmsDebuggingEnabled);
+      DEBUG = DEBUG || Services.prefs.getBoolPref(kPrefMmsDebuggingEnabled);
     } catch (e) {}
   },
 
