@@ -726,7 +726,8 @@ BluetoothHidManager::ConnectionStateNotification(
   const BluetoothAddress& aBdAddr, BluetoothHidConnectionState aState)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  BT_LOGR("state %d", aState);
+
+  BT_LOGR("[HID] state %d", aState);
 
   if (aState == HID_CONNECTION_STATE_CONNECTED) {
     mHidConnected = true;

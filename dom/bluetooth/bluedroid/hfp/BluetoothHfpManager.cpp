@@ -1526,7 +1526,7 @@ BluetoothHfpManager::ConnectionStateNotification(
 {
   MOZ_ASSERT(NS_IsMainThread());
 
-  BT_LOGR("state %d", aState);
+  BT_LOGR("[HFP] state %d", aState);
 
   mPrevConnectionState = mConnectionState;
   mConnectionState = aState;

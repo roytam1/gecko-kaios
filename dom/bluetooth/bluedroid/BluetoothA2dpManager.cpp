@@ -762,6 +762,8 @@ BluetoothA2dpManager::ConnectionStateNotification(
 {
   MOZ_ASSERT(NS_IsMainThread());
 
+  BT_LOGR("[A2DP] state %d", aState);
+
   nsString a2dpState;
   AvStatusToSinkString(aState, a2dpState);
 

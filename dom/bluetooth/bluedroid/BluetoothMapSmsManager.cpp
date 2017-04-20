@@ -774,6 +774,8 @@ BluetoothMapSmsManager::ReplyToConnect()
                            sizeof(BluetoothUuid));
   index += AppendHeaderConnectionId(&req[index], 0x01);
 
+  BT_LOGR("Reply to MAP_MAS connection request.");
+
   return SendMasObexData(req, ObexResponseCode::Success, index);
 }
 
@@ -1282,6 +1284,8 @@ void
 BluetoothMapSmsManager::SendMnsConnectRequest()
 {
   MOZ_ASSERT(mMnsSocket);
+
+  BT_LOGR("Send MAP_MNS connection request.");
 
   // Section 3.3.1 "Connect", IrOBEX 1.2
   // [opcode:1][length:2][version:1][flags:1][MaxPktSizeWeCanReceive:2]
