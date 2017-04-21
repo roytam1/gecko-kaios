@@ -2932,14 +2932,13 @@ CommandResult NetworkUtils::createNetwork(NetworkParams& aOptions)
   };
 
   NetIdManager::NetIdInfo netIdInfo;
-  mNetIdManager.acquire(GET_FIELD(mIfname), &netIdInfo);
-  if (netIdInfo.mRefCnt > 1) {
-    // Already created. Just return.
+  if (mNetIdManager.lookup(aOptions.mIfname, &netIdInfo)) {
     NU_DBG("Interface %s (%d) has been created.", GET_CHAR(mIfname),
                                                   netIdInfo.mNetId);
     return SUCCESS;
   }
 
+  mNetIdManager.acquire(GET_FIELD(mIfname), &netIdInfo);
   NU_DBG("Request netd to create a network with netid %d", netIdInfo.mNetId);
   // Newly created netid. Ask netd to create network.
   aOptions.mNetId = netIdInfo.mNetId;
