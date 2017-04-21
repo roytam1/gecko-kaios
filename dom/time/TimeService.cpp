@@ -51,6 +51,7 @@ TimeService::GetElapsedRealtime(uint64_t* aElapsedRealtime) {
 
 NS_IMETHODIMP
 TimeService::getSysUptime(nsTArray<uint64_t>& aResult) {
+#ifdef ReadSysFile_PRESENT
   char uptimeInfo[32];
   bool success = ReadSysFile("/proc/uptime", uptimeInfo, sizeof(uptimeInfo));
 
@@ -65,6 +66,9 @@ TimeService::getSysUptime(nsTArray<uint64_t>& aResult) {
   }
 
   return NS_OK;
+#else
+  return NS_ERROR_NOT_IMPLEMENTED;
+#endif /* ReadSysFile_PRESENT */
 }
 
 } // namespace time
