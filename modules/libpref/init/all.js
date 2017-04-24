@@ -5262,7 +5262,6 @@ pref("dom.details_element.enabled", true);
 pref("dom.secureelement.enabled", false);
 #endif
 
-<<<<<<< HEAD
 // Allow control characters appear in composition string.
 // When this is false, control characters except
 // CHARACTER TABULATION (horizontal tab) are removed from
