@@ -212,8 +212,10 @@ public:
           rv = DispatchMemoryPressure(MemPressure_Ongoing);
           NS_ENSURE_SUCCESS(rv, rv);
           continue;
+        } else {
+          break;
         }
-      } while (false);
+      } while (true);
 
       if (XRE_IsParentProcess()) {
         // The main process will try to adjust the trigger.
