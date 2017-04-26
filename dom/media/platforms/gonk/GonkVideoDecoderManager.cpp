@@ -291,6 +291,40 @@ CopyYUV(PlanarYCbCrData& aSource, PlanarYCbCrData& aDestination)
   }
 }
 
+static void
+CopyNV12(uint8_t* aSrc, uint8_t* aDst, uint32_t aWidth, uint32_t aHeight,
+         uint32_t aSrcYStride, uint32_t aDstYStride,
+         uint32_t aSrcYScanlines, uint32_t aDstYScanlines)
+{
+  // Copy Y plane.
+  uint8_t* s = aSrc;
+  uint8_t* d = aDst;
+  for (uint32_t i = 0; i < aHeight; i++) {
+    memcpy(d, s, aWidth);
+    s += aSrcYStride;
+    d += aDstYStride;
+  }
+
+  // Copy UV plane.
+  uint32_t uvHeight = (aHeight + 1) / 2;
+  s = aSrc + aSrcYStride * aSrcYScanlines;
+  d = aDst + aDstYStride * aDstYScanlines;
+  for (uint32_t i = 0; i < uvHeight; i++) {
+    memcpy(d, s, aWidth);
+    s += aSrcYStride;
+    d += aDstYStride;
+  }
+}
+
+inline static void
+CopyNV12(uint8_t* aSrc, uint8_t* aDst, uint32_t aWidth, uint32_t aHeight,
+         uint32_t aSrcYStride, uint32_t aDstYStride)
+{
+  CopyNV12(aSrc, aDst, aWidth, aHeight, aSrcYStride, aDstYStride,
+          /* aSrcYScanlines = */ aHeight,
+          /* aDstYScanlines = */ aHeight);
+}
+
 inline static int
 Align(int aX, int aAlign)
 {
@@ -304,27 +338,16 @@ Align(int aX, int aAlign)
 // * UV_Scanlines: Height/2 aligned to 16
 // * Total size = align((Y_Stride * Y_Scanlines
 // *          + UV_Stride * UV_Scanlines + 4096), 4096)
-static void
-CopyVenus(uint8_t* aSrc, uint8_t* aDest, uint32_t aWidth, uint32_t aHeight)
+inline static void
+CopyVenus(uint8_t* aSrc, uint8_t* aDst, uint32_t aWidth, uint32_t aHeight)
 {
-  size_t yStride = Align(aWidth, 128);
-  uint8_t* s = aSrc;
-  uint8_t* d = aDest;
-  for (size_t i = 0; i < aHeight; i++) {
-    memcpy(d, s, aWidth);
-    s += yStride;
-    d += yStride;
-  }
-  size_t uvStride = yStride;
-  size_t uvLines = (aHeight + 1) / 2;
-  size_t ySize = yStride * Align(aHeight, 32);
-  s = aSrc + ySize;
-  d = aDest + ySize;
-  for (size_t i = 0; i < uvLines; i++) {
-    memcpy(d, s, aWidth);
-    s += uvStride;
-    d += uvStride;
-  }
+  uint32_t yStride = Align(aWidth, 128);
+  uint32_t yScanlines = Align(aHeight, 32);
+  CopyNV12(aSrc, aDst, aWidth, aHeight,
+           /* aSrcYStride = */ yStride,
+           /* aDstYStride = */ yStride,
+           /* aSrcYScanlines = */ yScanlines,
+           /* aDstYScanlines = */ yScanlines);
 }
 
 static void
@@ -376,6 +399,15 @@ CopyGraphicBuffer(sp<GraphicBuffer>& aSource, sp<GraphicBuffer>& aDestination)
       CopyYUV(srcData, destData);
       break;
     }
+    case HAL_PIXEL_FORMAT_YCrCb_420_SP: // NV21, shared the same copy function with NV12
+    case GrallocImage::HAL_PIXEL_FORMAT_YCbCr_420_SP: // NV12
+      CopyNV12(static_cast<uint8_t*>(srcPtr),
+               static_cast<uint8_t*>(destPtr),
+               aSource->getWidth(),
+               aSource->getHeight(),
+               aSource->getStride(),
+               aDestination->getStride());
+      break;
     case GrallocImage::HAL_PIXEL_FORMAT_YCbCr_420_SP_VENUS:
       CopyVenus(static_cast<uint8_t*>(srcPtr),
                 static_cast<uint8_t*>(destPtr),
@@ -383,7 +415,8 @@ CopyGraphicBuffer(sp<GraphicBuffer>& aSource, sp<GraphicBuffer>& aDestination)
                 aSource->getHeight());
       break;
     default:
-      NS_ERROR("Unsupported input gralloc image type. Should never be here.");
+      GVDM_LOG("Unsupported input gralloc image type. Should never be here. PixelFormat: 0x%08x",
+               aSource->getPixelFormat());
   }
 
 
