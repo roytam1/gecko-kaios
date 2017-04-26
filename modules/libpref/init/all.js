@@ -5259,7 +5259,7 @@ pref("dom.details_element.enabled", true);
 
 // Secure Element API
 #ifdef MOZ_SECUREELEMENT
-pref("dom.secureelement.enabled", false);
+pref("dom.secureelement.enabled", true);
 #endif
 
 // Allow control characters appear in composition string.
