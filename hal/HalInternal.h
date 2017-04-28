@@ -120,6 +120,16 @@ void EnableFlipNotifications();
  */
 void DisableFlipNotifications();
 
+/**
+ * Enable flashlight state change notifications from the backend.
+ */
+void EnableFlashlightNotifications();
+
+/**
+ * Disable flashlight state change notifications from the backend.
+ */
+void DisableFlashlightNotifications();
+
 } // namespace MOZ_HAL_NAMESPACE
 } // namespace mozilla
 

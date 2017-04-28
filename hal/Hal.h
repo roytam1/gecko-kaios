@@ -11,6 +11,7 @@
 #include "base/platform_thread.h"
 #include "nsTArray.h"
 #include "mozilla/dom/battery/Types.h"
+#include "mozilla/dom/FlashlightManager.h"
 #include "mozilla/dom/FlipManager.h"
 #include "mozilla/dom/MozPowerManagerBinding.h"
 #include "mozilla/dom/network/Types.h"
@@ -144,7 +145,7 @@ void RegisterFlipObserver(mozilla::dom::FlipObserver* aFlipObserver);
 
 /**
  * Inform the flipmanager backend a flip observer unregistered.
- * @param aPowerSupplyObserver The observer that should be removed.
+ * @param aFlipObserver The observer that should be removed.
  */
 void UnregisterFlipObserver(mozilla::dom::FlipObserver* aFlipObserver);
 
@@ -165,6 +166,40 @@ void RequestCurrentFlipState();
  * @param aFlipState The new flip state.
  */
 void UpdateFlipState(const bool& aFlipState);
+
+/**
+ * Inform the flashlightmanager backend there is a new flashlight observer.
+ * @param aFlashlightObserver The observer that should be added.
+ */
+void RegisterFlashlightObserver(mozilla::dom::FlashlightObserver* aFlashlightObserver);
+
+/**
+ * Inform the flashlightmanager backend a flashlight observer unregistered.
+ * @param aFlashlightObserver The observer that should be removed.
+ */
+void UnregisterFlashlightObserver(mozilla::dom::FlashlightObserver* aFlashlightObserver);
+
+/**
+ * Request the current Flashlight state. If the request is made by content process,
+ * result will be returned asynchronously.
+ */
+void RequestCurrentFlashlightState();
+
+/**
+ * Update the Flashlight state in each Flashlight observers.
+ * @param aFlashlightState The new state of Flashlight.
+ */
+void UpdateFlashlightState(const hal::FlashlightInformation& aFlashlightInfo);
+
+/**
+ * Get the flashlight state which is enabled or not
+ */
+bool GetFlashlightEnabled();
+
+/**
+ * Enable or disable flashlight.
+ */
+void SetFlashlightEnabled(bool aEnabled);
 
 /**
  * Determine whether the device's screen is currently enabled.

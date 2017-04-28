@@ -100,6 +100,10 @@ struct SystemTimezoneChangeInformation {
   int32_t newTimezoneOffsetMinutes;
 };
 
+struct FlashlightInformation {
+  bool enabled;
+};
+
 } // namespace hal
 
 namespace hal_sandbox {
@@ -115,9 +119,10 @@ child:
     async NotifyScreenConfigurationChange(ScreenConfiguration aScreenOrientation);
     async NotifySwitchChange(SwitchEvent aEvent);
 
-    async NotifySystemClockChange(int64_t aClockDeltaMS); 
+    async NotifySystemClockChange(int64_t aClockDeltaMS);
     async NotifySystemTimezoneChange(SystemTimezoneChangeInformation aSystemTimezoneChangeInfo);
     async NotifyFlipState(bool aFlipState);
+    async NotifyFlashlightState(FlashlightInformation aFlashlightInfo);
 
 parent:
     async Vibrate(uint32_t[] pattern, uint64_t[] id, PBrowser browser);
@@ -126,6 +131,11 @@ parent:
     async EnableFlipNotifications();
     async DisableFlipNotifications();
     async GetFlipState();
+
+    async EnableFlashlightNotifications();
+    async DisableFlashlightNotifications();
+    async GetFlashlightEnabled();
+    async SetFlashlightEnabled(bool enabled);
 
     async EnableBatteryNotifications();
     async DisableBatteryNotifications();

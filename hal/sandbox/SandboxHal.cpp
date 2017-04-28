@@ -415,6 +415,37 @@ RequestCurrentFlipState()
   Hal()->SendGetFlipState();
 }
 
+void
+EnableFlashlightNotifications()
+{
+  Hal()->SendEnableFlashlightNotifications();
+}
+
+void
+DisableFlashlightNotifications()
+{
+  Hal()->SendDisableFlashlightNotifications();
+}
+
+void
+RequestCurrentFlashlightState()
+{
+  Hal()->SendGetFlashlightEnabled();
+}
+
+bool
+GetFlashlightEnabled()
+{
+  NS_RUNTIMEABORT("GetFlashlightEnabled() can't be called from sandboxed contexts.");
+  return true;
+}
+
+void
+SetFlashlightEnabled(bool aEnabled)
+{
+  Hal()->SendSetFlashlightEnabled(aEnabled);
+}
+
 bool
 EnableAlarm()
 {
@@ -588,6 +619,7 @@ class HalParent : public PHalParent
                 , public SystemClockChangeObserver
                 , public SystemTimezoneChangeObserver
                 , public FlipObserver
+                , public FlashlightObserver
 {
 public:
   virtual void
@@ -610,6 +642,7 @@ public:
       hal::UnregisterSwitchObserver(SwitchDevice(switchDevice), this);
     }
     hal::UnregisterFlipObserver(this);
+    hal::UnregisterFlashlightObserver(this);
   }
 
   virtual bool
@@ -667,6 +700,43 @@ public:
   void Notify(const bool& aFlipState) override
   {
     Unused << SendNotifyFlipState(aFlipState);
+  }
+
+  virtual bool
+  RecvEnableFlashlightNotifications() override
+  {
+    hal::RegisterFlashlightObserver(this);
+    return true;
+  }
+
+  virtual bool
+  RecvDisableFlashlightNotifications() override
+  {
+    hal::UnregisterFlashlightObserver(this);
+    return true;
+  }
+
+  virtual bool
+  RecvGetFlashlightEnabled() override
+  {
+    bool flashlightState = hal::GetFlashlightEnabled();
+    FlashlightInformation flashlightInfo;
+    flashlightInfo.enabled() = flashlightState;
+    Unused << SendNotifyFlashlightState(flashlightInfo);
+    return true;
+  }
+
+  virtual bool
+  RecvSetFlashlightEnabled(const bool& aEnabled) override
+  {
+    hal::SetFlashlightEnabled(aEnabled);
+    return true;
+  }
+
+  void
+  Notify(const FlashlightInformation& aFlashlightInfo) override
+  {
+    Unused << SendNotifyFlashlightState(aFlashlightInfo);
   }
 
   virtual bool
@@ -1132,6 +1202,12 @@ public:
   virtual bool
   RecvNotifyFlipState(const bool& aFlipState) override {
     hal::UpdateFlipState(aFlipState);
+    return true;
+  }
+
+  virtual bool
+  RecvNotifyFlashlightState(const FlashlightInformation& aFlashlightState) override {
+    hal::UpdateFlashlightState(aFlashlightState);
     return true;
   }
 };

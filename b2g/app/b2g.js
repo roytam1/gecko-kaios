@@ -1161,6 +1161,9 @@ pref("dom.bluetooth.webbluetooth.enabled", false);
 // Enable flip manager
 pref("dom.flip.enabled", true);
 
+// Enable flashlight manager
+pref("dom.flashlight.enabled", true);
+
 // Default device name for Presentation API
 pref("dom.presentation.device.name", "Firefox OS");
 

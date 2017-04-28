@@ -144,6 +144,11 @@ partial interface Navigator {
   Promise<FlipManager> getFlipManager();
 };
 
+partial interface Navigator {
+  [Throws, Pref="dom.flashlight.enabled", CheckAnyPermissions="flashlight", AvailableIn=CertifiedApps]
+  Promise<FlashlightManager> getFlashlightManager();
+};
+
 [NoInterfaceObject]
 interface NavigatorPowerSupply {
     [Throws, Pref="dom.powersupply.enabled"]

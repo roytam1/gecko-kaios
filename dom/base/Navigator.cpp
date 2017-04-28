@@ -54,6 +54,7 @@
 #include "mozilla/dom/VolumeManager.h"
 #endif
 #include "mozilla/dom/VRDevice.h"
+#include "mozilla/dom/FlashlightManager.h"
 #include "mozilla/dom/FlipManager.h"
 #include "mozilla/dom/workers/RuntimeService.h"
 #include "mozilla/Hal.h"
@@ -202,6 +203,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Navigator)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBatteryManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBatteryPromise)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFlipManager)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFlashlightManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPowerSupplyManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPowerManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mCellBroadcast)
@@ -279,6 +281,11 @@ Navigator::Invalidate()
   if (mFlipManager) {
     mFlipManager->Shutdown();
     mFlipManager = nullptr;
+  }
+
+  if (mFlashlightManager) {
+    mFlashlightManager->Shutdown();
+    mFlashlightManager = nullptr;
   }
 
   if (mPowerSupplyManager) {
@@ -1609,6 +1616,23 @@ Navigator::GetFlipManager(ErrorResult& aRv)
   }
 
   RefPtr<Promise> p = mFlipManager->GetPromise(aRv);
+  return p.forget();
+}
+
+already_AddRefed<Promise>
+Navigator::GetFlashlightManager(ErrorResult& aRv)
+{
+  if (!mWindow || !mWindow->GetDocShell()) {
+    aRv.Throw(NS_ERROR_UNEXPECTED);
+    return nullptr;
+  }
+
+  if (!mFlashlightManager) {
+    mFlashlightManager = new FlashlightManager(mWindow);
+    mFlashlightManager->Init();
+  }
+
+  RefPtr<Promise> p = mFlashlightManager->GetPromise(aRv);
   return p.forget();
 }
 

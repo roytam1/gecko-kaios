@@ -103,6 +103,7 @@ class InputPortManager;
 class DeviceStorageAreaListener;
 class Presentation;
 class LegacyMozTCPSocket;
+class FlashlightManager;
 class FlipManager;
 class SoftkeyManager;
 #ifdef HAS_KOOST_MODULES
@@ -177,6 +178,7 @@ public:
   battery::BatteryManager* GetDeprecatedBattery(ErrorResult& aRv);
 
   already_AddRefed<Promise> GetFlipManager(ErrorResult& aRv);
+  already_AddRefed<Promise> GetFlashlightManager(ErrorResult& aRv);
   powersupply::PowerSupplyManager* GetPowersupply(ErrorResult& aRv);
 
   static already_AddRefed<Promise> GetDataStores(nsPIDOMWindowInner* aWindow,
@@ -396,6 +398,7 @@ private:
   RefPtr<DesktopNotificationCenter> mNotification;
   RefPtr<battery::BatteryManager> mBatteryManager;
   RefPtr<FlipManager> mFlipManager;
+  RefPtr<FlashlightManager> mFlashlightManager;
   RefPtr<Promise> mBatteryPromise;
   RefPtr<powersupply::PowerSupplyManager> mPowerSupplyManager;
   RefPtr<SoftkeyManager> mSoftkeyManager;
