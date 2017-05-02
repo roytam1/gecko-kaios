@@ -147,6 +147,7 @@ public:
     COPY_OPT_FIELD(mDns1_long, 0)
     COPY_OPT_FIELD(mDns2_long, 0)
     COPY_OPT_FIELD(mMtu, 0)
+    COPY_OPT_FIELD(mPrivacyExtensions, false)
 
     mLoopIndex = 0;
 
@@ -173,6 +174,7 @@ public:
   nsString mInternalIfname;
   nsString mExternalIfname;
   bool mEnable;
+  bool mPrivacyExtensions;
   nsString mSsid;
   nsString mSecurity;
   nsString mKey;
@@ -318,6 +320,7 @@ private:
   CommandResult createNetwork(NetworkParams& aOptions);
   CommandResult destroyNetwork(NetworkParams& aOptions);
   CommandResult getNetId(NetworkParams& aOptions);
+  CommandResult setIpv6PrivacyExtensions(NetworkParams& aOptions);
   CommandResult setMtu(NetworkParams& aOptions);
   CommandResult getInterfaces(NetworkParams& aOptions);
   CommandResult getInterfaceConfig(NetworkParams& aOptions);
@@ -376,6 +379,7 @@ private:
   static void clearWifiTetherParms(PARAMS);
   static void enableAlarm(PARAMS);
   static void disableAlarm(PARAMS);
+  static void setIpv6PrivacyExtensions(PARAMS);
   static void setQuota(PARAMS);
   static void removeQuota(PARAMS);
   static void setAlarm(PARAMS);

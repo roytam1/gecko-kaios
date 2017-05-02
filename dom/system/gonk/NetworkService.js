@@ -847,6 +847,19 @@ NetworkService.prototype = {
     });
   },
 
+  setIpv6PrivacyExtensions: function(aInterfaceName, aEnable, aCallback) {
+    debug("setIpv6PrivacyExtensions: interfaceName = " + aInterfaceName + ", enable = " + aEnable);
+    let params = {
+      cmd: "setIpv6PrivacyExtensions",
+      ifname: aInterfaceName,
+      privacyExtensions: aEnable
+    };
+
+    this.controlMessage(params, function(aResult) {
+      aCallback.nativeCommandResult(!aResult.error);
+    });
+  },
+
   setMtu: function (aInterfaceName, aMtu, aCallback) {
     debug("Set MTU on " + aInterfaceName + ": " + aMtu);
 

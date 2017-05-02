@@ -1579,6 +1579,17 @@ void NetworkUtils::disableIpv6(CommandChain* aChain,
   setIpv6Enabled(aChain, aCallback, aResult, false);
 }
 
+void NetworkUtils::setIpv6PrivacyExtensions(CommandChain* aChain,
+                                            CommandCallback aCallback,
+                                            NetworkResultOptions& aResult)
+{
+  char command[MAX_COMMAND_SIZE];
+  snprintf(command, MAX_COMMAND_SIZE - 1, "interface ipv6privacyextensions %s %s",
+           GET_CHAR(mIfname), GET_FIELD(mPrivacyExtensions) ? "enable" : "disable");
+
+  doCommand(command, aChain, aCallback);
+}
+
 void NetworkUtils::setMtu(CommandChain* aChain,
                           CommandCallback aCallback,
                           NetworkResultOptions& aResult)
@@ -1932,6 +1943,7 @@ void NetworkUtils::ExecuteCommand(NetworkParams aOptions)
     BUILD_ENTRY(createNetwork),
     BUILD_ENTRY(destroyNetwork),
     BUILD_ENTRY(getNetId),
+    BUILD_ENTRY(setIpv6PrivacyExtensions),
     BUILD_ENTRY(getInterfaces),
     BUILD_ENTRY(getInterfaceConfig),
     BUILD_ENTRY(setInterfaceConfig),
@@ -3027,6 +3039,17 @@ CommandResult NetworkUtils::getInterfaceConfig(NetworkParams& aOptions)
 CommandResult NetworkUtils::setInterfaceConfig(NetworkParams& aOptions)
 {
   runChain(aOptions, sSetInterfaceConfigChain, setInterfaceConfigFail);
+  return CommandResult::Pending();
+}
+
+CommandResult NetworkUtils::setIpv6PrivacyExtensions(NetworkParams& aOptions)
+{
+  static CommandFunc COMMAND_CHAIN[] = {
+    setIpv6PrivacyExtensions,
+    defaultAsyncSuccessHandler,
+  };
+
+  runChain(aOptions, COMMAND_CHAIN, defaultAsyncFailureHandler);
   return CommandResult::Pending();
 }
 

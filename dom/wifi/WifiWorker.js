@@ -1100,47 +1100,48 @@ var WifiManager = (function() {
           gNetworkService.setWifiOperationMode(manager.ifname,
                                                WIFI_FIRMWARE_STATION,
                                                function (status) {
+            gNetworkService.setIpv6PrivacyExtensions(manager.ifname, true, function() {
+              function startSupplicantInternal() {
+                wifiCommand.startSupplicant(function (status) {
+                  if (status < 0) {
+                    unloadDriver(WIFI_FIRMWARE_STATION, function() {
+                      callback(status);
+                    });
+                    manager.state = "UNINITIALIZED";
+                    return;
+                  }
 
-            function startSupplicantInternal() {
-              wifiCommand.startSupplicant(function (status) {
-                if (status < 0) {
-                  unloadDriver(WIFI_FIRMWARE_STATION, function() {
-                    callback(status);
+                  manager.supplicantStarted = true;
+                  gNetworkService.enableInterface(manager.ifname, function (ok) {
+                    callback(ok ? 0 : -1);
                   });
-                  manager.state = "UNINITIALIZED";
+                });
+              }
+
+              function doStartSupplicant() {
+                cancelWaitForDriverReadyTimer();
+
+                if (!manager.connectToSupplicant) {
+                  startSupplicantInternal();
                   return;
                 }
-
-                manager.supplicantStarted = true;
-                gNetworkService.enableInterface(manager.ifname, function (ok) {
-                  callback(ok ? 0 : -1);
+                wifiCommand.closeSupplicantConnection(function () {
+                  manager.connectToSupplicant = false;
+                  // closeSupplicantConnection() will trigger onsupplicantlost
+                  // and set manager.state to "UNINITIALIZED", we have to
+                  // restore it here.
+                  manager.state = "INITIALIZING";
+                  startSupplicantInternal();
                 });
-              });
-            }
-
-            function doStartSupplicant() {
-              cancelWaitForDriverReadyTimer();
-
-              if (!manager.connectToSupplicant) {
-                startSupplicantInternal();
-                return;
               }
-              wifiCommand.closeSupplicantConnection(function () {
-                manager.connectToSupplicant = false;
-                // closeSupplicantConnection() will trigger onsupplicantlost
-                // and set manager.state to "UNINITIALIZED", we have to
-                // restore it here.
-                manager.state = "INITIALIZING";
-                startSupplicantInternal();
-              });
-            }
-            // Driver delay timer: Some platform driver startup takes longer
-            // than it takes for us to return from loadDriver, so oem can use
-            // property "ro.moz.wifi.driverDelay" to change it. Default value
-            // is 0.
-            (manager.driverDelay > 0)
-              ? createWaitForDriverReadyTimer(doStartSupplicant)
-              : doStartSupplicant();
+              // Driver delay timer: Some platform driver startup takes longer
+              // than it takes for us to return from loadDriver, so oem can use
+              // property "ro.moz.wifi.driverDelay" to change it. Default value
+              // is 0.
+              (manager.driverDelay > 0)
+                ? createWaitForDriverReadyTimer(doStartSupplicant)
+                : doStartSupplicant();
+            });
           });
         });
       });

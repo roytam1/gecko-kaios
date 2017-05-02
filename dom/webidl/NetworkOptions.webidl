@@ -58,6 +58,7 @@ dictionary NetworkCommandOptions
 
   long mtu;                           // for "setMtu".
   long networkType;                   // for "createNetwork", "destroyNetwork".
+  boolean privacyExtensions;          // for "setIpv6PrivacyExtensions".
 };
 
 /**

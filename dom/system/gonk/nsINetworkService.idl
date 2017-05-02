@@ -201,7 +201,7 @@ interface nsISetInterfaceConfigCallback : nsISupports
 /**
  * Provide network services.
  */
-[scriptable, uuid(fe48783b-9b33-4bcc-8941-898aefe562fa)]
+[scriptable, uuid(adec3ded-6191-4bf6-826e-6fa2061d51bd)]
 interface nsINetworkService : nsISupports
 {
   const long MODIFY_ROUTE_ADD    = 0;
@@ -615,6 +615,21 @@ interface nsINetworkService : nsISupports
    *
    */
   jsval getNetId(in DOMString interfaceName);
+
+  /**
+   * Set ipv6 privacy extensions for a network interface.
+   *
+   * @param interfaceName
+   *        The name of the network interface that we want to set ipv6 privacy extensions.
+   *
+   * @param enable
+   *        Boolean to indicate we want enable or disable ipv6 privacy extensions.
+   *
+   * @param callback
+   *        Callback to notify the result of setting ipv6 privacy extensions.
+   */
+  void setIpv6PrivacyExtensions(in DOMString interfaceName, in boolean enable,
+                                in nsINativeCommandCallback callback);
 
   /**
    * Set maximum transmission unit on a network interface.
