@@ -2088,8 +2088,8 @@ EnsureKernelLowMemKillerParamsSet()
     // The LMK in kernel only accept 6 sets of LMK parameters. See bug 914728.
     MOZ_ASSERT(countOfLowmemorykillerParametersSets < 6);
 
-    // adj is in oom_adj units.
-    adjParams.AppendPrintf("%d,", OomAdjOfOomScoreAdj(oomScoreAdj));
+    // adj is in oom_score_adj units.
+    adjParams.AppendPrintf("%d,", oomScoreAdj);
 
     // minfree is in pages.
     minfreeParams.AppendPrintf("%ld,", killUnderKB * 1024 / page_size);
