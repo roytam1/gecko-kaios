@@ -1315,7 +1315,7 @@ RilObject.prototype = {
     let Buf = this.context.Buf;
     options.request = REQUEST_CDMA_FLASH;
     Buf.newParcel(options.request, options);
-    Buf.writeString(options.featureStr || "");
+    Buf.writeString(options.number || "");
     Buf.sendParcel();
   },
 

@@ -556,10 +556,12 @@ NS_IMETHODIMP
 TelephonyRequestParent::DialCallback::NotifyDialCallSuccess(uint32_t aClientId,
                                                             uint32_t aCallIndex,
                                                             const nsAString& aNumber,
+                                                            bool aIsEmergency,
                                                             uint16_t aVoiceQuality)
 {
   return SendResponse(DialResponseCallSuccess(aClientId, aCallIndex,
                                               nsAutoString(aNumber),
+                                              aIsEmergency,
                                               aVoiceQuality));
 }
 

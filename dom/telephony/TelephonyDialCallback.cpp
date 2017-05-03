@@ -55,13 +55,15 @@ NS_IMETHODIMP
 TelephonyDialCallback::NotifyDialCallSuccess(uint32_t aClientId,
                                              uint32_t aCallIndex,
                                              const nsAString& aNumber,
+                                             bool aIsEmergency,
                                              uint16_t aVoiceQuality)
 {
   RefPtr<TelephonyCallId> id = mTelephony->CreateCallId(aNumber);
   RefPtr<TelephonyCall> call =
       mTelephony->CreateCall(id, aClientId, aCallIndex,
                              TelephonyCallState::Dialing,
-                             TelephonyCall::ConvertToTelephonyCallVoiceQuality(aVoiceQuality));
+                             TelephonyCall::ConvertToTelephonyCallVoiceQuality(aVoiceQuality),
+                             aIsEmergency);
 
   mPromise->MaybeResolve(call);
   return NS_OK;

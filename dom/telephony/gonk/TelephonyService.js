@@ -978,7 +978,7 @@ TelephonyService.prototype = {
 
     // CDMA 3-way calling.
     if (this._isCdmaClient(aClientId)) {
-      this._dialCdmaThreeWayCall(aClientId, aNumber, aCallback);
+      this._dialCdmaThreeWayCall(aClientId, options, aCallback);
       return;
     }
 
@@ -1009,8 +1009,8 @@ TelephonyService.prototype = {
     });
   },
 
-  _dialCdmaThreeWayCall: function(aClientId, aNumber, aCallback) {
-    this._sendToRilWorker(aClientId, "cdmaFlash", { featureStr: aNumber },
+  _dialCdmaThreeWayCall: function(aClientId, aOptions, aCallback) {
+    this._sendToRilWorker(aClientId, "cdmaFlash", { number: aOptions.number },
                           response => {
       if (response.errorMsg) {
         aCallback.notifyError(response.errorMsg);
@@ -1019,7 +1019,8 @@ TelephonyService.prototype = {
 
       // RIL doesn't hold the 2nd call. We create one by ourselves.
       aCallback.notifyDialCallSuccess(aClientId, CDMA_SECOND_CALL_INDEX,
-                                      aNumber.
+                                      aOptions.number,
+                                      aOptions.isEmergency,
                                       nsITelephonyService.CALL_VOICE_QUALITY_NORMAL);
 
       let childCall = this._currentCalls[aClientId][CDMA_SECOND_CALL_INDEX] =
@@ -1027,9 +1028,9 @@ TelephonyService.prototype = {
 
       childCall.parentId = CDMA_FIRST_CALL_INDEX;
       childCall.state = nsITelephonyService.CALL_STATE_DIALING;
-      childCall.number = aNumber;
+      childCall.number = aOptions.number;
       childCall.isOutgoing = true;
-      childCall.isEmergency = DialNumberUtils.isEmergency(aNumber);
+      childCall.isEmergency = aOptions.isEmergency;
       childCall.isConference = false;
       childCall.isSwitchable = false;
       childCall.isMergeable = true;
@@ -1061,6 +1062,7 @@ TelephonyService.prototype = {
       } else {
         this._ongoingDial = {
           clientId: aClientId,
+          isEmergency: aOptions.isEmergency,
           callback: aCallback
         };
       }
@@ -2459,6 +2461,7 @@ TelephonyService.prototype = {
             call.state !== nsITelephonyService.CALL_STATE_INCOMING) {
           this._ongoingDial.callback.notifyDialCallSuccess(aClientId, i,
                                                            call.number,
+                                                           this._ongoingDial.isEmergency,
                                                            nsITelephonyService.CALL_VOICE_QUALITY_NORMAL);
           this._ongoingDial = null;
         }

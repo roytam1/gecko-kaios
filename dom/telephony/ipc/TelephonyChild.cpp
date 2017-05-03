@@ -217,6 +217,7 @@ TelephonyRequestChild::DoResponse(const DialResponseCallSuccess& aResponse)
   nsCOMPtr<nsITelephonyDialCallback> callback = do_QueryInterface(mCallback);
   callback->NotifyDialCallSuccess(aResponse.clientId(), aResponse.callIndex(),
                                   aResponse.number(),
+                                  aResponse.isEmergency(),
                                   aResponse.voiceQuality());
   return true;
 }
