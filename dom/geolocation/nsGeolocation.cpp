@@ -536,7 +536,6 @@ nsGeolocationRequest::Allow(JS::HandleValue aChoices)
     }
   }
 
-  gs->UpdateAccuracy(WantsHighAccuracy());
   if (canUseCache) {
     // okay, we can return a cached position
     // getCurrentPosition requests serviced by the cache
@@ -566,6 +565,8 @@ nsGeolocationRequest::Allow(JS::HandleValue aChoices)
     NotifyError(nsIDOMGeoPositionError::POSITION_UNAVAILABLE);
     return NS_OK;
   }
+
+  gs->UpdateAccuracy(WantsHighAccuracy());
 
   if (mLocator->ContainsRequest(this)) {
     return NS_OK;
