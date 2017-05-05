@@ -872,7 +872,8 @@ nsJARChannel::ShouldIntercept()
 {
     LOG(("nsJARChannel::ShouldIntercept [this=%x]\n", this));
     // We only intercept app:// requests
-    if (!mAppURI) {
+    // FIXME (KaiOS Bug 12651): Reject Chrome process also
+    if (!mAppURI || XRE_IsParentProcess()) {
       return false;
     }
 
