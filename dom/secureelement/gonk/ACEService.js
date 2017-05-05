@@ -121,8 +121,8 @@ ACEService.prototype = {
   _rulesManagers: null,
 
   isAccessAllowed: function isAccessAllowed(localId, seType, aid) {
-    if(!Services.prefs.getBoolPref("devtools.debugger.forbid-certified-apps")) {
-      debug("Certified apps debug enabled, allowing access");
+    if(!Services.prefs.getBoolPref("dom.secureelement.ace.enabled")) {
+      debug("Access control enforcer is disabled, allowing access");
       return Promise.resolve(true);
     }
 
