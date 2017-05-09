@@ -16,7 +16,6 @@
 #include "nsWrapperCache.h"
 
 class nsIBrowserElementAPI;
-class nsITabParent;
 class nsPIDOMWindowOuter;
 
 namespace mozilla {
@@ -85,7 +84,6 @@ private:
 
   nsCOMPtr<nsIFrameLoader> mFrameLoader;
   nsCOMPtr<nsIBrowserElementAPI> mBrowserElementAPI;
-  nsCOMPtr<nsITabParent> mTabParent;
   nsCOMPtr<nsPIDOMWindowOuter> mFrameWindow;
   AudioChannel mAudioChannel;
   nsString mManifestURL;

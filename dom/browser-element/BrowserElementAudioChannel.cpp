@@ -43,7 +43,6 @@ NS_IMPL_CYCLE_COLLECTION_INHERITED(BrowserElementAudioChannel,
                                    DOMEventTargetHelper,
                                    mFrameLoader,
                                    mFrameWindow,
-                                   mTabParent,
                                    mBrowserElementAPI)
 
 /* static */ already_AddRefed<BrowserElementAudioChannel>
@@ -71,11 +70,11 @@ BrowserElementAudioChannel::Create(nsPIDOMWindowInner* aWindow,
 }
 
 BrowserElementAudioChannel::BrowserElementAudioChannel(
-						nsPIDOMWindowInner* aWindow,
-						nsIFrameLoader* aFrameLoader,
-                                                nsIBrowserElementAPI* aAPI,
-                                                AudioChannel aAudioChannel,
-                                                const nsAString& aManifestURL)
+    nsPIDOMWindowInner* aWindow,
+    nsIFrameLoader* aFrameLoader,
+    nsIBrowserElementAPI* aAPI,
+    AudioChannel aAudioChannel,
+    const nsAString& aManifestURL)
   : DOMEventTargetHelper(aWindow)
   , mFrameLoader(aFrameLoader)
   , mBrowserElementAPI(aAPI)
@@ -146,12 +145,9 @@ BrowserElementAudioChannel::Initialize()
     return NS_OK;
   }
 
-  rv = mFrameLoader->GetTabParent(getter_AddRefs(mTabParent));
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return rv;
-  }
+  TabParent* tabParent = TabParent::GetFrom(mFrameLoader);
+  NS_ENSURE_TRUE(tabParent, NS_ERROR_FAILURE);
 
-  MOZ_ASSERT(mTabParent);
   return NS_OK;
 }
 
@@ -572,7 +568,12 @@ BrowserElementAudioChannel::Observe(nsISupports* aSubject, const char* aTopic,
 
   // Message received from the child.
   if (!mFrameWindow) {
-    if (mTabParent == aSubject) {
+    nsCOMPtr<nsITabParent> tabParent = do_QueryInterface(aSubject);
+    TabParent* subjectTp = TabParent::GetFrom(tabParent);
+    NS_ENSURE_TRUE(subjectTp, NS_ERROR_FAILURE);
+    TabParent* tp = TabParent::GetFrom(mFrameLoader);
+    NS_ENSURE_TRUE(tp, NS_ERROR_FAILURE);
+    if (tp == subjectTp) {
       ProcessStateChanged(aData);
     }
 
