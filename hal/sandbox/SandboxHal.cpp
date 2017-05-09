@@ -563,6 +563,12 @@ bool SystemServiceIsRunning(const char* aSvcName)
   return false;
 }
 
+bool SystemServiceIsStopped(const char* aSvcName)
+{
+  NS_RUNTIMEABORT("System services cannot be controlled from sandboxed contexts.");
+  return true;
+}
+
 class HalParent : public PHalParent
                 , public BatteryObserver
                 , public PowerSupplyObserver

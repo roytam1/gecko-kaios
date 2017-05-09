@@ -111,7 +111,7 @@ uint16_t GetAppStatusByWindow(nsPIDOMWindowInner* aWindow)
   uint16_t status = nsIPrincipal::APP_STATUS_NOT_INSTALLED;
   nsIDocument* document = aWindow->GetDoc();
   NS_ENSURE_TRUE(document, status);
-  
+
   nsIPrincipal* principal = document->NodePrincipal();
   if (!principal || NS_FAILED(principal->GetAppStatus(&status))) {
     NS_WARNING("principal is a nullptr or GetAppStatus is failed");
@@ -1383,6 +1383,12 @@ bool SystemServiceIsRunning(const char* aSvcName)
 {
   AssertMainThread();
   RETURN_PROXY_IF_SANDBOXED(SystemServiceIsRunning(aSvcName), false);
+}
+
+bool SystemServiceIsStopped(const char* aSvcName)
+{
+  AssertMainThread();
+  RETURN_PROXY_IF_SANDBOXED(SystemServiceIsStopped(aSvcName), false);
 }
 
 bool IsFlipOpened()

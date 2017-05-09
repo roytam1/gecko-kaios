@@ -31,5 +31,13 @@ SystemServiceIsRunning(const char* aSvcName)
   return false;
 }
 
+bool
+SystemServiceIsStopped(const char* aSvcName)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  return true;
+}
+
 } // namespace hal_impl
 } // namespace mozilla

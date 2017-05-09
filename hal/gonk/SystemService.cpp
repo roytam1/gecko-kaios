@@ -41,6 +41,28 @@ SystemServiceIsRunning(const char* aSvcName)
   return !strcmp(value, "running");
 }
 
+bool
+SystemServiceIsStopped(const char* aSvcName)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  char key[PROPERTY_KEY_MAX];
+  auto res = snprintf(key, sizeof(key), "init.svc.%s", aSvcName);
+
+  if (res < 0) {
+    HAL_ERR("snprintf: %s", strerror(errno));
+    return false;
+  } else if (static_cast<size_t>(res) >= sizeof(key)) {
+    HAL_ERR("snprintf: trunctated service name %s", aSvcName);
+    return false;
+  }
+
+  char value[PROPERTY_VALUE_MAX];
+  NS_WARN_IF(property_get(key, value, "") < 0);
+
+  return !strcmp(value, "stopped");
+}
+
 class StartSystemServiceTimerCallback final : public nsITimerCallback
 {
   NS_DECL_THREADSAFE_ISUPPORTS;

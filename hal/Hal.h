@@ -751,6 +751,7 @@ void StopSystemService(const char* aSvcName);
  * Determine whether the system service with the specified name is running.
  */
 bool SystemServiceIsRunning(const char* aSvcName);
+bool SystemServiceIsStopped(const char* aSvcName);
 
 /**
  * Determine the lid is open or not

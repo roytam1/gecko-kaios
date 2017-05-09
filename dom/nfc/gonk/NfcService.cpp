@@ -112,6 +112,16 @@ NfcConsumer::Start()
   // here.
   StopSystemService("nfcd");
 
+  bool stopped = SystemServiceIsStopped("nfcd");
+  int count = 0;
+  // Make sure nfcd is not in middle of stop stage.
+  // Android's init service creates a new process only when
+  // the process is in stopped state.
+  while (!stopped && count++ < 5) {
+    PR_Sleep(PR_MillisecondsToInterval(100));
+    stopped = SystemServiceIsStopped("nfcd");
+  }
+
   mHandler = MakeUnique<NfcMessageHandler>();
 
   mStreamSocket = new StreamSocket(this, STREAM_SOCKET);
