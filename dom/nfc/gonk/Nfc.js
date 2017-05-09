@@ -1010,7 +1010,7 @@ Nfc.prototype = {
     }
 
     debug("closeConnectionResponse: receive message from nfcd " + JSON.stringify(message));
-    callback.notifyCloseChannelSuccess();
+    callback.notifyCloseConnectionSuccess();
   },
 
   resetSecureElement: function(handle, callback) {

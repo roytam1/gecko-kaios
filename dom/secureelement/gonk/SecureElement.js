@@ -176,6 +176,19 @@ XPCOMUtils.defineLazyGetter(this, "gMap", function() {
         debug("Deleting channel with token : " + channelToken);
         delete this.appInfoMap[appId].channels[channelToken];
       }
+
+    },
+
+    isChannels: function() {
+      let isChannels = false;
+      Object.keys(this.appInfoMap).find((id) => {
+        if (this.appInfoMap[id].channels) {
+          if (Object.keys(this.appInfoMap[id].channels).length > 0) {
+            isChannels = true;
+          }
+        }
+      });
+      return isChannels;
     },
 
     getChannel: function(appId, channelToken) {
@@ -417,6 +430,19 @@ SecureElementManager.prototype = {
     connector.closeChannel(channel.channelNumber, {
       notifyCloseChannelSuccess: () => {
         gMap.removeChannel(msg.appId, msg.channelToken);
+        // Close the connection if there is no channel used.
+        if (!gMap.isChannels()) {
+          debug("No channel is used, close the secure element connection");
+          connector.closeConnection({
+            notifyCloseConnectionSuccess: function () {
+              debug("Close secure element connection successfully");
+            },
+
+            notifyError: function() {
+              debug("Failed to close secure element connection");
+            }
+          });
+        }
         callback({ error: SE.ERROR_NONE });
       },
 

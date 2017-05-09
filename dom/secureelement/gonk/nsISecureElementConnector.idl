@@ -4,7 +4,7 @@
 
 #include "nsISupports.idl"
 
-[scriptable, uuid(1ff3f35a-1b6f-4e65-a89e-a363b8604cd7)]
+[scriptable, uuid(94295f0c-099a-48ac-a678-e46e60b9c2ca)]
 interface nsISEChannelCallback : nsISupports
 {
   /**
@@ -36,6 +36,12 @@ interface nsISEChannelCallback : nsISupports
   void notifyExchangeAPDUResponse(in octet sw1,
                                   in octet sw2,
                                   in DOMString data);
+
+  /**
+   * Callback function to notify on successfully close connection.
+   *
+   */
+  void notifyCloseConnectionSuccess();
 
   /**
    * Callback function to notify on successfully reset the secure element.
@@ -82,7 +88,7 @@ interface nsISEListener : nsISupports
   void notifySEPresenceChanged(in DOMString seType, in boolean isPresent);
 };
 
-[scriptable, uuid(3cef313a-1d01-432d-9cd2-6610a80911f3)]
+[scriptable, uuid(8adb030c-ce40-4fd8-bd1e-da4443c656aa)]
 interface nsISecureElementConnector : nsISupports
 {
    /**
@@ -137,6 +143,15 @@ interface nsISecureElementConnector : nsISupports
     */
    void closeChannel(in long channel,
                      in nsISEChannelCallback callback);
+
+
+   /**
+    * Closes the connection to the secure element
+    *
+    * @param callback
+    *        callback to notify the result of the operation.
+    */
+   void closeConnection(in nsISEChannelCallback callback);
 
    /**
     * Reset the secure element
