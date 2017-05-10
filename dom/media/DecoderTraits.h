@@ -11,6 +11,8 @@
 
 class nsAString;
 class nsACString;
+class nsIChannel;
+class nsIStreamListener;
 
 namespace mozilla {
 
@@ -59,7 +61,9 @@ public:
   // were unable to create the decoder.
   static already_AddRefed<MediaDecoder> CreateDecoder(const nsACString& aType,
                                                       MediaDecoderOwner* aOwner,
-                                                      DecoderDoctorDiagnostics* aDiagnostics);
+                                                      DecoderDoctorDiagnostics* aDiagnostics,
+                                                      nsIChannel* aChannel = nullptr,
+                                                      nsIStreamListener** aStreamListener = nullptr);
 
   // Create a reader for thew given MIME type aType. Returns null
   // if we were unable to create the reader.

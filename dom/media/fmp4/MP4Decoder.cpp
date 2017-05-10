@@ -91,7 +91,9 @@ IsWhitelistedH264Codec(const nsAString& aCodec)
 bool
 MP4Decoder::CanHandleMediaType(const nsACString& aMIMETypeExcludingCodecs,
                                const nsAString& aCodecs,
-                               DecoderDoctorDiagnostics* aDiagnostics)
+                               DecoderDoctorDiagnostics* aDiagnostics, 
+                               nsIChannel* aChannel,
+                               nsIStreamListener** aStreamListener)
 {
   if (!IsEnabled()) {
     return false;
@@ -112,6 +114,31 @@ MP4Decoder::CanHandleMediaType(const nsACString& aMIMETypeExcludingCodecs,
     aMIMETypeExcludingCodecs.EqualsASCII("video/x-m4v");
   if (!isMP4Audio && !isMP4Video) {
     return false;
+  }
+
+  // if have resource, parse mp4 container to get real video codec
+  // but we only check the first video track
+  // open resource must be on main thread, but read resource must not be main thread
+  // so use a new thread to run MP4Demuxer::IsSupport()
+  if(aChannel && aStreamListener){
+    RefPtr<MediaResource> resource =
+      MediaResource::Create(new MediaResourceCallback(), aChannel);
+    
+    resource->Open(aStreamListener);
+    RefPtr<MP4Demuxer> inputMP4Demuxer = new MP4Demuxer(resource);
+    bool bIsSupport = false;
+
+    nsCOMPtr<nsIThread> sThread;
+    NS_NewThread(getter_AddRefs(sThread));    
+    nsCOMPtr<nsIRunnable> runnable =
+          NS_NewRunnableMethodWithArgs<TrackInfo::TrackType, uint32_t, bool&>(
+            inputMP4Demuxer, &MP4Demuxer::IsSupport, mozilla::TrackInfo::kVideoTrack,
+            0, bIsSupport);
+    sThread->Dispatch(runnable, NS_DISPATCH_SYNC); 
+
+    if(bIsSupport == false){
+      return false;
+    }
   }
 
   nsTArray<nsCString> codecMimes;

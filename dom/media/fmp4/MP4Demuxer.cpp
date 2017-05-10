@@ -112,6 +112,33 @@ MP4Demuxer::MP4Demuxer(MediaResource* aResource)
 {
 }
 
+void MP4Demuxer::IsSupport(TrackInfo::TrackType aType, uint32_t aTrackNumber, bool &aResult){
+  AutoPinned<mp4_demuxer::ResourceStream> stream(mStream);
+  
+  // Check that we have enough data to read the metadata.
+  if (!mp4_demuxer::MP4Metadata::HasCompleteMetadata(stream)) {
+    aResult = false;
+    return;
+  }
+
+  mInitData = mp4_demuxer::MP4Metadata::Metadata(stream);
+
+  if(!mInitData){
+    // OOM
+    aResult = false;
+    return;
+  }
+
+  RefPtr<mp4_demuxer::BufferStream> bufferstream =
+    new mp4_demuxer::BufferStream(mInitData);
+    
+  mMetadata = MakeUnique<mp4_demuxer::MP4Metadata>(bufferstream);
+
+  aResult = mMetadata->IsSupport(aType, aTrackNumber); 
+  return;
+}
+
+
 RefPtr<MP4Demuxer::InitPromise>
 MP4Demuxer::Init()
 {

@@ -35,6 +35,8 @@ public:
 
   bool ReadTrackIndex(FallibleTArray<Index::Indice>& aDest, mozilla::TrackID aTrackID);
 
+  bool IsSupport(mozilla::TrackInfo::TrackType aType, size_t aTrackNumber);
+
 private:
   UniquePtr<MP4MetadataStagefright> mStagefright;
 #ifdef MOZ_RUST_MP4PARSE

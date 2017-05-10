@@ -44,6 +44,8 @@ public:
 
   void NotifyDataRemoved() override;
 
+  void IsSupport(TrackInfo::TrackType aType, uint32_t aTrackNumber, bool &aResult);
+  
 private:
   friend class MP4TrackDemuxer;
   RefPtr<MediaResource> mResource;

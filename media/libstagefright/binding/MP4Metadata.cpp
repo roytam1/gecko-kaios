@@ -82,6 +82,8 @@ public:
 
   bool ReadTrackIndex(FallibleTArray<Index::Indice>& aDest, mozilla::TrackID aTrackID);
 
+  bool IsSupport(mozilla::TrackInfo::TrackType aType, size_t aTrackNumber);
+
 private:
   int32_t GetTrackNumber(mozilla::TrackID aTrackID);
   void UpdateCrypto(const stagefright::MetaData* aMetaData);
@@ -155,6 +157,11 @@ TrackTypeToString(mozilla::TrackInfo::TrackType aType)
   default:
     return "unknown";
   }
+}
+
+bool 
+MP4Metadata::IsSupport(mozilla::TrackInfo::TrackType aType, size_t aTrackNumber){
+  return mStagefright->IsSupport(aType, aTrackNumber);
 }
 
 uint32_t
@@ -253,6 +260,30 @@ MP4MetadataStagefright::MP4MetadataStagefright(Stream* aSource)
 
 MP4MetadataStagefright::~MP4MetadataStagefright()
 {
+}
+
+bool 
+MP4MetadataStagefright::IsSupport(mozilla::TrackInfo::TrackType aType, size_t aTrackNumber){
+  UniquePtr<TrackInfo> info = this->GetTrackInfo(aType, aTrackNumber);
+  if (!info) {
+    return false;
+  }
+
+  bool bIsSupport = false; 
+
+  switch(aType){
+    case mozilla::TrackInfo::kAudioTrack:
+      bIsSupport = true;
+      break;
+    case mozilla::TrackInfo::kVideoTrack:
+      if(info->mMimeType.LowerCaseEqualsLiteral("video/avc")){
+        bIsSupport = true;
+      }
+      break;
+    default:
+      break;
+  }
+  return bIsSupport;
 }
 
 uint32_t

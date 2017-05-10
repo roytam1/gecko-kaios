@@ -330,9 +330,11 @@ IsDirectShowSupportedType(const nsACString& aType)
 static bool
 IsMP4SupportedType(const nsACString& aType,
                    DecoderDoctorDiagnostics* aDiagnostics,
-                   const nsAString& aCodecs = EmptyString())
+                   const nsAString& aCodecs = EmptyString(),
+                   nsIChannel* aChannel = nullptr,
+                   nsIStreamListener** aStreamListener = nullptr)
 {
-  return MP4Decoder::CanHandleMediaType(aType, aCodecs, aDiagnostics);
+  return MP4Decoder::CanHandleMediaType(aType, aCodecs, aDiagnostics, aChannel, aStreamListener);
 }
 #endif
 
@@ -568,13 +570,14 @@ static
 already_AddRefed<MediaDecoder>
 InstantiateDecoder(const nsACString& aType,
                    MediaDecoderOwner* aOwner,
-                   DecoderDoctorDiagnostics* aDiagnostics)
+                   DecoderDoctorDiagnostics* aDiagnostics, 
+                   nsIChannel* aChannel = nullptr,
+                   nsIStreamListener** aStreamListener = nullptr)
 {
   MOZ_ASSERT(NS_IsMainThread());
   RefPtr<MediaDecoder> decoder;
-
 #ifdef MOZ_FMP4
-  if (IsMP4SupportedType(aType, aDiagnostics)) {
+  if (IsMP4SupportedType(aType, aDiagnostics, EmptyString(), aChannel, aStreamListener)) {
     decoder = new MP4Decoder(aOwner);
     return decoder.forget();
   }
@@ -662,10 +665,12 @@ InstantiateDecoder(const nsACString& aType,
 already_AddRefed<MediaDecoder>
 DecoderTraits::CreateDecoder(const nsACString& aType,
                              MediaDecoderOwner* aOwner,
-                             DecoderDoctorDiagnostics* aDiagnostics)
+                             DecoderDoctorDiagnostics* aDiagnostics,
+                             nsIChannel* aChannel,
+                             nsIStreamListener** aStreamListener)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  return InstantiateDecoder(aType, aOwner, aDiagnostics);
+  return InstantiateDecoder(aType, aOwner, aDiagnostics, aChannel, aStreamListener);
 }
 
 /* static */

@@ -33,8 +33,10 @@ public:
   // out params wether the codecs string contains AAC or H.264.
   static bool CanHandleMediaType(const nsACString& aMIMETypeExcludingCodecs,
                                  const nsAString& aCodecs,
-                                 DecoderDoctorDiagnostics* aDiagnostics);
-
+                                 DecoderDoctorDiagnostics* aDiagnostics,
+                                 nsIChannel* aChannel = nullptr,
+                                 nsIStreamListener** aStreamListener = nullptr);
+  
   static bool CanHandleMediaType(const nsAString& aMIMEType,
                                  DecoderDoctorDiagnostics* aDiagnostics);
 
