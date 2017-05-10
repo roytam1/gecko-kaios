@@ -200,6 +200,9 @@ NS_IMETHODIMP nsDeviceSensors::AddWindowListener(uint32_t aType, nsIDOMWindow *a
 
 NS_IMETHODIMP nsDeviceSensors::RemoveWindowListener(uint32_t aType, nsIDOMWindow *aWindow)
 {
+  if (!mEnabled)
+    return NS_OK;
+
   if (mWindowListeners[aType]->IndexOf(aWindow) == NoIndex)
     return NS_OK;
 
@@ -213,6 +216,9 @@ NS_IMETHODIMP nsDeviceSensors::RemoveWindowListener(uint32_t aType, nsIDOMWindow
 
 NS_IMETHODIMP nsDeviceSensors::RemoveWindowAsListener(nsIDOMWindow *aWindow)
 {
+  if (!mEnabled)
+    return NS_OK;
+
   for (int i = 0; i < NUM_SENSOR_TYPE; i++) {
     RemoveWindowListener((SensorType)i, aWindow);
   }
