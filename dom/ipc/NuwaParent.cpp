@@ -122,10 +122,11 @@ NuwaParent::CloneProtocol(Channel* aChannel,
       AssertIsOnBackgroundThread();
 
       // Call NuwaParent::ActorConstructed() on the worker thread.
-      actor->ActorConstructed();
-
-      // The actor can finally be deleted after fully constructed.
-      mozilla::Unused << actor->Send__delete__(actor);
+      // NuwaParent::ActorConstructed() may return 'false' if mContentParent is nullptr.
+      if (actor->ActorConstructed()) {
+        // The actor can finally be deleted after fully constructed.
+        mozilla::Unused << actor->Send__delete__(actor);
+      }
     });
     MOZ_ASSERT(nested);
     MOZ_ALWAYS_SUCCEEDS(actor->mWorkerThread->Dispatch(nested, NS_DISPATCH_NORMAL));
@@ -148,10 +149,11 @@ NuwaParent::ActorDestroy(ActorDestroyReason aWhy)
     // These extra nsRefPtr serve as kungFuDeathGrip to keep both objects from
     // deletion in breaking the ref cycle.
     RefPtr<ContentParent> contentParent = self->mContentParent;
-
-    contentParent->SetNuwaParent(nullptr);
-    // Need to clear the ref to ContentParent on the main thread.
-    self->mContentParent = nullptr;
+    if (contentParent) {
+      contentParent->SetNuwaParent(nullptr);
+      // Need to clear the ref to ContentParent on the main thread.
+      self->mContentParent = nullptr;
+    }
   });
   MOZ_ASSERT(runnable);
   MOZ_ALWAYS_SUCCEEDS(NS_DispatchToMainThread(runnable));
