@@ -153,7 +153,8 @@ this.SystemMessagePermissionsTable = {
     "settings": ["read", "write"]
   },
   "audiochannel-interruption-begin" : {},
-  "audiochannel-interruption-ended" : {}
+  "audiochannel-interruption-ended" : {},
+  "salestracker-register-server" : {}
 };
 
 
