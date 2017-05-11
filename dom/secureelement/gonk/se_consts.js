@@ -32,8 +32,10 @@ this.MAX_CHANNELS_ALLOWED_PER_SESSION = 4;
 
 this.BASIC_CHANNEL = 0;
 
-// According GPCardSpec 2.2
-this.MAX_APDU_LEN = 255; // including APDU header
+// According to GPCardSpec 2.2, extended APUD length is limited to 65536.
+// But there are limitations for the buffer size in NFC HAL layer.
+// Set it to 1022 for now, we can increase and improve when it is required.
+this.MAX_APDU_LEN = 1022; // including APDU header
 
 // CLA (1 byte) + INS (1 byte) + P1 (1 byte) + P2 (1 byte)
 this.APDU_HEADER_LEN = 4;
