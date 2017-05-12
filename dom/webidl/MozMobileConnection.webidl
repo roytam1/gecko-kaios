@@ -337,7 +337,8 @@ interface MozMobileConnection : EventTarget
    *
    * Otherwise, the request's onerror will be called, and the request's error
    * will be either 'RadioNotAvailable', 'RequestNotSupported',
-   * 'InvalidParameter', 'IllegalSIMorME', or 'GenericFailure'.
+   * 'InvalidParameter', 'IllegalSIMorME', or 'GenericFailure',
+   * 'IncorrectPassword'.
    */
   [Throws, CheckAnyPermissions="mobileconnection"]
   DOMRequest setCallBarringOption(optional MozCallBarringOptions options);
