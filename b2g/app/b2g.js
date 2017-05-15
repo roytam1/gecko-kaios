@@ -1091,7 +1091,7 @@ pref("services.sync.fxaccounts.enabled", false);
 pref("identity.fxaccounts.enabled", false);
 
 // Enable sync and mozId with KaiOS Accounts.
-pref("identity.kaiaccounts.enabled", true);
+pref("identity.kaiaccounts.enabled", false);
 
 // Mobile Identity API.
 pref("services.mobileid.server.uri", "https://msisdn.services.mozilla.com");
