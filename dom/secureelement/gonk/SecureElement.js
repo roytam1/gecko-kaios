@@ -49,6 +49,7 @@ function debug(s) {
 const SE_IPC_SECUREELEMENT_MSG_NAMES = [
   "SE:GetSEReaders",
   "SE:OpenChannel",
+  "SE:OpenBasicChannel",
   "SE:CloseChannel",
   "SE:TransmitAPDU",
   "SE:GetAtr",
@@ -376,6 +377,58 @@ SecureElementManager.prototype = {
     });
   },
 
+  _handleOpenBasicChannel: function(msg, callback) {
+    if (!this._canOpenChannel(msg.appId, msg.type)) {
+      debug("Max channels per session exceed");
+      callback({ error: SE.ERROR_GENERIC });
+      return;
+    }
+
+    let connector = getConnector(msg.type);
+    if (!connector) {
+      debug("No SE connector available");
+      callback({ error: SE.ERROR_NOTPRESENT });
+      return;
+    }
+
+    this._acEnforcer.isAccessAllowed(msg.appId, msg.type, msg.aid)
+    .then((allowed) => {
+      if (!allowed) {
+        callback({ error: SE.ERROR_SECURITY });
+        return;
+      }
+      connector.openBasicChannel(SEUtils.byteArrayToHexString(msg.aid), {
+
+        notifyOpenChannelSuccess: (channelNumber, openResponse) => {
+          // Add the new 'channel' to the map upon success
+          let channelToken =
+            gMap.addChannel(msg.appId, msg.type, msg.aid, channelNumber);
+          if (channelToken) {
+            callback({
+              error: SE.ERROR_NONE,
+              channelToken: channelToken,
+              isBasicChannel: (channelNumber === SE.BASIC_CHANNEL),
+              openResponse: SEUtils.hexStringToByteArray(openResponse)
+            });
+          } else {
+            callback({ error: SE.ERROR_GENERIC });
+          }
+        },
+
+        notifyError: (reason) => {
+          debug("Failed to open the channel to AID : " +
+                SEUtils.byteArrayToHexString(msg.aid) +
+                ", Rejected with Reason : " + reason);
+          callback({ error: SE.ERROR_GENERIC, reason: reason, response: [] });
+        }
+      });
+    })
+    .catch((error) => {
+      debug("Failed to get info from accessControlEnforcer " + error);
+      callback({ error: SE.ERROR_SECURITY });
+    });
+  },
+
   _handleTransmit: function(msg, callback) {
     let channel = gMap.getChannel(msg.appId, msg.channelToken);
     if (!channel) {
@@ -426,7 +479,6 @@ SecureElementManager.prototype = {
       callback({ error: SE.ERROR_NOTPRESENT });
       return;
     }
-
     connector.closeChannel(channel.channelNumber, {
       notifyCloseChannelSuccess: () => {
         gMap.removeChannel(msg.appId, msg.channelToken);
@@ -652,6 +704,9 @@ SecureElementManager.prototype = {
         break;
       case "SE:OpenChannel":
         this._handleOpenChannel(msg.data, callback);
+        break;
+      case "SE:OpenBasicChannel":
+        this._handleOpenBasicChannel(msg.data, callback);
         break;
       case "SE:CloseChannel":
         this._handleCloseChannel(msg.data, callback);

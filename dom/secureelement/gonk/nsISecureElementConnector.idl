@@ -103,6 +103,17 @@ interface nsISecureElementConnector : nsISupports
                      in nsISEChannelCallback callback);
 
    /**
+    * Open a default communication channel with the specific secure element type
+    *
+    * @param aid
+    *        Application Identifier of the Card Applet on the secure element.
+    * @param callback
+    *        callback to notify the result of the operation.
+    */
+    void openBasicChannel(in DOMString aid,
+                     in nsISEChannelCallback callback);
+
+   /**
     * Exchanges APDU channel with the specific secure element type
     *
     * @param channel

@@ -119,6 +119,22 @@ interface SESession {
   Promise<SEResponse> getAtr();
 
   /**
+   * Opens a communication basic channel to an application on Secure Element identified by the AID.
+   * The 'aid' can be null for some secure elements.
+   *
+   * @param aid
+   *     Application Identifier of the Card Applet on the secure element.
+   *     If the 'aid' is null :
+   *       For secure element type 'eSE', the default applet is selected.
+   *       For secure element type 'uicc', the request will be immediately rejected.
+   *     Note that the length of 'aid should be between 5 and 16.
+   *
+   * @return If the operation is successful the promise is resolved with an instance of SEChannel.
+   */
+  [Throws]
+  Promise<SEChannel> openBasicChannel(Uint8Array? aid);
+
+  /**
    * Opens a communication logical channel to an application on Secure Element identified by the AID.
    * The 'aid' can be null for some secure elements.
    *

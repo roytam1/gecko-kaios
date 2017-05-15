@@ -273,6 +273,36 @@ SESessionImpl.prototype = {
     this._reader = readerCtx;
   },
 
+  openBasicChannel: function openBasicChannel(aid) {
+    if (this._isClosed) {
+      return PromiseHelpers.rejectWithSEError(SE.ERROR_BADSTATE,
+             "Session Already Closed!");
+    }
+
+    let aidLen = aid ? aid.length : 0;
+    if (aidLen < SE.MIN_AID_LEN || aidLen > SE.MAX_AID_LEN) {
+      return PromiseHelpers.rejectWithSEError(SE.ERROR_ILLEGALPARAMETER,
+             "Invalid AID length - " + aidLen);
+    }
+
+    return PromiseHelpers.createSEPromise((resolverId) => {
+      /**
+       * @params for 'SE:OpenChannel'
+       *
+       * resolverId  : ID that identifies this IPC request.
+       * aid         : AID that identifies the applet on SecureElement
+       * type        : Reader type ('uicc' / 'eSE')
+       * appId       : Current appId obtained from 'Principal' obj
+       */
+      cpmm.sendAsyncMessage("SE:OpenBasicChannel", {
+        resolverId: resolverId,
+        aid: aid,
+        type: this.reader.type,
+        appId: this._window.document.nodePrincipal.appId
+      });
+    }, this);
+  },
+
   openLogicalChannel: function openLogicalChannel(aid) {
     if (this._isClosed) {
       return PromiseHelpers.rejectWithSEError(SE.ERROR_BADSTATE,
@@ -553,6 +583,7 @@ SEManagerImpl.prototype = {
     // Add the messages to be listened to.
     const messages = ["SE:GetSEReadersResolved",
                       "SE:OpenChannelResolved",
+                      "SE:OpenBasicChannelResolved",
                       "SE:CloseChannelResolved",
                       "SE:TransmitAPDUResolved",
                       "SE:ResetSecureElementResolved",
@@ -561,6 +592,7 @@ SEManagerImpl.prototype = {
                       "SE:LsGetVersionResolved",
                       "SE:GetSEReadersRejected",
                       "SE:OpenChannelRejected",
+                      "SE:OpenBasicChannelRejected",
                       "SE:CloseChannelRejected",
                       "SE:TransmitAPDURejected",
                       "SE:ResetSecureElementRejected",
@@ -639,6 +671,20 @@ SEManagerImpl.prototype = {
         }
         resolver.resolve(channelImpl.__DOM_IMPL__);
         break;
+      case "SE:OpenBasicChannelResolved":
+        let basicChannelImpl = new SEChannelImpl();
+        basicChannelImpl.initialize(this._window,
+                                    result.channelToken,
+                                    result.isBasicChannel,
+                                    result.openResponse,
+                                    context);
+        this._window.SEChannel._create(this._window, basicChannelImpl);
+        if (context) {
+          // Notify context's handler with SEChannel instance
+          context.onChannelOpen(basicChannelImpl);
+        }
+        resolver.resolve(basicChannelImpl.__DOM_IMPL__);
+        break;
       case "SE:TransmitAPDUResolved":
         let responseImpl = new SEResponseImpl();
         responseImpl.initialize(result.sw1,
@@ -682,6 +728,7 @@ SEManagerImpl.prototype = {
         break;
       case "SE:GetSEReadersRejected":
       case "SE:OpenChannelRejected":
+      case "SE:OpenBasicChannelRejected":
       case "SE:CloseChannelRejected":
       case "SE:TransmitAPDURejected":
       case "SE:ResetSecureElementRejected":
