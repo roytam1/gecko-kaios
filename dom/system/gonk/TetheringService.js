@@ -828,18 +828,6 @@ TetheringService.prototype = {
     }
   },
 
-  // Deprecated, replace by onExternalConnectionChangedReport.
-  onConnectionChangedReport: function(aSuccess, aExternalIfname) {
-    debug("onConnectionChangedReport result: success " + aSuccess);
-
-    if (aSuccess) {
-      // Update the external interface.
-      this._tetheringInterface[TETHERING_TYPE_USB].externalInterface =
-        aExternalIfname;
-      debug("Change the interface name to " + aExternalIfname);
-    }
-  },
-
   onExternalConnectionChangedReport: function(type, aSuccess, aExternalIfname) {
     debug("onExternalConnectionChangedReport result: success= " + aSuccess + " ,type= " + type);
 
@@ -960,72 +948,6 @@ TetheringService.prototype = {
         debug("onExternalConnectionChanged. Not default type state change, return.");
       }
     }
-  },
-
-  // Deprecated, replace by onConnectionChanged.
-  onConnectionChanged: function(aNetworkInfo) {
-    if (aNetworkInfo.state != Ci.nsINetworkInfo.NETWORK_STATE_CONNECTED) {
-      debug("We are only interested in CONNECTED event");
-      return;
-    }
-
-    if (this.tetheringSettings[SETTINGS_DUN_REQUIRED] &&
-        aNetworkInfo.type === Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_DUN) {
-      this.dunConnectTimer.cancel();
-      debug("DUN data call connected, process callbacks.");
-      while (this._pendingTetheringRequests.length > 0) {
-        let callback = this._pendingTetheringRequests.shift();
-        if (typeof callback === 'function') {
-          callback(aNetworkInfo);
-        }
-      }
-      return;
-    }
-
-    if (!this.tetheringSettings[SETTINGS_USB_ENABLED]) {
-      debug("Usb tethering settings is not enabled");
-      return;
-    }
-
-    if (this.tetheringSettings[SETTINGS_DUN_REQUIRED] &&
-        aNetworkInfo.type === Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_DUN &&
-        this._tetheringInterface[TETHERING_TYPE_USB].externalInterface ===
-        aNetworkInfo.name) {
-      debug("Dun required and dun interface is the same");
-      return;
-    }
-
-    if (this._tetheringInterface[TETHERING_TYPE_USB].externalInterface ===
-        gNetworkManager.activeNetworkInfo.name) {
-      debug("The active interface is the same");
-      return;
-    }
-
-    let previous = {
-      internalIfname: this._tetheringInterface[TETHERING_TYPE_USB].internalInterface,
-      externalIfname: this._tetheringInterface[TETHERING_TYPE_USB].externalInterface
-    };
-
-    let current = {
-      internalIfname: this._tetheringInterface[TETHERING_TYPE_USB].internalInterface,
-      externalIfname: aNetworkInfo.name
-    };
-
-    let callback = (() => {
-      // Update external network interface.
-      debug("Update upstream interface to " + aNetworkInfo.name);
-      gNetworkService.updateUpStream(previous, current,
-                                     this.onConnectionChangedReport.bind(this));
-    });
-
-    if (this._usbTetheringAction === TETHERING_STATE_ONGOING) {
-      debug("Postpone the event and handle it when state is idle.");
-      this.wantConnectionEvent = callback;
-      return;
-    }
-    this.wantConnectionEvent = null;
-
-    callback.call(this);
   },
 
   isAnyConnected: function() {
