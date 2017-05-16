@@ -954,5 +954,5 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
 
 if CONFIG['ENABLE_NUANCE_XT9']:
     WEBIDL_FILES += [
-        'Xt9Connect.webidl'
+        'IMEConnect.webidl'
     ]

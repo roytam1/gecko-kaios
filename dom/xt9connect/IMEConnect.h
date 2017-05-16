@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef mozilla_dom_xt9connect_Xt9Connect_h
-#define mozilla_dom_xt9connect_Xt9Connect_h
+#ifndef mozilla_dom_xt9connect_IMEConnect_h
+#define mozilla_dom_xt9connect_IMEConnect_h
 
 #include "nsCOMPtr.h"
 #include "nsPIDOMWindow.h"
@@ -179,19 +179,19 @@ void PrintEditorBuffer(demoEditorInfo *pEditor);
 
 void PrintScreen(demoIMEInfo *pIME);
 
-class Xt9Connect final : public nsISupports, public nsWrapperCache
+class IMEConnect final : public nsISupports, public nsWrapperCache
 {
 public:
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
-  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(Xt9Connect)
+  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(IMEConnect)
 
-  static already_AddRefed<Xt9Connect> 
+  static already_AddRefed<IMEConnect>
   Constructor(const GlobalObject& aGlobal,
               ErrorResult& aRv);
 
-  static already_AddRefed<Xt9Connect>
+  static already_AddRefed<IMEConnect>
   Constructor(const GlobalObject& aGlobal,
-              uint32_t aXt9LID,
+              uint32_t aLID,
               ErrorResult& aRv);
 
   bool InitEmptyWord() const
@@ -236,9 +236,9 @@ public:
     cursorPositionEnabled = true;
   }
 
-  uint32_t CurrentEt9LID() const
+  uint32_t CurrentLID() const
   {
-    return mCurrentEt9LID;
+    return mCurrentLID;
   }
 
   virtual JSObject* WrapObject(JSContext* aCx,
@@ -252,12 +252,12 @@ public:
     return GetOwner();
   }
 
-  explicit Xt9Connect(nsPIDOMWindowInner* aWindow);
+  explicit IMEConnect(nsPIDOMWindowInner* aWindow);
 
-  nsresult Init(uint32_t aXt9LID);
+  nsresult Init(uint32_t aLID);
 
   static void SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLetter, ErrorResult& aRv);
-  static uint32_t SetLanguage(const uint32_t et9_lid);
+  static uint32_t SetLanguage(const uint32_t lid);
 
   static bool mEmptyWord;
   static nsCString mWholeWord;
@@ -267,12 +267,12 @@ public:
   static uint32_t  mCursorPosition;
   static uint32_t  sCursorPosition;
   static bool cursorPositionEnabled;
-  static uint32_t mCurrentEt9LID;
+  static uint32_t mCurrentLID;
 
 private:
-  ~Xt9Connect();
+  ~IMEConnect();
 };
 } // namespace dom
 } // namespace mozilla
 
-#endif // mozilla_dom_xt9connect_Xt9Connect_h
+#endif // mozilla_dom_xt9connect_IMEConnect_h

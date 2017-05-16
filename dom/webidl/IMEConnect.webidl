@@ -5,12 +5,12 @@
  */
 
 [Constructor,
-Constructor(unsigned long et9_lid)]
-interface Xt9Connect {
+Constructor(unsigned long lid)]
+interface IMEConnect {
   [Throws]
   void setLetter (unsigned long hexPrefix, unsigned long hexLetter);
 
-  unsigned long setLanguage(unsigned long et9_lid);
+  unsigned long setLanguage(unsigned long lid);
 
   attribute boolean initEmptyWord;
 
@@ -22,5 +22,5 @@ interface Xt9Connect {
 
   attribute long cursorPosition;
 
-  readonly attribute unsigned long currentEt9LID;
+  readonly attribute unsigned long currentLID;
 };

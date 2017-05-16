@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "mozilla/dom/Xt9Connect.h"
-#include "mozilla/dom/Xt9ConnectBinding.h"
+#include "mozilla/dom/IMEConnect.h"
+#include "mozilla/dom/IMEConnectBinding.h"
 
 namespace mozilla {
 namespace dom {
@@ -11,15 +11,15 @@ namespace dom {
 static demoIMEInfo         sIME;
 static demoEditorInfo      sEditor;
 
-bool      Xt9Connect::mEmptyWord;
-nsCString Xt9Connect::mWholeWord;
-nsCString Xt9Connect::sWholeWord;
-nsCString Xt9Connect::mCandidateWord;
-uint16_t  Xt9Connect::mTotalWord;
-uint32_t  Xt9Connect::mCursorPosition;
-uint32_t  Xt9Connect::sCursorPosition;
-bool      Xt9Connect::cursorPositionEnabled;
-uint32_t  Xt9Connect::mCurrentEt9LID;
+bool      IMEConnect::mEmptyWord;
+nsCString IMEConnect::mWholeWord;
+nsCString IMEConnect::sWholeWord;
+nsCString IMEConnect::mCandidateWord;
+uint16_t  IMEConnect::mTotalWord;
+uint32_t  IMEConnect::mCursorPosition;
+uint32_t  IMEConnect::sCursorPosition;
+bool      IMEConnect::cursorPositionEnabled;
+uint32_t  IMEConnect::mCurrentLID;
 
 uint32_t GetTickCount() {
   struct timeval tv;
@@ -38,7 +38,7 @@ EditorInitEmptyWord(demoIMEInfo * const pIME, bool& initEmptyWord)
     initEmptyWord = false;
     ET9ClearAllSymbs(&pIME->sWordSymbInfo);
   } else {
-    XT9_LOGD("EditorInitEmptyWord::Xt9Connect::mEmptyWord: False");
+    XT9_LOGD("EditorInitEmptyWord::IMEConnect::mEmptyWord: False");
   }
 }
 
@@ -47,7 +47,7 @@ EditorInitWord(demoIMEInfo * const pIME, nsCString& initWord)
 {
   demoEditorInfo *pEditor = pIME->pEditor;
   if (initWord.IsEmpty()) {
-    XT9_LOGD("EditorInitWord::Xt9Connect::sWholeWord: Empty");
+    XT9_LOGD("EditorInitWord::IMEConnect::sWholeWord: Empty");
   } else {
     ET9INT initWordLength = initWord.Length();
     std::copy(initWord.get(),
@@ -528,7 +528,7 @@ PrintCandidateList(demoIMEInfo *pIME)
     return;
   }
 
-  Xt9Connect::mTotalWord = pIME->bTotWords;
+  IMEConnect::mTotalWord = pIME->bTotWords;
   ET9U8 lower = pIME->bActiveWordIndex - pIME->bActiveWordIndex % 5;
   const ET9U8 interval = 5;
 
@@ -576,7 +576,7 @@ PrintCandidateList(demoIMEInfo *pIME)
     jsWord.Append(" ");
 
     XT9_LOGD("%s", dbgWord.get());
-    Xt9Connect::mCandidateWord.Append(jsWord);
+    IMEConnect::mCandidateWord.Append(jsWord);
 
     /* print auto subst */
     if (pWord->wSubstitutionLen && !pIME->bSupressSubstitutions) {
@@ -615,9 +615,9 @@ PrintEditorBuffer(demoEditorInfo *pEditor)
 
   XT9_LOGD("%s", dbgWord.get());
 
-  Xt9Connect::mWholeWord.Append(jsWord);
+  IMEConnect::mWholeWord.Append(jsWord);
 
-  Xt9Connect::mCursorPosition = pEditor->snCursorPos;
+  IMEConnect::mCursorPosition = pEditor->snCursorPos;
 }
 
 void
@@ -639,9 +639,9 @@ PrintScreen(demoIMEInfo *pIME)
 
   PrintState(pIME);
 
-  // Clear input sequence in xt9connet before libxt9 processing input text or after word applied
-  if (!Xt9Connect::mCandidateWord.IsEmpty()) {
-    Xt9Connect::mCandidateWord.Assign("");
+  // Clear input sequence in IMEconnet before libxt9 processing input text or after word applied
+  if (!IMEConnect::mCandidateWord.IsEmpty()) {
+    IMEConnect::mCandidateWord.Assign("");
   }
 
   if (pIME->bTotWords) {
@@ -652,22 +652,22 @@ PrintScreen(demoIMEInfo *pIME)
   }
 }
 
-NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(Xt9Connect, mWindow)
-NS_IMPL_CYCLE_COLLECTING_ADDREF(Xt9Connect)
-NS_IMPL_CYCLE_COLLECTING_RELEASE(Xt9Connect)
+NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(IMEConnect, mWindow)
+NS_IMPL_CYCLE_COLLECTING_ADDREF(IMEConnect)
+NS_IMPL_CYCLE_COLLECTING_RELEASE(IMEConnect)
 
-NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(Xt9Connect)
+NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(IMEConnect)
 NS_WRAPPERCACHE_INTERFACE_MAP_ENTRY
 NS_INTERFACE_MAP_ENTRY(nsISupports)
 NS_INTERFACE_MAP_END
 
-Xt9Connect::Xt9Connect(nsPIDOMWindowInner* aWindow): mWindow(aWindow)
+IMEConnect::IMEConnect(nsPIDOMWindowInner* aWindow): mWindow(aWindow)
 {
     MOZ_ASSERT(mWindow);
 }
 
-already_AddRefed<Xt9Connect>
-Xt9Connect::Constructor(const GlobalObject& aGlobal,
+already_AddRefed<IMEConnect>
+IMEConnect::Constructor(const GlobalObject& aGlobal,
                         ErrorResult& aRv)
 {
   MOZ_ASSERT(NS_IsMainThread());
@@ -677,15 +677,15 @@ Xt9Connect::Constructor(const GlobalObject& aGlobal,
     return nullptr;
   }
 
-  RefPtr<Xt9Connect> xt_object = new Xt9Connect(window);
+  RefPtr<IMEConnect> xt_object = new IMEConnect(window);
   aRv = xt_object->Init(ET9LIDEnglish_US);
 
   return xt_object.forget();
 }
 
-already_AddRefed<Xt9Connect>
-Xt9Connect::Constructor(const GlobalObject& aGlobal,
-                        uint32_t aXt9LID,
+already_AddRefed<IMEConnect>
+IMEConnect::Constructor(const GlobalObject& aGlobal,
+                        uint32_t aLID,
                         ErrorResult& aRv)
 {
   MOZ_ASSERT(NS_IsMainThread());
@@ -695,14 +695,14 @@ Xt9Connect::Constructor(const GlobalObject& aGlobal,
     return nullptr;
   }
 
-  RefPtr<Xt9Connect> xt_object = new Xt9Connect(window);
-  aRv = xt_object->Init(aXt9LID);
+  RefPtr<IMEConnect> xt_object = new IMEConnect(window);
+  aRv = xt_object->Init(aLID);
 
   return xt_object.forget();
 }
 
 nsresult
-Xt9Connect::Init(uint32_t aXt9LID)
+IMEConnect::Init(uint32_t aLID)
 {
   ET9STATUS LdbValidate_eStatus;
   ET9STATUS Validate_HPD_eStatus;
@@ -754,14 +754,14 @@ Xt9Connect::Init(uint32_t aXt9LID)
     return NS_ERROR_FAILURE;
   }
 
-  ET9STATUS LdbSetLanguage_eStatus(ET9AWLdbSetLanguage(&sIME.sLingInfo, aXt9LID, ET9PLIDNone, 1));
+  ET9STATUS LdbSetLanguage_eStatus(ET9AWLdbSetLanguage(&sIME.sLingInfo, aLID, ET9PLIDNone, 1));
 
   if (LdbSetLanguage_eStatus) {
-    XT9_LOGE("Init::LdbSetLanguage_eStatus: [%d], aXt9LID = 0x%x", LdbSetLanguage_eStatus, aXt9LID);
+    XT9_LOGE("Init::LdbSetLanguage_eStatus: [%d], aLID = 0x%x", LdbSetLanguage_eStatus, aLID);
     return NS_ERROR_FAILURE;
   }
 
-  Xt9Connect::mCurrentEt9LID = aXt9LID;
+  IMEConnect::mCurrentLID = aLID;
 
   if (sIME.pDLMInfo) {
     free(sIME.pDLMInfo);
@@ -884,7 +884,7 @@ Xt9Connect::Init(uint32_t aXt9LID)
 }
 
 void
-Xt9Connect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLetter, ErrorResult& aRv)
+IMEConnect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLetter, ErrorResult& aRv)
 {
   int nInputPrefix(aHexPrefix);
   XT9_LOGD("SetLetter::nInputPrefix: %x", nInputPrefix);
@@ -896,11 +896,11 @@ Xt9Connect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLe
       return;
   }
 
-  EditorInitWord(&sIME, Xt9Connect::sWholeWord); // send init word
+  EditorInitWord(&sIME, IMEConnect::sWholeWord); // send init word
 
-  EditorInitEmptyWord(&sIME, Xt9Connect::mEmptyWord); // send empty init word
+  EditorInitEmptyWord(&sIME, IMEConnect::mEmptyWord); // send empty init word
 
-  EditorSetCursor(&sIME, Xt9Connect::sCursorPosition, Xt9Connect::cursorPositionEnabled); // set cursor position
+  EditorSetCursor(&sIME, IMEConnect::sCursorPosition, IMEConnect::cursorPositionEnabled); // set cursor position
 
   if (nInputPrefix == 0xE0) {
     switch (nInputChar) {
@@ -1026,17 +1026,17 @@ Xt9Connect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLe
 }
 
 uint32_t
-Xt9Connect::SetLanguage(const uint32_t et9_lid)
+IMEConnect::SetLanguage(const uint32_t lid)
 {
 
-  ET9STATUS LdbSetLanguage_eStatus(ET9AWLdbSetLanguage(&sIME.sLingInfo, et9_lid, ET9PLIDNone, 1));
+  ET9STATUS LdbSetLanguage_eStatus(ET9AWLdbSetLanguage(&sIME.sLingInfo, lid, ET9PLIDNone, 1));
 
   if (LdbSetLanguage_eStatus) {
-    XT9_LOGE("Init::LdbSetLanguage_eStatus: [%d], aXt9LID = 0x%x", LdbSetLanguage_eStatus, et9_lid);
-    return Xt9Connect::mCurrentEt9LID;
+    XT9_LOGE("Init::LdbSetLanguage_eStatus: [%d], aLID = 0x%x", LdbSetLanguage_eStatus, lid);
+    return IMEConnect::mCurrentLID;
   }
 
-  Xt9Connect::mCurrentEt9LID = et9_lid;
+  IMEConnect::mCurrentLID = lid;
 
   if ((sIME.sKdbInfo.dwKdbNum & ET9SLIDMASK) == ET9SKIDPhonePad) {
     ET9U16  wPageNum;
@@ -1049,18 +1049,18 @@ Xt9Connect::SetLanguage(const uint32_t et9_lid)
 
   ET9AWSelLstBuild(&sIME.sLingInfo, &sIME.bTotWords, &sIME.bActiveWordIndex, &sIME.wGestureValue);
 
-  return Xt9Connect::mCurrentEt9LID;
+  return IMEConnect::mCurrentLID;
 
 }
 
 JSObject*
-Xt9Connect::WrapObject(JSContext* aCx,
+IMEConnect::WrapObject(JSContext* aCx,
                                JS::Handle<JSObject*> aGivenProto)
 {
-  return mozilla::dom::Xt9ConnectBinding::Wrap(aCx, this, aGivenProto);
+  return mozilla::dom::IMEConnectBinding::Wrap(aCx, this, aGivenProto);
 }
 
-Xt9Connect::~Xt9Connect()
+IMEConnect::~IMEConnect()
 {
   if (sIME.pDLMInfo) {
     free(sIME.pDLMInfo);
