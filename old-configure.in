@@ -2873,8 +2873,8 @@ AC_SUBST(MOZ_BING_API_KEY)
 
 # Allow to specify a KaiOS API key file that contains the secret key to be
 # used for KaiOS location API requests.
-MOZ_ARG_WITH_STRING(kaios-api-keyfile,
-[  --with-kaios-api-keyfile=file   Use the secret key contained in the given keyfile for KaiOS location API requests],
+MOZ_ARG_WITH_STRING(kaios-geo-api-keyfile,
+[  --with-kaios-geo-api-keyfile=file   Use the secret key contained in the given keyfile for KaiOS location API requests],
   KAI_KAIOS_GEO_API_KEY=`cat $withval`)
 if test -z "$KAI_KAIOS_GEO_API_KEY"; then
     KAI_KAIOS_GEO_API_KEY=no-kaios-geo-api-key
