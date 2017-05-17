@@ -20,12 +20,14 @@ public:
   virtual bool IsScoConnected() = 0;
 
   virtual bool IsNrecEnabled() = 0;
+  virtual bool IsWbsEnabled() = 0;
 };
 
 #define BT_DECL_HFP_MGR_BASE                  \
   BT_DECL_PROFILE_MGR_BASE                    \
   virtual bool IsScoConnected() override;     \
-  virtual bool IsNrecEnabled() override;
+  virtual bool IsNrecEnabled() override;      \
+  virtual bool IsWbsEnabled() override;
 
 END_BLUETOOTH_NAMESPACE
 

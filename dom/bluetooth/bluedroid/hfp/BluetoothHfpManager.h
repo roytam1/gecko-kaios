@@ -135,6 +135,9 @@ public:
                         const BluetoothAddress& aBdAddress) override;
   void NRECNotification(BluetoothHandsfreeNRECState aNrec,
                         const BluetoothAddress& aBdAddr) override;
+  void WbsNotification(BluetoothHandsfreeWbsConfig aWbs,
+                       const BluetoothAddress& aBdAddr) override;
+  //                     const nsAString& aBdAddr) override;
   void CallHoldNotification(BluetoothHandsfreeCallHoldType aChld,
                             const BluetoothAddress& aBdAddress) override;
   void DialCallNotification(const nsAString& aNumber,
@@ -223,6 +226,7 @@ private:
   // This flag is for HFP only, not for HSP.
   bool mDialingRequestProcessed;
   bool mNrecEnabled;
+  bool mWbsEnabled;
   PhoneType mPhoneType;
   BluetoothAddress mDeviceAddress;
   nsString mMsisdn;

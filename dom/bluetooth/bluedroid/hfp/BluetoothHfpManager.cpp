@@ -221,6 +221,7 @@ BluetoothHfpManager::Cleanup()
   mRoam = HFP_SERVICE_TYPE_HOME;
   mSignal = 0;
   mNrecEnabled = HFP_NREC_STARTED;
+  mWbsEnabled = HFP_WBS_NONE;
 
   mController = nullptr;
 }
@@ -1354,6 +1355,12 @@ BluetoothHfpManager::ReplyToConnectionRequest(bool aAccept)
   return false;
 }
 
+bool
+BluetoothHfpManager::IsWbsEnabled()
+{
+  return mWbsEnabled;
+}
+
 void
 BluetoothHfpManager::OnConnectError()
 {
@@ -1648,6 +1655,29 @@ BluetoothHfpManager::NRECNotification(BluetoothHandsfreeNRECState aNrec,
     BT_WARNING("Failed to notify bluetooth-hfp-nrec-status-changed observsers!");
   }
 
+}
+
+void
+BluetoothHfpManager::WbsNotification(BluetoothHandsfreeWbsConfig aWbs,
+                                     const BluetoothAddress& aBdAddr)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  // Notify Gecko observers
+  nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
+  NS_ENSURE_TRUE_VOID(obs);
+
+  mWbsEnabled = (aWbs == HFP_WBS_YES);
+
+  nsAutoString deviceAddressStr;
+  AddressToString(mDeviceAddress, deviceAddressStr);
+
+  // Notify audio manager
+  if (NS_FAILED(obs->NotifyObservers(this,
+                                     BLUETOOTH_HFP_WBS_STATUS_CHANGED_ID,
+                                     deviceAddressStr.get()))) {
+    BT_WARNING("Failed to notify bluetooth-hfp-wbs-status-changed observsers!");
+  }
 }
 
 void

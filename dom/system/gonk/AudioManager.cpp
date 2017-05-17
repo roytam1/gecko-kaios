@@ -559,16 +559,28 @@ AudioManager::HandleBluetoothStatusChanged(nsISupports* aSubject,
                                 AUDIO_DEVICE_IN_BLUETOOTH_SCO_HEADSET,
                                 aAddress);
   } else if (!strcmp(aTopic, BLUETOOTH_HFP_NREC_STATUS_CHANGED_ID)) {
-      String8 cmd;
-      BluetoothHfpManagerBase* hfp =
-          static_cast<BluetoothHfpManagerBase*>(aSubject);
-      if (hfp->IsNrecEnabled()) {
-          cmd.setTo("bt_headset_name=<unknown>;bt_headset_nrec=on");
-          AudioSystem::setParameters(0, cmd);
-      } else {
-          cmd.setTo("bt_headset_name=<unknown>;bt_headset_nrec=off");
-          AudioSystem::setParameters(0, cmd);
-      }
+    String8 cmd;
+    BluetoothHfpManagerBase* hfp =
+      static_cast<BluetoothHfpManagerBase*>(aSubject);
+    if (hfp->IsNrecEnabled()) {
+      // TODO: (Bug 880785) Replace <unknown> with remote Bluetooth device name
+      cmd.setTo("bt_headset_name=<unknown>;bt_headset_nrec=on");
+      AudioSystem::setParameters(0, cmd);
+    } else {
+      cmd.setTo("bt_headset_name=<unknown>;bt_headset_nrec=off");
+      AudioSystem::setParameters(0, cmd);
+    }
+  } else if (!strcmp(aTopic, BLUETOOTH_HFP_WBS_STATUS_CHANGED_ID)) {
+    String8 cmd;
+    BluetoothHfpManagerBase* hfp =
+      static_cast<BluetoothHfpManagerBase*>(aSubject);
+    if (hfp->IsWbsEnabled()) {
+      cmd.setTo("bt_wbs=on");
+      AudioSystem::setParameters(0, cmd);
+    } else {
+      cmd.setTo("bt_wbs=off");
+      AudioSystem::setParameters(0, cmd);
+    }
   }
 #endif
 }
@@ -605,6 +617,7 @@ AudioManager::Observe(nsISupports* aSubject,
   if ((strcmp(aTopic, BLUETOOTH_SCO_STATUS_CHANGED_ID) == 0) ||
       (strcmp(aTopic, BLUETOOTH_HFP_STATUS_CHANGED_ID) == 0) ||
       (strcmp(aTopic, BLUETOOTH_HFP_NREC_STATUS_CHANGED_ID) == 0) ||
+      (strcmp(aTopic, BLUETOOTH_HFP_WBS_STATUS_CHANGED_ID) == 0) ||
       (strcmp(aTopic, BLUETOOTH_A2DP_STATUS_CHANGED_ID) == 0)) {
     nsCString address = NS_ConvertUTF16toUTF8(nsDependentString(aData));
     if (address.IsEmpty()) {
@@ -778,6 +791,9 @@ AudioManager::AudioManager()
   if (NS_FAILED(obs->AddObserver(this, BLUETOOTH_HFP_NREC_STATUS_CHANGED_ID, false))) {
     NS_WARNING("Failed to add bluetooth hfp NREC status changed observer!");
   }
+  if (NS_FAILED(obs->AddObserver(this, BLUETOOTH_HFP_WBS_STATUS_CHANGED_ID, false))) {
+    NS_WARNING("Failed to add bluetooth hfp WBS status changed observer!");
+  }
   if (NS_FAILED(obs->AddObserver(this, MOZ_SETTINGS_CHANGE_ID, false))) {
     NS_WARNING("Failed to add mozsettings-changed observer!");
   }
@@ -816,6 +832,9 @@ AudioManager::~AudioManager() {
   }
   if (NS_FAILED(obs->RemoveObserver(this, BLUETOOTH_HFP_NREC_STATUS_CHANGED_ID))) {
     NS_WARNING("Failed to remove bluetooth hfp NREC status changed observer!");
+  }
+  if (NS_FAILED(obs->RemoveObserver(this, BLUETOOTH_HFP_WBS_STATUS_CHANGED_ID))) {
+    NS_WARNING("Failed to remove bluetooth hfp WBS status changed observer!");
   }
   if (NS_FAILED(obs->RemoveObserver(this, MOZ_SETTINGS_CHANGE_ID))) {
     NS_WARNING("Failed to remove mozsettings-changed observer!");
@@ -1496,7 +1515,7 @@ AudioManager::VolumeStreamState::SetVolumeIndexToConsistentDeviceIfNeeded(uint32
     // No alias device
     rv = SetVolumeIndex(aIndex, aDevice);
   }
-  return rv;  
+  return rv;
 }
 
 nsresult
