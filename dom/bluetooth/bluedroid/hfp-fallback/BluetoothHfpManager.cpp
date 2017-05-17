@@ -115,7 +115,7 @@ BluetoothHfpManager::IsNrecEnabled()
 bool
 BluetoothHfpManager::IsWbsEnabled()
 {
-  return mWbsEnabled;
+  return false;
 }
 
 /**
