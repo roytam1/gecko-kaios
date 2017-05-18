@@ -8608,6 +8608,8 @@ nsCSSFrameConstructor::EndUpdate()
 void
 nsCSSFrameConstructor::RecalcQuotesAndCounters()
 {
+  nsAutoScriptBlocker scriptBlocker;
+
   if (mQuotesDirty) {
     mQuotesDirty = false;
     mQuoteList.RecalcAll();
