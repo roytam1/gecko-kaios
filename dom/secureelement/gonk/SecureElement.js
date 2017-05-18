@@ -482,20 +482,23 @@ SecureElementManager.prototype = {
     connector.closeChannel(channel.channelNumber, {
       notifyCloseChannelSuccess: () => {
         gMap.removeChannel(msg.appId, msg.channelToken);
-        // Close the connection if there is no channel used.
-        if (!gMap.isChannels()) {
-          debug("No channel is used, close the secure element connection");
-          connector.closeConnection({
-            notifyCloseConnectionSuccess: function () {
-              debug("Close secure element connection successfully");
-            },
-
-            notifyError: function() {
-              debug("Failed to close secure element connection");
-            }
-          });
+        if (gMap.isChannels()) {
+          callback({ error: SE.ERROR_NONE });
+          return;
         }
-        callback({ error: SE.ERROR_NONE });
+        debug("No channel is used, close the secure element connection");
+        // Close the connection if there is no channel used.
+        connector.closeConnection({
+          notifyCloseConnectionSuccess: function () {
+            debug("Close secure element connection successfully");
+            callback({ error: SE.ERROR_NONE });
+          },
+
+          notifyError: function() {
+            debug("Failed to close secure element connection");
+            callback({ error: SE.ERROR_NONE });
+          }
+        });
       },
 
       notifyError: (reason) => {
@@ -638,6 +641,7 @@ SecureElementManager.prototype = {
     let promiseStatus = (result.error === SE.ERROR_NONE) ? "Resolved" : "Rejected";
     result.resolverId = msg.data.resolverId;
     msg.target.sendAsyncMessage(msg.name + promiseStatus, {result: result});
+    this.requestDone();
   },
 
   _isValidMessage: function(msg) {
@@ -663,41 +667,51 @@ SecureElementManager.prototype = {
       debug("Unknow RF state " + data.rfState);
     }
   },
-  /**
-   * nsIMessageListener interface methods.
-   */
 
-  receiveMessage: function(msg) {
-    DEBUG && debug("Received '" + msg.name + "' message from content process" +
-                   ": " + JSON.stringify(msg.data));
+  _stateRequests: [],
 
-    if (msg.name === "child-process-shutdown") {
-      this._handleChildProcessShutdown(msg.target);
-      return null;
+  requestProcessing: false,
+
+  queueRequest: function(msg, callback) {
+    if (!callback) {
+        throw "Try to enqueue a request without callback";
     }
-    if (msg.name === "NFC:ChangeRFState" && !msg.target.assertPermission("nfc-manager")) {
-      debug("Received " + msg.name + " from a content process without nfc-manager permissions");
+
+    this._stateRequests.push({
+      msg: msg,
+      callback: callback
+    });
+
+    this.nextRequest();
+  },
+
+  requestDone: function requestDone() {
+    this.requestProcessing = false;
+    this.nextRequest();
+  },
+
+  nextRequest: function nextRequest() {
+    // No request to process
+    if (this._stateRequests.length === 0) {
       return;
     }
 
-    if (SE_IPC_SECUREELEMENT_MSG_NAMES.indexOf(msg.name) !== -1) {
-      if (!msg.target.assertPermission("secureelement-manage")) {
-        debug("SecureElement message " + msg.name + " from a content process " +
-              "with no 'secureelement-manage' privileges.");
-        return null;
-      }
-    } else {
-      debug("Ignoring unknown message type: " + msg.name);
-      return null;
+    // Handling request, wait for it.
+    if (this.requestProcessing) {
+      return;
     }
+    // Hold processing lock
+    this.requestProcessing = true;
 
-    let callback = (result) => this._sendSEResponse(msg, result);
-    if (!this._isValidMessage(msg)) {
-      debug("Message not valid");
-      callback({ error: SE.ERROR_GENERIC });
-      return null;
-    }
+    // Find next valid request
+    let request = this._stateRequests.shift();
 
+    this.handleRequest(request);
+  },
+
+  handleRequest: function(request) {
+    let callback = request.callback;
+    let msg = request.msg;
     switch (msg.name) {
       case "SE:GetSEReaders":
         this._handleGetSEReadersRequest(msg.data, msg.target, callback);
@@ -726,10 +740,52 @@ SecureElementManager.prototype = {
       case "SE:LsGetVersion":
         this._handleLsGetVersion(msg.data, callback);
         break;
-      case "NFC:ChangeRFState":
-        this._handleRFStateChange(msg.data);
-        break;
     }
+  },
+
+  /**
+   * nsIMessageListener interface methods.
+   */
+
+  receiveMessage: function(msg) {
+    DEBUG && debug("Received '" + msg.name + "' message from content process" +
+                   ": " + JSON.stringify(msg.data));
+
+    if (msg.name === "child-process-shutdown") {
+      this._handleChildProcessShutdown(msg.target);
+      return null;
+    }
+    if (msg.name === "NFC:ChangeRFState" && !msg.target.assertPermission("nfc-manager")) {
+      debug("Received " + msg.name + " from a content process without nfc-manager permissions");
+      return;
+    }
+
+    if (SE_IPC_SECUREELEMENT_MSG_NAMES.indexOf(msg.name) !== -1) {
+      if (!msg.target.assertPermission("secureelement-manage")) {
+        debug("SecureElement message " + msg.name + " from a content process " +
+              "with no 'secureelement-manage' privileges.");
+        return null;
+      }
+    } else {
+      debug("Ignoring unknown message type: " + msg.name);
+      return null;
+    }
+    let self = this;
+    let callback = (result) => self._sendSEResponse(msg, result);
+
+    if (!this._isValidMessage(msg)) {
+      debug("Message not valid");
+      callback({ error: SE.ERROR_GENERIC });
+      return null;
+    }
+
+    if (msg.name === "NFC:ChangeRFState") {
+      this._handleRFStateChange(msg.data);
+      return null;
+    }
+
+    this.queueRequest(msg, callback);
+
     return null;
   },
 
