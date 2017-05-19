@@ -1053,6 +1053,8 @@ nsHttpConnection::OnHeadersAvailable(nsAHttpTransaction *trans,
             Close(NS_ERROR_ABORT);
         }
         else {
+            nsAutoCString protocol(upgradeReq);
+            mUpgradedProtocol = protocol;
             LOG(("HTTP Upgrade Response to %s\n", upgradeResp));
         }
     }
@@ -1982,8 +1984,13 @@ nsHttpConnection::StartLongLivedTCPKeepalives()
         return NS_ERROR_NOT_INITIALIZED;
     }
 
+    bool allow = true;
+    if (mUpgradedProtocol.LowerCaseEqualsLiteral("websocket")) {
+        allow = false;
+    }
+
     nsresult rv = NS_OK;
-    if (gHttpHandler->TCPKeepaliveEnabledForLongLivedConns()) {
+    if (gHttpHandler->TCPKeepaliveEnabledForLongLivedConns() && allow) {
         // Increase the idle time.
         int32_t idleTimeS = gHttpHandler->GetTCPKeepaliveLongLivedIdleTime();
         LOG(("nsHttpConnection::StartLongLivedTCPKeepalives[%p] idle time[%ds]",

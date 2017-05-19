@@ -329,6 +329,7 @@ private:
     bool                            mNPNComplete;
     bool                            mSetupSSLCalled;
 
+    nsCString                       mUpgradedProtocol;
     // version level in use, 0 if unused
     uint8_t                         mUsingSpdyVersion;
 
