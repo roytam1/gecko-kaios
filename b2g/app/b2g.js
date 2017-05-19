@@ -1148,6 +1148,8 @@ pref("dom.serviceWorkers.focus.enabled", false);
 pref("dom.push.enabled", true);
 // Enable Adaptive ping
 pref("dom.push.adaptive.enabled", true);
+// Set first pingInterval as adaptive pingInterval.default if adaptive.enabled is set
+pref("dom.push.pingInterval", 180000); // 3 minutes
 // enable udp wakeup support
 pref("dom.push.udp.wakeupEnabled", true);
 
