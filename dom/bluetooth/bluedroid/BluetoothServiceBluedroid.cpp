@@ -2652,6 +2652,11 @@ BluetoothServiceBluedroid::BondStateChangedNotification(
   } else {
     if (!mBondedAddresses.Contains(aRemoteBdAddr)) {
       mBondedAddresses.AppendElement(aRemoteBdAddr);
+
+      // Get properties of bonded device for updating CoD
+      sBtCoreInterface->GetRemoteDeviceProperties(aRemoteBdAddr,
+        new GetRemoteDevicePropertiesResultHandler(mGetDeviceRequests,
+        aRemoteBdAddr));
     }
 
     // We don't assert |!remotebdName.IsEmpty()| since empty string is also
