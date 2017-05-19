@@ -140,11 +140,9 @@ ContentPermissionPrompt.prototype = {
       }
     });
 
-    // If all permissions are allowed already and no more than one option,
-    // call allow() without prompting.
+    // If all permissions are allowed already, call allow() without prompting.
     let checkAllowPermission = function(type) {
-      if (type.action == Ci.nsIPermissionManager.ALLOW_ACTION &&
-          type.options.length <= 1) {
+      if (type.action == Ci.nsIPermissionManager.ALLOW_ACTION) {
         return true;
       }
       return false;
@@ -287,9 +285,9 @@ ContentPermissionPrompt.prototype = {
        return;
     }
 
-    // prompt PROMPT_ACTION request or request with options.
+    // prompt PROMPT_ACTION request.
     typesInfo = typesInfo.filter(function(type) {
-      return !type.deny && (type.action == Ci.nsIPermissionManager.PROMPT_ACTION || type.options.length > 0) ;
+      return !type.deny && type.action == Ci.nsIPermissionManager.PROMPT_ACTION;
     });
 
     if (!request.element) {
@@ -450,7 +448,7 @@ ContentPermissionPrompt.prototype = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIContentPermissionPrompt])
 };
 
-//TODO: Re-enable "Not allow audio-capture permission while in call 
+//TODO: Re-enable "Not allow audio-capture permission while in call
 //      after we add incall-capture permission.
 /*
 (function() {
