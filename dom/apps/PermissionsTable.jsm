@@ -240,9 +240,10 @@ this.PermissionsTable =  { geolocation: {
                              certified: ALLOW_ACTION
                            },
                            "desktop-notification": {
-                             app: ALLOW_ACTION,
-                             privileged: ALLOW_ACTION,
-                             certified: ALLOW_ACTION
+                             app: PROMPT_ACTION,
+                             privileged: PROMPT_ACTION,
+                             certified: PROMPT_ACTION,
+                             defaultPromptAction: ALLOW_ACTION
                            },
                            "networkstats-manage": {
                              app: DENY_ACTION,

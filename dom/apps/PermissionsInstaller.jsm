@@ -167,6 +167,11 @@ this.PermissionsInstaller = {
                                                      false,
                                                      aApp.isCachedPackage);
             if (permValue === "unknown") {
+              // Overwrite default prompt permission value if defaultPromptAction
+              // is declared
+              if (PermissionsTable[permName].defaultPromptAction)
+                permission = PermissionsTable[permName].defaultPromptAction;
+
               permValue = PERM_TO_STRING[permission];
             }
           }
