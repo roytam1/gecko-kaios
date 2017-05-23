@@ -874,6 +874,17 @@ StaticStrings::isStatic(JSAtom* atom)
            : isStatic(atom->twoByteChars(nogc), atom->length());
 }
 
+AutoStableStringChars::~AutoStableStringChars()
+{
+    if (ownsChars_) {
+        MOZ_ASSERT(state_ == Latin1 || state_ == TwoByte);
+        if (state_ == Latin1)
+            js_free(const_cast<Latin1Char*>(latin1Chars_));
+        else
+            js_free(const_cast<char16_t*>(twoByteChars_));
+    }
+}
+
 bool
 AutoStableStringChars::init(JSContext* cx, JSString* s)
 {
@@ -933,33 +944,10 @@ bool AutoStableStringChars::baseIsInline(HandleLinearString linearString)
     return base->isInline();
 }
 
-template <typename T>
-T*
-AutoStableStringChars::allocOwnChars(JSContext* cx, size_t count)
-{
-    static_assert(
-        InlineCapacity >= sizeof(JS::Latin1Char) * (JSFatInlineString::MAX_LENGTH_LATIN1 + 1) &&
-        InlineCapacity >= sizeof(char16_t) * (JSFatInlineString::MAX_LENGTH_TWO_BYTE + 1),
-        "InlineCapacity too small to hold fat inline strings");
-
-    static_assert((JSString::MAX_LENGTH & mozilla::tl::MulOverflowMask<sizeof(T)>::value) == 0,
-                  "Size calculation can overflow");
-    MOZ_ASSERT(count <= JSString::MAX_LENGTH);
-    size_t size = sizeof(T) * count;
-
-    ownChars_.emplace(cx);
-    if (!ownChars_->resize(size)) {
-        ownChars_.reset();
-        return nullptr;
-    }
-
-    return reinterpret_cast<T*>(ownChars_->begin());
-}
-
 bool
 AutoStableStringChars::copyAndInflateLatin1Chars(JSContext* cx, HandleLinearString linearString)
 {
-    char16_t* chars = allocOwnChars<char16_t>(cx, linearString->length() + 1);
+    char16_t* chars = cx->pod_malloc<char16_t>(linearString->length() + 1);
     if (!chars)
         return false;
 
@@ -968,6 +956,7 @@ AutoStableStringChars::copyAndInflateLatin1Chars(JSContext* cx, HandleLinearStri
     chars[linearString->length()] = 0;
 
     state_ = TwoByte;
+    ownsChars_ = true;
     twoByteChars_ = chars;
     s_ = linearString;
     return true;
@@ -977,7 +966,7 @@ bool
 AutoStableStringChars::copyLatin1Chars(JSContext* cx, HandleLinearString linearString)
 {
     size_t length = linearString->length();
-    JS::Latin1Char* chars = allocOwnChars<JS::Latin1Char>(cx, length + 1);
+    JS::Latin1Char* chars = cx->pod_malloc<JS::Latin1Char>(length + 1);
     if (!chars)
         return false;
 
@@ -985,6 +974,7 @@ AutoStableStringChars::copyLatin1Chars(JSContext* cx, HandleLinearString linearS
     chars[length] = 0;
 
     state_ = Latin1;
+    ownsChars_ = true;
     latin1Chars_ = chars;
     s_ = linearString;
     return true;
@@ -994,7 +984,7 @@ bool
 AutoStableStringChars::copyTwoByteChars(JSContext* cx, HandleLinearString linearString)
 {
     size_t length = linearString->length();
-    char16_t* chars = allocOwnChars<char16_t>(cx, length + 1);
+    char16_t* chars = cx->pod_malloc<char16_t>(length + 1);
     if (!chars)
         return false;
 
@@ -1002,6 +992,7 @@ AutoStableStringChars::copyTwoByteChars(JSContext* cx, HandleLinearString linear
     chars[length] = 0;
 
     state_ = TwoByte;
+    ownsChars_ = true;
     twoByteChars_ = chars;
     s_ = linearString;
     return true;
