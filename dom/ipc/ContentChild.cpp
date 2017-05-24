@@ -208,6 +208,7 @@
 #include "gfxPlatform.h"
 #include "nscore.h" // for NS_FREE_PERMANENT_DATA
 #include "VRManagerChild.h"
+#include "mozilla/dom/workers/ServiceWorkerManager.h"
 
 using namespace mozilla;
 using namespace mozilla::docshell;
@@ -3390,6 +3391,39 @@ ContentChild::RecvPushError(const nsCString& aScope, const nsString& aMessage,
     static_cast<PushNotifier*>(pushNotifierIface.get());
   pushNotifier->NotifyErrorWorkers(aScope, aMessage, aFlags, aPrincipal);
 #endif
+  return true;
+}
+
+bool
+ContentChild::RecvNotificationClickEvent(const nsCString& aOriginSuffix,
+                                         const nsCString& aScope,
+                                         const nsString& aID,
+                                         const nsString& aTitle,
+                                         const nsString& aDir,
+                                         const nsString& aLang,
+                                         const nsString& aBody,
+                                         const nsString& aTag,
+                                         const nsString& aIcon,
+                                         const nsString& aData,
+                                         const nsString& aBehavior)
+{
+  nsCOMPtr<nsIServiceWorkerManager> swm =
+    do_GetService("@mozilla.org/serviceworkers/manager;1");
+  if (NS_WARN_IF(!swm)) {
+    return true;
+  }
+  nsresult rv = swm->SendNotificationClickEvent(aOriginSuffix,
+                                                aScope,
+                                                aID,
+                                                aTitle,
+                                                aDir,
+                                                aLang,
+                                                aBody,
+                                                aTag,
+                                                aIcon,
+                                                aData,
+                                                aBehavior);
+  Unused << NS_WARN_IF(NS_FAILED(rv));
   return true;
 }
 

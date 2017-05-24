@@ -29,6 +29,10 @@ XPCOMUtils.defineLazyServiceGetter(this, "notificationStorage",
                                    "@mozilla.org/notificationStorage;1",
                                    "nsINotificationStorage");
 
+XPCOMUtils.defineLazyServiceGetter(this, "serviceWorkerManager",
+                                   "@mozilla.org/serviceworkers/manager;1",
+                                   "nsIServiceWorkerManager");
+
 XPCOMUtils.defineLazyGetter(this, "ppmm", function() {
   return Cc["@mozilla.org/parentprocessmessagemanager;1"]
          .getService(Ci.nsIMessageListenerManager);
@@ -139,26 +143,51 @@ var AlertsHelper = {
           target: listener.target
         });
       } catch (e) {
-        // we get an exception if the app is not launched yet
-        if (detail.type !== kDesktopNotificationShow) {
-          // excluding the 'show' event: there is no reason a unlaunched app
-          // would want to be notified that a notification is shown. This
-          // happens when a notification is still displayed at reboot time.
-          gSystemMessenger.sendMessage(kNotificationSystemMessageName, {
-              clicked: (detail.type === kDesktopNotificationClick),
-              title: listener.title,
-              body: listener.text,
-              imageURL: listener.imageURL,
-              lang: listener.lang,
-              dir: listener.dir,
-              id: listener.id,
-              tag: listener.tag,
-              timestamp: listener.timestamp,
-              data: listener.dataObj
-            },
-            Services.io.newURI(listener.target, null, null),
-            Services.io.newURI(listener.manifestURL, null, null)
-          );
+        // The non-empty serviceWorkerRegistrationID means the notification
+        // is issued by service worker, so deal with this listener
+        // via serviceWorkerManager
+        if (listener.serviceWorkerRegistrationID.length) {
+          if (topic == kTopicAlertClickCallback) {
+            let appId = appsService.getAppLocalIdByManifestURL(listener.manifestURL);
+            let originSuffix = "^appId=" + appId;
+
+            serviceWorkerManager.sendNotificationClickEvent(
+              originSuffix,
+              listener.serviceWorkerRegistrationID,
+              listener.id,
+              listener.title,
+              listener.dir,
+              listener.lang,
+              listener.text,
+              listener.tag,
+              listener.imageURL,
+              listener.dataObj || undefined,
+              listener.mozbehavior
+            );
+          }
+        } else {
+          // we get an exception if the app is not launched yet
+          if (detail.type !== kDesktopNotificationShow) {
+            // excluding the 'show' event: there is no reason a unlaunched app
+            // would want to be notified that a notification is shown. This
+            // happens when a notification is still displayed at reboot time.
+            let dataObj = this.deserializeStructuredClone(listener.dataObj);
+            gSystemMessenger.sendMessage(kNotificationSystemMessageName, {
+                clicked: (detail.type === kDesktopNotificationClick),
+                title: listener.title,
+                body: listener.text,
+                imageURL: listener.imageURL,
+                lang: listener.lang,
+                dir: listener.dir,
+                id: listener.id,
+                tag: listener.tag,
+                timestamp: listener.timestamp,
+                data: dataObj || undefined
+              },
+              Services.io.newURI(listener.target, null, null),
+              Services.io.newURI(listener.manifestURL, null, null)
+            );
+          }
         }
       }
       if (detail.type === kDesktopNotificationClose && listener.dbId) {
@@ -233,7 +262,7 @@ var AlertsHelper = {
 
   showNotification: function(imageURL, title, text, textClickable, cookie,
                              uid, dir, lang, dataObj, manifestURL, timestamp,
-                             behavior) {
+                             behavior, serviceWorkerRegistrationID) {
     function send(appName, appIcon) {
       SystemAppProxy._sendCustomEvent(kMozChromeNotificationEvent, {
         type: kDesktopNotification,
@@ -248,7 +277,8 @@ var AlertsHelper = {
         manifestURL: manifestURL,
         timestamp: timestamp,
         data: dataObj,
-        mozbehavior: behavior
+        mozbehavior: behavior,
+        serviceWorkerRegistrationID: serviceWorkerRegistrationID
       });
     }
 
@@ -283,7 +313,6 @@ var AlertsHelper = {
   showAppNotification: function(aMessage) {
     let data = aMessage.data;
     let details = data.details;
-    let dataObject = this.deserializeStructuredClone(details.data);
     let listener = {
       mm: aMessage.target,
       title: data.title,
@@ -296,13 +325,14 @@ var AlertsHelper = {
       dir: details.dir || undefined,
       tag: details.tag || undefined,
       timestamp: details.timestamp || undefined,
-      dataObj: dataObject || undefined
+      dataObj: details.data || undefined,
+      serviceWorkerRegistrationID: details.serviceWorkerRegistrationID
     };
     this.registerAppListener(data.uid, listener);
     this.showNotification(data.imageURL, data.title, data.text,
                           details.textClickable, null, data.uid, details.dir,
-                          details.lang, dataObject, details.manifestURL,
-                          details.timestamp, details.mozbehavior);
+                          details.lang, details.data, details.manifestURL,
+                          details.timestamp, details.mozbehavior, details.serviceWorkerRegistrationID);
   },
 
   closeAlert: function(name) {

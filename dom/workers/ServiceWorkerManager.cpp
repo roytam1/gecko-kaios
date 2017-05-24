@@ -81,6 +81,7 @@
 #include "WorkerPrivate.h"
 #include "WorkerRunnable.h"
 #include "WorkerScope.h"
+#include "mozilla/AppProcessChecker.h"
 
 #ifndef MOZ_SIMPLEPUSH
 #include "mozilla/dom/TypedArray.h"
@@ -1075,6 +1076,31 @@ ServiceWorkerManager::SendNotificationClickEvent(const nsACString& aOriginSuffix
   PrincipalOriginAttributes attrs;
   if (!attrs.PopulateFromSuffix(aOriginSuffix)) {
     return NS_ERROR_INVALID_ARG;
+  }
+
+  if (XRE_IsParentProcess()) {
+    // We're in the parent. Broadcast the event
+    // to the content processes matching the principal.
+    bool ok = true;
+    nsTArray<ContentParent*> contentActors;
+    ContentParent::GetAll(contentActors);
+    for (uint32_t i = 0; i < contentActors.Length(); ++i) {
+      const nsString nAppManifestURL = contentActors[i]->AppManifestURL();
+      if (CheckAppPrincipalOriginAttributes(contentActors[i], attrs)) {
+        ok &= contentActors[i]->SendNotificationClickEvent(PromiseFlatCString(aOriginSuffix),
+                                                           PromiseFlatCString(aScope),
+                                                           PromiseFlatString(aID),
+                                                           PromiseFlatString(aTitle),
+                                                           PromiseFlatString(aDir),
+                                                           PromiseFlatString(aLang),
+                                                           PromiseFlatString(aBody),
+                                                           PromiseFlatString(aTag),
+                                                           PromiseFlatString(aIcon),
+                                                           PromiseFlatString(aData),
+                                                           PromiseFlatString(aBehavior));
+        return ok ? NS_OK : NS_ERROR_FAILURE;
+      }
+    }
   }
 
   ServiceWorkerInfo* info = GetActiveWorkerInfoForScope(attrs, aScope);

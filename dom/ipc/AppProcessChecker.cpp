@@ -18,6 +18,7 @@
 #include "nsNetUtil.h"
 #include "nsServiceManagerUtils.h"
 #include "TabParent.h"
+#include "mozilla/BasePrincipal.h"
 
 #include <algorithm>
 
@@ -293,6 +294,24 @@ CheckAppPrincipal(PContentParent* aActor,
         return true;
       }
       break;
+    }
+  }
+
+  return false;
+}
+
+bool
+CheckAppPrincipalOriginAttributes(PContentParent* aActor,
+                                  const PrincipalOriginAttributes& aPrincipalOriginAttributes)
+{
+  uint32_t attributesAppId = aPrincipalOriginAttributes.mAppId;
+
+  // Check if the permission's appId matches a child we manage.
+  nsTArray<TabContext> contextArray =
+    static_cast<ContentParent*>(aActor)->GetManagedTabContext();
+  for (uint32_t i = 0; i < contextArray.Length(); ++i) {
+    if (contextArray[i].OwnOrContainingAppId() == attributesAppId) {
+      return true;
     }
   }
 

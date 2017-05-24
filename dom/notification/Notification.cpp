@@ -1806,6 +1806,7 @@ Notification::ShowInternal()
         ops.mData = mDataAsBase64;
         ops.mMozbehavior = mBehavior;
         ops.mMozbehavior.mSoundFile = soundUrl;
+        ops.mServiceWorkerRegistrationID = mScope;
 
         if (!ToJSValue(cx, ops, &val)) {
           NS_WARNING("Converting dict to object failed!");

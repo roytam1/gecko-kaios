@@ -688,6 +688,21 @@ child:
     async PushError(nsCString scope, nsString message, uint32_t flags, Principal principal);
 
     /**
+     * Send a Notification click event to all service worker in the child.
+     */
+    async NotificationClickEvent(nsCString aOriginSuffix,
+                                 nsCString scope,
+                                 nsString aID,
+                                 nsString aTitle,
+                                 nsString aDir,
+                                 nsString aLang,
+                                 nsString aBody,
+                                 nsString aTag,
+                                 nsString aIcon,
+                                 nsString aData,
+                                 nsString aBehavior);
+
+    /**
      * Windows specific: associate this content process with the browsers
      * audio session.
      */

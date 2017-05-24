@@ -12,6 +12,7 @@
 class nsIPrincipal;
 
 namespace mozilla {
+class PrincipalOriginAttributes;
 
 namespace dom {
 class TabContext;
@@ -107,6 +108,13 @@ AssertAppPrincipal(mozilla::dom::PContentParent* aParent,
 bool
 CheckAppPrincipal(mozilla::dom::PContentParent* aParent,
                   nsIPrincipal* aPrincipal);
+
+/**
+ * Check if the specified principal from origin attributes is matching this content process.
+ */
+bool
+CheckAppPrincipalOriginAttributes(mozilla::dom::PContentParent* aParent,
+                                  const mozilla::PrincipalOriginAttributes& aPrincipalOriginAttributes);
 
 /**
  * Check if the specified principal is valid, and return the saved permission

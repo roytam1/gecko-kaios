@@ -559,6 +559,19 @@ public:
   RecvPushError(const nsCString& aScope, const nsString& aMessage,
                 const uint32_t& aFlags, const IPC::Principal& aPrincipal) override;
 
+  virtual bool
+  RecvNotificationClickEvent(const nsCString& aOriginSuffix,
+                             const nsCString& aScope,
+                             const nsString& aID,
+                             const nsString& aTitle,
+                             const nsString& aDir,
+                             const nsString& aLang,
+                             const nsString& aBody,
+                             const nsString& aTag,
+                             const nsString& aIcon,
+                             const nsString& aData,
+                             const nsString& aBehavior) override;
+
   // Get the directory for IndexedDB files. We query the parent for this and
   // cache the value
   nsString &GetIndexedDBPath();
