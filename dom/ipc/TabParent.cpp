@@ -3334,15 +3334,14 @@ TabParent::RecvGetTabCount(uint32_t* aValue)
 bool
 TabParent::RecvRequestVolumeChange(const bool& aUp)
 {
-  VolumeManager::DispatchEvent(mFrameElement,
-    aUp ? VolumeManager::VOLUME_UP : VolumeManager::VOLUME_DOWN);
+  VolumeManager::Notify(aUp ? VolumeManager::VOLUME_UP : VolumeManager::VOLUME_DOWN);
   return true;
 }
 
 bool
 TabParent::RecvRequestVolumeShow()
 {
-  VolumeManager::DispatchEvent(mFrameElement, VolumeManager::VOLUME_SHOW);
+  VolumeManager::Notify(VolumeManager::VOLUME_SHOW);
   return true;
 }
 
