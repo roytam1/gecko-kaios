@@ -82,7 +82,8 @@ const NFC_IPC_MSG_ENTRIES = [
                "NFC:NotifyUserAcceptedP2P",
                "NFC:NotifySendFileStatus",
                "NFC:ChangeRFState",
-               "NFC:SetFocusTab"] }
+               "NFC:SetFocusTab",
+               "NFC:MPOSReaderMode"] }
 ];
 
 // Should be consistent with NfcRequestType defined in NfcOptions.webidl.
@@ -100,6 +101,7 @@ const NfcRequestType = {
   GETATR: "getAtr",
   LSEXECUTESCRIPT: "lsExecuteScript",
   LSGETVERSION: "lsGetVersion",
+  MPOSREADERMODE: "mPOSReaderMode"
 };
 
 const CommandMsgTable = {};
@@ -116,6 +118,7 @@ CommandMsgTable["NFC:ResetSecureElement"] = NfcRequestType.RESETSECUREELEMENT;
 CommandMsgTable["NFC:GetAtr"] = NfcRequestType.GETATR;
 CommandMsgTable["NFC:LsExecuteScript"] = NfcRequestType.LSEXECUTESCRIPT;
 CommandMsgTable["NFC:LsGetVersion"] = NfcRequestType.LSGETVERSION;
+CommandMsgTable["NFC:MPOSReaderMode"] = NfcRequestType.MPOSREADERMODE;
 
 // Should be consistent with NfcResponseType defined in NfcOptions.webidl.
 const NfcResponseType = {
@@ -131,7 +134,9 @@ const NfcResponseType = {
   RESETSECUREELEMENT_RSP: "resetSecureElementRsp",
   GETATR_RSP: "getAtrRsp",
   LSEXECUTESCRIPT_RSP: "lsExecuteScriptRsp",
-  LSGETVERSION_RSP: "lsGetVersionRsp"
+  LSGETVERSION_RSP: "lsGetVersionRsp",
+  MPOSREADERMODE_RSP: "mPOSReaderModeRsp",
+  CONNECTERROR_RSP: "connectErrorRsp"
 };
 
 const EventMsgTable = {};
@@ -148,6 +153,7 @@ EventMsgTable[NfcResponseType.RESETSECUREELEMENT_RSP] = "NFC:ResetSecureElementR
 EventMsgTable[NfcResponseType.GETATR_RSP] = "NFC:GetAtrResponse";
 EventMsgTable[NfcResponseType.LSEXECUTESCRIPT_RSP] = "NFC:LsExecuteScriptResponse";
 EventMsgTable[NfcResponseType.LSGETVERSION_RSP] = "NFC:LsGetVersionResponse";
+EventMsgTable[NfcResponseType.MPOSREADERMODE_RSP] = "NFC:MPOSReaderModeResponse";
 
 // Should be consistent with NfcNotificationType defined in NfcOptions.webidl.
 const NfcNotificationType = {
@@ -155,7 +161,8 @@ const NfcNotificationType = {
   TECH_DISCOVERED: "techDiscovered",
   TECH_LOST: "techLost",
   HCI_EVENT_TRANSACTION: "hciEventTransaction",
-  NDEF_RECEIVED: "ndefReceived"
+  NDEF_RECEIVED: "ndefReceived",
+  MPOS_READER_MODE_EVENT: "mPOSReaderModeEvent"
 };
 
 XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
@@ -387,6 +394,15 @@ XPCOMUtils.defineLazyGetter(this, "gMessageManager", function () {
       this.notifyDOMEvent(target, { tabId: this.focusId,
                                     event: NFC.FOCUS_CHANGED,
                                     focus: focus });
+    },
+
+    onMPOSReaderModeEvent: function onMPOSReaderModeEvent(message) {
+      for (let id in this.eventListeners) {
+        this.notifyDOMEvent(this.eventListeners[id],
+                            { tabId: id,
+                              event: NFC.MPOS_READER_MODE_EVENT,
+                              type: message.mPOSReaderModeEvent });
+      }
     },
 
     /**
@@ -714,6 +730,9 @@ Nfc.prototype = {
       case NfcNotificationType.HCI_EVENT_TRANSACTION:
         this.notifyHCIEventTransaction(message);
         break;
+      case NfcNotificationType.MPOS_READER_MODE_EVENT:
+        gMessageManager.onMPOSReaderModeEvent(message);
+        break;
       case NfcNotificationType.NDEF_RECEIVED:
         message.sessionToken = SessionHelper.getToken(message.sessionId);
         delete message.sessionId;
@@ -760,6 +779,9 @@ Nfc.prototype = {
         break;
       case NfcResponseType.LSGETVERSION_RSP:
         this.lsGetVersionResponse(message);
+        break;
+      case NfcResponseType.MPOSREADERMODE_RSP:
+        this.mPOSReaderModeResponse(message);
         break;
       default:
         throw new Error("Don't know about this message type: " + message.type);
@@ -1174,6 +1196,12 @@ Nfc.prototype = {
 
     debug("lsGetVersionResponse: receive message from nfcd " + JSON.stringify(message));
     callback.notifyLsGetVersionSuccess(message.response);
+  },
+
+  mPOSReaderModeResponse: function mPOSReaderModeResponse(message)
+  {
+    debug("mPOSReaderModeResponse: send mpos reader mode response:" + JSON.stringify(message));
+    this.sendNfcResponse(message);
   },
 
   registerListener: function registerListener(listener) {

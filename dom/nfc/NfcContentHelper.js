@@ -59,7 +59,8 @@ const NFC_IPC_MSG_NAMES = [
   "NFC:CheckP2PRegistrationResponse",
   "NFC:DOMEvent",
   "NFC:NotifySendFileStatusResponse",
-  "NFC:ChangeRFStateResponse"
+  "NFC:ChangeRFStateResponse",
+  "NFC:MPOSReaderModeResponse"
 ];
 
 XPCOMUtils.defineLazyServiceGetter(this, "cpmm",
@@ -90,6 +91,7 @@ NfcContentHelper.prototype = {
   }),
 
   _requestMap: null,
+  _mPOSReaderModeOn: false,
   eventListeners: null,
 
   queryRFState: function queryRFState() {
@@ -222,6 +224,19 @@ NfcContentHelper.prototype = {
                            rfState: rfState});
   },
 
+  mPOSReaderMode: function mPOSReaderMode(enabled, callback) {
+    let requestId = callback.getCallbackId();
+    this._requestMap[requestId] = callback;
+    this._mPOSReaderModeOn = enabled;
+    cpmm.sendAsyncMessage("NFC:MPOSReaderMode",
+                          {requestId: requestId,
+                           mPOSReaderMode: enabled});
+  },
+
+  get isMPOSReaderMode() {
+    return this._mPOSReaderModeOn;
+  },
+
   callDefaultFoundHandler: function callDefaultFoundHandler(sessionToken,
                                                             isP2P,
                                                             records) {
@@ -267,11 +282,20 @@ NfcContentHelper.prototype = {
       case "NFC:NotifySendFileStatusResponse":
       case "NFC:ChangeRFStateResponse":
         this.handleGeneralResponse(result);
+        break
+      case "NFC:MPOSReaderModeResponse":
+        this.handleMPOSReaderModeResponse(result);
         break;
       case "NFC:DOMEvent":
         this.handleDOMEvent(result);
         break;
     }
+  },
+  handleMPOSReaderModeResponse: function handleMPOSReaderModeResponse(result) {
+    if (result.errorMsg) {
+      this._mPOSReaderModeOn = false;
+    }
+    this.handleGeneralResponse(result);
   },
 
   handleGeneralResponse: function handleGeneralResponse(result) {
@@ -381,6 +405,9 @@ NfcContentHelper.prototype = {
         break;
       case NFC.FOCUS_CHANGED:
         listener.notifyFocusChanged(result.focus);
+        break;
+      case NFC.MPOS_READER_MODE_EVENT:
+        listener.notifyMPOSReaderModeEvent(result.type);
         break;
     }
   }

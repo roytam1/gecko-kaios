@@ -24,6 +24,15 @@ XPCOMUtils.defineLazyServiceGetter(this,
                                    "@mozilla.org/AppsService;1",
                                    "nsIAppsService");
 
+const NFC_MPOS_EVENTS = [
+  "MPOS_READER_MODE_FAILED",
+  "MPOS_READER_MODE_START_SUCCESS",
+  "MPOS_READER_MODE_STOP_SUCCESS",
+  "MPOS_READER_MODE_TIMEOUT",
+  "MPOS_READER_MODE_REMOVE_CARD",
+  "MPOS_READER_MODE_INVALID"
+];
+
 function NfcCallback(aWindow) {
   this._window = aWindow;
   this.initDOMRequestHelper(aWindow, null);
@@ -359,6 +368,7 @@ MozNFCImpl.prototype = {
     this.defineEventHandlerGetterSetter("onpeerready");
     this.defineEventHandlerGetterSetter("onpeerfound");
     this.defineEventHandlerGetterSetter("onpeerlost");
+    this.defineEventHandlerGetterSetter("onmposreaderevent");
 
     Services.obs.addObserver(this, "inner-window-destroyed",
                              /* weak-ref */ false);
@@ -442,6 +452,16 @@ MozNFCImpl.prototype = {
 
   get enabled() {
     return this._rfState != RFState.IDLE;
+  },
+
+  get mPOSReaderStatus() {
+    return this._nfcContentHelper.isMPOSReaderMode;
+  },
+
+  mPOSSetReaderMode: function mPOSSetReaderMode(enabled) {
+    let callback = new NfcCallback(this.window);
+    this._nfcContentHelper.mPOSReaderMode(enabled, callback);
+    return callback.promise;
   },
 
   observe: function observe(subject, topic, data) {
@@ -691,6 +711,31 @@ MozNFCImpl.prototype = {
       this.notifyPeerLost(this.nfcPeer.session);
     }
   },
+
+  notifyMPOSReaderModeEvent: function notifyMPOSReaderModeEvent(type) {
+    this.handleMPOSReaderModeEvent(type);
+  },
+
+  handleMPOSReaderModeEvent: function handleMPOSReaderModeEvent(type) {
+    if (this.hasDeadWrapper()) {
+      dump("this.window or this.__DOM_IMPL__ is a dead wrapper.");
+      return false;
+    }
+
+    if (!this.checkPermissions(["nfc-manager"])) {
+      return false;
+    }
+    // Set to invalid type.
+    if (type >= NFC_MPOS_EVENTS.length || type < 0) {
+      type = 3;
+    }
+
+    let event = new this.window.MozNFCMPOSReaderModeEvent("mposreaderevent", {eventType: NFC_MPOS_EVENTS[type]});
+    this.__DOM_IMPL__.dispatchEvent(event);
+
+    return true;
+  },
+
 
   checkPermissions: function checkPermissions(perms) {
     let principal = this.window.document.nodePrincipal;

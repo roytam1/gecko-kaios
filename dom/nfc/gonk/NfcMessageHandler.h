@@ -58,12 +58,16 @@ private:
   bool LsGetVersionRequest(android::Parcel& aParcel, const CommandOptions& aOptions);
   bool LsGetVersionResponse(const android::Parcel& aParcel, EventOptions& aOptions);
 
+  bool MPOSReaderModeRequest(android::Parcel& aParcel, const CommandOptions& aOptions);
+  bool MPOSReaderModeResponse(const android::Parcel& aParcel, EventOptions& aOptions);
+
   bool ProcessNotification(int32_t aType, const android::Parcel& aParcel, EventOptions& aOptions);
   bool InitializeNotification(const android::Parcel& aParcel, EventOptions& aOptions);
   bool TechDiscoveredNotification(const android::Parcel& aParcel, EventOptions& aOptions);
   bool TechLostNotification(const android::Parcel& aParcel, EventOptions& aOptions);
   bool HCIEventTransactionNotification(const android::Parcel& aParcel, EventOptions& aOptions);
   bool NDEFReceivedNotification(const android::Parcel& aParcel, EventOptions& aOptions);
+  bool MPOSReaderModeEventNotification(const android::Parcel& aParcel, EventOptions& aOptions);
 
   bool ReadNDEFMessage(const android::Parcel& aParcel, EventOptions& aOptions);
   bool WriteNDEFMessage(android::Parcel& aParcel, const CommandOptions& aOptions);

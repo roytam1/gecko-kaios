@@ -309,6 +309,8 @@ public:
         Uint8Array::Create(cx, mEvent.mApduResponse.Length(), mEvent.mApduResponse.Elements()));
     }
 
+    COPY_OPT_FIELD(mMPOSReaderModeEvent, -1)
+
 #undef COPY_FIELD
 #undef COPY_OPT_FIELD
 
@@ -366,6 +368,9 @@ ConvertToResponse(EventOptions& event, NfcRequestType reqquestType)
       break;
     case NfcRequestType::LsGetVersion:
       returnType = NfcResponseType::LsGetVersionRsp;
+      break;
+    case NfcRequestType::MPOSReaderMode:
+      returnType = NfcResponseType::MPOSReaderModeRsp;
       break;
     default:
       returnType = NfcResponseType::EndGuard_;

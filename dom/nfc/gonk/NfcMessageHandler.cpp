@@ -66,6 +66,9 @@ NfcMessageHandler::Marshall(Parcel& aParcel, const CommandOptions& aOptions)
     case NfcRequestType::LsGetVersion:
       result = LsGetVersionRequest(aParcel, aOptions);
       break;
+    case NfcRequestType::MPOSReaderMode:
+      result = MPOSReaderModeRequest(aParcel, aOptions);
+      break;
     default:
       result = false;
       break;
@@ -127,6 +130,9 @@ NfcMessageHandler::ProcessResponse(int32_t aType, const Parcel& aParcel, EventOp
     case NfcResponseType::LsGetVersionRsp:
       result = LsGetVersionResponse(aParcel, aOptions);
       break;
+    case NfcResponseType::MPOSReaderModeRsp:
+      result = MPOSReaderModeResponse(aParcel, aOptions);
+      break;
     default:
       result = false;
   }
@@ -139,6 +145,7 @@ NfcMessageHandler::ProcessNotification(int32_t aType, const Parcel& aParcel, Eve
 {
   bool result;
   aOptions.mNtfType = static_cast<NfcNotificationType>(aType);
+  NMH_LOG("ProcessNotification %d", aType);
   switch (aOptions.mNtfType) {
     case NfcNotificationType::Initialized:
       result = InitializeNotification(aParcel, aOptions);
@@ -155,7 +162,10 @@ NfcMessageHandler::ProcessNotification(int32_t aType, const Parcel& aParcel, Eve
     case NfcNotificationType::NdefReceived:
       result = NDEFReceivedNotification(aParcel, aOptions);
       break;
+    case NfcNotificationType::MPOSReaderModeEvent:
+      result = MPOSReaderModeEventNotification(aParcel, aOptions);
     default:
+    NMH_LOG("ProcessNotification %d", aType);
       result = false;
       break;
   }
@@ -352,6 +362,14 @@ NfcMessageHandler::HCIEventTransactionNotification(const Parcel& aParcel, EventO
   aOptions.mPayload.AppendElements(
     static_cast<const uint8_t*>(aParcel.readInplace(payloadLength)), payloadLength);
 
+  return true;
+}
+
+bool
+NfcMessageHandler::MPOSReaderModeEventNotification(const Parcel& aParcel, EventOptions& aOptions)
+{
+  aOptions.mMPOSReaderModeEvent = aParcel.readInt32();
+  NMH_LOG("MPOSReaderModeEventNotification %d", aOptions.mMPOSReaderModeEvent);
   return true;
 }
 
@@ -623,5 +641,26 @@ NfcMessageHandler::LsGetVersionResponse(const Parcel& aParcel, EventOptions& aOp
   aOptions.mResponse.AppendElements(
     static_cast<const uint8_t*>(aParcel.readInplace(length)), length);
 
+  return true;
+}
+
+bool
+NfcMessageHandler::MPOSReaderModeRequest(Parcel& aParcel, const CommandOptions& aOptions)
+{
+  NMH_LOG("MPOSReaderModeRequest %d\n", aOptions.mMPOSReaderMode);
+  aParcel.writeInt32(static_cast<int32_t>(NfcRequestType::MPOSReaderMode));
+  aParcel.writeInt32(aOptions.mMPOSReaderMode);
+  mRequestIdQueue.AppendElement(aOptions.mRequestId);
+  return true;
+}
+
+bool
+NfcMessageHandler::MPOSReaderModeResponse(const Parcel& aParcel, EventOptions& aOptions)
+{
+  NMH_LOG("MPOSReaderModeResponse\n");
+  aOptions.mErrorCode = aParcel.readInt32();
+  NS_ENSURE_TRUE(!mRequestIdQueue.IsEmpty(), false);
+  aOptions.mRequestId = mRequestIdQueue[0];
+  mRequestIdQueue.RemoveElementAt(0);
   return true;
 }

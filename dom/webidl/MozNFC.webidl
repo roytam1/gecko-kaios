@@ -137,4 +137,26 @@ partial interface MozNFC {
   void eventListenerWasRemoved(DOMString aType);
 };
 
+partial interface MozNFC {
+  /**
+   * Indicate mPOS reader mode is enabled.
+   */
+  [CheckAnyPermissions="nfc-manager", AvailableIn=CertifiedApps]
+  readonly attribute boolean mPOSReaderStatus;
+
+  /**
+   * Switch mPOS mode
+   * Reader mode if enabled is true.
+   * Card mode if enabled is false.
+   */
+  [CheckAnyPermissions="nfc-manager", AvailableIn=CertifiedApps]
+  Promise<void> mPOSSetReaderMode(boolean enabled);
+
+  /**
+   * This event will be fired to indicate mPOS reader mode status.
+   */
+  [CheckAnyPermissions="nfc-manager", AvailableIn=CertifiedApps]
+  attribute EventHandler onmposreaderevent;
+};
+
 MozNFC implements MozNFCManager;

@@ -911,6 +911,11 @@ if CONFIG['MOZ_NFC']:
         'MozNFCTagEvent.webidl',
     ]
 
+if CONFIG['MOZ_SECUREELEMENT']:
+    GENERATED_EVENTS_WEBIDL_FILES += [
+         'MozNFCMPOSReaderModeEvent.webidl',
+    ]
+
 if CONFIG['MOZ_BUILD_APP'] in ['browser', 'xulrunner'] or CONFIG['MOZ_SUITE']:
     WEBIDL_FILES += [
         'BrowserFeedWriter.webidl',

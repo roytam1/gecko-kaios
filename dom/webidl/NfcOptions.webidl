@@ -24,7 +24,8 @@ enum NfcRequestType {
   "resetSecureElement",
   "getAtr",
   "lsExecuteScript",
-  "lsGetVersion"
+  "lsGetVersion",
+  "mPOSReaderMode"
 };
 
 /**
@@ -43,7 +44,8 @@ enum NfcResponseType {
   "resetSecureElementRsp",
   "getAtrRsp",
   "lsExecuteScriptRsp",
-  "lsGetVersionRsp"
+  "lsGetVersionRsp",
+  "mPOSReaderModeRsp"
 };
 
 /**
@@ -55,6 +57,7 @@ enum NfcNotificationType {
   "techLost",
   "hciEventTransaction",
   "ndefReceived",
+  "mPOSReaderModeEvent"
 };
 
 /**
@@ -89,6 +92,8 @@ dictionary NfcCommandOptions
   DOMString lsScriptFile;
   DOMString lsResponseFile;
   Uint8Array uniqueApplicationID;
+
+  boolean mPOSReaderMode;
 };
 
 dictionary NfcEventOptions
@@ -126,4 +131,6 @@ dictionary NfcEventOptions
 
   long handle;
   Uint8Array apduResponse;
+
+  long mPOSReaderModeEvent;
 };

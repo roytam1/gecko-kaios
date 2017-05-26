@@ -99,6 +99,8 @@ struct CommandOptions
       mUniqueApplicationID.AppendElements(value.Data(), value.Length());
     }
 
+    COPY_OPT_FIELD(mMPOSReaderMode, false)
+
 #undef COPY_FIELD
 #undef COPY_OPT_FIELD
   }
@@ -119,6 +121,8 @@ struct CommandOptions
   nsString mLsScriptFile;
   nsString mLsResponseFile;
   nsTArray<uint8_t> mUniqueApplicationID;
+
+  bool mMPOSReaderMode;
 };
 
 struct EventOptions
@@ -158,6 +162,8 @@ struct EventOptions
 
   int32_t mHandle;
   nsTArray<uint8_t> mApduResponse;
+
+  int32_t mMPOSReaderModeEvent;
 };
 
 } // namespace mozilla

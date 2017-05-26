@@ -31,7 +31,7 @@ interface nsITagNDEFInfo : nsISupports
   readonly attribute boolean isFormatable;
 };
 
-[scriptable, uuid(86e46a0c-016d-4e5d-9fb5-789eb71848a1)]
+[scriptable, uuid(e9db0a32-08e1-4a67-993e-e356f4324c97)]
 interface nsINfcEventListener : nsISupports
 {
   /**
@@ -94,6 +94,14 @@ interface nsINfcEventListener : nsISupports
   void notifyFocusChanged(in boolean focus);
 
   /**
+   * Callback function used to notify the mPOS reader mode event.
+   *
+   * @param eventType
+   *        mPOS reader mode status
+   */
+  void notifyMPOSReaderModeEvent(in long eventType);
+
+  /**
    * The window object of this event listener.
    */
   readonly attribute nsIDOMWindow window;
@@ -124,7 +132,7 @@ interface nsINfcBrowserAPI : nsISupports
                    in boolean isFocus);
 };
 
-[scriptable, uuid(75f0c8c0-2e5a-491f-a75d-4f3849c4feec)]
+[scriptable, uuid(6c84f130-40f0-11e7-9598-0800200c9a66)]
 interface nsINfcContentHelper : nsISupports
 {
   /**
@@ -330,4 +338,16 @@ interface nsINfcContentHelper : nsISupports
   void callDefaultLostHandler(in DOMString sessionToken,
                               in boolean isP2P);
 
+  /**
+   * Enable mPOS reader mode.
+   *
+   * @param enabled
+   *        enable or disable mPOS reader mode.
+   *
+   * @param callback
+   *        Called when request is finished
+   */
+  void mPOSReaderMode(in boolean enabled, in nsINfcRequestCallback callback);
+
+  readonly attribute boolean isMPOSReaderMode;
 };
