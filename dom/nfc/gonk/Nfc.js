@@ -596,9 +596,6 @@ Nfc.prototype = {
    * Shutdown NFC service
    */
   shutdownNfcService : function shutdownNfcService() {
-    // TODO
-    debug("Debug mode, don't shutting down Nfc Service");
-    return;
     debug("Shutting down Nfc Service");
 
     this.nfcService.shutdown();
@@ -728,11 +725,10 @@ Nfc.prototype = {
         break;
       case NfcResponseType.CHANGE_RF_STATE_RSP:
         this.sendNfcResponse(message);
+        // Report the event even if there is a error.　　
+        this.rfState = message.rfState;
+        gMessageManager.onRFStateChanged(this.rfState);
 
-        if (!message.errorMsg) {
-          this.rfState = message.rfState;
-          gMessageManager.onRFStateChanged(this.rfState);
-        }
         if (this.rfState == NFC.NFC_RF_STATE_IDLE) {
           this.shutdownNfcService();
         }

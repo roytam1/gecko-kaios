@@ -8,6 +8,7 @@
 #include <binder/Parcel.h>
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/dom/NfcOptionsBinding.h"
+#include "mozilla/dom/MozNFCBinding.h"
 #include "mozilla/dom/ToJSValue.h"
 #include "mozilla/dom/RootedDictionary.h"
 #include "mozilla/Endian.h"
@@ -154,30 +155,6 @@ NfcConsumer::Shutdown()
   mHandler = nullptr;
 
   mThread = nullptr;
-}
-
-nsresult
-NfcConsumer::Send(const CommandOptions& aOptions)
-{
-  MOZ_ASSERT(IsNfcServiceThread());
-
-  if (NS_WARN_IF(!mStreamSocket) ||
-      NS_WARN_IF(mStreamSocket->GetConnectionStatus() != SOCKET_CONNECTED)) {
-    return NS_OK; // Probably shutting down.
-  }
-
-  Parcel parcel;
-  parcel.writeInt32(0); // Parcel Size.
-  mHandler->Marshall(parcel, aOptions);
-  parcel.setDataPosition(0);
-  uint32_t sizeBE = htonl(parcel.dataSize() - sizeof(int));
-  parcel.writeInt32(sizeBE);
-
-  // TODO: Zero-copy buffer transfers
-  mStreamSocket->SendSocketData(
-    new UnixSocketRawData(parcel.data(), parcel.dataSize()));
-
-  return NS_OK;
 }
 
 // Runnable used dispatch the NfcEventOptions on the main thread.
@@ -343,6 +320,93 @@ private:
   RefPtr<NfcService> mNfcService;
   EventOptions mEvent;
 };
+
+NfcResponseType
+ConvertToResponse(EventOptions& event, NfcRequestType reqquestType)
+{
+  NfcResponseType returnType;
+
+  switch (reqquestType) {
+    case NfcRequestType::ChangeRFState:
+      returnType = NfcResponseType::ChangeRFStateRsp;
+      event.mRfState = (int32_t)RFState::Idle;
+      break;
+    case NfcRequestType::ReadNDEF:
+      returnType = NfcResponseType::ReadNDEFRsp;
+      break;
+    case NfcRequestType::WriteNDEF:
+      returnType = NfcResponseType::WriteNDEFRsp;
+      break;
+    case NfcRequestType::MakeReadOnly:
+      returnType = NfcResponseType::MakeReadOnlyRsp;
+      break;
+    case NfcRequestType::Format:
+      returnType = NfcResponseType::FormatRsp;
+      break;
+    case NfcRequestType::Transceive:
+      returnType = NfcResponseType::TransceiveRsp;
+      break;
+    case NfcRequestType::OpenConnection:
+      returnType = NfcResponseType::OpenConnectionRsp;
+      break;
+    case NfcRequestType::Transmit:
+      returnType = NfcResponseType::TransmitRsp;
+      break;
+    case NfcRequestType::CloseConnection:
+      returnType = NfcResponseType::CloseConnectionRsp;
+      break;
+    case NfcRequestType::ResetSecureElement:
+      returnType = NfcResponseType::ResetSecureElementRsp;
+      break;
+    case NfcRequestType::GetAtr:
+      returnType = NfcResponseType::GetAtrRsp;
+      break;
+    case NfcRequestType::LsExecuteScript:
+      returnType = NfcResponseType::LsExecuteScriptRsp;
+      break;
+    case NfcRequestType::LsGetVersion:
+      returnType = NfcResponseType::LsGetVersionRsp;
+      break;
+    case NfcRequestType::MPOSReaderMode:
+      returnType = NfcResponseType::MPOSReaderModeRsp;
+      break;
+    default:
+      returnType = NfcResponseType::EndGuard_;
+      break;
+  };
+
+  return returnType;
+}
+
+nsresult
+NfcConsumer::Send(const CommandOptions& aOptions)
+{
+  MOZ_ASSERT(IsNfcServiceThread());
+
+  if (NS_WARN_IF(!mStreamSocket) ||
+    NS_WARN_IF(mStreamSocket->GetConnectionStatus() != SOCKET_CONNECTED)) {
+
+    EventOptions event;
+    event.mErrorCode = (int32_t)NfcErrorMessage::ErrorConnect;
+    event.mRspType = ConvertToResponse(event, aOptions.mType);
+    event.mRequestId = aOptions.mRequestId;
+    NS_DispatchToMainThread(new DispatchNfcEventRunnable(mNfcService, event));
+    return NS_OK; // Probably shutting down.
+  }
+
+  Parcel parcel;
+  parcel.writeInt32(0); // Parcel Size.
+  mHandler->Marshall(parcel, aOptions);
+  parcel.setDataPosition(0);
+  uint32_t sizeBE = htonl(parcel.dataSize() - sizeof(int));
+  parcel.writeInt32(sizeBE);
+
+  // TODO: Zero-copy buffer transfers
+  mStreamSocket->SendSocketData(
+    new UnixSocketRawData(parcel.data(), parcel.dataSize()));
+
+  return NS_OK;
+}
 
 nsresult
 NfcConsumer::Receive(UnixSocketBuffer* aBuffer)

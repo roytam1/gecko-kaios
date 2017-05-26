@@ -442,6 +442,10 @@ StreamSocket::Close()
   MOZ_ASSERT(mIO);
   MOZ_ASSERT(mIO->IsConsumerThread());
 
+  if (!mIO) {
+    return;
+  }
+
   mIO->CancelDelayedConnectTask();
 
   // From this point on, we consider |mIO| as being deleted. We sever
