@@ -367,9 +367,6 @@ ConvertToResponse(EventOptions& event, NfcRequestType reqquestType)
     case NfcRequestType::LsGetVersion:
       returnType = NfcResponseType::LsGetVersionRsp;
       break;
-    case NfcRequestType::MPOSReaderMode:
-      returnType = NfcResponseType::MPOSReaderModeRsp;
-      break;
     default:
       returnType = NfcResponseType::EndGuard_;
       break;
