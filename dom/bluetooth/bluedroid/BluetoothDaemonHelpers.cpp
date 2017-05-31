@@ -48,9 +48,12 @@ Convert(int32_t aIn, BluetoothTypeOfDevice& aOut)
       MOZ_HAL_IPC_CONVERT_WARN_IF(
         static_cast<size_t>(aIn) >= MOZ_ARRAY_LENGTH(sTypeOfDevice), int32_t,
         BluetoothTypeOfDevice)) {
-    return NS_ERROR_ILLEGAL_VALUE;
+    // instead of returning NS_ERROR_ILLEGAL_VALUE,
+    // assumes the default type is BR/EDR for fault tolerance
+    aOut = TYPE_OF_DEVICE_BREDR;
+  } else {
+    aOut = sTypeOfDevice[aIn];
   }
-  aOut = sTypeOfDevice[aIn];
   return NS_OK;
 }
 
