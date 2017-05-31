@@ -41,6 +41,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
         'android/AndroidSensor.cpp',
         'fallback/FallbackFlipManager.cpp',
         'fallback/FallbackPower.cpp',
+        'fallback/FallbackPowerSupply.cpp',
         'linux/LinuxMemory.cpp',
     ]
     # AndroidHal.cpp cannot be built in unified mode because it relies on HalImpl.h.
@@ -70,6 +71,7 @@ elif CONFIG['OS_TARGET'] == 'Linux':
     UNIFIED_SOURCES += [
         'fallback/FallbackAlarm.cpp',
         'fallback/FallbackFlipManager.cpp',
+        'fallback/FallbackPowerSupply.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
         'fallback/FallbackSensor.cpp',
         'fallback/FallbackVibration.cpp',
@@ -90,6 +92,7 @@ elif CONFIG['OS_TARGET'] == 'WINNT':
         'fallback/FallbackFlipManager.cpp',
         'fallback/FallbackMemory.cpp',
         'fallback/FallbackPower.cpp',
+        'fallback/FallbackPowerSupply.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
         'fallback/FallbackVibration.cpp',
         'windows/WindowsSensor.cpp',
@@ -105,6 +108,7 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
         'fallback/FallbackFlipManager.cpp',
         'fallback/FallbackMemory.cpp',
         'fallback/FallbackPower.cpp',
+        'fallback/FallbackPowerSupply.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
         'fallback/FallbackVibration.cpp',
     ]
@@ -114,6 +118,7 @@ elif CONFIG['OS_TARGET'] in ('OpenBSD', 'NetBSD', 'FreeBSD', 'DragonFly'):
         'fallback/FallbackFlipManager.cpp',
         'fallback/FallbackMemory.cpp',
         'fallback/FallbackPower.cpp',
+        'fallback/FallbackPowerSupply.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
         'fallback/FallbackSensor.cpp',
         'fallback/FallbackVibration.cpp',
@@ -133,6 +138,7 @@ else:
         'fallback/FallbackFlipManager.cpp',
         'fallback/FallbackMemory.cpp',
         'fallback/FallbackPower.cpp',
+        'fallback/FallbackPowerSupply.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
         'fallback/FallbackSensor.cpp',
         'fallback/FallbackVibration.cpp',
