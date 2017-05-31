@@ -20,6 +20,13 @@
 #include "mozilla/dom/MozPowerManagerBinding.h"
 #include "mozilla/Services.h"
 
+#ifdef ANDROID
+#include <android/log.h>
+#define PM_LOG(args...) __android_log_print(ANDROID_LOG_INFO, "PowerManager", ##args)
+#else
+#define PM_LOG(args...)
+#endif
+
 namespace mozilla {
 namespace dom {
 
@@ -152,6 +159,7 @@ PowerManager::ScreenEnabled()
 void
 PowerManager::SetScreenEnabled(bool aEnabled)
 {
+  PM_LOG("Turn %s screen\n", aEnabled ? "on" : "off");
   hal::SetScreenEnabled(aEnabled);
 }
 
@@ -164,6 +172,7 @@ PowerManager::ExtScreenEnabled()
 void
 PowerManager::SetExtScreenEnabled(bool aEnabled)
 {
+  PM_LOG("Turn %s external screen\n", aEnabled ? "on" : "off");
   hal::SetExtScreenEnabled(aEnabled);
 }
 
