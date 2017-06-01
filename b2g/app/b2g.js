@@ -1150,8 +1150,6 @@ pref("dom.push.enabled", true);
 pref("dom.push.adaptive.enabled", true);
 // Set first pingInterval as adaptive pingInterval.default if adaptive.enabled is set
 pref("dom.push.pingInterval", 180000); // 3 minutes
-// enable udp wakeup support
-pref("dom.push.udp.wakeupEnabled", true);
 
 // Retain at most 10 processes' layers buffers
 pref("layers.compositor-lru-size", 10);
