@@ -32,6 +32,9 @@ const MAX_SUPPLICANT_LOOP_ITERATIONS = 4;
 const MAX_RETRIES_ON_DHCP_FAILURE = 2;
 const MAX_RETRIES_ON_ASSOCIATION_REJECT = 5;
 
+// Setting DB path for telephony default service id.
+const SETTINGS_TELEPHONY_DEFAULT_SERVICE_ID = "ril.telephony.defaultServiceId";
+
 // Settings DB path for wifi
 const SETTINGS_WIFI_ENABLED            = "wifi.enabled";
 const SETTINGS_WIFI_DEBUG_ENABLED      = "wifi.debugging.enabled";
@@ -109,6 +112,13 @@ XPCOMUtils.defineLazyServiceGetter(this, "gTetheringService",
                                    "@mozilla.org/tethering/service;1",
                                    "nsITetheringService");
 
+XPCOMUtils.defineLazyServiceGetter(this, "gMobileConnectionService",
+                                   "@mozilla.org/mobileconnection/mobileconnectionservice;1",
+                                   "nsIMobileConnectionService");
+
+XPCOMUtils.defineLazyModuleGetter(this, "PhoneNumberUtils",
+                                  "resource://gre/modules/PhoneNumberUtils.jsm");
+
 // A note about errors and error handling in this file:
 // The libraries that we use in this file are intended for C code. For
 // C code, it is natural to return -1 for errors and 0 for success.
@@ -128,12 +138,15 @@ var WifiManager = (function() {
       p2pSupported: libcutils.property_get("ro.moz.wifi.p2p_supported") === "1",
       eapSimSupported: libcutils.property_get("ro.moz.wifi.eapsim_supported", "true") === "true",
       ibssSupported: libcutils.property_get("ro.moz.wifi.ibss_supported", "true") === "true",
-      ifname: libcutils.property_get("wifi.interface")
+      ifname: libcutils.property_get("wifi.interface"),
+      defaultCountryCode: libcutils.property_get("ro.default.countrycode", ""),
+      persistCountryCode: libcutils.property_get("persist.wifi.countrycode", "")
     };
   }
 
   let {sdkVersion, unloadDriverEnabled, schedScanRecovery,
-       driverDelay, p2pSupported, eapSimSupported, ibssSupported, ifname} = getStartupPrefs();
+       driverDelay, p2pSupported, eapSimSupported, ibssSupported,
+       ifname, defaultCountryCode, persistCountryCode} = getStartupPrefs();
 
   let capabilities = {
     security: ["OPEN", "WEP", "WPA-PSK", "WPA2-PSK", "WPA-EAP"],
@@ -981,10 +994,22 @@ var WifiManager = (function() {
     manager.setPowerMode("AUTO", function(ok) {});
     manager.setSuspendOptimizations(requestOptimizationMode === 0,
       function(ok) {});
+    manager.setCountryCode(pickWifiCountryCode(), function(ok) {});
 
     if (p2pSupported) {
       manager.enableP2p(function(success) {});
     }
+  }
+
+  function pickWifiCountryCode() {
+    if (manager.lastKnownCountryCode) {
+      return manager.lastKnownCountryCode;
+    } else if (persistCountryCode) {
+      return persistCountryCode.toUpperCase();
+    } else if (defaultCountryCode) {
+      return defaultCountryCode.toUpperCase();
+    }
+    return "";
   }
 
   function prepareForStartup(callback) {
@@ -1023,6 +1048,7 @@ var WifiManager = (function() {
   manager.wpsStarted = false;
   manager.connectionInfo = { ssid: null, bssid: null, id: -1 };
   manager.stopSupplicantCallback = null;
+  manager.lastKnownCountryCode = null;
   manager.clearDisableReasonCounter(function(){});
 
   manager.__defineGetter__("enabled", function() {
@@ -1497,6 +1523,7 @@ var WifiManager = (function() {
   manager.setScanInterval = wifiCommand.setScanInterval;
   manager.autoScanMode = wifiCommand.autoScanMode;
   manager.handleScreenStateChanged = handleScreenStateChanged;
+  manager.setCountryCode = wifiCommand.setCountryCode;
 
   manager.ensureSupplicantDetached = aCallback => {
     if (!manager.enabled) {
@@ -2714,12 +2741,30 @@ function WifiWorker() {
     }
   };
 
+  var initTelephonyDefaultServiceIdCb = {
+    handle: function handle(aName, aResult) {
+      if (aName !== SETTINGS_TELEPHONY_DEFAULT_SERVICE_ID) {
+        return;
+      }
+      self._telephonyDefaultServiceId = aResult || 0;
+      gMobileConnectionService
+        .getItemByServiceId(self._telephonyDefaultServiceId).registerListener(self);
+    },
+    handleError: function handleError(aErrorMessage) {
+      debug("Error reading the 'SETTINGS_TELEPHONY_DEFAULT_SERVICE_ID'.");
+      self._telephonyDefaultServiceId = 0;
+      gMobileConnectionService
+        .getItemByServiceId(self._telephonyDefaultServiceId).registerListener(self);
+    }
+  };
+
   this.initTetheringSettings();
 
   let lock = gSettingsService.createLock();
   lock.get(SETTINGS_WIFI_ENABLED, initWifiEnabledCb);
   lock.get(SETTINGS_WIFI_DEBUG_ENABLED, initWifiDebuggingEnabledCb);
   lock.get(SETTINGS_AIRPLANE_MODE, initAirplaneModeCb);
+  lock.get(SETTINGS_TELEPHONY_DEFAULT_SERVICE_ID, initTelephonyDefaultServiceIdCb);
 
   lock.get(SETTINGS_WIFI_SSID, this);
   lock.get(SETTINGS_WIFI_SECURITY_TYPE, this);
@@ -2782,7 +2827,8 @@ WifiWorker.prototype = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIWorkerHolder,
                                          Ci.nsIWifi,
                                          Ci.nsIObserver,
-                                         Ci.nsISettingsServiceCallback]),
+                                         Ci.nsISettingsServiceCallback,
+                                         Ci.nsIMobileConnectionListener]),
 
   disconnectedByWifi: false,
 
@@ -2794,6 +2840,8 @@ WifiWorker.prototype = {
 
   _airplaneMode: false,
   _airplaneMode_status: null,
+
+  _telephonyDefaultServiceId: 0,
 
   _needToEnableNetworks: false,
   tetheringSettings: {},
@@ -2812,6 +2860,20 @@ WifiWorker.prototype = {
 
     this.tetheringSettings[SETTINGS_USB_DHCPSERVER_STARTIP] = DEFAULT_USB_DHCPSERVER_STARTIP;
     this.tetheringSettings[SETTINGS_USB_DHCPSERVER_ENDIP] = DEFAULT_USB_DHCPSERVER_ENDIP;
+  },
+
+  // nsIMobileConnectionListener
+  notifyLastKnownNetworkChanged: function() {
+    let countryCode = PhoneNumberUtils.getCountryName().toUpperCase();
+    if (countryCode != "" &&
+      countryCode !== WifiManager.lastKnownCountryCode) {
+      debug("Set country code = " + countryCode);
+      libcutils.property_set("persist.wifi.countrycode", countryCode);
+      WifiManager.lastKnownCountryCode = countryCode;
+      if (WifiManager.enabled) {
+        WifiManager.setCountryCode(countryCode, function(){});
+      }
+    }
   },
 
   isAirplaneMode: function isAirplaneMode() {
@@ -4192,6 +4254,8 @@ WifiWorker.prototype = {
         let wifiCertService = Cc["@mozilla.org/wifi/certservice;1"].getService(Ci.nsIWifiCertService);
         wifiCertService.shutdown();
       });
+      gMobileConnectionService
+        .getItemByServiceId(this._telephonyDefaultServiceId).unregisterListener(this);
       break;
 
     case kScreenStateChangedTopic:
@@ -4213,6 +4277,15 @@ WifiWorker.prototype = {
           aResult = false;
         DEBUG = aResult;
         updateDebug();
+        break;
+      case SETTINGS_TELEPHONY_DEFAULT_SERVICE_ID:
+        if (this._telephonyDefaultServiceId != aResult) {
+          gMobileConnectionService
+            .getItemByServiceId(this._telephonyDefaultServiceId).unregisterListener(this);
+          this._telephonyDefaultServiceId = aResult;
+          gMobileConnectionService
+            .getItemByServiceId(this._telephonyDefaultServiceId).registerListener(this);
+        }
         break;
       case SETTINGS_AIRPLANE_MODE:
         this._airplaneMode = aResult;

@@ -14,6 +14,7 @@ const Ci = Components.interfaces;
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import('resource://gre/modules/XPCOMUtils.jsm');
+Cu.import("resource://gre/modules/systemlibs.js");
 XPCOMUtils.defineLazyModuleGetter(this, "PhoneNumberNormalizer",
                                   "resource://gre/modules/PhoneNumberNormalizer.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "MCC_ISO3166_TABLE",
@@ -41,12 +42,16 @@ this.PhoneNumberUtils = {
   //  1. See whether we have a network mcc
   //  2. If we don't have that, look for the simcard mcc
   //  3. If we don't have that or its 0 (not activated), pick up the last used mcc
-  //  4. If we don't have, default to some mcc
+  //  4. If we don't have, use oem default country code setting
 
-  // mcc for Brasil
-  _mcc: '724',
+  // countrycode for oem setting
+  _defaultCountryCode: libcutils.property_get("ro.default.countrycode", ""),
 
-  getCountryName: function getCountryName() {
+  defaultCountryCode: function () {
+    return this._defaultCountryCode;
+  },
+
+  getCountryName: function () {
     let mcc;
     let countryName;
 
@@ -80,10 +85,6 @@ this.PhoneNumberUtils = {
       } catch (e) {}
     }
 
-    // Set to default mcc
-    if (!mcc) {
-      mcc = this._mcc;
-    }
 #else
 
     // Attempt to grab last known sim mcc from prefs
@@ -93,12 +94,10 @@ this.PhoneNumberUtils = {
       } catch (e) {}
     }
 
-    if (!mcc) {
-      mcc = this._mcc;
-    }
 #endif
 
-    countryName = MCC_ISO3166_TABLE[mcc];
+    countryName = MCC_ISO3166_TABLE[mcc] || this.defaultCountryCode();
+
     if (DEBUG) debug("MCC: " + mcc + "countryName: " + countryName);
     return countryName;
   },

@@ -324,6 +324,10 @@ this.WifiCommand = function(aControlMessage, aInterface, aSdkVersion) {
     });
   };
 
+  command.setCountryCode = function (countryCode, callback) {
+    doBooleanCommand("DRIVER COUNTRY " + countryCode, "OK", callback);
+  };
+
   command.setPowerModeICS = function (mode, callback) {
     doBooleanCommand("DRIVER POWERMODE " + (mode === "AUTO" ? 0 : 1), "OK", callback);
   };
