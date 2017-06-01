@@ -1353,3 +1353,6 @@ et9kbdef.h
 et9traceapi.h
 xxet9oem.h
 #endif
+#ifdef ENABLE_REVERIE_RT9
+keypad_R9.h
+#endif

@@ -381,5 +381,10 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk' and CONFIG['ENABLE_NUANCE_XT9']:
          'xt9',
     ]
 
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk' and CONFIG['ENABLE_REVERIE_RT9']:
+    OS_LIBS += [
+         'rt9',
+    ]
+
 # This needs to be last
 USE_LIBS += ['StaticXULComponentsEnd']

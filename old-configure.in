@@ -107,6 +107,18 @@ if test -n "$ENABLE_NUANCE_XT9"; then
 fi
 AC_SUBST(ENABLE_NUANCE_XT9)
 
+dnl ========================================================
+dnl = Enable Reverie RT9 Library Support
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(reverie-rt9,
+[  --enable-reverie-rt9        Enable Reverie's RT9 Library Support for IME],
+    ENABLE_REVERIE_RT9=1,
+    ENABLE_REVERIE_RT9= )
+if test -n "$ENABLE_REVERIE_RT9"; then
+   AC_DEFINE(ENABLE_REVERIE_RT9)
+fi
+AC_SUBST(ENABLE_REVERIE_RT9)
+
 if test -n "$gonkdir" ; then
     dnl export for js/src/configure. We can't pass the option down normally,
     dnl because it's a `--enable-project=b2g`-only option.
@@ -242,6 +254,11 @@ if test -n "$gonkdir" ; then
     if test -n "$ENABLE_NUANCE_XT9" ; then
       if test -d "$gonkdir/external/libxt9" ; then
         CPPFLAGS="$CPPFLAGS -I$gonkdir/external/libxt9"
+      fi
+    fi
+    if test -n "$ENABLE_REVERIE_RT9" ; then
+      if test -d "$gonkdir/external/librt9" ; then
+        CPPFLAGS="$CPPFLAGS -I$gonkdir/external/librt9"
       fi
     fi
 

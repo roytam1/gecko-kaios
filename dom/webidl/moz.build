@@ -952,7 +952,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
         'AlarmsManager.webidl',
     ]
 
-if CONFIG['ENABLE_NUANCE_XT9']:
+if CONFIG['ENABLE_NUANCE_XT9'] or CONFIG['ENABLE_REVERIE_RT9']:
     WEBIDL_FILES += [
         'IMEConnect.webidl'
     ]
