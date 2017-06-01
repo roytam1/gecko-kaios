@@ -355,6 +355,14 @@ this.PushServiceWebSocket = {
   _adaptiveEnabled: false,
 
   /**
+   * Holds if the udp wake up feature is enabled. This is read on init().
+   * If udp wake up feature is enabled, the client is capable of being
+   * woken up by UDP (which currently just means having an mcc and mnc along
+   * with an IP, and optionally a netid).
+   */
+  _udpWakeUpEnabled: false,
+
+  /**
    * This saves a flag about if we need to recalculate a new ping, based on:
    *   1) the gap between the maximum working ping and the first ping that
    *      gives an error (timeout) OR
@@ -427,6 +435,7 @@ this.PushServiceWebSocket = {
 
     this._requestTimeout = prefs.get("requestTimeout");
     this._adaptiveEnabled = prefs.get('adaptive.enabled');
+    this._udpWakeUpEnabled = prefs.get('udp.wakeupEnabled');
     this._upperLimit = prefs.get('adaptive.upperLimit');
 
     return Promise.resolve();
@@ -1243,27 +1252,32 @@ this.PushServiceWebSocket = {
       data.uaid = this._UAID;
     }
 
-    this._networkInfo.getNetworkState((networkState) => {
-      if (networkState.ip) {
-        // Opening an available UDP port.
-        this._listenForUDPWakeup();
+    if(this._udpWakeUpEnabled) {
+      this._networkInfo.getNetworkState((networkState) => {
+        if (networkState.ip) {
+          // Opening an available UDP port.
+          this._listenForUDPWakeup();
 
-        // Host-port is apparently a thing.
-        data.wakeup_hostport = {
-          ip: networkState.ip,
-          port: this._udpServer && this._udpServer.port
-        };
+          // Host-port is apparently a thing.
+          data.wakeup_hostport = {
+            ip: networkState.ip,
+            port: this._udpServer && this._udpServer.port
+          };
 
-        data.mobilenetwork = {
-          mcc: networkState.mcc,
-          mnc: networkState.mnc,
-          netid: networkState.netid
-        };
-      }
+          data.mobilenetwork = {
+            mcc: networkState.mcc,
+            mnc: networkState.mnc,
+            netid: networkState.netid
+          };
+        }
 
+        this._wsSendMessage(data);
+        this._currentState = STATE_WAITING_FOR_HELLO;
+      });
+    } else {
       this._wsSendMessage(data);
       this._currentState = STATE_WAITING_FOR_HELLO;
-    });
+    }
   },
 
   /**
@@ -1397,7 +1411,7 @@ this.PushServiceWebSocket = {
       return;
     }
 
-    if (!prefs.get("udp.wakeupEnabled")) {
+    if (!this._udpWakeUpEnabled) {
       console.debug("listenForUDPWakeup: UDP support disabled");
       return;
     }
@@ -1446,12 +1460,6 @@ var PushNetworkInfo = {
     console.debug("PushNetworkInfo: getNetworkInformation()");
 
     try {
-      if (!prefs.get("udp.wakeupEnabled")) {
-        console.debug("getNetworkInformation: UDP support disabled, we do not",
-          "send any carrier info");
-        throw new Error("UDP disabled");
-      }
-
       let nm = Cc["@mozilla.org/network/manager;1"]
                  .getService(Ci.nsINetworkManager);
       if (nm.activeNetworkInfo &&
