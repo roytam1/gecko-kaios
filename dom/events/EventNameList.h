@@ -587,6 +587,10 @@ WINDOW_ONLY_EVENT(devicelight,
                   eDeviceLight,
                   EventNameType_None,
                   eBasicEventClass)
+WINDOW_ONLY_EVENT(devicestepcounter,
+                  eDeviceStepCounter,
+                  EventNameType_None,
+                  eBasicEventClass)
 
 #ifdef MOZ_B2G
 WINDOW_ONLY_EVENT(moztimechange,

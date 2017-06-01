@@ -25,6 +25,7 @@
 #include "mozilla/dom/DeviceOrientationEvent.h"
 #include "mozilla/dom/DeviceProximityEvent.h"
 #include "mozilla/dom/UserProximityEvent.h"
+#include "mozilla/dom/DeviceStepCounterEvent.h"
 
 #include <cmath>
 
@@ -373,9 +374,37 @@ nsDeviceSensors::Notify(const mozilla::hal::SensorData& aSensorData)
         FireDOMProximityEvent(target, x, y, z);
       } else if (type == nsIDeviceSensorData::TYPE_LIGHT) {
         FireDOMLightEvent(target, x);
+      } else if (type == nsIDeviceSensorData::TYPE_STEPCOUNTER) {
+        NS_ASSERTION(len == 2, "Data length does not match with step counter");
+        union {
+          float buffer[2];
+          uint64_t stepCount;
+        };
+        if (len == 2) {
+          buffer[0] = values[0];
+          buffer[1] = values[1];
+          FireDOMStepCounterEvent(target, stepCount);
+        }
       }
     }
   }
+}
+
+void
+nsDeviceSensors::FireDOMStepCounterEvent(mozilla::dom::EventTarget* aTarget,
+                                   uint64_t aValue)
+{
+  DeviceStepCounterEventInit init;
+  init.mBubbles = true;
+  init.mCancelable = false;
+  init.mValue = aValue;
+  RefPtr<DeviceStepCounterEvent> event =
+    DeviceStepCounterEvent::Constructor(aTarget, NS_LITERAL_STRING("devicestepcounter"), init);
+
+  event->SetTrusted(true);
+
+  bool defaultActionEnabled;
+  aTarget->DispatchEvent(event, &defaultActionEnabled);
 }
 
 void

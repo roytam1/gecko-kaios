@@ -1948,6 +1948,9 @@ GK_ATOM(onuserproximity, "onuserproximity")
 // light sensor support
 GK_ATOM(ondevicelight, "ondevicelight")
 
+// Step counter support
+GK_ATOM(ondevicestepcounter, "ondevicestepcounter")
+
 // Audio channel events
 GK_ATOM(onmozinterruptbegin, "onmozinterruptbegin")
 GK_ATOM(onmozinterruptend, "onmozinterruptend")

@@ -43,6 +43,9 @@ private:
   // sensor -> window listener
   nsTArray<nsTArray<nsIDOMWindow*>* > mWindowListeners;
 
+  void FireDOMStepCounterEvent(mozilla::dom::EventTarget* aTarget,
+                               uint64_t value);
+
   void FireDOMLightEvent(mozilla::dom::EventTarget* aTarget,
                          double value);
 

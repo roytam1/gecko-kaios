@@ -74,6 +74,8 @@ HardwareSensorToHalSensor(int type)
       return SENSOR_ROTATION_VECTOR;
     case MOZ_SENSOR_TYPE_GAME_ROTATION_VECTOR:
       return SENSOR_GAME_ROTATION_VECTOR;
+    case SENSOR_TYPE_STEP_COUNTER:
+      return SENSOR_STEP_COUNTER;
     default:
       return SENSOR_UNKNOWN;
   }
@@ -104,6 +106,8 @@ HalSensorToHardwareSensor(SensorType type)
       return SENSOR_TYPE_ROTATION_VECTOR;
     case SENSOR_GAME_ROTATION_VECTOR:
       return MOZ_SENSOR_TYPE_GAME_ROTATION_VECTOR;
+    case SENSOR_STEP_COUNTER:
+      return SENSOR_TYPE_STEP_COUNTER;
     default:
       return -1;
   }
@@ -173,6 +177,9 @@ public:
       mSensorValues.AppendElement(data.data[1]);
       mSensorValues.AppendElement(data.data[2]);
       mSensorValues.AppendElement(data.data[3]);
+    } else if (mSensorData.sensor() == SENSOR_STEP_COUNTER) {
+      mSensorValues.AppendElement(data.data[0]);
+      mSensorValues.AppendElement(data.data[1]);
     } else {
       mSensorValues.AppendElement(data.data[0]);
       mSensorValues.AppendElement(data.data[1]);

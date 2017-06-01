@@ -338,6 +338,8 @@ EventListenerManager::AddEventListenerInternal(
     EnableDevice(eDeviceLight);
   } else if (aTypeAtom == nsGkAtoms::ondevicemotion) {
     EnableDevice(eDeviceMotion);
+  } else if (aTypeAtom == nsGkAtoms::ondevicestepcounter) {
+    EnableDevice(eDeviceStepCounter);
 #if defined(MOZ_WIDGET_ANDROID) || defined(MOZ_WIDGET_GONK)
   } else if (aTypeAtom == nsGkAtoms::onorientationchange) {
     EnableDevice(eOrientationChange);
@@ -479,6 +481,7 @@ EventListenerManager::IsDeviceType(EventMessage aEventMessage)
     case eDeviceLight:
     case eDeviceProximity:
     case eUserProximity:
+    case eDeviceStepCounter:
 #if defined(MOZ_WIDGET_ANDROID) || defined(MOZ_WIDGET_GONK)
     case eOrientationChange:
 #endif
@@ -527,6 +530,9 @@ EventListenerManager::EnableDevice(EventMessage aEventMessage)
       window->EnableDeviceSensor(SENSOR_LINEAR_ACCELERATION);
       window->EnableDeviceSensor(SENSOR_GYROSCOPE);
       break;
+    case eDeviceStepCounter:
+      window->EnableDeviceSensor(SENSOR_STEP_COUNTER);
+      break;
 #if defined(MOZ_WIDGET_ANDROID) || defined(MOZ_WIDGET_GONK)
     case eOrientationChange:
       window->EnableOrientationChangeListener();
@@ -572,6 +578,9 @@ EventListenerManager::DisableDevice(EventMessage aEventMessage)
       break;
     case eDeviceLight:
       window->DisableDeviceSensor(SENSOR_LIGHT);
+      break;
+    case eDeviceStepCounter:
+      window->DisableDeviceSensor(SENSOR_STEP_COUNTER);
       break;
 #if defined(MOZ_WIDGET_ANDROID) || defined(MOZ_WIDGET_GONK)
     case eOrientationChange:
