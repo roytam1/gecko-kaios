@@ -131,6 +131,10 @@ MediaStreamGraphImpl::RemoveStreamGraphThread(MediaStream* aStream)
   // Ensure that mFirstCycleBreaker and mMixer are updated when necessary.
   SetStreamOrderDirty();
 
+  // Clear the GraphImpl pointer,
+  // MediaStreams' destruction might delayed until cycle collector triggers it.
+  // This prevents from accessing dangling pointer from MediaStreams.
+  aStream->ClearGraphImpl();
   if (aStream->IsSuspended()) {
     mSuspendedStreams.RemoveElement(aStream);
   } else {
@@ -1754,6 +1758,10 @@ MediaStreamGraphImpl::RunInStableState(bool aSourceIsMSG)
         MediaStreamGraphImpl* graph;
         if (gGraphs.Get(uint32_t(mAudioChannel), &graph) && graph == this) {
           // null out gGraph if that's the graph being shut down
+          // Before remove the graphs, set the MediaStreams' graph to nullptr,
+          // MediaStreams' destruction might delayed until cycle collector triggers it.
+          // This prevents from accessing dangling pointer from MediaStreams.
+          ClearStreamsRef();
           gGraphs.Remove(uint32_t(mAudioChannel));
         }
       }
@@ -1909,6 +1917,10 @@ MediaStreamGraphImpl::AppendMessage(UniquePtr<ControlMessage> aMessage)
 
       MediaStreamGraphImpl* graph;
       if (gGraphs.Get(uint32_t(mAudioChannel), &graph) && graph == this) {
+        // Before remove the graphs, set the MediaStreams' graph to nullptr,
+        // MediaStreams' destruction might delayed until cycle collector triggers it.
+        // This prevents from accessing dangling pointer from MediaStreams.
+        ClearStreamsRef();
         gGraphs.Remove(uint32_t(mAudioChannel));
       }
 
@@ -2007,6 +2019,12 @@ MediaStream::SetGraphImpl(MediaStreamGraph* aGraph)
   SetGraphImpl(graph);
 }
 
+void
+MediaStream::ClearGraphImpl()
+{
+  mGraph = nullptr;
+}
+
 StreamTime
 MediaStream::GraphTimeToStreamTime(GraphTime aTime)
 {
@@ -2028,13 +2046,19 @@ MediaStream::StreamTimeToGraphTime(StreamTime aTime)
 StreamTime
 MediaStream::GraphTimeToStreamTimeWithBlocking(GraphTime aTime)
 {
+  if (GraphImpl() == nullptr) {
+    return 0;
+  }
+
   return GraphImpl()->GraphTimeToStreamTimeWithBlocking(this, aTime);
 }
 
 void
 MediaStream::FinishOnGraphThread()
 {
-  GraphImpl()->FinishStream(this);
+  if (GraphImpl() != nullptr) {
+    GraphImpl()->FinishStream(this);
+  }
 }
 
 StreamBuffer::Track*
@@ -2104,7 +2128,7 @@ MediaStream::Destroy()
     { Run(); }
   };
   mWrapper = nullptr;
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this));
+  AppendMessageToGraph(MakeUnique<Message>(this));
   // Message::RunDuringShutdown may have removed this stream from the graph,
   // but our kungFuDeathGrip above will have kept this stream alive if
   // necessary.
@@ -2143,7 +2167,7 @@ MediaStream::AddAudioOutput(void* aKey)
     }
     void* mKey;
   };
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this, aKey));
+  AppendMessageToGraph(MakeUnique<Message>(this, aKey));
 }
 
 void
@@ -2172,7 +2196,7 @@ MediaStream::SetAudioOutputVolume(void* aKey, float aVolume)
     void* mKey;
     float mVolume;
   };
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this, aKey, aVolume));
+  AppendMessageToGraph(MakeUnique<Message>(this, aKey, aVolume));
 }
 
 void
@@ -2210,7 +2234,7 @@ MediaStream::RemoveAudioOutput(void* aKey)
     }
     void* mKey;
   };
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this, aKey));
+  AppendMessageToGraph(MakeUnique<Message>(this, aKey));
 }
 
 void
@@ -2246,7 +2270,7 @@ MediaStream::AddVideoOutput(VideoFrameContainer* aContainer)
     }
     RefPtr<VideoFrameContainer> mContainer;
   };
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this, aContainer));
+   AppendMessageToGraph(MakeUnique<Message>(this, aContainer));
 }
 
 void
@@ -2262,7 +2286,7 @@ MediaStream::RemoveVideoOutput(VideoFrameContainer* aContainer)
     }
     RefPtr<VideoFrameContainer> mContainer;
   };
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this, aContainer));
+  AppendMessageToGraph(MakeUnique<Message>(this, aContainer));
 }
 
 void
@@ -2274,7 +2298,9 @@ MediaStream::Suspend()
       ControlMessage(aStream) {}
     void Run() override
     {
-      mStream->GraphImpl()->IncrementSuspendCount(mStream);
+      if (mStream->GraphImpl() != nullptr) {
+        mStream->GraphImpl()->IncrementSuspendCount(mStream);
+      }
     }
   };
 
@@ -2283,7 +2309,7 @@ MediaStream::Suspend()
   if (mMainThreadDestroyed) {
     return;
   }
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this));
+  AppendMessageToGraph(MakeUnique<Message>(this));
 }
 
 void
@@ -2295,7 +2321,9 @@ MediaStream::Resume()
       ControlMessage(aStream) {}
     void Run() override
     {
-      mStream->GraphImpl()->DecrementSuspendCount(mStream);
+      if (mStream->GraphImpl() != nullptr) {
+        mStream->GraphImpl()->DecrementSuspendCount(mStream);
+      }
     }
   };
 
@@ -2304,7 +2332,7 @@ MediaStream::Resume()
   if (mMainThreadDestroyed) {
     return;
   }
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this));
+  AppendMessageToGraph(MakeUnique<Message>(this));
 }
 
 void
@@ -2334,7 +2362,7 @@ MediaStream::AddListener(MediaStreamListener* aListener)
     }
     RefPtr<MediaStreamListener> mListener;
   };
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this, aListener));
+  AppendMessageToGraph(MakeUnique<Message>(this, aListener));
 }
 
 void
@@ -2362,7 +2390,7 @@ MediaStream::RemoveListener(MediaStreamListener* aListener)
   // If the stream is destroyed the Listeners have or will be
   // removed.
   if (!IsDestroyed()) {
-    GraphImpl()->AppendMessage(MakeUnique<Message>(this, aListener));
+    AppendMessageToGraph(MakeUnique<Message>(this, aListener));
   }
 }
 
@@ -2399,7 +2427,7 @@ MediaStream::AddTrackListener(MediaStreamTrackListener* aListener,
     RefPtr<MediaStreamTrackListener> mListener;
     TrackID mTrackID;
   };
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this, aListener, aTrackID));
+  AppendMessageToGraph(MakeUnique<Message>(this, aListener, aTrackID));
 }
 
 void
@@ -2432,7 +2460,7 @@ MediaStream::RemoveTrackListener(MediaStreamTrackListener* aListener,
     RefPtr<MediaStreamTrackListener> mListener;
     TrackID mTrackID;
   };
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this, aListener, aTrackID));
+  AppendMessageToGraph(MakeUnique<Message>(this, aListener, aTrackID));
 }
 
 void
@@ -2461,7 +2489,7 @@ MediaStream::AddDirectTrackListener(MediaStreamTrackDirectListener* aListener,
     RefPtr<MediaStreamTrackDirectListener> mListener;
     TrackID mTrackID;
   };
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this, aListener, aTrackID));
+  AppendMessageToGraph(MakeUnique<Message>(this, aListener, aTrackID));
 }
 
 void
@@ -2488,7 +2516,7 @@ MediaStream::RemoveDirectTrackListener(MediaStreamTrackDirectListener* aListener
     RefPtr<MediaStreamTrackDirectListener> mListener;
     TrackID mTrackID;
   };
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this, aListener, aTrackID));
+  AppendMessageToGraph(MakeUnique<Message>(this, aListener, aTrackID));
 }
 
 void
@@ -2556,7 +2584,7 @@ MediaStream::SetTrackEnabled(TrackID aTrackID, bool aEnabled)
     TrackID mTrackID;
     bool mEnabled;
   };
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this, aTrackID, aEnabled));
+  AppendMessageToGraph(MakeUnique<Message>(this, aTrackID, aEnabled));
 }
 
 void
@@ -2608,6 +2636,15 @@ MediaStream::AddMainThreadListener(MainThreadMediaStreamListener* aListener)
   RefPtr<nsRunnable> runnable = new NotifyRunnable(this);
   NS_WARN_IF(NS_FAILED(NS_DispatchToMainThread(runnable.forget())));
 }
+
+ template<typename Message>
+ void 
+ MediaStream::AppendMessageToGraph(UniquePtr<Message> aMessage)
+ {
+   if (GraphImpl() != nullptr) {
+     GraphImpl()->AppendMessage(Move(aMessage));
+   }
+ }
 
 nsresult
 SourceMediaStream::OpenAudioInput(int aID,
@@ -2687,6 +2724,10 @@ SourceMediaStream::FinishAddTracks()
 void
 SourceMediaStream::ResampleAudioToGraphSampleRate(TrackData* aTrackData, MediaSegment* aSegment)
 {
+  if (GraphImpl() == nullptr) {
+    return;
+  }
+
   if (aSegment->GetType() != MediaSegment::AUDIO ||
       aTrackData->mInputRate == GraphImpl()->GraphRate()) {
     return;
@@ -2792,7 +2833,7 @@ SourceMediaStream::NotifyListenersEvent(MediaStreamListener::MediaStreamGraphEve
       }
     MediaStreamListener::MediaStreamGraphEvent mEvent;
   };
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this, aNewEvent));
+  AppendMessageToGraph(MakeUnique<Message>(this, aNewEvent));
 }
 
 void
@@ -3044,7 +3085,7 @@ MediaInputPort::Destroy()
     }
     MediaInputPort* mPort;
   };
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this));
+  AppendMessageToGraph(MakeUnique<Message>(this));
 }
 
 MediaStreamGraphImpl*
@@ -3107,9 +3148,18 @@ MediaInputPort::BlockSourceTrackId(TrackID aTrackId)
     pledge->Resolve(true);
     return NS_OK;
   });
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this, aTrackId, runnable.forget()));
+  AppendMessageToGraph(MakeUnique<Message>(this, aTrackId, runnable.forget()));
   return pledge.forget();
 }
+
+ template<typename Message>
+ void 
+ MediaInputPort::AppendMessageToGraph(UniquePtr<Message> aMessage)
+ {
+   if (GraphImpl() != nullptr) {
+     GraphImpl()->AppendMessage(Move(aMessage));
+   }
+ }
 
 already_AddRefed<MediaInputPort>
 ProcessedMediaStream::AllocateInputPort(MediaStream* aStream, TrackID aTrackID,
@@ -3154,7 +3204,7 @@ ProcessedMediaStream::AllocateInputPort(MediaStream* aStream, TrackID aTrackID,
     }
   }
   port->SetGraphImpl(GraphImpl());
-  GraphImpl()->AppendMessage(MakeUnique<Message>(port));
+  AppendMessageToGraph(MakeUnique<Message>(port));
   return port.forget();
 }
 
@@ -3170,7 +3220,7 @@ ProcessedMediaStream::Finish()
       mStream->GraphImpl()->FinishStream(mStream);
     }
   };
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this));
+  AppendMessageToGraph(MakeUnique<Message>(this));
 }
 
 void
@@ -3186,7 +3236,7 @@ ProcessedMediaStream::SetAutofinish(bool aAutofinish)
     }
     bool mAutofinish;
   };
-  GraphImpl()->AppendMessage(MakeUnique<Message>(this, aAutofinish));
+  AppendMessageToGraph(MakeUnique<Message>(this, aAutofinish));
 }
 
 void

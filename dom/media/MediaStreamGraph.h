@@ -537,6 +537,9 @@ public:
    */
   void SetGraphImpl(MediaStreamGraphImpl* aGraph);
   void SetGraphImpl(MediaStreamGraph* aGraph);
+  //Clear the GraphImpl pointer, prevent from accessing 
+  //dangling pointer by Circle Colelctor.
+  void ClearGraphImpl();
 
   /**
    * Returns sample rate of the graph.
@@ -832,6 +835,9 @@ protected:
     mFinishedNotificationSent = true;
     return true;
   }
+
+  template<typename Message>
+  void AppendMessageToGraph(UniquePtr<Message> aMessage);
 
   // This state is all initialized on the main thread but
   // otherwise modified only on the media graph thread.
@@ -1251,6 +1257,9 @@ public:
   already_AddRefed<media::Pledge<bool, nsresult>> BlockSourceTrackId(TrackID aTrackId);
 private:
   void BlockSourceTrackIdImpl(TrackID aTrackId);
+  
+  template<typename Message>
+  void AppendMessageToGraph(UniquePtr<Message> aMessage);
 
 public:
   // Returns true if aTrackId has not been blocked and this port has not

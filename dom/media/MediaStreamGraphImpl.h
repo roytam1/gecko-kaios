@@ -426,6 +426,17 @@ public:
     return mStreams.IsEmpty() && mSuspendedStreams.IsEmpty() && mPortCount == 0;
   }
 
+  void ClearStreamsRef()
+  {
+    for (uint32_t i = 0; i < mStreams.Length(); ++i) {
+      mStreams[i]->ClearGraphImpl();
+    }
+
+    for (uint32_t j = 0; j < mSuspendedStreams.Length(); ++j) {
+      mSuspendedStreams[j]->ClearGraphImpl();
+    } 
+  }
+
   /**
    * Add aStream to the graph and initializes its graph-specific state.
    */
