@@ -920,12 +920,6 @@ TelephonyService.prototype = {
         aCallback.notifyError(DIAL_ERROR_RADIO_NOT_AVAILABLE);
         return;
       }
-
-      if (this._isEmergencyOnly(aClientId)) {
-        if (DEBUG) debug("Error: Dial a normal call when emergencyCallsOnly. Drop");
-        aCallback.notifyError(DIAL_ERROR_BAD_NUMBER);
-        return;
-      }
     }
 
     if (isEmergency) {
