@@ -5,9 +5,73 @@
 
 
 chrome.jar:
-% content controls %content/controls/
 % content branding %content/branding/ contentaccessible=yes
 % content b2g %content/
+% content kaios-sdk %kaios-sdk/
+
+#ifdef FXOS_SIMULATOR
+  kaios-sdk/kairt.xul                (content/kairt.xul)
+  kaios-sdk/kairt.js                 (content/kairt.js)
+
+  kaios-sdk/webide.js                 (/devtools/client/webide/content/webide.js)
+  kaios-sdk/newapp.xul                (/devtools/client/webide/content/newapp.xul)
+  kaios-sdk/newapp.js                 (/devtools/client/webide/content/newapp.js)
+  kaios-sdk/details.xhtml             (/devtools/client/webide/content/details.xhtml)
+  kaios-sdk/details.js                (/devtools/client/webide/content/details.js)
+  kaios-sdk/addons.js                 (/devtools/client/webide/content/addons.js)
+  kaios-sdk/addons.xhtml              (/devtools/client/webide/content/addons.xhtml)
+  kaios-sdk/permissionstable.js       (/devtools/client/webide/content/permissionstable.js)
+  kaios-sdk/permissionstable.xhtml    (/devtools/client/webide/content/permissionstable.xhtml)
+  kaios-sdk/runtimedetails.js         (/devtools/client/webide/content/runtimedetails.js)
+  kaios-sdk/runtimedetails.xhtml      (/devtools/client/webide/content/runtimedetails.xhtml)
+  kaios-sdk/prefs.js                  (/devtools/client/webide/content/prefs.js)
+  kaios-sdk/prefs.xhtml               (/devtools/client/webide/content/prefs.xhtml)
+  kaios-sdk/monitor.xhtml             (/devtools/client/webide/content/monitor.xhtml)
+  kaios-sdk/monitor.js                (/devtools/client/webide/content/monitor.js)
+  kaios-sdk/devicepreferences.js      (/devtools/client/webide/content/devicepreferences.js)
+  kaios-sdk/devicepreferences.xhtml   (/devtools/client/webide/content/devicepreferences.xhtml)
+  kaios-sdk/devicesettings.js         (/devtools/client/webide/content/devicesettings.js)
+  kaios-sdk/devicesettings.xhtml      (/devtools/client/webide/content/devicesettings.xhtml)
+  kaios-sdk/wifi-auth.js              (/devtools/client/webide/content/wifi-auth.js)
+  kaios-sdk/wifi-auth.xhtml           (/devtools/client/webide/content/wifi-auth.xhtml)
+  kaios-sdk/logs.xhtml                (/devtools/client/webide/content/logs.xhtml)
+  kaios-sdk/logs.js                   (/devtools/client/webide/content/logs.js)
+  kaios-sdk/project-listing.xhtml     (/devtools/client/webide/content/project-listing.xhtml)
+  kaios-sdk/project-listing.js        (/devtools/client/webide/content/project-listing.js)
+  kaios-sdk/project-panel.js          (/devtools/client/webide/content/project-panel.js)
+  kaios-sdk/runtime-panel.js          (/devtools/client/webide/content/runtime-panel.js)
+  kaios-sdk/runtime-listing.xhtml     (/devtools/client/webide/content/runtime-listing.xhtml)
+  kaios-sdk/runtime-listing.js        (/devtools/client/webide/content/runtime-listing.js)
+  kaios-sdk/simulator.js              (/devtools/client/webide/content/simulator.js)
+  kaios-sdk/simulator.xhtml           (/devtools/client/webide/content/simulator.xhtml)
+
+  kaios-sdk/settings.js                     (content/settings.js)
+  kaios-sdk/shell.js                        (content/shell.js)
+  kaios-sdk/shell.css                       (content/shell.css)
+  kaios-sdk/devtools/debugger.js            (content/devtools/debugger.js)
+
+  kaios-sdk/index.html                      (/kaios-sdk/dist/index.html)
+  kaios-sdk/style.css                       (/kaios-sdk/dist/style.css)
+  kaios-sdk/vendors.js                      (/kaios-sdk/dist/vendors.js)
+  kaios-sdk/bundle.js                       (/kaios-sdk/dist/bundle.js)
+  kaios-sdk/images/keypad_number.png        (/kaios-sdk/dist/images/keypad_number.png)
+  kaios-sdk/images/keypad_iem.png           (/kaios-sdk/dist/images/keypad_iem.png)
+  kaios-sdk/images/ic_LSK.png               (/kaios-sdk/dist/images/ic_LSK.png)
+  kaios-sdk/images/ic_RSK.png               (/kaios-sdk/dist/images/ic_RSK.png)
+  kaios-sdk/images/ic_call.png              (/kaios-sdk/dist/images/ic_call.png)
+  kaios-sdk/images/ic_endcall.png           (/kaios-sdk/dist/images/ic_endcall.png)
+  kaios-sdk/images/ic_ok.png                (/kaios-sdk/dist/images/ic_ok.png)
+  kaios-sdk/images/ic_arrow.png             (/kaios-sdk/dist/images/ic_arrow.png)
+  kaios-sdk/images/ic_back.png              (/kaios-sdk/dist/images/ic_back.png)
+  kaios-sdk/images/ic_message.png           (/kaios-sdk/dist/images/ic_message.png)
+  kaios-sdk/images/KaiOS_logo.png           (/kaios-sdk/dist/images/KaiOS_logo.png)
+
+  kaios-sdk/images/ic_power_68px.png              (/kaios-sdk/dist/images/ic_power_68px.png)
+  kaios-sdk/images/ic_voice_68px.png              (/kaios-sdk/dist/images/ic_voice_68px.png)
+  kaios-sdk/images/ic_menu_68px.png              (/kaios-sdk/dist/images/ic_menu_68px.png)
+  kaios-sdk/images/ic_back_68px.png              (/kaios-sdk/dist/images/ic_back_68px.png)
+  kaios-sdk/images/ic_home_68px.png              (/kaios-sdk/dist/images/ic_home_68px.png)
+#endif
 
   content/arrow.svg                     (content/arrow.svg)
   content/settings.js                   (content/settings.js)

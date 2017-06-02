@@ -135,5 +135,5 @@ simulator: make-package
 libs:: simulator
 
 # Ensure copying Simulator xpi to ftp
-UPLOAD_EXTRA_FILES += fxos-simulator-*-*.xpi
+UPLOAD_EXTRA_FILES += kaios-simulator-*-*.xpi
 endif

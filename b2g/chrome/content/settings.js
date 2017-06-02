@@ -158,7 +158,7 @@ SettingsListener.observe_fast('language.current', 'en-US', function(value) {
 
 function delayed_start() {
 
-  if (AdbController) {
+  if (isGonk) {
     AdbController.init();
   }
   InitDebuggerSettings();

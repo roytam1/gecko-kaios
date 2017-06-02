@@ -1350,3 +1350,7 @@ pref("ril.support.primarysim.switch", false);
 
 // Enable app cell broadcast list configuration (apn.json)
 pref("dom.app_cb_configuration", false);
+
+#ifdef FXOS_SIMULATOR
+#include ../simulator/prefs.js
+#endif

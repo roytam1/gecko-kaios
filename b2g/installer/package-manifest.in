@@ -979,7 +979,7 @@ bin/libfreebl_32int64_3.so
 
 #ifdef PACKAGE_GAIA
 [gaia]
-@RESPATH@/gaia/*
+@BINPATH@/gaia/*
 @BINPATH@/b2g-bin@BIN_SUFFIX@
 #endif
 

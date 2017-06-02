@@ -1,4 +1,5 @@
 /*.app/***
+/gaia/***
 /*.dylib
 /b2g
 /certutil

@@ -2,6 +2,7 @@ body{
   background-color: -moz-dialog;
   display: flex;
   flex-direction: row;
+  min-width: 864px;
 }
 
 iframe {

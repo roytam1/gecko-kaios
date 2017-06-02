@@ -12,3 +12,6 @@ if CONFIG['GAIADIR']:
     DIRS += ['gaia']
 
 DIRS += ['app']
+
+if CONFIG['FXOS_SIMULATOR']:
+    DIRS += ['simulator']

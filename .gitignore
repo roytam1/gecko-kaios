@@ -14,6 +14,7 @@ ID
 # Dirs that should be ignored wherever they appear
 koost
 proprietary
+/kaios-sdk
 
 # Allow the id locale directory for loop ('ID' matches this normally)
 !browser/extensions/loop/chrome/locale/id
