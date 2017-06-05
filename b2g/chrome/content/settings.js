@@ -706,7 +706,9 @@ var settingsToObserve = {
   'layers.effect.contrast': '0.0',
   'layout.display-list.dump': false,
   'mms.debugging.enabled': false,
-  'network.debugging.enabled': false,
+  'network.debugging.enabled': {
+    resetToPref: true
+  },
   'privacy.donottrackheader.enabled': false,
   'privacy.trackingprotection.enabled': false,
   'ril.debugging.enabled': false,
