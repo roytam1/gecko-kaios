@@ -24,7 +24,6 @@ EXTRA_JS_MODULES.identity += [
     'IdentityUtils.jsm',
     'jwcrypto.jsm',
     'LogUtils.jsm',
-    'MinimalIdentity.jsm',
     'RelyingParty.jsm',
     'Sandbox.jsm',
 ]

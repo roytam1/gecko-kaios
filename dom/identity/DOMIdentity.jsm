@@ -23,13 +23,6 @@ this.EXPORTED_SYMBOLS = ["DOMIdentity"];
 XPCOMUtils.defineLazyModuleGetter(this, "objectCopy",
                                   "resource://gre/modules/identity/IdentityUtils.jsm");
 
-/* jshint ignore:start */
-XPCOMUtils.defineLazyModuleGetter(this, "IdentityService",
-#ifdef MOZ_B2G_VERSION
-                                  "resource://gre/modules/identity/MinimalIdentity.jsm");
-#else
-                                  "resource://gre/modules/identity/Identity.jsm");
-#endif
 /* jshint ignore:end */
 
 XPCOMUtils.defineLazyModuleGetter(this, "FirefoxAccounts",
@@ -193,7 +186,7 @@ RPWatchContext.prototype = {
 this.DOMIdentity = {
   /*
    * When relying parties (RPs) invoke the watch() method, they can request
-   * to use Firefox Accounts as their auth service or BrowserID (the default).
+   * to use Firefox Accounts as their auth service.
    * For each RP, we create an RPWatchContext to store the parameters given to
    * watch(), and to provide hooks to invoke the onlogin(), onlogout(), etc.
    * callbacks held in the nsDOMIdentity state.
@@ -216,7 +209,7 @@ this.DOMIdentity = {
       log("Using a mocked identity service");
       return this._mockIdentityService;
     }
-    return IdentityService;
+    return null;
   },
 
   /*
@@ -236,7 +229,7 @@ this.DOMIdentity = {
    *         A message received from an RP.  Will include the id of the window
    *         whence the message originated.
    *
-   * Returns FirefoxAccounts or IdentityService
+   * Returns FirefoxAccounts or KaiosAccounts
    */
   getService: function(message) {
     if (!this._serviceContexts.has(message.id)) {
@@ -250,14 +243,14 @@ this.DOMIdentity = {
           && Services.prefs.getBoolPref(PREF_KAIA_ENABLED)) {
         return KaiosAccounts;
       }
-      log("WARNING: KaiOS Accounts is not enabled; Defaulting to BrowserID");
+      log("WARNING: KaiOS Accounts is not enabled");
     }
     if (context.wantIssuer == "firefox-accounts") {
       if (Services.prefs.getPrefType(PREF_FXA_ENABLED) === Ci.nsIPrefBranch.PREF_BOOL
           && Services.prefs.getBoolPref(PREF_FXA_ENABLED)) {
         return FirefoxAccounts;
       }
-      log("WARNING: Firefox Accounts is not enabled; Defaulting to BrowserID");
+      log("WARNING: Firefox Accounts is not enabled");
     }
     return this.IdentityService;
   },
@@ -406,7 +399,12 @@ this.DOMIdentity = {
   _watch: function DOMIdentity__watch(message, targetMM, principal) {
     log("DOMIdentity__watch: " + message.id + " - " + principal);
     let context = this.newContext(message, targetMM, principal);
-    this.getService(message).RP.watch(context);
+    let service = this.getService(message);
+    if (service && service.RP) {
+      service.RP.watch(context);
+      return;
+    }
+    log("Can't find a service to watch() for " + message.id);
   },
 
   _unwatch: function DOMIdentity_unwatch(message, targetMM) {

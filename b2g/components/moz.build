@@ -74,7 +74,6 @@ EXTRA_JS_MODULES += [
     'PersistentDataBlock.jsm',
     'SafeMode.jsm',
     'Screenshot.jsm',
-    'SignInToWebsite.jsm',
     'SystemAppProxy.jsm',
     'TelURIParser.jsm',
     'WebappsUpdater.jsm',

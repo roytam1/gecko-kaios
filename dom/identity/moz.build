@@ -10,7 +10,7 @@ EXTRA_COMPONENTS += [
     'nsIDService.js',
 ]
 
-EXTRA_PP_JS_MODULES += [
+EXTRA_JS_MODULES += [
     'DOMIdentity.jsm',
 ]
 
