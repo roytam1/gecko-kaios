@@ -817,7 +817,6 @@ this.DOMApplicationRegistry = {
         // installPreinstalledApp() removes the ones failing to install.
         yield this._saveApps();
 
-        Services.prefs.setBoolPref("dom.apps.reset-permissions", true);
       }
 
       // DataStores must be initialized at startup.
@@ -827,7 +826,12 @@ this.DOMApplicationRegistry = {
 
       let loadActicitiesComplete = Services.prefs.getBoolPref("dom.apps.load-activities-complete");
       yield this.registerAppsHandlers(runUpdate || !loadActicitiesComplete);
-    }.bind(this)).then(null, Cu.reportError);
+    }.bind(this)).then(function(result) {
+      let loadAppPermission = Services.prefs.getBoolPref("dom.apps.reset-permissions");
+      if (!loadAppPermission) {
+        Services.perms.loadAppPermissionDone();
+      }
+    }, Cu.reportError);
   },
 
   updateDataStore: function(aId, aOrigin, aManifestURL, aManifest) {

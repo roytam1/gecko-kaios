@@ -263,6 +263,11 @@ interface nsIPermissionManager : nsISupports
    * chrome process.
    */
   void refreshPermission();
+
+  /**
+   * Load all app permissions done, used to check the permission database handle completion.
+   */
+  void loadAppPermissionDone();
 };
 
 %{ C++

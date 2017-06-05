@@ -635,6 +635,54 @@ CloseDatabaseListener::Complete(nsresult, nsISupports*)
 }
 
 
+class UpdateFromMozPermListener : public mozIStorageStatementCallback
+{
+public:
+  NS_DECL_ISUPPORTS
+  NS_DECL_MOZISTORAGESTATEMENTCALLBACK
+  bool mDBCompleted = false;
+  int mUpdateDBCount = 0;
+  UpdateFromMozPermListener(){}
+protected:
+  int mDBCount = 0;
+  virtual ~UpdateFromMozPermListener() {}
+};
+
+NS_IMETHODIMP
+UpdateFromMozPermListener::HandleError(mozIStorageError *aError)
+{
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+UpdateFromMozPermListener::HandleResult(mozIStorageResultSet *aResultSet)
+{
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+UpdateFromMozPermListener::HandleCompletion(uint16_t aReason)
+{
+  if (aReason == REASON_FINISHED) {
+    mDBCount ++;
+  }
+  if (mDBCompleted && mDBCount == mUpdateDBCount) {
+    nsCOMPtr<nsIPrefBranch> prefs = do_GetService(NS_PREFSERVICE_CONTRACTID);
+    if (prefs) {
+      nsresult rv = prefs->SetBoolPref("dom.apps.reset-permissions", true);
+      NS_ENSURE_SUCCESS(rv, NS_ERROR_UNEXPECTED);
+      LogToConsole(NS_LITERAL_STRING("dom.apps.reset-permissions has been set to true."));
+    }
+    else {
+      LogToConsole(NS_LITERAL_STRING("No Preferences service!"));
+    }
+  }
+  return NS_OK;
+}
+
+NS_IMPL_ISUPPORTS(UpdateFromMozPermListener, mozIStorageStatementCallback)
+
+
 /**
  * Simple callback used by |RemoveAllInternal| to trigger closing
  * the database and reinitializing it.
@@ -715,6 +763,8 @@ static const char kDefaultsUrlPrefName[] = "permissions.manager.defaultsUrl";
 
 static const char kPermissionChangeNotification[] = PERM_CHANGE_NOTIFICATION;
 
+static RefPtr<UpdateFromMozPermListener> cbPerm = new UpdateFromMozPermListener();
+
 NS_IMPL_ISUPPORTS(nsPermissionManager, nsIPermissionManager, nsIObserver, nsISupportsWeakReference)
 
 nsPermissionManager::nsPermissionManager()
@@ -792,6 +842,12 @@ nsPermissionManager::RefreshPermission() {
   rv = FetchPermissions();
   NS_ENSURE_SUCCESS(rv, rv);
 
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsPermissionManager::LoadAppPermissionDone() {
+  cbPerm->mDBCompleted = true;
   return NS_OK;
 }
 
@@ -2789,6 +2845,7 @@ nsPermissionManager::UpdateDB(OperationType aOp,
       if (NS_FAILED(rv)) break;
 
       rv = aStmt->BindInt64ByIndex(6, aModificationTime);
+      cbPerm->mUpdateDBCount++;
       break;
     }
 
@@ -2830,7 +2887,7 @@ nsPermissionManager::UpdateDB(OperationType aOp,
   }
 
   nsCOMPtr<mozIStoragePendingStatement> pending;
-  rv = aStmt->ExecuteAsync(nullptr, getter_AddRefs(pending));
+  rv = aStmt->ExecuteAsync(cbPerm, getter_AddRefs(pending));
   MOZ_ASSERT(NS_SUCCEEDED(rv));
 }
 
