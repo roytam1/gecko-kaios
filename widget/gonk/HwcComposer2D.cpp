@@ -200,7 +200,7 @@ HwcComposer2D::Vsync(int aDisplay, nsecs_t aVsyncTimestamp)
     // KaiOS Bug 567: The vsync here might be fired during testing whether vsync
     // is avaliabe in gfxAndroidPlatform::CreateHardwareVsyncSource. At this
     // timing created VsyncSource doesn't be assigned to gfxPlatform yet.
-    if (!gfxPlatform::GetPlatform()->GetHardwareVsync()) {
+    if (!gfxPlatform::Initialized()){
         return;
     }
 
