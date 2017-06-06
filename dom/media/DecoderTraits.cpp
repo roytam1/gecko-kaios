@@ -570,14 +570,17 @@ static
 already_AddRefed<MediaDecoder>
 InstantiateDecoder(const nsACString& aType,
                    MediaDecoderOwner* aOwner,
-                   DecoderDoctorDiagnostics* aDiagnostics, 
+                   DecoderDoctorDiagnostics* aDiagnostics,
+                   bool aIsMSE,
                    nsIChannel* aChannel = nullptr,
                    nsIStreamListener** aStreamListener = nullptr)
 {
   MOZ_ASSERT(NS_IsMainThread());
   RefPtr<MediaDecoder> decoder;
 #ifdef MOZ_FMP4
-  if (IsMP4SupportedType(aType, aDiagnostics, EmptyString(), aChannel, aStreamListener)) {
+  //Since current MP4Decoder has high power consumption issue on QRD,
+  //We use MP4Decoder only for MSE.
+  if (aIsMSE && IsMP4SupportedType(aType, aDiagnostics, EmptyString(), aChannel, aStreamListener)) {
     decoder = new MP4Decoder(aOwner);
     return decoder.forget();
   }
@@ -666,11 +669,12 @@ already_AddRefed<MediaDecoder>
 DecoderTraits::CreateDecoder(const nsACString& aType,
                              MediaDecoderOwner* aOwner,
                              DecoderDoctorDiagnostics* aDiagnostics,
+                             bool aIsMSE,
                              nsIChannel* aChannel,
                              nsIStreamListener** aStreamListener)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  return InstantiateDecoder(aType, aOwner, aDiagnostics, aChannel, aStreamListener);
+  return InstantiateDecoder(aType, aOwner, aDiagnostics, aIsMSE, aChannel, aStreamListener);
 }
 
 /* static */

@@ -62,6 +62,7 @@ public:
   static already_AddRefed<MediaDecoder> CreateDecoder(const nsACString& aType,
                                                       MediaDecoderOwner* aOwner,
                                                       DecoderDoctorDiagnostics* aDiagnostics,
+                                                      bool aIsMSE,
                                                       nsIChannel* aChannel = nullptr,
                                                       nsIStreamListener** aStreamListener = nullptr);
 

@@ -2986,7 +2986,7 @@ nsresult HTMLMediaElement::InitializeDecoderForChannel(nsIChannel* aChannel,
 
   DecoderDoctorDiagnostics diagnostics;
   RefPtr<MediaDecoder> decoder =
-    DecoderTraits::CreateDecoder(mimeType, this, &diagnostics, aChannel, aListener);
+    DecoderTraits::CreateDecoder(mimeType, this, &diagnostics, /*MSE?*/(mSrcMediaSource != nullptr));
   diagnostics.StoreFormatDiagnostics(OwnerDoc(),
                                      NS_ConvertASCIItoUTF16(mimeType),
                                      decoder != nullptr,
