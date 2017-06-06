@@ -29,7 +29,6 @@ EXTRA_JS_MODULES.identity += [
 ]
 
 EXTRA_PP_JS_MODULES.identity += [
-    'FirefoxAccounts.jsm',
     'KaiosAccounts.jsm',
 ]
 

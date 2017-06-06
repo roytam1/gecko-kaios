@@ -1086,21 +1086,11 @@ pref("layout.accessiblecaret.use_long_tap_injector", false);
 // Hide carets and text selection dialog during scrolling.
 pref("layout.accessiblecaret.always_show_when_scrolling", false);
 
-// Enable sync and mozId with Firefox Accounts.
-pref("services.sync.fxaccounts.enabled", false);
-pref("identity.fxaccounts.enabled", false);
-
 // Enable sync and mozId with KaiOS Accounts.
 pref("identity.kaiaccounts.enabled", false);
 
 // Mobile Identity API.
 pref("services.mobileid.server.uri", "https://msisdn.services.mozilla.com");
-
-pref("identity.fxaccounts.remote.oauth.uri", "https://oauth.accounts.firefox.com/v1");
-pref("identity.fxaccounts.remote.profile.uri", "https://profile.accounts.firefox.com/v1");
-
-// Disable Firefox Accounts device registration until bug 1238895 is fixed.
-pref("identity.fxaccounts.skipDeviceRegistration", true);
 
 // Enable mapped array buffer.
 #ifndef XP_WIN

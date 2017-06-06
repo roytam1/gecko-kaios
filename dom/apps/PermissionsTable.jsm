@@ -455,17 +455,6 @@ this.PermissionsTable =  { geolocation: {
                              certified: ALLOW_ACTION,
                              access: ["read", "write", "create"]
                            },
-                           "firefox-accounts": {
-                             app: DENY_ACTION,
-                             privileged: DENY_ACTION,
-                             certified: ALLOW_ACTION
-                           },
-                           "moz-firefox-accounts": {
-                             app: DENY_ACTION,
-                             privileged: PROMPT_ACTION,
-                             certified: ALLOW_ACTION,
-                             substitute: ["firefox-accounts"]
-                           },
                            "kaios-accounts": {
                              app: DENY_ACTION,
                              trusted: DENY_ACTION,

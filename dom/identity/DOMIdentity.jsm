@@ -12,8 +12,6 @@ const {classes: Cc,
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
-const PREF_FXA_ENABLED = "identity.fxaccounts.enabled";
-const FXA_PERMISSION = "firefox-accounts";
 const PREF_KAIA_ENABLED = "identity.kaiaccounts.enabled";
 const KAIA_PERMISSION = "kaios-accounts";
 
@@ -22,11 +20,6 @@ this.EXPORTED_SYMBOLS = ["DOMIdentity"];
 
 XPCOMUtils.defineLazyModuleGetter(this, "objectCopy",
                                   "resource://gre/modules/identity/IdentityUtils.jsm");
-
-/* jshint ignore:end */
-
-XPCOMUtils.defineLazyModuleGetter(this, "FirefoxAccounts",
-                                  "resource://gre/modules/identity/FirefoxAccounts.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "KaiosAccounts",
                                   "resource://gre/modules/identity/KaiosAccounts.jsm");
@@ -186,7 +179,7 @@ RPWatchContext.prototype = {
 this.DOMIdentity = {
   /*
    * When relying parties (RPs) invoke the watch() method, they can request
-   * to use Firefox Accounts as their auth service.
+   * to use Kaios Accounts as their auth service.
    * For each RP, we create an RPWatchContext to store the parameters given to
    * watch(), and to provide hooks to invoke the onlogin(), onlogout(), etc.
    * callbacks held in the nsDOMIdentity state.
@@ -229,7 +222,7 @@ this.DOMIdentity = {
    *         A message received from an RP.  Will include the id of the window
    *         whence the message originated.
    *
-   * Returns FirefoxAccounts or KaiosAccounts
+   * Returns KaiosAccounts
    */
   getService: function(message) {
     if (!this._serviceContexts.has(message.id)) {
@@ -244,13 +237,6 @@ this.DOMIdentity = {
         return KaiosAccounts;
       }
       log("WARNING: KaiOS Accounts is not enabled");
-    }
-    if (context.wantIssuer == "firefox-accounts") {
-      if (Services.prefs.getPrefType(PREF_FXA_ENABLED) === Ci.nsIPrefBranch.PREF_BOOL
-          && Services.prefs.getBoolPref(PREF_FXA_ENABLED)) {
-        return FirefoxAccounts;
-      }
-      log("WARNING: Firefox Accounts is not enabled");
     }
     return this.IdentityService;
   },
@@ -276,19 +262,16 @@ this.DOMIdentity = {
   },
 
   hasPermission: function(aMessage) {
-    // We only check that the firefox/kaios accounts permission is present in the
+    // We only check that the kaios accounts permission is present in the
     // manifest.
-    if (aMessage.json && (aMessage.json.wantIssuer == "kaios-accounts" ||
-      aMessage.json.wantIssuer == "firefox-accounts")) {
+    if (aMessage.json && aMessage.json.wantIssuer == "kaios-accounts") {
       if (!aMessage.principal) {
         return false;
       }
 
-      let whichAccount = aMessage.json.wantIssuer == "kaios-accounts" ?
-                         KAIA_PERMISSION : FXA_PERMISSION;
       let permission =
         permissionManager.testPermissionFromPrincipal(aMessage.principal,
-                                                      whichAccount);
+                                                      KAIA_PERMISSION);
       return permission != Ci.nsIPermissionManager.UNKNOWN_ACTION &&
              permission != Ci.nsIPermissionManager.DENY_ACTION;
     }
