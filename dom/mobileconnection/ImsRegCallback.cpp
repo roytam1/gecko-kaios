@@ -31,9 +31,9 @@ NS_IMETHODIMP ImsRegCallback::NotifySuccess()
   return NS_OK;
 }
 
-NS_IMETHODIMP ImsRegCallback::NotifyError(const nsAString & aRrror)
+NS_IMETHODIMP ImsRegCallback::NotifyError(const nsAString & aError)
 {
-  mPromise->MaybeRejectBrokenly(aRrror);
+  mPromise->MaybeRejectBrokenly(aError);
   return NS_OK;
 }
 

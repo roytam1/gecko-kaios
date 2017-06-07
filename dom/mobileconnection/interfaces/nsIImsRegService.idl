@@ -40,7 +40,7 @@ interface nsIImsRegCallback : nsISupports {
   /**
    * The error callback when the request is failed.
    */
-  void notifyError(in AString aRrror);
+  void notifyError(in AString aError);
 };
 
 %{C++
