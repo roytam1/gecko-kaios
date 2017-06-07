@@ -112,10 +112,6 @@ void ThreadProfile::StreamSamplesAndMarkers(SpliceableJSONWriter& aWriter, doubl
   if (XRE_GetProcessType() == GeckoProcessType_Plugin) {
     // TODO Add the proper plugin name
     aWriter.StringProperty("name", "Plugin");
-  } else if (XRE_GetProcessType() == GeckoProcessType_Content) {
-    // This isn't going to really help once we have multiple content
-    // processes, but it'll do for now.
-    aWriter.StringProperty("name", "Content");
   } else {
     aWriter.StringProperty("name", Name());
   }
