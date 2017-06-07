@@ -132,10 +132,18 @@ MediaCodecProxy::AsyncAllocateVideoMediaCodec()
                     mozilla::MediaSystemResourceType::VIDEO_DECODER;
   mResourceClient = new mozilla::MediaSystemResourceClient(type);
   mResourceClient->SetListener(this);
+
+  // MediaCodecProxy::ResourceReserved() will return promise
+  // so make sure promise is set before acquire resource to avoid deadlock
+  // (if promise doesn't exist, can't reject or resolve. video will just hang there with black screen)
+  RefPtr<CodecPromise> p = nullptr; 
+  {
+    mozilla::MonitorAutoLock lock(mPromiseMonitor);
+    p = mCodecPromise.Ensure(__func__);
+  }
+
   mResourceClient->Acquire();
 
-  mozilla::MonitorAutoLock lock(mPromiseMonitor);
-  RefPtr<CodecPromise> p = mCodecPromise.Ensure(__func__);
   return p.forget();
 }
 
