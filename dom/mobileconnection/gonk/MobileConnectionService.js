@@ -620,6 +620,11 @@ MobileConnectionProvider.prototype = {
   /**
    * Fix the roaming. RIL can report roaming in some case it is not
    * really the case. See bug 787967
+   *
+   * See bug 12354, remove check at _updateConnectionInfo to avoid wrong status
+   * update, it looks like andorid only left this check for CDMA case.
+   * http://androidxref.com/6.0.1_r10/xref/frameworks/opt/telephony/src/java/com
+   * /android/internal/telephony/cdma/CdmaServiceStateTracker.java#1573
    */
   _checkRoamingBetweenOperators: function(aNetworkInfo) {
     let icc = gIccService.getIccByServiceId(this._clientId);
@@ -691,8 +696,6 @@ MobileConnectionProvider.prototype = {
       }
     }
 
-    // Check roaming state
-    isUpdated = this._checkRoamingBetweenOperators(aDestInfo) || isUpdated;
     return isUpdated;
   },
 
