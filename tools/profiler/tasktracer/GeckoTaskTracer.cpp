@@ -153,10 +153,6 @@ SetLogStarted(bool aIsStartLogging)
 
   sStarted = aIsStartLogging;
 
-  if (aIsStartLogging && sTraceInfos == nullptr) {
-    sTraceInfos = new nsTArray<UniquePtr<TraceInfo>>();
-  }
-
   if (!aIsStartLogging && sTraceInfos) {
     ObsoleteCurrentTraceInfos();
   }
@@ -187,12 +183,14 @@ InitTaskTracer(uint32_t aFlags)
 {
   StaticMutexAutoLock lock(sMutex);
 
-  if (aFlags & FORKED_AFTER_NUWA) {
+  if ((aFlags & FORKED_AFTER_NUWA) && sTraceInfos) {
     ObsoleteCurrentTraceInfos();
     return;
   }
 
   MOZ_ASSERT(!sTraceInfos);
+  // A memory barrier is necessary here.
+  sTraceInfos = new nsTArray<UniquePtr<TraceInfo>>();
 
   bool success = sTraceInfoTLS.init();
   if (!success) {
