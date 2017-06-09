@@ -592,8 +592,6 @@ WifiGeoPositionProvider.prototype = {
     let xhr = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
                         .createInstance(Ci.nsIXMLHttpRequest);
 
-    this.notifyListener("locationUpdatePending");
-
     try {
       xhr.open("POST", url, true);
     } catch (e) {
