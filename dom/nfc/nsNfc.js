@@ -438,9 +438,9 @@ MozNFCImpl.prototype = {
     return callback.promise;
   },
 
-  stopPoll: function stopPoll() {
+  stopPoll: function stopPoll(powerMode) {
     let callback = new NfcCallback(this.window);
-    this._nfcContentHelper.changeRFState(RFState.LISTEN, callback);
+    this._nfcContentHelper.changeRFStateWithMode(RFState.LISTEN, powerMode, callback);
     return callback.promise;
   },
 
@@ -735,7 +735,6 @@ MozNFCImpl.prototype = {
 
     return true;
   },
-
 
   checkPermissions: function checkPermissions(perms) {
     let principal = this.window.document.nodePrincipal;

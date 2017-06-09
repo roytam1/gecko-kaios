@@ -190,6 +190,7 @@ NfcMessageHandler::ChangeRFStateRequest(Parcel& aParcel, const CommandOptions& a
 {
   aParcel.writeInt32(static_cast<int32_t>(NfcRequestType::ChangeRFState));
   aParcel.writeInt32(aOptions.mRfState);
+  aParcel.writeInt32(aOptions.mPowerMode);
   mRequestIdQueue.AppendElement(aOptions.mRequestId);
   return true;
 }

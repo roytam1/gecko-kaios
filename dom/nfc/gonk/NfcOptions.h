@@ -37,6 +37,10 @@ struct CommandOptions
                  static_cast<int32_t>(aOther.mRfState.Value()) :
                  0;
 
+    mPowerMode = aOther.mPowerMode.WasPassed() ?
+                 static_cast<int32_t>(aOther.mPowerMode.Value()) :
+                 0;
+
     COPY_OPT_FIELD(mTechType, 0)
     COPY_OPT_FIELD(mIsP2P, false)
 
@@ -109,6 +113,7 @@ struct CommandOptions
   int32_t mSessionId;
   nsString mRequestId;
   int32_t mRfState;
+  int32_t mPowerMode;
   int32_t mTechType;
   bool mIsP2P;
   nsTArray<NDEFRecordStruct> mRecords;

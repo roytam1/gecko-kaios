@@ -132,7 +132,7 @@ interface nsINfcBrowserAPI : nsISupports
                    in boolean isFocus);
 };
 
-[scriptable, uuid(6c84f130-40f0-11e7-9598-0800200c9a66)]
+[scriptable, uuid(1a96ac30-4c56-11e7-9598-0800200c9a66)]
 interface nsINfcContentHelper : nsISupports
 {
   /**
@@ -310,6 +310,23 @@ interface nsINfcContentHelper : nsISupports
    */
   void changeRFState(in DOMString rfState,
                      in nsINfcRequestCallback callback);
+
+
+  /**
+   * Change RF state.
+   *
+   * @param rfState. Possible values are 'idle', 'listen' and 'discovery'.
+   *
+   * @param powerMode. Possible values are 'mode_low_power', 'mode_full_power',
+   *                                       'mode_screen_off', 'mode_screen_lock,
+   *                                       'mode_ultra_low_power'.
+   *
+   * @param callback
+   *        Called when request is finished
+   */
+  void changeRFStateWithMode(in DOMString rfState,
+                             in DOMString powerMode,
+                             in nsINfcRequestCallback callback);
 
   /**
    * Notify parent process to call the default tagfound or peerfound event

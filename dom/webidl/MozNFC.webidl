@@ -26,6 +26,14 @@ enum NfcErrorMessage {
   "FailDisableLowPowerMode"
 };
 
+enum StopPollPowerMode {
+  "mode_low_power",
+  "mode_full_power",
+  "mode_screen_off",
+  "mode_screen_lock",
+  "mode_ultra_low_power"
+};
+
 [NoInterfaceObject]
 interface MozNFCManager {
   /**
@@ -60,7 +68,7 @@ interface MozNFCManager {
    * Stop polling for NFC tags or devices. i.e. enter low power mode.
    */
   [CheckAnyPermissions="nfc-manager", AvailableIn=CertifiedApps]
-  Promise<void> stopPoll();
+  Promise<void> stopPoll(StopPollPowerMode mode);
 
   /**
    * Power off the NFC hardware.

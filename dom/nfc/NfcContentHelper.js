@@ -224,6 +224,16 @@ NfcContentHelper.prototype = {
                            rfState: rfState});
   },
 
+  changeRFStateWithMode: function changeRFStateWithMode(rfState, powerMode, callback) {
+    let requestId = callback.getCallbackId();
+    this._requestMap[requestId] = callback;
+
+    cpmm.sendAsyncMessage("NFC:ChangeRFState",
+                          {requestId: requestId,
+                           rfState: rfState,
+                           powerMode: powerMode});
+  },
+
   mPOSReaderMode: function mPOSReaderMode(enabled, callback) {
     let requestId = callback.getCallbackId();
     this._requestMap[requestId] = callback;

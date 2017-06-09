@@ -78,6 +78,8 @@ dictionary NfcCommandOptions
 
   RFState rfState;
 
+  StopPollPowerMode powerMode;
+
   long techType;
 
   boolean isP2P;

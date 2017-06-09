@@ -397,11 +397,14 @@ XPCOMUtils.defineLazyGetter(this, "gMessageManager", function () {
     },
 
     onMPOSReaderModeEvent: function onMPOSReaderModeEvent(message) {
+      let tabId = this.getFocusTabId();
       for (let id in this.eventListeners) {
-        this.notifyDOMEvent(this.eventListeners[id],
-                            { tabId: id,
-                              event: NFC.MPOS_READER_MODE_EVENT,
-                              type: message.mPOSReaderModeEvent });
+        if (id == tabId) {
+          this.notifyDOMEvent(this.eventListeners[id],
+                              { tabId: id,
+                                event: NFC.MPOS_READER_MODE_EVENT,
+                                type: message.mPOSReaderModeEvent });
+        }
       }
     },
 
