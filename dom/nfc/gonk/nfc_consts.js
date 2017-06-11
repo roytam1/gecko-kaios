@@ -47,6 +47,8 @@ this.PEER_EVENT_FOUND = 0x05;
 this.RF_EVENT_STATE_CHANGED = 0x06;
 this.FOCUS_CHANGED = 0x07;
 this.MPOS_READER_MODE_EVENT = 0x08;
+this.RF_FIELD_ACTIVATE_EVENT = 0x09;
+this.RF_FIELD_DEACTIVATE_EVENT = 0x0a;
 
 // This value should sync with |SYSTEM_APP_ID| in nsINfcContentHelper.idl
 this.SYSTEM_APP_ID = 0;

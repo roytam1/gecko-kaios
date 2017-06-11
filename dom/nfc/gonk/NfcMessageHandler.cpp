@@ -164,6 +164,12 @@ NfcMessageHandler::ProcessNotification(int32_t aType, const Parcel& aParcel, Eve
       break;
     case NfcNotificationType::MPOSReaderModeEvent:
       result = MPOSReaderModeEventNotification(aParcel, aOptions);
+      break;
+    case NfcNotificationType::RfFieldActivateEvent:
+    case NfcNotificationType::RfFieldDeActivateEvent:
+      result = true;
+      break;
+
     default:
     NMH_LOG("ProcessNotification %d", aType);
       result = false;

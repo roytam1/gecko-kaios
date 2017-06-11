@@ -57,7 +57,9 @@ enum NfcNotificationType {
   "techLost",
   "hciEventTransaction",
   "ndefReceived",
-  "mPOSReaderModeEvent"
+  "mPOSReaderModeEvent",
+  "rfFieldActivateEvent",
+  "rfFieldDeActivateEvent"
 };
 
 /**

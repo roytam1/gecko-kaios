@@ -369,6 +369,7 @@ MozNFCImpl.prototype = {
     this.defineEventHandlerGetterSetter("onpeerfound");
     this.defineEventHandlerGetterSetter("onpeerlost");
     this.defineEventHandlerGetterSetter("onmposreaderevent");
+    this.defineEventHandlerGetterSetter("onrffieldevent");
 
     Services.obs.addObserver(this, "inner-window-destroyed",
                              /* weak-ref */ false);
@@ -733,6 +734,22 @@ MozNFCImpl.prototype = {
     let event = new this.window.MozNFCMPOSReaderModeEvent("mposreaderevent", {eventType: NFC_MPOS_EVENTS[type]});
     this.__DOM_IMPL__.dispatchEvent(event);
 
+    return true;
+  },
+
+  notifyRfFieldEvent: function notifyRfFieldEvent(isAct) {
+    if (this.hasDeadWrapper()) {
+      dump("this.window or this.__DOM_IMPL__ is a dead wrapper.");
+      return false;
+    }
+
+    if (!this.checkPermissions(["nfc"])) {
+      return false;
+    }
+
+    let event = new this.window.MozNFCRfFieldEvent("rffieldevent", {rfFieldOn: isAct});
+    this.__DOM_IMPL__.dispatchEvent(event);
+    debug("notifyRfFieldEvent: " + isAct);
     return true;
   },
 

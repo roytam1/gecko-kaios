@@ -102,6 +102,15 @@ interface nsINfcEventListener : nsISupports
   void notifyMPOSReaderModeEvent(in long eventType);
 
   /**
+   * Callback function used to notify the RF Field event.
+   *
+   * @param isAct
+   *        true: RF field is activated.
+   *        false: RF field is de-activated.
+   */
+  void notifyRfFieldEvent(in boolean isAct);
+
+  /**
    * The window object of this event listener.
    */
   readonly attribute nsIDOMWindow window;

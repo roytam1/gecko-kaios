@@ -908,6 +908,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
 if CONFIG['MOZ_NFC']:
     GENERATED_EVENTS_WEBIDL_FILES += [
         'MozNFCPeerEvent.webidl',
+        'MozNFCRfFieldEvent.webidl',
         'MozNFCTagEvent.webidl',
     ]
 

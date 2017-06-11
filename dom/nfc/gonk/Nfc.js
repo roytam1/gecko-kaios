@@ -162,7 +162,9 @@ const NfcNotificationType = {
   TECH_LOST: "techLost",
   HCI_EVENT_TRANSACTION: "hciEventTransaction",
   NDEF_RECEIVED: "ndefReceived",
-  MPOS_READER_MODE_EVENT: "mPOSReaderModeEvent"
+  MPOS_READER_MODE_EVENT: "mPOSReaderModeEvent",
+  RF_FIELD_ACTIVATED_EVENT: "rfFieldActivateEvent",
+  RF_FIELD_DEACTIVATED_EVENT: "rfFieldDeActivateEvent",
 };
 
 XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
@@ -406,6 +408,52 @@ XPCOMUtils.defineLazyGetter(this, "gMessageManager", function () {
                                 type: message.mPOSReaderModeEvent });
         }
       }
+    },
+
+    isAct: false,
+    pending: false,
+    previous: false,
+    debounceTimer: null,
+
+    debounce: function debounce (callback, wait, immediate) {
+      if (!this.pending) {
+        this.pending = true;
+
+        if (immediate) {
+          callback();
+          return;
+        }
+
+        if (!this.debounceTimer) {
+          this.debounceTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+        }
+        this.debounceTimer.initWithCallback(function(timer) {
+          callback();
+          }, wait, Ci.nsITimer.TYPE_ONE_SHOT);
+      }
+    },
+
+    onRfFieldEvent: function onRfFieldEvent(isAct) {
+      this.isAct = isAct;
+      let self = this;
+      this.debounce(function() {
+
+        if (self.previous != self.isAct) {
+          let tabId = self.getFocusTabId();
+          for (let id in self.eventListeners) {
+            if (id == tabId) {
+              self.notifyDOMEvent( self.eventListeners[id],
+                { tabId: id,
+                  event: self.isAct ?
+                         NFC.RF_FIELD_ACTIVATE_EVENT : NFC.RF_FIELD_DEACTIVATE_EVENT
+                });
+              debug("Fire RfFieldEvent: " + self.isAct + " to tab " + id);
+            }
+          }
+          self.previous = self.isAct;
+        }
+        self.pending = false;
+      }, 250, true);
     },
 
     /**
@@ -735,6 +783,12 @@ Nfc.prototype = {
         break;
       case NfcNotificationType.MPOS_READER_MODE_EVENT:
         gMessageManager.onMPOSReaderModeEvent(message);
+        break;
+      case NfcNotificationType.RF_FIELD_ACTIVATED_EVENT:
+        gMessageManager.onRfFieldEvent(true);
+        break;
+      case NfcNotificationType.RF_FIELD_DEACTIVATED_EVENT:
+        gMessageManager.onRfFieldEvent(false);
         break;
       case NfcNotificationType.NDEF_RECEIVED:
         message.sessionToken = SessionHelper.getToken(message.sessionId);

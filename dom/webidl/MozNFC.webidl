@@ -135,6 +135,8 @@ interface MozNFC : EventTarget {
    * by System app).
    */
   attribute EventHandler ontaglost;
+
+  attribute EventHandler onrffieldevent;
 };
 
 // Mozilla Only

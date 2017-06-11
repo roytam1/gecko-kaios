@@ -419,6 +419,12 @@ NfcContentHelper.prototype = {
       case NFC.MPOS_READER_MODE_EVENT:
         listener.notifyMPOSReaderModeEvent(result.type);
         break;
+      case NFC.RF_FIELD_ACTIVATE_EVENT:
+        listener.notifyRfFieldEvent(true);
+        break;
+      case NFC.RF_FIELD_DEACTIVATE_EVENT:
+        listener.notifyRfFieldEvent(false);
+        break;
     }
   }
 };
