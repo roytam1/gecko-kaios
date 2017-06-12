@@ -425,6 +425,12 @@ NfcContentHelper.prototype = {
       case NFC.RF_FIELD_DEACTIVATE_EVENT:
         listener.notifyRfFieldEvent(false);
         break;
+      case NFC.LISTEN_MODE_ACTIVATE_EVENT:
+        listener.notifyListenModeEvent(true);
+        break;
+      case NFC.LISTEN_MODE_DEACTIVATE_EVENT:
+        listener.notifyListenModeEvent(false);
+        break;
     }
   }
 };

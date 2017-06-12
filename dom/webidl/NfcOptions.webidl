@@ -59,7 +59,9 @@ enum NfcNotificationType {
   "ndefReceived",
   "mPOSReaderModeEvent",
   "rfFieldActivateEvent",
-  "rfFieldDeActivateEvent"
+  "rfFieldDeActivateEvent",
+  "listenModeActivateEvent",
+  "listenModeDeActivateEvent"
 };
 
 /**

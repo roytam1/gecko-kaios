@@ -167,6 +167,8 @@ NfcMessageHandler::ProcessNotification(int32_t aType, const Parcel& aParcel, Eve
       break;
     case NfcNotificationType::RfFieldActivateEvent:
     case NfcNotificationType::RfFieldDeActivateEvent:
+    case NfcNotificationType::ListenModeActivateEvent:
+    case NfcNotificationType::ListenModeDeActivateEvent:
       result = true;
       break;
 

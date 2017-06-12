@@ -111,6 +111,15 @@ interface nsINfcEventListener : nsISupports
   void notifyRfFieldEvent(in boolean isAct);
 
   /**
+   * Callback function used to notify the Listen Mode event.
+   *
+   * @param isAct
+   *        true: Listen mode is activated.
+   *        false: Listen mode is de-activated.
+   */
+  void notifyListenModeEvent(in boolean isAct);
+
+  /**
    * The window object of this event listener.
    */
   readonly attribute nsIDOMWindow window;

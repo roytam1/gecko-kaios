@@ -165,6 +165,8 @@ const NfcNotificationType = {
   MPOS_READER_MODE_EVENT: "mPOSReaderModeEvent",
   RF_FIELD_ACTIVATED_EVENT: "rfFieldActivateEvent",
   RF_FIELD_DEACTIVATED_EVENT: "rfFieldDeActivateEvent",
+  LISTEN_MODE_ACTIVATED_EVENT: "listenModeActivateEvent",
+  LISTEN_MODE_DEACTIVATED_EVENT: "listenModeDeActivateEvent"
 };
 
 XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
@@ -454,6 +456,20 @@ XPCOMUtils.defineLazyGetter(this, "gMessageManager", function () {
         }
         self.pending = false;
       }, 250, true);
+    },
+
+    onListenModeEvent: function onListenModeEvent(isAct) {
+      let tabId = this.getFocusTabId();
+      for (let id in this.eventListeners) {
+        if (id == tabId) {
+          this.notifyDOMEvent(this.eventListeners[id],
+                { tabId: id,
+                  event: isAct ?
+                         NFC.LISTEN_MODE_ACTIVATE_EVENT : NFC.LISTEN_MODE_DEACTIVATE_EVENT
+                });
+          debug("Fire Listen Mode Event: " + isAct + " to tab " + id);
+        }
+      }
     },
 
     /**
@@ -789,6 +805,12 @@ Nfc.prototype = {
         break;
       case NfcNotificationType.RF_FIELD_DEACTIVATED_EVENT:
         gMessageManager.onRfFieldEvent(false);
+        break;
+      case NfcNotificationType.LISTEN_MODE_ACTIVATED_EVENT:
+        gMessageManager.onListenModeEvent(true);
+        break;
+      case NfcNotificationType.LISTEN_MODE_DEACTIVATED_EVENT:
+        gMessageManager.onListenModeEvent(false);
         break;
       case NfcNotificationType.NDEF_RECEIVED:
         message.sessionToken = SessionHelper.getToken(message.sessionId);
