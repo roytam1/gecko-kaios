@@ -364,10 +364,27 @@ SecureElementManager.prototype = {
         },
 
         notifyError: (reason) => {
-          debug("Failed to open the channel to AID : " +
-                SEUtils.byteArrayToHexString(msg.aid) +
-                ", Rejected with Reason : " + reason);
-          callback({ error: SE.ERROR_GENERIC, reason: reason, response: [] });
+          if (gMap.isChannels()) {
+            debug("Failed to open basic channel to AID : " +
+                  SEUtils.byteArrayToHexString(msg.aid) +
+                  ", Rejected with Reason : " + reason);
+            callback({ error: SE.ERROR_GENERIC, reason: reason, response: [] });
+            return;
+          }
+
+          debug("No channel is used, close the secure element connection");
+          // Close the connection if there is no channel used.
+          connector.closeConnection({
+            notifyCloseConnectionSuccess: function () {
+              debug("Close secure element connection successfully");
+              callback({ error: SE.ERROR_GENERIC, reason: reason, response: [] });
+            },
+
+            notifyError: function() {
+              debug("Failed to close secure element connection");
+              callback({ error: SE.ERROR_GENERIC, reason: reason, response: [] });
+            }
+          });
         }
       });
     })
@@ -416,10 +433,26 @@ SecureElementManager.prototype = {
         },
 
         notifyError: (reason) => {
-          debug("Failed to open the channel to AID : " +
-                SEUtils.byteArrayToHexString(msg.aid) +
-                ", Rejected with Reason : " + reason);
-          callback({ error: SE.ERROR_GENERIC, reason: reason, response: [] });
+          if (gMap.isChannels()) {
+            debug("Failed to open basic channel to AID : " +
+                  SEUtils.byteArrayToHexString(msg.aid) +
+                  ", Rejected with Reason : " + reason);
+            callback({ error: SE.ERROR_GENERIC, reason: reason, response: [] });
+            return;
+          }
+          debug("No channel is used, close the secure element connection");
+          // Close the connection if there is no channel used.
+          connector.closeConnection({
+            notifyCloseConnectionSuccess: function () {
+              debug("Close secure element connection successfully");
+              callback({ error: SE.ERROR_GENERIC, reason: reason, response: [] });
+            },
+
+            notifyError: function() {
+              debug("Failed to close secure element connection");
+              callback({ error: SE.ERROR_GENERIC, reason: reason, response: [] });
+            }
+          });
         }
       });
     })
