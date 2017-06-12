@@ -284,9 +284,18 @@ this.PushService = {
         break;
       case "network-active-changed":         /* On B2G. */
       case "network:offline-status-changed": /* On desktop. */
-        this._stateChangeProcessEnqueue(_ =>
-          this._changeStateOfflineEvent(aData === "offline", false)
-        );
+        this._stateChangeProcessEnqueue(_ => {
+          let activeNetworkInfo = aSubject;
+          let offline = false;
+          if (!activeNetworkInfo) {
+            offline = true;
+          } else {
+            activeNetworkInfo = activeNetworkInfo.QueryInterface(Ci.nsINetworkInfo);
+            offline =
+              activeNetworkInfo.state != Ci.nsINetworkInfo.NETWORK_STATE_CONNECTED;
+          }
+          this._changeStateOfflineEvent(offline, false);
+        });
         break;
 
       case "nsPref:changed":
