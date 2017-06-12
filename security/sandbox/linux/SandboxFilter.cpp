@@ -522,6 +522,9 @@ public:
       // Workaround for bug 964455:
       return Error(EINVAL);
 
+    case __NR_ioprio_set:
+      return Allow();
+
     CASES_FOR_select:
     case __NR_pselect6:
       return Allow();
