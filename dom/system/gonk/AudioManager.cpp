@@ -1342,6 +1342,12 @@ AudioManager::SelectDeviceFromDevices(uint32_t aOutDevices)
 {
   uint32_t device = aOutDevices;
 
+  //Consider force use speaker case.
+  int32_t force = AudioSystem::getForceUse((audio_policy_force_use_t)nsIAudioManager::USE_MEDIA);
+  if (force == nsIAudioManager::FORCE_SPEAKER) {
+    device = AUDIO_DEVICE_OUT_SPEAKER;
+  }
+
   // See android AudioService.getDeviceForStream().
   // AudioPolicyManager expects it.
   // See also android AudioPolicyManager::getDeviceForVolume().
