@@ -16,6 +16,8 @@ const Cu = Components.utils;
 const POSITION_UNAVAILABLE = Ci.nsIDOMGeoPositionError.POSITION_UNAVAILABLE;
 const SETTINGS_DEBUG_ENABLED = "geolocation.debugging.enabled";
 const SETTINGS_CHANGED_TOPIC = "mozsettings-changed";
+const NETWORK_CHANGED_TOPIC = "network-active-changed";
+
 const SETTINGS_WIFI_ENABLED = "wifi.enabled";
 const GEO_KAI_ACCESS_TOKEN = "geolocation.kaios.accessToken";
 const GEO_KAI_ACCESS_TOKEN_TIMESTAMP = "geolocation.kaios.accessTokenTimestamp";
@@ -284,20 +286,45 @@ WifiGeoPositionProvider.prototype = {
   listener: null,
 
   observe: function(aSubject, aTopic, aData) {
-    if (aTopic != SETTINGS_CHANGED_TOPIC) {
-      return;
-    }
-
-    try {
-      if ("wrappedJSObject" in aSubject) {
-        aSubject = aSubject.wrappedJSObject;
+    switch (aTopic) {
+    case SETTINGS_CHANGED_TOPIC:
+      try {
+        if ("wrappedJSObject" in aSubject) {
+          aSubject = aSubject.wrappedJSObject;
+        }
+        if (aSubject.key == SETTINGS_DEBUG_ENABLED) {
+          gLoggingEnabled = aSubject.value;
+        } else if (aSubject.key == SETTINGS_WIFI_ENABLED) {
+          gWifiScanningEnabled = aSubject.value;
+          if (this.wifiService) {
+            this.wifiService.stopWatching(this);
+            this.wifiService = null;
+          }
+          if (gWifiScanningEnabled && this.hasNetwork) {
+            this.wifiService = Cc["@mozilla.org/wifi/monitor;1"].getService(Ci.nsIWifiMonitor);
+            this.wifiService.startWatching(this);
+          }
+        }
+      } catch (e) {}
+      break;
+    case NETWORK_CHANGED_TOPIC:
+      // aSubject will be a nsINetworkInfo if network is connected,
+      // otherwise, aSubject should be null.
+      if (aSubject) {
+        this.hasNetwork = true;
+        if (gWifiScanningEnabled && !this.wifiService) {
+          this.wifiService = Cc["@mozilla.org/wifi/monitor;1"].getService(Ci.nsIWifiMonitor);
+          this.wifiService.startWatching(this);
+        }
+        this.resetTimer();
+      } else {
+        this.hasNetwork = false;
+        if (this.wifiService) {
+          this.wifiService.stopWatching(this);
+          this.wifiService = null;
+        }
       }
-      if (aSubject.key == SETTINGS_DEBUG_ENABLED) {
-        gLoggingEnabled = aSubject.value;
-      } else if (aSubject.key == SETTINGS_WIFI_ENABLED) {
-        gWifiScanningEnabled = aSubject.value;
-      }
-    } catch (e) {
+      break;
     }
   },
 
@@ -306,6 +333,12 @@ WifiGeoPositionProvider.prototype = {
       this.timer.cancel();
       this.timer = null;
     }
+
+    // Stop the timer if network is not available
+    if (!this.hasNetwork) {
+      return;
+    }
+
     // wifi thread triggers WifiGeoPositionProvider to proceed, with no wifi, do manual timeout
     this.timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
     this.timer.initWithCallback(this,
@@ -316,6 +349,15 @@ WifiGeoPositionProvider.prototype = {
   startup:  function() {
     if (this.started)
       return;
+
+    // Check whether there are any active network
+    let nm = Cc["@mozilla.org/network/manager;1"].getService(Ci.nsINetworkManager);
+    if (nm && nm.activeNetworkInfo) {
+      this.hasNetwork = true;
+    } else {
+      this.hasNetwork = false;
+      LOG("startup: has no active network.");
+    }
 
     this.started = true;
     let self = this;
@@ -329,8 +371,9 @@ WifiGeoPositionProvider.prototype = {
           gWifiScanningEnabled = result;
           if (self.wifiService) {
             self.wifiService.stopWatching(self);
+            self.wifiService = null;
           }
-          if (gWifiScanningEnabled) {
+          if (gWifiScanningEnabled && this.hasNetwork) {
             self.wifiService = Cc["@mozilla.org/wifi/monitor;1"].getService(Ci.nsIWifiMonitor);
             self.wifiService.startWatching(self);
           }
@@ -348,6 +391,8 @@ WifiGeoPositionProvider.prototype = {
     };
 
     Services.obs.addObserver(this, SETTINGS_CHANGED_TOPIC, false);
+    Services.obs.addObserver(this, NETWORK_CHANGED_TOPIC, false);
+
     let settingsService = Cc["@mozilla.org/settingsService;1"];
     if (settingsService) {
       let settings = settingsService.getService(Ci.nsISettingsService);
@@ -360,14 +405,6 @@ WifiGeoPositionProvider.prototype = {
         settings.createLock().get(GEO_KAI_ACCESS_TOKEN, settingsCallback);
         settings.createLock().get(GEO_KAI_ACCESS_TOKEN_TIMESTAMP, settingsCallback);
       }
-    }
-
-    if (gWifiScanningEnabled && Cc["@mozilla.org/wifi/monitor;1"]) {
-      if (this.wifiService) {
-        this.wifiService.stopWatching(this);
-      }
-      this.wifiService = Cc["@mozilla.org/wifi/monitor;1"].getService(Ci.nsIWifiMonitor);
-      this.wifiService.startWatching(this);
     }
 
     this.resetTimer();
@@ -399,6 +436,7 @@ WifiGeoPositionProvider.prototype = {
     }
 
     Services.obs.removeObserver(this, SETTINGS_CHANGED_TOPIC);
+    Services.obs.removeObserver(this, NETWORK_CHANGED_TOPIC);
 
     this.listener = null;
     this.started = false;
@@ -407,8 +445,8 @@ WifiGeoPositionProvider.prototype = {
   setHighAccuracy: function(enable) {
   },
 
+  // nsIWifiListener.onChange
   onChange: function(accessPoints) {
-
     // we got some wifi data, rearm the timer.
     this.resetTimer();
 
@@ -437,6 +475,7 @@ WifiGeoPositionProvider.prototype = {
     this.sendLocationRequest(wifiData);
   },
 
+  // nsIWifiListener.onError
   onError: function (code) {
     LOG("wifi error: " + code);
     this.sendLocationRequest(null);
@@ -478,7 +517,7 @@ WifiGeoPositionProvider.prototype = {
               radioTechFamily = "lte";
               break;
             // CDMA cases to be handled in bug 1010282
-          };
+          }
           result.push({ radioType: radioTechFamily,
                       mobileCountryCode: voice.network.mcc,
                       mobileNetworkCode: voice.network.mnc,
@@ -492,7 +531,17 @@ WifiGeoPositionProvider.prototype = {
     }
   },
 
+  // nsITimerCallback.notify
   notify: function (timer) {
+    if (!this.hasNetwork) {
+      // Cancel the timer if network is not available
+      if (this.timer) {
+        this.timer.cancel();
+        this.timer = null;
+      }
+      return;
+    }
+
     this.sendLocationRequest(null);
   },
 
@@ -582,6 +631,11 @@ WifiGeoPositionProvider.prototype = {
     if (useCached) {
       gCachedRequest.location.timestamp = Date.now();
       this.notifyListener("update", [gCachedRequest.location]);
+      return;
+    }
+
+    // early return if none of data is available
+    if (!data.cellTowers && !data.wifiAccessPoints) {
       return;
     }
 
