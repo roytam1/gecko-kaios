@@ -509,7 +509,7 @@ function* execute(script, args, timeout, opts) {
   opts.timeout = timeout;
   script = importedScripts.for("content").concat(script);
 
-  let sb = sandbox.createMutable(curContainer.frame);
+  let sb = sandboxes.get(opts.sandboxName, opts.newSandbox);
   let wargs = elementManager.convertWrappedArguments(args, curContainer);
   let res = yield evaluate.sandbox(sb, script, wargs, opts);
 
