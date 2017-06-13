@@ -88,6 +88,7 @@ const NETWORK_INTERFACE_DOWN = "down";
 const DEFAULT_WLAN_INTERFACE = "wlan0";
 
 const SUPP_PROP = "init.svc.wpa_supplicant";
+const P2P_PROP = "init.svc.p2p_supplicant";
 const WPA_SUPPLICANT = "wpa_supplicant";
 const DHCP_PROP = "init.svc.dhcpcd";
 const DHCP = "dhcpcd";
@@ -1043,7 +1044,11 @@ var WifiManager = (function() {
     // phones, stopSupplicant won't work for a supplicant that we didn't
     // start, so we hand-roll it here.
     function tryStopSupplicant () {
-      let status = libcutils.property_get(SUPP_PROP);
+      let status;
+      if (p2pSupported)
+        status = libcutils.property_get(P2P_PROP);
+      else
+        status = libcutils.property_get(SUPP_PROP);
       if (status !== "running") {
         callback();
         return;

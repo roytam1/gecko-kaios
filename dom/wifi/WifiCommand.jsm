@@ -13,7 +13,9 @@ const {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
 Cu.import("resource://gre/modules/systemlibs.js");
 
 const SUPP_PROP = "init.svc.wpa_supplicant";
+const P2P_PROP  = "init.svc.p2p_supplicant";
 const WPA_SUPPLICANT = "wpa_supplicant";
+const P2P_SUPPLICANT = "p2p_supplicant";
 const DEBUG = false;
 
 this.WifiCommand = function(aControlMessage, aInterface, aSdkVersion) {
@@ -58,7 +60,10 @@ this.WifiCommand = function(aControlMessage, aInterface, aSdkVersion) {
     // changed that function in a way that means that it doesn't recognize
     // wpa_supplicant as already running. Therefore, we have to roll our own
     // version here.
-    stopProcess(SUPP_PROP, WPA_SUPPLICANT, callback);
+    if (libcutils.property_get("ro.moz.wifi.p2p_supported") === "1")
+      stopProcess(P2P_PROP, P2P_SUPPLICANT, callback);
+    else
+      stopProcess(SUPP_PROP, WPA_SUPPLICANT, callback);
   };
 
   command.terminateSupplicant = function (callback) {
