@@ -589,9 +589,11 @@ opensl_stream_init(cubeb * ctx, cubeb_stream ** stream, char const * stream_name
   const SLboolean req[] = {SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE};
 #endif
   assert(NELEMS(ids) == NELEMS(req));
-
   uint32_t preferred_sampling_rate = stm->inputrate;
-#if defined(__ANDROID__)
+
+// Because of the limitation of HW resources, we prevent using low audio
+// latency. That could trigger FastMixer thread and consume more CPU.
+#if defined(__ANDROID__) && !defined(NOT_USE_MIN_LATENCY)
   if (get_android_version() >= ANDROID_VERSION_MARSHMALLOW) {
     // Reset preferred samping rate to trigger fallback to native sampling rate.
     preferred_sampling_rate = 0;
