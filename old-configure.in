@@ -119,6 +119,10 @@ if test -n "$ENABLE_REVERIE_RT9"; then
 fi
 AC_SUBST(ENABLE_REVERIE_RT9)
 
+if test -n "$ENABLE_NUANCE_XT9" -a -n "$ENABLE_REVERIE_RT9" ; then
+  AC_MSG_ERROR([Cannot enable ENABLE_REVERIE_RT9 and ENABLE_NUANCE_XT9 at the same time])
+fi
+
 if test -n "$gonkdir" ; then
     dnl export for js/src/configure. We can't pass the option down normally,
     dnl because it's a `--enable-project=b2g`-only option.
