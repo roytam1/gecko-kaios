@@ -65,14 +65,11 @@ this.KaiAccountsManager = {
     }
   },
 
-  _error: function(aError, aDetails) {
-    log.error(aError);
+  _error: function(aErrorString) {
+    log.error(aErrorString);
     let reason = {
-      error: aError
+      error: aErrorString
     };
-    if (aDetails) {
-      reason.details = aDetails;
-    }
     return Promise.reject(reason);
   },
 
@@ -86,7 +83,7 @@ this.KaiAccountsManager = {
 
   _serverError: function(aServerResponse) {
     let error = this._getError({ error: aServerResponse });
-    return this._error(error ? error : ERROR_SERVER_ERROR, aServerResponse);
+    return this._error(error ? error : ERROR_SERVER_ERROR);
   },
 
   // As with _kaiAccounts, we don't really need this method, but this way we
@@ -121,9 +118,7 @@ this.KaiAccountsManager = {
         let error = this._getError(user);
 
         if (!user || !user.kid || !user.refresh_token || error) {
-          return this._error(error ? error : ERROR_INTERNAL_INVALID_USER, {
-            user: user
-          });
+          return this._error(error ? error : ERROR_INTERNAL_INVALID_USER);
         }
 
         // If the user object includes an email field, it may differ in
@@ -170,9 +165,7 @@ this.KaiAccountsManager = {
         let error = this._getError(user);
 
         if (!user || !user.id || !user.email || error) {
-          return this._error(error ? error : ERROR_INTERNAL_INVALID_USER, {
-            user: user
-          });
+          return this._error(error ? error : ERROR_INTERNAL_INVALID_USER);
         }
 
         // If the user object includes an email field, it may differ in
@@ -287,7 +280,7 @@ this.KaiAccountsManager = {
             result => {
               let error = this._getError(result);
               if (error) {
-                return this._error(error, result);
+                return this._error(error);
               }
               log.debug("Signed out");
               return Promise.resolve();
@@ -323,12 +316,10 @@ this.KaiAccountsManager = {
           return this._getAssertion(aAudience, aPrincipal);
         }
 
-        return this._error(ERROR_UNVERIFIED_ACCOUNT, {
-          user: result
-        });
+        return this._error(ERROR_UNVERIFIED_ACCOUNT);
       },
       error => {
-        return this._error(ERROR_UI_ERROR, error);
+        return this._error(ERROR_UI_ERROR);
       }
     );
   },
@@ -376,7 +367,7 @@ this.KaiAccountsManager = {
         return result;
       },
       (error) => {
-        return this._error(ERROR_SERVER_ERROR, error);
+        return this._error(ERROR_SERVER_ERROR);
       }
     );
   },
@@ -426,7 +417,7 @@ this.KaiAccountsManager = {
         log.debug("Account " + result ? "" : "does not" + " exists");
         let error = this._getError(result);
         if (error) {
-          return this._error(error, result);
+          return this._error(error);
         }
 
         return Promise.resolve({
@@ -477,9 +468,7 @@ this.KaiAccountsManager = {
         if (user) {
           // Three have-user cases to consider. First: are we unverified?
           if (!user.verified) {
-            return this._error(ERROR_UNVERIFIED_ACCOUNT, {
-              user: user
-            });
+            return this._error(ERROR_UNVERIFIED_ACCOUNT);
           }
           // Second case: do we need to refresh?
           if (aOptions &&
