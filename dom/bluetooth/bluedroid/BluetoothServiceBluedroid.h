@@ -556,6 +556,9 @@ protected:
   // <address, name> mapping table for remote devices
   nsDataHashtable<BluetoothAddressHashKey, BluetoothRemoteName> mDeviceNameMap;
 
+  // <address, cod> mapping table for remote devices
+  nsDataHashtable<BluetoothAddressHashKey, uint32_t> mDeviceCodMap;
+
   // Arrays for SDP operations
   nsTArray<GetRemoteServiceRecordRequest> mGetRemoteServiceRecordArray;
   nsTArray<GetRemoteServicesRequest> mGetRemoteServicesArray;

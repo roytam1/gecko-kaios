@@ -2197,6 +2197,7 @@ BluetoothServiceBluedroid::AdapterStateChangedNotification(bool aState)
     mCreateBondRunnables.Clear();
     mRemoveBondRunnables.Clear();
     mDeviceNameMap.Clear();
+    mDeviceCodMap.Clear();
 
     // Bluetooth scan mode is SCAN_MODE_CONNECTABLE by default, i.e., it should
     // be connectable and non-discoverable.
@@ -2531,6 +2532,10 @@ BluetoothServiceBluedroid::PinRequestNotification(
     mDeviceNameMap.Put(aRemoteBdAddr, bdName);
   }
 
+  // Update <address, cod> mapping
+  mDeviceCodMap.Remove(aRemoteBdAddr);
+  mDeviceCodMap.Put(aRemoteBdAddr, aCod);
+
   AppendNamedValue(propertiesArray, "address", aRemoteBdAddr);
   AppendNamedValue(propertiesArray, "name", bdName);
   AppendNamedValue(propertiesArray, "passkey", EmptyString());
@@ -2566,6 +2571,10 @@ BluetoothServiceBluedroid::SspRequestNotification(
     mDeviceNameMap.Remove(aRemoteBdAddr);
     mDeviceNameMap.Put(aRemoteBdAddr, bdName);
   }
+
+  // Update <address, cod> mapping
+  mDeviceCodMap.Remove(aRemoteBdAddr);
+  mDeviceCodMap.Put(aRemoteBdAddr, aCod);
 
   /**
    * Assign pairing request type and passkey based on the pairing variant.
@@ -2641,10 +2650,6 @@ BluetoothServiceBluedroid::BondStateChangedNotification(
     return;
   }
 
-  // Query pairing device name from hash table
-  BluetoothRemoteName remotebdName;
-  mDeviceNameMap.Get(aRemoteBdAddr, &remotebdName);
-
   // Update bonded address array and append pairing device name
   InfallibleTArray<BluetoothNamedValue> propertiesArray;
   if (!bonded) {
@@ -2654,11 +2659,20 @@ BluetoothServiceBluedroid::BondStateChangedNotification(
       mBondedAddresses.AppendElement(aRemoteBdAddr);
     }
 
+    // Query pairing device name from hash table
+    BluetoothRemoteName remotebdName;
+    mDeviceNameMap.Get(aRemoteBdAddr, &remotebdName);
+
     // We don't assert |!remotebdName.IsEmpty()| since empty string is also
     // valid, according to Bluetooth Core Spec. v3.0 - Sec. 6.22:
     // "a valid Bluetooth name is a UTF-8 encoding string which is up to 248
     // bytes in length."
     AppendNamedValue(propertiesArray, "Name", remotebdName);
+
+    // Use the cached CoD which is got from pairing request
+    uint32_t remoteCod = 0;
+    mDeviceCodMap.Get(aRemoteBdAddr, &remoteCod);
+    AppendNamedValue(propertiesArray, "Cod", remoteCod);
   }
 
   // Notify device of attribute changed
