@@ -267,10 +267,7 @@ this.Keyboard = {
       case 'Forms:SetSelectionRange:Result:Error':
       case 'Forms:ReplaceSurroundingText:Result:Error':
         let name = msg.name.replace(/^Forms/, 'Keyboard');
-        this.forwardEvent(name, msg).then(() => {
-        }, (reason) => {
-          dump("Keyboard.jsm Error: " + reason);
-        });
+        this.forwardEvent(name, msg);
         break;
       case 'System:SetValue':
         this.setValue(msg);
@@ -371,11 +368,13 @@ this.Keyboard = {
     let appManifest = msg.target.appManifestURL;
     msg.data.isFromApp = appManifest !== '' ? true : false;
 
-    // Notify the current active input app to gain focus.
-    this.forwardEvent('Keyboard:Focus', msg).then(() => {
+    function sendNotify(self, msg) {
+      // Notify the current active input app to gain focus.
+      self.forwardEvent('Keyboard:Focus', msg);
+
       // Notify System app, used also to render value selectors for now;
       // that's why we need the info about choices / min / max here as well...
-      this.sendToSystem('System:Focus', msg.data);
+      self.sendToSystem('System:Focus', msg.data);
 
       // XXX: To be removed when content migrate away from mozChromeEvents.
       SystemAppProxy.dispatchEvent({
@@ -386,8 +385,16 @@ this.Keyboard = {
         min: msg.data.min,
         max: msg.data.max
       });
-    }, (reason) => {
-      dump("Keyboard.jsm Error: handleFocus is rejected by: " + reason);
+    }
+
+    if (!appManifest || !appManifest.length) {
+      sendNotify(this, msg);
+      return;
+    }
+
+    appsService.getManifestFor(appManifest).then((manifest) => {
+      msg.data.defaultSoftkeyBar = manifest.ime_default_softkey_bar === true;
+      sendNotify(this, msg);
     });
   },
 
@@ -408,39 +415,32 @@ this.Keyboard = {
     // unset formMM
     this.formMM = null;
 
-    this.forwardEvent('Keyboard:Blur', msg).then(() => {
-      this.sendToSystem('System:Blur', {});
+    this.forwardEvent('Keyboard:Blur', msg);
+    this.sendToSystem('System:Blur', {});
 
-      // XXX: To be removed when content migrate away from mozChromeEvents.
-      SystemAppProxy.dispatchEvent({
-        type: 'inputmethod-contextchange',
-        inputType: 'blur'
-      });
-    }, (reason) => {
-      dump("Keyboard.jsm Error: handleBlur is rejected by: " + reason);
+    // XXX: To be removed when content migrate away from mozChromeEvents.
+    SystemAppProxy.dispatchEvent({
+      type: 'inputmethod-contextchange',
+      inputType: 'blur'
     });
   },
 
   forwardEvent: function keyboardForwardEvent(newEventName, msg) {
-    let shouldGetAppManifest = false;
     if (newEventName === 'Keyboard:GetContext:Result:OK') {
       let appManifest = msg.target.appManifestURL;
       msg.data.isFromApp = appManifest !== '' ? true : false;
-      if (appManifest && appManifest.length) {
-        shouldGetAppManifest = true;
-      }
-    }
 
-    if (shouldGetAppManifest) {
-      return appsService.getManifestFor(appManifest).then((manifest) => {
+      if (!appManifest || !appManifest.length) {
+        this.sendToKeyboard(newEventName, msg.data);
+        return;
+      }
+
+      appsService.getManifestFor(appManifest).then((manifest) => {
         msg.data.defaultSoftkeyBar = manifest.ime_default_softkey_bar === true;
         this.sendToKeyboard(newEventName, msg.data);
-      }, (reason) => {
-        return Promise.reject('Failed in appsService.getManifestFor.')
       });
     } else {
       this.sendToKeyboard(newEventName, msg.data);
-      return Promise.resolve(newEventName + ' has sent to Keyboard.');
     }
   },
 
