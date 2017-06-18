@@ -183,36 +183,6 @@ SEReaderImpl.prototype = {
     }, this);
   },
 
-  lsExecuteScript: function lsExecuteScript(appletScriptFile, responseFile) {
-    return PromiseHelpers.createSEPromise((resolverId) => {
-      /**
-       * @params for 'SE:LsExecuteScript'
-       *
-       * resolverId  : Id that identifies this IPC request.
-       */
-      let uniqueAppID;
-      cpmm.sendAsyncMessage("SE:LsExecuteScript", {
-        resolverId: resolverId,
-        appletScriptFile: appletScriptFile,
-        responseFile: responseFile,
-        uniqueAppID: uniqueAppID
-      });
-    }, this);
-  },
-
-  lsGetVersion: function lsGetVersion() {
-    return PromiseHelpers.createSEPromise((resolverId) => {
-      /**
-       * @params for 'SE:LsGetVersion'
-       *
-       * resolverId  : Id that identifies this IPC request.
-       */
-      cpmm.sendAsyncMessage("SE:LsGetVersion", {
-        resolverId: resolverId
-      });
-    }, this);
-  },
-
   updateSEPresence: function updateSEPresence(isSEPresent) {
     if (!isSEPresent) {
       this.invalidate();
@@ -588,8 +558,6 @@ SEManagerImpl.prototype = {
                       "SE:TransmitAPDUResolved",
                       "SE:ResetSecureElementResolved",
                       "SE:GetAtrResolved",
-                      "SE:LsExecuteScriptResolved",
-                      "SE:LsGetVersionResolved",
                       "SE:GetSEReadersRejected",
                       "SE:OpenChannelRejected",
                       "SE:OpenBasicChannelRejected",
@@ -597,8 +565,6 @@ SEManagerImpl.prototype = {
                       "SE:TransmitAPDURejected",
                       "SE:ResetSecureElementRejected",
                       "SE:GetAtrRejected",
-                      "SE:LsExecuteScriptRejected",
-                      "SE:LsGetVersionRejected",
                       "SE:ReaderPresenceChanged"];
 
     this.initDOMRequestHelper(win, messages);
@@ -712,20 +678,6 @@ SEManagerImpl.prototype = {
         this._window.SEResponse._create(this._window, atrResponse);
         resolver.resolve(atrResponse.__DOM_IMPL__);
         break;
-      case "SE:LsExecuteScriptResolved":
-        debug("SE:LsExecuteScriptResolved: " + JSON.stringify(result.response));
-        let lsExecuteScript = new SEResponseImpl();
-        lsExecuteScript.initialize(0, 0, result.response, context);
-        this._window.SEResponse._create(this._window, lsExecuteScript);
-        resolver.resolve(lsExecuteScript.__DOM_IMPL__);
-        break;
-      case "SE:LsGetVersionResolved":
-        debug("SE:LsGetVersionResolved: " + JSON.stringify(result.response));
-        let lsGetVersion = new SEResponseImpl();
-        lsGetVersion.initialize(0, 0, result.response, context);
-        this._window.SEResponse._create(this._window, lsGetVersion);
-        resolver.resolve(lsGetVersion.__DOM_IMPL__);
-        break;
       case "SE:GetSEReadersRejected":
       case "SE:OpenChannelRejected":
       case "SE:OpenBasicChannelRejected":
@@ -733,8 +685,6 @@ SEManagerImpl.prototype = {
       case "SE:TransmitAPDURejected":
       case "SE:ResetSecureElementRejected":
       case "SE:GetAtrRejected":
-      case "SE:LsExecuteScriptRejected":
-      case "SE:LsGetVersionRejected":
         let error = new SEError(result.error, result.reason);
         resolver.reject(Cu.cloneInto(error, this._window));
         break;

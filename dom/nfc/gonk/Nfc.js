@@ -19,6 +19,7 @@
 
 const {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
 
+Cu.import("resource://gre/modules/FileUtils.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
@@ -29,6 +30,9 @@ XPCOMUtils.defineLazyServiceGetter(this, "gSettingsService",
 XPCOMUtils.defineLazyModuleGetter(this, "SEUtils",
                                   "resource://gre/modules/SEUtils.jsm");
 
+XPCOMUtils.defineLazyModuleGetter(this, "DOMApplicationRegistry",
+                                  "resource://gre/modules/Webapps.jsm");
+
 XPCOMUtils.defineLazyGetter(this, "NFC", function () {
   let obj = {};
   Cu.import("resource://gre/modules/nfc_consts.js", obj);
@@ -37,7 +41,8 @@ XPCOMUtils.defineLazyGetter(this, "NFC", function () {
 
 Cu.import("resource://gre/modules/systemlibs.js");
 const NFC_ENABLED = libcutils.property_get("ro.moz.nfc.enabled", "false") === "true";
-
+const LOADER_SERVICE_TMP = "/data/nfc/";
+const LOADER_SERVICE_SD = "/storage/emulated/";
 // set to true in nfc_consts.js to see debug messages
 var DEBUG = NFC.DEBUG_NFC;
 
@@ -633,6 +638,7 @@ function Nfc(isXPCShell) {
   }
 
   this.targetsByRequestId = {};
+  this.outputPathByRequestId = {};
 }
 
 Nfc.prototype = {
@@ -651,6 +657,8 @@ Nfc.prototype = {
   nfcService: null,
 
   targetsByRequestId: null,
+
+  outputPathByRequestId: null,
 
   // temporary variables while NFC initialization is pending
   pendingNfcService: null,
@@ -726,6 +734,17 @@ Nfc.prototype = {
     delete this.targetsByRequestId[requestId];
 
     return target;
+  },
+
+  getPathByRequestId: function getPathByRequestId(requestId) {
+    let path = this.outputPathByRequestId[requestId];
+    if (!path) {
+      debug("No path for requestId: " + requestId);
+      return null;
+    }
+    delete this.outputPathByRequestId[requestId];
+
+    return path;
   },
 
   /**
@@ -984,7 +1003,7 @@ Nfc.prototype = {
              .getService(Ci.nsIUUIDGenerator).generateUUID().toString();
   },
 
-  _hexStringToUint8Array: function _hexStringToUint8Array(hexStr) {
+  _hexStringToUint8Array: function(hexStr) {
     if (typeof hexStr !== "string" || hexStr.length % 2 !== 0) {
       return [];
     }
@@ -999,8 +1018,22 @@ Nfc.prototype = {
     return array;
   },
 
+  _uint8ArrayToHexString: function(array) {
+    let hexStr = "";
 
-  openConnection: function openConnection(callback) {
+    let len = array ? array.length : 0;
+    for (let i = 0; i < len; i++) {
+      let hex = (array[i] & 0xff).toString(16);
+      hex = (hex.length === 1) ? "0" + hex : hex;
+      hexStr += hex;
+    }
+
+    return hexStr.toUpperCase();
+  },
+
+
+
+  openConnection: function(callback) {
     let command = CommandMsgTable["NFC:OpenConnection"];
     if (!command) {
       debug("Unknown message");
@@ -1017,7 +1050,7 @@ Nfc.prototype = {
     this.sendToNfcService(command, message);
   },
 
-  openConnectionResponse: function openConnection(message) {
+  openConnectionResponse: function(message) {
     let callback = this.getTargetByRequestId(message.requestId);
     if (!callback) {
       debug("openConnectionResponse: can't find callback");
@@ -1034,7 +1067,7 @@ Nfc.prototype = {
     callback.notifyOpenConnectionSuccess(message.handle);
   },
 
-  transmit: function transmit(handle, data, callback) {
+  transmit: function(handle, data, callback) {
     let command = CommandMsgTable["NFC:Transmit"];
     if (!command) {
       debug("Unknown message");
@@ -1053,7 +1086,7 @@ Nfc.prototype = {
     this.sendToNfcService(command, message);
   },
 
-  transmitResponse: function transmitResponse(message) {
+  transmitResponse: function(message) {
     let callback = this.getTargetByRequestId(message.requestId);
     if (!callback) {
       debug("TransmitResponse: can't find callback");
@@ -1075,7 +1108,7 @@ Nfc.prototype = {
     callback.notifyTransmitResponse(message.apduResponse);
   },
 
-  closeConnection: function closeConnection(handle, callback) {
+  closeConnection: function(handle, callback) {
     let command = CommandMsgTable["NFC:CloseConnection"];
     if (!command) {
       debug("Unknown message");
@@ -1093,7 +1126,7 @@ Nfc.prototype = {
     this.sendToNfcService(command, message);
   },
 
-  closeConnectionResponse: function closeConnectionResponse(message) {
+  closeConnectionResponse: function(message) {
     let callback = this.getTargetByRequestId(message.requestId);
     if (!callback) {
       debug("closeConnectionResponse: can't find callback");
@@ -1128,7 +1161,7 @@ Nfc.prototype = {
     this.sendToNfcService(command, message);
   },
 
-  resetSecureElementResponse: function resetSecureElement(message)
+  resetSecureElementResponse: function(message)
   {
     let callback = this.getTargetByRequestId(message.requestId);
     if (!callback) {
@@ -1165,7 +1198,7 @@ Nfc.prototype = {
 
   },
 
-  getAtrResponse: function getAtrResponse(message)
+  getAtrResponse: function(message)
   {
     let callback = this.getTargetByRequestId(message.requestId);
     if (!callback) {
@@ -1189,28 +1222,110 @@ Nfc.prototype = {
     callback.notifyGetAtrSuccess(message.response);
   },
 
+  _copyFile: function(sourcePath, destPath, fileNewName, callback) {
+    debug('copyFile: ' + sourcePath + ' destPath: ' + destPath + ' fileName:' + fileNewName);
+
+    let sourcefile = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+    sourcefile.initWithPath(sourcePath);
+
+    let destfile = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+    destfile.initWithPath(destPath);
+
+    let dest = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+    dest.initWithPath(destPath + fileNewName);
+
+    if (dest.exists()) {
+      dest.remove(false);
+    }
+
+    let cbData = {};
+    cbData['processState'] = 'process-finished';
+    try {
+      sourcefile.copyTo(destfile, fileNewName);
+    }
+    catch (e) {
+      debug("_copyFile: error: " + e.result);
+      cbData['processState'] = 'process-failed';
+      if(e.result == Cr.NS_ERROR_FILE_TARGET_DOES_NOT_EXIST) {
+        cbData['errorType'] = 'SourceFileNotExist';
+      } else {
+        cbData['errorType'] = 'DefaultError';
+      }
+    }
+    finally {
+      callback(cbData);
+    }
+  },
+
   lsExecuteScript: function(msg, callback) {
     let command = CommandMsgTable["NFC:LsExecuteScript"];
     if (!command) {
       debug("Unknown message");
       return null;
     }
+    let self = this;
 
-    let message = {
-      requestId: this._getRandomId(),
-      lsScriptFile: msg.appletScriptFile,
-      lsResponseFile: msg.responseFile,
-      uniqueApplicationID: msg.uniqueAppID
-    };
+    let fullScriptFileName = msg.appletScriptFile;
+    let regx = /^\/$|(^(?=\/)|^\.|^\.\.)(\/(?=[^/\0])[^/\0]+)*\/?$/;
+    let valid = regx.test(fullScriptFileName);
+    if (!valid) {
+      callback.notifyError("Invalid script file name");
+      return null;
+    }
 
-    this.targetsByRequestId[message.requestId] = callback;
+    let fullResponseFileName = msg.responseFile;
+    valid = regx.test(fullResponseFileName);
+    if (!valid) {
+      callback.notifyError("Invalid script file name");
+      return null;
+    }
 
-    debug("lsExecuteScript: send message to nfcd " + JSON.stringify(message));
-    this.sendToNfcService(command, message);
+    let lastSlashIndex = fullScriptFileName.lastIndexOf('/');
+    let scriptFileName = fullScriptFileName.substr(lastSlashIndex + 1);
 
+    lastSlashIndex = fullResponseFileName.lastIndexOf('/');
+    let responseFileName = fullResponseFileName.substr(lastSlashIndex + 1);
+
+    let dstDir = LOADER_SERVICE_TMP;
+
+    // Create the response file in LOADER_SERVICE_TMP
+    let destFile = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+    destFile.initWithPath(dstDir + responseFileName);
+    if (!destFile.exists()) {
+      destFile.create(Ci.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_DIRECTORY);
+    }
+
+    // Copy the applet file
+    this._copyFile(fullScriptFileName, dstDir, scriptFileName, function(data) {
+      let manifestURL = DOMApplicationRegistry.getManifestURLByLocalId(msg.uniqueAppID);
+      // Remove app:// from url.
+      var removeProtocol = manifestURL.substr(6);
+      // Get the first index of '/'.
+      var end = removeProtocol.indexOf('/');
+      var manifest = removeProtocol.substr(0, end);
+
+      let message = {
+        requestId: self._getRandomId(),
+        lsScriptFile: dstDir + scriptFileName,
+        lsResponseFile: dstDir + responseFileName,
+        uniqueApplicationID: manifest
+      };
+      debug("lsExecuteScript: send message to nfcd " + JSON.stringify(message));
+
+      self.targetsByRequestId[message.requestId] = callback;
+
+      self.outputPathByRequestId[message.requestId] = {
+        scriptFileName: scriptFileName,
+        fullScriptFileName: fullScriptFileName,
+        responseFileName: responseFileName,
+        fullResponseFileName: fullResponseFileName
+      };
+
+      self.sendToNfcService(command, message);
+    });
   },
 
-  lsExecuteScriptResponse: function getAtrResponse(message)
+  lsExecuteScriptResponse: function(message)
   {
     let callback = this.getTargetByRequestId(message.requestId);
     if (!callback) {
@@ -1218,20 +1333,40 @@ Nfc.prototype = {
       return;
     }
 
-    if (message.errorMsg) {
-      debug("lsExecuteScriptResponse: receive error from nfcd " + message.errorMsg);
-      callback.notifyError(message.errorMsg);
-      return;
-    }
+    let path = this.getPathByRequestId(message.requestId);
 
-    if (!message.response) {
-      debug("lsExecuteScriptResponse: no valid response from eSE " + JSON.stringify(message));
-      callback.notifyError("No valid response from eSE");
-      return;
-    }
+    var index = path.fullScriptFileName.lastIndexOf('/');
+    var dstDir = path.fullScriptFileName.substr(0, index + 1);
 
-    debug("lsExecuteScriptResponse: receive message from nfcd " + JSON.stringify(message));
-    callback.notifyLsExecuteScriptSuccess(message.response);
+    let srcFile = LOADER_SERVICE_TMP + path.responseFileName;
+
+    debug("lsExecuteScriptResponse: receive message from nfcd srcFile " + srcFile + " " + " dstFile " + dstDir + path.responseFileName);
+
+    let self = this;
+    this._copyFile(srcFile, dstDir, path.responseFileName, function(data) {
+      // Remove the temporary files.
+      let script = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+      script.initWithPath((LOADER_SERVICE_TMP + path.scriptFileName));
+      script.remove(false);
+      let rsp = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+      rsp.initWithPath((LOADER_SERVICE_TMP + path.responseFileName));
+      rsp.remove(false);
+
+      if (!message.response) {
+        debug("lsExecuteScriptResponse: no valid response from eSE " + JSON.stringify(message));
+        callback.notifyError("No valid response from eSE");
+        return;
+      }
+
+      if (message.errorMsg) {
+        debug("lsExecuteScriptResponse: receive error from nfcd " + message.errorMsg);
+        callback.notifyError(self._uint8ArrayToHexString(message.response));
+        return;
+      }
+
+      debug("lsExecuteScriptResponse: receive message from nfcd " + JSON.stringify(message));
+      callback.notifyLsExecuteScriptSuccess(message.response);
+    });
   },
 
   lsGetVersion: function(msg, callback) {
@@ -1252,17 +1387,11 @@ Nfc.prototype = {
 
   },
 
-  lsGetVersionResponse: function getAtrResponse(message)
+  lsGetVersionResponse: function(message)
   {
     let callback = this.getTargetByRequestId(message.requestId);
     if (!callback) {
       debug("lsGetVersionResponse: can't find callback");
-      return;
-    }
-
-    if (message.errorMsg) {
-      debug("lsGetVersionResponse: receive error from nfcd " + message.errorMsg);
-      callback.notifyError(message.errorMsg);
       return;
     }
 
@@ -1272,23 +1401,28 @@ Nfc.prototype = {
       return;
     }
 
+    if (message.errorMsg) {
+      debug("lsGetVersionResponse: receive error from nfcd " + message.errorMsg);
+      callback.notifyError(this._uint8ArrayToHexString(message.response));
+      return;
+    }
 
     debug("lsGetVersionResponse: receive message from nfcd " + JSON.stringify(message));
     callback.notifyLsGetVersionSuccess(message.response);
   },
 
-  mPOSReaderModeResponse: function mPOSReaderModeResponse(message)
+  mPOSReaderModeResponse: function(message)
   {
     debug("mPOSReaderModeResponse: send mpos reader mode response:" + JSON.stringify(message));
     this.sendNfcResponse(message);
   },
 
-  registerListener: function registerListener(listener) {
+  registerListener: function(listener) {
     // TODO, wait for integration
     debug("register listener");
   },
 
-  unregisterListener: function unregisterListener(listener) {
+  unregisterListener: function(listener) {
     // TODO, wait for integration.
     debug("unregister listener");
   }

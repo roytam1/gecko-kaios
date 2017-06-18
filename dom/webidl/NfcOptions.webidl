@@ -97,7 +97,7 @@ dictionary NfcCommandOptions
 
   DOMString lsScriptFile;
   DOMString lsResponseFile;
-  Uint8Array uniqueApplicationID;
+  DOMString uniqueApplicationID;
 
   boolean mPOSReaderMode;
 };

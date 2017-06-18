@@ -607,6 +607,8 @@
 #ifdef MOZ_SECUREELEMENT
 @RESPATH@/components/DOMSecureElement.manifest
 @RESPATH@/components/DOMSecureElement.js
+@RESPATH@/components/DOMLoaderService.manifest
+@RESPATH@/components/DOMLoaderService.js
 #endif
 @RESPATH@/components/nsINIProcessor.manifest
 @RESPATH@/components/nsINIProcessor.js

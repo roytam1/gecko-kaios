@@ -4,6 +4,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include "NfcMessageHandler.h"
 #include <binder/Parcel.h>
 #include "mozilla/dom/MozNDEFRecordBinding.h"
@@ -303,14 +308,18 @@ NfcMessageHandler::FormatRequest(Parcel& aParcel, const CommandOptions& aOptions
   mRequestIdQueue.AppendElement(aOptions.mRequestId);
   return true;
 }
-
+static int nfcdUID = 0;
+static int nfcdGID = 0;
 bool
 NfcMessageHandler::InitializeNotification(const Parcel& aParcel, EventOptions& aOptions)
 {
   aOptions.mStatus = aParcel.readInt32();
   aOptions.mMajorVersion = aParcel.readInt32();
   aOptions.mMinorVersion = aParcel.readInt32();
+  nfcdUID = aParcel.readInt32();
+  nfcdGID = aParcel.readInt32();
 
+  NMH_LOG("Get nfcd uid %d gid %d", nfcdUID, nfcdGID);
   if (aOptions.mMajorVersion != NFCD_MAJOR_VERSION ||
       aOptions.mMinorVersion != NFCD_MINOR_VERSION) {
     NMH_LOG("NFCD version mismatched. majorVersion: %d, minorVersion: %d",
@@ -602,13 +611,12 @@ NfcMessageHandler::LsExecuteScriptRequest(Parcel& aParcel, const CommandOptions&
   aParcel.writeInt32(static_cast<int32_t>(NfcRequestType::LsExecuteScript));
   WriteString16(aParcel, aOptions.mLsScriptFile.get(), aOptions.mLsScriptFile.Length());
   WriteString16(aParcel, aOptions.mLsResponseFile.get(), aOptions.mLsResponseFile.Length());
+  WriteString16(aParcel, aOptions.mUniqueApplicationID.get(), aOptions.mUniqueApplicationID.Length());
 
-  uint32_t length = aOptions.mUniqueApplicationID.Length();
-  aParcel.writeInt32(length);
-
-  void* data = aParcel.writeInplace(length);
-  memcpy(data, aOptions.mUniqueApplicationID.Elements(), length);
-
+  // Modify file mode and owner to allow nfcd to access the files.
+  chmod(NS_LossyConvertUTF16toASCII(aOptions.mLsScriptFile).get(), S_IRWXU|S_IRWXG|S_IRWXO);
+  chown(NS_LossyConvertUTF16toASCII(aOptions.mLsResponseFile).get(), nfcdUID, nfcdUID);
+  chmod(NS_LossyConvertUTF16toASCII(aOptions.mLsResponseFile).get(), S_IRWXU|S_IRWXG|S_IRWXO);
   mRequestIdQueue.AppendElement(aOptions.mRequestId);
   return true;
 }

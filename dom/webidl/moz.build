@@ -753,6 +753,7 @@ if CONFIG['MOZ_NFC']:
 
 if CONFIG['MOZ_SECUREELEMENT']:
     WEBIDL_FILES += [
+         'LoaderService.webidl',
          'SecureElement.webidl',
          'SecureElementManager.webidl',
     ]

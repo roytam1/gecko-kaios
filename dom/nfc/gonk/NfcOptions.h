@@ -96,12 +96,7 @@ struct CommandOptions
 
     COPY_OPT_FIELD(mLsScriptFile, EmptyString());
     COPY_OPT_FIELD(mLsResponseFile, EmptyString());
-
-    if (aOther.mUniqueApplicationID.WasPassed()) {
-      dom::Uint8Array const & value = aOther.mUniqueApplicationID.InternalValue();
-      value.ComputeLengthAndData();
-      mUniqueApplicationID.AppendElements(value.Data(), value.Length());
-    }
+    COPY_OPT_FIELD(mUniqueApplicationID, EmptyString());
 
     COPY_OPT_FIELD(mMPOSReaderMode, false)
 
@@ -125,7 +120,7 @@ struct CommandOptions
 
   nsString mLsScriptFile;
   nsString mLsResponseFile;
-  nsTArray<uint8_t> mUniqueApplicationID;
+  nsString mUniqueApplicationID;
 
   bool mMPOSReaderMode;
 };

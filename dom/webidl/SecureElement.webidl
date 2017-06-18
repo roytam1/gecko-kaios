@@ -71,34 +71,6 @@ interface SEReader {
    */
   [Throws]
   Promise<void> reset();
-
-  /**
-   * Loader service is used to update applets within secure element. The loader service application
-   * receives applet binary from specific server, the binary is saved to the LsScriptFile file using
-   * device storage APIs. LsExecuteScript API notified NFC hal layer where to get the applet,
-   * and starts applet upgrade. The upgrade report is saved in the LsResponseFile file.
-   *
-   * @param LsScriptFile
-   *     File name for where the applet is stored.
-   *
-   * @param LsResponseFile
-   *     File name for where the upgrade report is stored.
-   *
-   * @return the promise is resolved or rejected with the new created
-   * SEResponse object.
-   */
-  [Throws]
-  Promise<SEResponse> lsExecuteScript(DOMString LsScriptFile, DOMString LsResponseFile);
-
-  /**
-   * Get applets version
-   *
-   *
-   * @return the promise is resolved or rejected with the new created
-   * SEResponse object.
-   */
-  [Throws]
-  Promise<SEResponse> lsGetVersion();
 };
 
 [Pref="dom.secureelement.enabled",
