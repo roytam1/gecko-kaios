@@ -381,7 +381,7 @@ pref("media.navigator.video.default_height", 240);
 pref("media.peerconnection.enabled", true);
 pref("media.peerconnection.video.enabled", true);
 pref("media.navigator.video.max_fs", 1200); // 640x480 == 1200mb
-pref("media.navigator.video.max_fr", 30);
+pref("media.navigator.video.max_fr", 10);
 pref("media.navigator.video.h264.level", 12); // 0x42E00C - level 1.2
 pref("media.navigator.video.h264.max_br", 700); // 8x10
 pref("media.navigator.video.h264.max_mbps", 11880); // CIF@30fps
@@ -406,9 +406,9 @@ pref("media.getusermedia.browser.enabled", true);
 // 160x120; 100Kbps is plenty for that.
 // Desktop is typically VGA capture or more; and qm_select will not drop resolution
 // below 1/2 in each dimension (or so), so QVGA (320x200) is the lowest here usually.
-pref("media.peerconnection.video.min_bitrate", 0);
-pref("media.peerconnection.video.start_bitrate", 0);
-pref("media.peerconnection.video.max_bitrate", 0);
+pref("media.peerconnection.video.min_bitrate", 100);
+pref("media.peerconnection.video.start_bitrate", 200);
+pref("media.peerconnection.video.max_bitrate", 200);
 pref("media.peerconnection.video.min_bitrate_estimate", 0);
 pref("media.navigator.audio.fake_frequency", 1000);
 pref("media.navigator.permission.disabled", false);
