@@ -4,7 +4,7 @@
 
 #include "nsISupports.idl"
 
-[scriptable, uuid(b13280b2-4aee-4b1b-820f-b17054d2106a)]
+[scriptable, uuid(d5b60efc-ea3d-4d5a-8153-6edc18f1648c)]
 interface nsINetworkInfo : nsISupports
 {
   const long NETWORK_STATE_UNKNOWN       = -1;
@@ -50,6 +50,7 @@ interface nsINetworkInfo : nsISupports
   const long NETWORK_TYPE_MOBILE_CBS   = 10;
   const long NETWORK_TYPE_MOBILE_IA    = 11;
   const long NETWORK_TYPE_MOBILE_ECC   = 12;
+  const long NETWORK_TYPE_MOBILE_XCAP  = 13;
 
   /**
    * Network type. One of the NETWORK_TYPE_* constants.

@@ -75,6 +75,7 @@ const NETWORK_TYPE_MOBILE_HIPRI = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_HIPRI;
 const NETWORK_TYPE_MOBILE_CBS   = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_CBS;
 const NETWORK_TYPE_MOBILE_IA    = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_IA;
 const NETWORK_TYPE_MOBILE_ECC   = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_ECC;
+const NETWORK_TYPE_MOBILE_XCAP  = Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_XCAP;
 
 const NETWORK_STATE_UNKNOWN       = Ci.nsINetworkInfo.NETWORK_STATE_UNKNOWN;
 const NETWORK_STATE_CONNECTING    = Ci.nsINetworkInfo.NETWORK_STATE_CONNECTING;
@@ -460,6 +461,8 @@ DataCallHandler.prototype = {
         return NETWORK_TYPE_MOBILE_FOTA;
       case "ia":
         return NETWORK_TYPE_MOBILE_IA;
+      case "xcap":
+        return NETWORK_TYPE_MOBILE_XCAP;
       default:
         return NETWORK_TYPE_UNKNOWN;
      }
@@ -784,7 +787,8 @@ DataCallHandler.prototype = {
         aNetworkType === NETWORK_TYPE_MOBILE_HIPRI ||
         aNetworkType === NETWORK_TYPE_MOBILE_CBS ||
         aNetworkType === NETWORK_TYPE_MOBILE_IA ||
-        aNetworkType === NETWORK_TYPE_MOBILE_ECC) {
+        aNetworkType === NETWORK_TYPE_MOBILE_ECC ||
+        aNetworkType === NETWORK_TYPE_MOBILE_XCAP) {
       return true;
     }
 
