@@ -20,6 +20,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
 Cu.import("resource://services-crypto/utils.js");
 Cu.import("resource://services-common/utils.js");
+Cu.import("resource://gre/modules/KaiAccountsCommon.js");
 
 const PROTOCOL_VERSION = "identity.mozilla.com/picl/v1/";
 const PBKDF2_ROUNDS = 1000;
@@ -28,34 +29,6 @@ const HKDF_SALT = CommonUtils.hexToBytes("00");
 const HKDF_LENGTH = 32;
 const HMAC_ALGORITHM = Ci.nsICryptoHMAC.SHA256;
 const HMAC_LENGTH = 32;
-
-// loglevel preference should be one of: "FATAL", "ERROR", "WARN", "INFO",
-// "CONFIG", "DEBUG", "TRACE" or "ALL". We will be logging error messages by
-// default.
-const PREF_LOG_LEVEL = "identity.kaiaccounts.loglevel";
-// The level of messages will be dumped to the console.  If not specified,
-// "Error" will be used.
-const PREF_LOG_LEVEL_DUMP = "identity.kaiaccounts.log.appender.dump";
-
-let log = Log.repository.getLogger("Identity.KaiAccounts");
-let appender = new Log.ConsoleAppender(new Log.BasicFormatter());
-appender.level = Log.Level.Error;
-log.addAppender(appender);
-try {
-  // The log itself.
-  let level =
-    Services.prefs.getPrefType(PREF_LOG_LEVEL) == Ci.nsIPrefBranch.PREF_STRING
-    && Services.prefs.getCharPref(PREF_LOG_LEVEL);
-  log.level = Log.Level[level] || Log.Level.Debug;
-
-  // The appender.
-  level =
-    Services.prefs.getPrefType(PREF_LOG_LEVEL_DUMP) == Ci.nsIPrefBranch.PREF_STRING
-    && Services.prefs.getCharPref(PREF_LOG_LEVEL_DUMP);
-  appender.level = Log.Level[level] || Log.Level.Error;
-} catch (e) {
-  log.error(e);
-}
 
 this.KaiCredentials = Object.freeze({
   /**

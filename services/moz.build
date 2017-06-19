@@ -11,10 +11,6 @@ DIRS += [
     'kaiaccounts',
 ]
 
-EXTRA_JS_MODULES += [
-    'fxaccounts/Credentials.jsm'
-]
-
 if CONFIG['MOZ_SERVICES_SYNC']:
     DIRS += ['sync']
 
