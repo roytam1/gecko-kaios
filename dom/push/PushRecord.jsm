@@ -29,6 +29,8 @@ this.EXPORTED_SYMBOLS = ["PushRecord"];
 
 const prefs = new Preferences("dom.push.");
 
+const maxRetryCounts = 3;
+
 /**
  * The push subscription record, stored in IndexedDB.
  */
@@ -45,6 +47,7 @@ this.PushRecord = function(props) {
   this.appServerKey = props.appServerKey;
   this.setQuota(props.quota);
   this.ctime = (typeof props.ctime === "number") ? props.ctime : 0;
+  this.retryCounts = props.retryCounts || 0;
 }
 
 PushRecord.prototype = {
@@ -277,6 +280,14 @@ PushRecord.prototype = {
       quota: this.quotaApplies() ? this.quota : -1,
     };
   },
+
+  reachMaxRetryCounts() {
+    if (this.retryCounts >= maxRetryCounts) {
+      return true;
+    }
+    return false;
+  },
+
 };
 
 // Define lazy getters for the principal and scope URI. IndexedDB can't store

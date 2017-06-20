@@ -38,7 +38,7 @@ XPCOMUtils.defineLazyGetter(this, "console", () => {
 });
 
 const kPUSHANDROIDGCMDB_DB_NAME = "pushAndroidGCM";
-const kPUSHANDROIDGCMDB_DB_VERSION = 5; // Change this if the IndexedDB format changes
+const kPUSHANDROIDGCMDB_DB_VERSION = 6; // Change this if the IndexedDB format changes
 const kPUSHANDROIDGCMDB_STORE_NAME = "pushAndroidGCM";
 
 const prefs = new Preferences("dom.push.");

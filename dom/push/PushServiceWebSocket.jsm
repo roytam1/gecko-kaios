@@ -41,7 +41,7 @@ var threadManager = Cc["@mozilla.org/thread-manager;1"]
                       .getService(Ci.nsIThreadManager);
 
 const kPUSHWSDB_DB_NAME = "pushapi";
-const kPUSHWSDB_DB_VERSION = 5; // Change this if the IndexedDB format changes
+const kPUSHWSDB_DB_VERSION = 6; // Change this if the IndexedDB format changes
 const kPUSHWSDB_STORE_NAME = "pushapi";
 
 const kUDP_WAKEUP_WS_STATUS_CODE = 4774;  // WebSocket Close status code sent
@@ -60,6 +60,7 @@ const kUNREGISTER_REASON_TO_CODE = {
   [Ci.nsIPushErrorReporter.UNSUBSCRIBE_MANUAL]: 200,
   [Ci.nsIPushErrorReporter.UNSUBSCRIBE_QUOTA_EXCEEDED]: 201,
   [Ci.nsIPushErrorReporter.UNSUBSCRIBE_PERMISSION_REVOKED]: 202,
+  [Ci.nsIPushErrorReporter.UNSUBSCRIBE_PENDING_RECORD]: 203,
 };
 
 const kDELIVERY_REASON_TO_CODE = {
@@ -900,6 +901,7 @@ this.PushServiceWebSocket = {
 
       this._dataEnabled = !!reply.use_webpush;
       if (this._dataEnabled) {
+        this._mainPushService.executeAllPendingUnregistering();
         this._mainPushService.getAllUnexpired().then(records =>
           Promise.all(records.map(record =>
             this._mainPushService.ensureCrypto(record).catch(error => {
@@ -1062,6 +1064,19 @@ this.PushServiceWebSocket = {
         // eventually fix this
         this._receivedUpdate(update.channelID, version);
       }
+    }
+  },
+
+  _handleUnregisterReply: function(reply) {
+    console.debug("handleUnregisterReply");
+    if (reply.status == 200) {
+      if (typeof reply.channelID !== "string") {
+        console.warn("handleUnregisterReply: Discarding delete db without channel ID");
+        return;
+      }
+      this._mainPushService.removePendingUnsubscribe(reply.channelID);
+    } else {
+      console.error("handleUnregisterReply: unregister fail, status: ", reply.status);
     }
   },
 
@@ -1341,7 +1356,7 @@ this.PushServiceWebSocket = {
 
     // A whitelist of protocol handlers. Add to these if new messages are added
     // in the protocol.
-    let handlers = ["Hello", "Register", "Notification"];
+    let handlers = ["Hello", "Register", "Notification", "Unregister"];
 
     // Build up the handler name to call from messageType.
     // e.g. messageType == "register" -> _handleRegisterReply.

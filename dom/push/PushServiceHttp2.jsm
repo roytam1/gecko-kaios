@@ -39,7 +39,7 @@ XPCOMUtils.defineLazyGetter(this, "console", () => {
 const prefs = new Preferences("dom.push.");
 
 const kPUSHHTTP2DB_DB_NAME = "pushHttp2";
-const kPUSHHTTP2DB_DB_VERSION = 5; // Change this if the IndexedDB format changes
+const kPUSHHTTP2DB_DB_VERSION = 6; // Change this if the IndexedDB format changes
 const kPUSHHTTP2DB_STORE_NAME = "pushHttp2";
 
 /**

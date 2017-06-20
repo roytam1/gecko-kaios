@@ -29,7 +29,7 @@ this.PushDB = function PushDB(dbName, dbVersion, dbStoreName, keyPath, model) {
 
   // set the indexeddb database
   this.initDBHelper(dbName, dbVersion,
-                    [dbStoreName]);
+                    [dbStoreName, "unsubscribeDb"]);
 };
 
 this.PushDB.prototype = {
@@ -49,17 +49,9 @@ this.PushDB.prototype = {
            typeof record[this._keyPath] == "string";
   },
 
-  upgradeSchema: function(aTransaction, aDb, aOldVersion, aNewVersion) {
-    if (aOldVersion <= 3) {
-      //XXXnsm We haven't shipped Push during this upgrade, so I'm just going to throw old
-      //registrations away without even informing the app.
-      if (aDb.objectStoreNames.contains(this._dbStoreName)) {
-        aDb.deleteObjectStore(this._dbStoreName);
-      }
-
-      let objectStore = aDb.createObjectStore(this._dbStoreName,
-                                              { keyPath: this._keyPath });
-
+  createSchema: function(aDb) {
+    let objectStore = aDb.createObjectStore(this._dbStoreName,
+                                            { keyPath: this._keyPath });
       // index to fetch records based on endpoints. used by unregister
       objectStore.createIndex("pushEndpoint", "pushEndpoint", { unique: true });
 
@@ -70,13 +62,35 @@ this.PushDB.prototype = {
       // scope are enough to reconstruct a valid principal.
       objectStore.createIndex("identifiers", ["scope", "originAttributes"], { unique: true });
       objectStore.createIndex("originAttributes", "originAttributes", { unique: false });
-    }
-
-    if (aOldVersion < 4) {
-      let objectStore = aTransaction.objectStore(this._dbStoreName);
-
       // index to fetch active and expired registrations.
       objectStore.createIndex("quota", "quota", { unique: false });
+
+      objectStore = aDb.createObjectStore("unsubscribeDb",
+                                          { keyPath: this._keyPath });
+  },
+
+  upgradeSchemaFrom5to6: function(aDb) {
+    let objectStore = aDb.createObjectStore("unsubscribeDb",
+                                            { keyPath: this._keyPath });
+  },
+
+  upgradeSchema: function(aTransaction, aDb, aOldVersion, aNewVersion) {
+    console.debug("upgrade schema from: " + aOldVersion + " to " + aNewVersion + " called!");
+
+    if (aOldVersion <= 3) {
+      // XXXnsm We haven't shipped Push during this upgrade, so I'm just going to throw old
+      // registrations away without even informing the app.
+      if (aDb.objectStoreNames.contains(this._dbStoreName)) {
+        aDb.deleteObjectStore(this._dbStoreName);
+      }
+    }
+    switch(aOldVersion) {
+      case 0:
+        this.createSchema(aDb);
+        break;
+      case 5:
+        this.upgradeSchemaFrom5to6(aDb);
+        break;
     }
   },
 
@@ -85,7 +99,7 @@ this.PushDB.prototype = {
    *        The record to be added.
    */
 
-  put: function(aRecord) {
+  put: function(aRecord, aStoreName) {
     console.debug("put()", aRecord);
     if (!this.isValidRecord(aRecord)) {
       return Promise.reject(new TypeError(
@@ -95,10 +109,20 @@ this.PushDB.prototype = {
       );
     }
 
+    if (aStoreName) {
+      if (typeof aStoreName != "string" || aStoreName.length === 0) {
+        return Promise.reject(new TypeError(
+          "aStoreName type is not a string"
+          )
+        );
+      }
+      console.debug("storeName = ", aStoreName);
+    }
+
     return new Promise((resolve, reject) =>
       this.newTxn(
         "readwrite",
-        this._dbStoreName,
+        (aStoreName) ? aStoreName : this._dbStoreName,
         (aTxn, aStore) => {
           aTxn.result = undefined;
 
@@ -118,13 +142,23 @@ this.PushDB.prototype = {
    * @param aKeyID
    *        The ID of record to be deleted.
    */
-  delete: function(aKeyID) {
+  delete: function(aKeyID, aStoreName) {
     console.debug("delete()");
+
+    if (aStoreName) {
+      if (typeof aStoreName != "string" || aStoreName.length === 0) {
+        return Promise.reject(new TypeError(
+          "aStoreName type is not a string"
+          )
+        );
+      }
+      console.debug("aStoreName = ", aStoreName);
+    }
 
     return new Promise((resolve, reject) =>
       this.newTxn(
         "readwrite",
-        this._dbStoreName,
+        (aStoreName) ? aStoreName : this._dbStoreName,
         (aTxn, aStore) => {
           console.debug("delete: Removing record", aKeyID);
           aStore.get(aKeyID).onsuccess = event => {
@@ -193,13 +227,23 @@ this.PushDB.prototype = {
     );
   },
 
-  getByKeyID: function(aKeyID) {
+  getByKeyID: function(aKeyID, aStoreName) {
     console.debug("getByKeyID()");
+
+    if (aStoreName) {
+      if (typeof aStoreName != "string" || aStoreName.length === 0) {
+        return Promise.reject(new TypeError(
+          "aStoreName type is not a string"
+          )
+        );
+      }
+      console.debug("aStoreName = ", aStoreName);
+    }
 
     return new Promise((resolve, reject) =>
       this.newTxn(
         "readonly",
-        this._dbStoreName,
+        (aStoreName) ? aStoreName : this._dbStoreName,
         (aTxn, aStore) => {
           aTxn.result = undefined;
 
@@ -318,13 +362,23 @@ this.PushDB.prototype = {
     return this._getAllByKey("originAttributes", aOriginAttributes);
   },
 
-  getAllKeyIDs: function() {
+  getAllKeyIDs: function(aStoreName) {
     console.debug("getAllKeyIDs()");
+
+    if (aStoreName) {
+      if (typeof aStoreName != "string" || aStoreName.length === 0) {
+        return Promise.reject(new TypeError(
+          "aStoreName type is not a string"
+          )
+        );
+      }
+      console.debug("aStoreName = ", aStoreName);
+    }
 
     return new Promise((resolve, reject) =>
       this.newTxn(
         "readonly",
-        this._dbStoreName,
+        (aStoreName) ? aStoreName : this._dbStoreName,
         (aTxn, aStore) => {
           aTxn.result = undefined;
           aStore.mozGetAll().onsuccess = event => {
@@ -384,11 +438,20 @@ this.PushDB.prototype = {
    * @returns {Promise} A promise resolved with either the updated record, or
    *  `undefined` if the record was not updated.
    */
-  update: function(aKeyID, aUpdateFunc) {
+  update: function(aKeyID, aUpdateFunc, aStoreName) {
+    if (aStoreName) {
+      if (typeof aStoreName != "string" || aStoreName.length === 0) {
+        return Promise.reject(new TypeError(
+          "aStoreName type is not a string"
+          )
+        );
+      }
+      console.debug("aStoreName = ", aStoreName);
+    }
     return new Promise((resolve, reject) =>
       this.newTxn(
         "readwrite",
-        this._dbStoreName,
+        (aStoreName) ? aStoreName : this._dbStoreName,
         (aTxn, aStore) => {
           aStore.get(aKeyID).onsuccess = aEvent => {
             aTxn.result = undefined;
@@ -426,13 +489,23 @@ this.PushDB.prototype = {
     );
   },
 
-  drop: function() {
+  drop: function(aStoreName) {
     console.debug("drop()");
+
+    if (aStoreName) {
+      if (typeof aStoreName != "string" || aStoreName.length === 0) {
+        return Promise.reject(new TypeError(
+          "aStoreName type is not a string"
+          )
+        );
+      }
+      console.debug("aStoreName = ", aStoreName);
+    }
 
     return new Promise((resolve, reject) =>
       this.newTxn(
         "readwrite",
-        this._dbStoreName,
+        (aStoreName) ? aStoreName : this._dbStoreName,
         function txnCb(aTxn, aStore) {
           aStore.clear();
         },
