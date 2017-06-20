@@ -237,6 +237,9 @@ this.PushService = {
         // if there are request waiting
         this._service.connect(records);
       }
+      this._dropExpiredRegistrations().catch(error => {
+        console.error("Failed to drop expired registrations on idle", error);
+      });
     });
   },
 
@@ -1280,6 +1283,9 @@ this.PushService = {
       return Promise.all(records.map(record =>
         record.quotaChanged().then(isChanged => {
           if (isChanged) {
+            if (this._state != PUSH_SERVICE_RUNNING) {
+              return;
+            }
             // If the user revisited the site, drop the expired push
             // registration and notify the associated service worker.
             return this.dropRegistrationAndNotifyApp(record.keyID);
@@ -1402,6 +1408,9 @@ this.PushService = {
       return;
     }
     if (record.isExpired()) {
+      if (this._state != PUSH_SERVICE_RUNNING) {
+        return;
+      }
       // If the registration has expired, drop and notify the worker
       // unconditionally.
       subscriptionChanges.push(record);
