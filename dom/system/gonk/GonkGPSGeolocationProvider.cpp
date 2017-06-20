@@ -50,10 +50,6 @@
 #include "nsIDataCallManager.h"
 #endif
 
-#ifdef AGPS_TYPE_INVALID
-#define AGPS_HAVE_DUAL_APN
-#endif
-
 #define FLUSH_AIDE_DATA 0
 #define SUPL_NI_NOTIFY  "supl-ni-notify"
 #define SUPL_NI_VERIFY  "supl-ni-verify"
@@ -668,10 +664,10 @@ GonkGPSGeolocationProvider::SetAGpsDataConn(nsAString& aApn)
     if (hasUpdateNetworkAvailability) {
       mAGpsRilInterface->update_network_availability(true, apn.get());
     }
-#ifdef AGPS_HAVE_DUAL_APN
-    mAGpsInterface->data_conn_open(AGPS_TYPE_SUPL,
-                                   apn.get(),
-                                   AGPS_APN_BEARER_IPV4);
+// data_conn_open has been deprecated since Android L added ApnIpType to HAL
+// Check APN_IP_IPV4V6 to see whether data_conn_open_with_apn_ip_type is supported.
+#ifdef APN_IP_IPV4V6
+    mAGpsInterface->data_conn_open_with_apn_ip_type(apn.get(), APN_IP_IPV4V6);
 #else
     mAGpsInterface->data_conn_open(apn.get());
 #endif
@@ -679,11 +675,7 @@ GonkGPSGeolocationProvider::SetAGpsDataConn(nsAString& aApn)
     if (hasUpdateNetworkAvailability) {
       mAGpsRilInterface->update_network_availability(false, apn.get());
     }
-#ifdef AGPS_HAVE_DUAL_APN
-    mAGpsInterface->data_conn_closed(AGPS_TYPE_SUPL);
-#else
     mAGpsInterface->data_conn_closed();
-#endif
   }
 }
 
