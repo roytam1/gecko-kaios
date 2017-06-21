@@ -41,7 +41,7 @@
 #include "GraphicBufferAlloc.h"
 
 #ifndef NUM_FRAMEBUFFER_SURFACE_BUFFERS
-#define NUM_FRAMEBUFFER_SURFACE_BUFFERS (2)
+#define NUM_FRAMEBUFFER_SURFACE_BUFFERS (3)
 #endif
 
 // ----------------------------------------------------------------------------
