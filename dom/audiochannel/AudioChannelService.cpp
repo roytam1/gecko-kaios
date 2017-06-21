@@ -620,6 +620,14 @@ AudioChannelService::RefreshAgentsVolume(nsPIDOMWindowOuter* aWindow)
   while (iter.HasMore()) {
     iter.GetNext()->WindowVolumeChanged();
   }
+
+#ifdef MOZ_WIDGET_GONK
+  //Refresh all SpeakerManagers when Agents volume updated.
+  bool active = AnyAudioChannelIsActive();
+  for (uint32_t i = 0; i < mSpeakerManager.Length(); i++) {
+    mSpeakerManager[i]->SetAudioChannelActive(active);
+  }
+#endif
 }
 
 void
