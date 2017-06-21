@@ -6,35 +6,22 @@
 
 window.performance.mark('gecko-shell-loadstart');
 
-// Workaround for Bug-8878
-// Force updating permissions each time to boot normally
-Services.prefs.setBoolPref("dom.apps.reset-permissions", false);
-
-Cu.import('resource://gre/modules/ContactService.jsm');
 Cu.import('resource://gre/modules/DataStoreChangeNotifier.jsm');
-Cu.import('resource://gre/modules/AlarmService.jsm');
 Cu.import('resource://gre/modules/ActivitiesService.jsm');
 Cu.import('resource://gre/modules/NotificationDB.jsm');
 Cu.import("resource://gre/modules/AppsUtils.jsm");
-Cu.import('resource://gre/modules/UserAgentOverrides.jsm');
 Cu.import('resource://gre/modules/Keyboard.jsm');
 Cu.import('resource://gre/modules/ErrorPage.jsm');
 Cu.import('resource://gre/modules/AlertsHelper.jsm');
-Cu.import('resource://gre/modules/RequestSyncService.jsm');
-Cu.import('resource://gre/modules/SystemUpdateService.jsm');
 
 if (isGonk) {
-  Cu.import('resource://gre/modules/MultiscreenHandler.jsm');
   Cu.import('resource://gre/modules/NetworkStatsService.jsm');
   Cu.import('resource://gre/modules/ResourceStatsService.jsm');
 }
 
 Cu.import('resource://gre/modules/KillSwitchMain.jsm');
 Cu.import('resource://gre/modules/KaiAccountsMgmtService.jsm');
-Cu.import('resource://gre/modules/DownloadsAPI.jsm');
 Cu.import('resource://gre/modules/MobileIdentityManager.jsm');
-Cu.import('resource://gre/modules/PresentationDeviceInfoManager.jsm');
-Cu.import('resource://gre/modules/AboutServiceWorkers.jsm');
 
 XPCOMUtils.defineLazyModuleGetter(this, "SystemAppProxy",
                                   "resource://gre/modules/SystemAppProxy.jsm");
@@ -425,7 +412,6 @@ var shell = {
 
     CustomEventManager.init();
     WebappsHelper.init();
-    UserAgentOverrides.init();
     CaptivePortalLoginHelper.init();
     VolumeRequestHelper.init();
     Services.spatialNavigationService.init(window);
@@ -795,6 +781,21 @@ var shell = {
     }
 
     SystemAppProxy.setIsReady();
+
+    // At this point, load js modules that should not be in the hot startup path.
+    Cu.import('resource://gre/modules/ContactService.jsm');
+    Cu.import('resource://gre/modules/AlarmService.jsm');
+    Cu.import('resource://gre/modules/AboutServiceWorkers.jsm');
+    Cu.import('resource://gre/modules/UserAgentOverrides.jsm');
+    Cu.import('resource://gre/modules/Payment.jsm');
+    Cu.import('resource://gre/modules/DownloadsAPI.jsm');
+    Cu.import('resource://gre/modules/RequestSyncService.jsm');
+    Cu.import('resource://gre/modules/SystemUpdateService.jsm');
+    Cu.import('resource://gre/modules/PresentationDeviceInfoManager.jsm');
+    if (isGonk) {
+      Cu.import('resource://gre/modules/MultiscreenHandler.jsm');
+    }
+    UserAgentOverrides.init();
   }
 };
 
