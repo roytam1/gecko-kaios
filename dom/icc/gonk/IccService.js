@@ -53,6 +53,7 @@ IccInfo.prototype = {
   mcc: null,
   mnc: null,
   spn: null,
+  imsi: null,
   isDisplayNetworkNameRequired: false,
   isDisplaySpnRequired: false
 };
@@ -269,6 +270,7 @@ IccService.prototype = {
 
     let icc = this.getIccByServiceId(aServiceId);
     icc.imsi = aImsi || null;
+    icc._deliverListenerEvent("notifyIccInfoChanged");
   },
 
   notifyIsimInfoChanged: function(aServiceId, aIsimInfo) {

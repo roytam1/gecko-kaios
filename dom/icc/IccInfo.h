@@ -60,6 +60,9 @@ public:
   void
   GetSpn(nsAString& aSpn) const;
 
+  void
+  GetImsi(nsAString& aImsi) const;
+
   bool
   IsDisplayNetworkNameRequired() const;
 
@@ -79,6 +82,7 @@ protected:
   nsString mMcc;
   nsString mMnc;
   nsString mSpn;
+  nsString mImsi;
   bool mIsDisplayNetworkNameRequired;
   bool mIsDisplaySpnRequired;
 };

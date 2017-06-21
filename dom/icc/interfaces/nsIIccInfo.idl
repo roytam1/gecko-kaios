@@ -4,7 +4,7 @@
 
 #include "nsISupports.idl"
 
-[scriptable, uuid(3ba11a90-34e0-11e4-8c21-0800200c9a66)]
+[scriptable, uuid(f6fe8c14-3da6-4601-8cc2-31c5ad58bee2)]
 interface nsIIccInfo : nsISupports
 {
   /**
@@ -33,6 +33,11 @@ interface nsIIccInfo : nsISupports
    * Service Provider Name (SPN) of the subscriber's home network.
    */
   readonly attribute DOMString spn;
+
+  /**
+   * International Mobile Subscriber Identity.
+   */
+  readonly attribute DOMString imsi;
 
   /**
    * Network name must be a part of displayed carrier name.

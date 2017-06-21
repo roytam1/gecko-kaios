@@ -20,6 +20,7 @@ IccIPCUtils::GetIccInfoDataFromIccInfo(nsIIccInfo* aInInfo,
   aInInfo->GetMcc(aOutData.mcc());
   aInInfo->GetMnc(aOutData.mnc());
   aInInfo->GetSpn(aOutData.spn());
+  aInInfo->GetImsi(aOutData.imsi());
   aInInfo->GetIsDisplayNetworkNameRequired(
     &aOutData.isDisplayNetworkNameRequired());
   aInInfo->GetIsDisplaySpnRequired(

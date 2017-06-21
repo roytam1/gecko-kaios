@@ -295,6 +295,7 @@ interface nsIIcc : nsISupports
 
   /**
    * IMSI of this ICC.
+   * TODO To removed this because we have moved this to nsIIccInfo.
    */
   readonly attribute DOMString imsi;
 

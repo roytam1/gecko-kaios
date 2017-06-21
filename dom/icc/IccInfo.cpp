@@ -45,6 +45,7 @@ IccInfo::IccInfo(nsPIDOMWindowInner* aWindow)
   mMcc.SetIsVoid(true);
   mMnc.SetIsVoid(true);
   mSpn.SetIsVoid(true);
+  mImsi.SetIsVoid(true);
 }
 
 IccInfo::IccInfo(const IccInfoData& aData)
@@ -54,6 +55,7 @@ IccInfo::IccInfo(const IccInfoData& aData)
   mMcc = aData.mcc();
   mMnc = aData.mnc();
   mSpn = aData.spn();
+  mImsi = aData.imsi();
   mIsDisplayNetworkNameRequired = aData.isDisplayNetworkNameRequired();
   mIsDisplaySpnRequired = aData.isDisplaySpnRequired();
 }
@@ -96,6 +98,13 @@ IccInfo::GetSpn(nsAString & aSpn)
 }
 
 NS_IMETHODIMP
+IccInfo::GetImsi(nsAString & aImsi)
+{
+  aImsi = mImsi;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 IccInfo::GetIsDisplayNetworkNameRequired(bool *aIsDisplayNetworkNameRequired)
 {
   *aIsDisplayNetworkNameRequired = mIsDisplayNetworkNameRequired;
@@ -119,6 +128,7 @@ IccInfo::Update(nsIIccInfo* aInfo)
   aInfo->GetMcc(mMcc);
   aInfo->GetMnc(mMnc);
   aInfo->GetSpn(mSpn);
+  aInfo->GetImsi(mImsi);
   aInfo->GetIsDisplayNetworkNameRequired(
     &mIsDisplayNetworkNameRequired);
   aInfo->GetIsDisplaySpnRequired(
@@ -165,6 +175,12 @@ void
 IccInfo::GetSpn(nsAString& aSpn) const
 {
   aSpn = mSpn;
+}
+
+void
+IccInfo::GetImsi(nsAString& aImsi) const
+{
+  aImsi = mImsi;
 }
 
 bool

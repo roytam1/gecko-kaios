@@ -13,6 +13,7 @@ struct IccInfoData
   nsString  mcc;
   nsString  mnc;
   nsString  spn;
+  nsString  imsi;
   bool      isDisplayNetworkNameRequired;
   bool      isDisplaySpnRequired;
   nsString  phoneNumber;

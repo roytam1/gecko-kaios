@@ -34,6 +34,11 @@ interface MozIccInfo {
   readonly attribute DOMString? spn;
 
   /**
+   * International Mobile Subscriber Identity.
+   */
+  readonly attribute DOMString? imsi;
+
+  /**
    * Network name must be a part of displayed carrier name.
    */
   readonly attribute boolean isDisplayNetworkNameRequired;
