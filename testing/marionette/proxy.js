@@ -136,6 +136,10 @@ proxy.AsyncMessageChannel = class {
 
       // sendAsync is GeckoDriver#sendAsync
       this.sendAsync(name, marshal(args), uuid);
+
+      // emtpy args to remove reference for JSString objects inside it,
+      // so they can be GC successfully.
+      args = [];
     });
   }
 
