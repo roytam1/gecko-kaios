@@ -2298,13 +2298,13 @@ TabChild::RecvAppOfflineStatus(const uint32_t& aId, const bool& aOffline)
 }
 
 bool
-TabChild::RecvActivateSpatialNavigation(const LayoutDeviceIntPoint& aPoint)
+TabChild::RecvActivateSpatialNavigation()
 {
   RefPtr<SpatialNavigationServiceChild> service =
     SpatialNavigationServiceChild::GetOrCreate();
   nsCOMPtr<nsPIDOMWindowOuter> window = do_GetInterface(WebNavigation());
 
-  service->Activate(window, aPoint, mChromeDisp);
+  service->Activate(window, mChromeDisp);
 
   return true;
 }

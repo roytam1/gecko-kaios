@@ -762,14 +762,7 @@ child:
     async HandledWindowedPluginKeyEvent(NativeEventData aKeyEventData,
                                         bool aIsConsumed);
 
-    /**
-     * In order to keep cursor position consistent among different tabs of
-     * browser app, chrome process will be responsible to update cursor
-     * position. Chrome process will save the cursor position of a certain
-     * tab which is going to switch to background and then send the cursor
-     * position to a certain tab which is going to switch to foreground.
-     */
-    async ActivateSpatialNavigation(LayoutDeviceIntPoint aPoint);
+    async ActivateSpatialNavigation();
     async DeactivateSpatialNavigation();
 
 /*

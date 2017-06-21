@@ -417,7 +417,7 @@ public:
   virtual bool RecvAppOfflineStatus(const uint32_t& aId,
                                     const bool& aOffline) override;
 
-  virtual bool RecvActivateSpatialNavigation(const LayoutDeviceIntPoint& aPoint) override;
+  virtual bool RecvActivateSpatialNavigation() override;
 
   virtual bool RecvDeactivateSpatialNavigation() override;
 
