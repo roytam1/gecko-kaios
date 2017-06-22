@@ -102,7 +102,8 @@ this.WapPushManager = {
         let params = options.headers["content-type"].params;
         let sec = params && params.sec;
         let mac = params && params.mac;
-        authInfo = CP.Authenticator.check(data.array.subarray(data.offset),
+        let octets = new Uint8Array(data.array);
+        authInfo = CP.Authenticator.check(octets.subarray(data.offset),
                                           sec, mac, function getNetworkPin() {
           let icc = gIccService.getIccByServiceId(options.serviceId);
           let imsi = icc ? icc.imsi : null;
