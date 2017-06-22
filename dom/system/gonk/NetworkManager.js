@@ -1203,7 +1203,7 @@ NetworkManager.prototype = {
   },
 
   requestClat: function(network) {
-    let connected = (network.state == Ci.nsINetworkInfo.NETWORK_STATE_CONNECTED);
+    let connected = (network.info.state == Ci.nsINetworkInfo.NETWORK_STATE_CONNECTED);
     if (!connected) {
       return Promise.resolve(false);
     }
