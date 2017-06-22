@@ -2219,6 +2219,8 @@ GeckoDriver.prototype.sessionTearDown = function(cmd, resp) {
         globalMessageManager.broadcastAsyncMessage(
             "Marionette:deleteSession" + browser.knownFrames[i], {});
       }
+      // clear knownFrames array after the message of deleting session is sent.
+      browser.knownFrames = [];
     }
 
     let winEn = Services.wm.getEnumerator(null);
