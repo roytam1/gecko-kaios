@@ -2401,13 +2401,18 @@ Navigator::HasWifiManagerSupport(JSContext* /* unused */,
 #ifdef MOZ_NFC
 /* static */
 bool
-Navigator::HasNFCSupport(JSContext* /* unused */, JSObject* aGlobal)
+Navigator::HasNFCSupport(JSContext* /* unused */, JSObject* /* unused */)
 {
-  nsCOMPtr<nsPIDOMWindowInner> win = GetWindowFromGlobal(aGlobal);
+  // Do not support NFC if it's disabled on this device.
+  char value[PROPERTY_VALUE_MAX];
+  uint32_t len = property_get("ro.moz.nfc.enabled", value, nullptr);
+  if (len > 0) {
+    return strncmp(value, "true", PROPERTY_VALUE_MAX) == 0;
+  }
 
-  // Do not support NFC if NFC content helper does not exist.
-  nsCOMPtr<nsISupports> contentHelper = do_GetService("@mozilla.org/nfc/content-helper;1");
-  return !!contentHelper;
+  // Something went wrong reading the property, safely consider we don't
+  // have support.
+  return false;
 }
 #endif // MOZ_NFC
 

@@ -1521,10 +1521,10 @@ TabChild::ApplyShowInfo(const ShowInfo& aInfo)
 
 #ifdef MOZ_WIDGET_GONK
 void
-TabChild::MaybeRequestPreinitCamera()
+TabChild::MaybeRequestPreinitHardware()
 {
     // Check if this tab is an app (not a browser frame) and will use the
-    // `camera` permission,
+    // `camera` or one of the `nfc` permission. If so, initialize the underlying components.
     if (IsIsolatedMozBrowserElement()) {
       return;
     }
@@ -1558,6 +1558,21 @@ TabChild::MaybeRequestPreinitCamera()
       return;
     }
 
+    // Test the NFC permissions from dom/apps/PermissionsTable.jsm
+    const char* permissions[] = {"nfc", "nfc-share", "nfc-manager", "nfc-hci-events"};
+    for (int i = 0; i < 4; i++) {
+      uint32_t permission = nsIPermissionManager::DENY_ACTION;
+      permMgr->TestPermissionFromPrincipal(principal, permissions[i], &permission);
+
+      if (permission == nsIPermissionManager::ALLOW_ACTION) {
+        // Instanciate the NfcContentHelper service.
+        nsCOMPtr<nsISupports> nfcHelper = do_GetService("@mozilla.org/nfc/content-helper;1");
+
+        break;
+      }
+    }
+
+    // Test the Camera permission.
     uint32_t permission = nsIPermissionManager::DENY_ACTION;
     permMgr->TestPermissionFromPrincipal(principal, "camera", &permission);
     bool hasPermission = permission == nsIPermissionManager::ALLOW_ACTION;
@@ -1609,7 +1624,7 @@ TabChild::RecvShow(const ScreenIntSize& aSize,
     baseWindow->SetVisibility(true);
 
 #ifdef MOZ_WIDGET_GONK
-    MaybeRequestPreinitCamera();
+    MaybeRequestPreinitHardware();
 #endif
 
     bool res = InitTabChildGlobal();

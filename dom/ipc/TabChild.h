@@ -675,7 +675,7 @@ protected:
                  const bool& aInstalled) override;
 
 #ifdef MOZ_WIDGET_GONK
-  void MaybeRequestPreinitCamera();
+  void MaybeRequestPreinitHardware();
 #endif
 
 private:
