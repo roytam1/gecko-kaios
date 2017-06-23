@@ -489,7 +489,7 @@ HwcComposer2D::PrepareLayerList(Layer* aLayer,
 
     hwcLayer.flags = 0;
     hwcLayer.hints = 0;
-    hwcLayer.blending = isOpaque ? HWC_BLENDING_NONE : HWC_BLENDING_PREMULT;
+    hwcLayer.blending = HWC_BLENDING_PREMULT;
 #if ANDROID_VERSION >= 17
     hwcLayer.compositionType = HWC_FRAMEBUFFER;
 #if ANDROID_VERSION >= 21
