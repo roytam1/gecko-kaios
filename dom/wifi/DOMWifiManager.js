@@ -81,7 +81,7 @@ function DOMWifiManager() {
   this.defineEventHandlerGetterSetter("onenabled");
   this.defineEventHandlerGetterSetter("ondisabled");
   this.defineEventHandlerGetterSetter("onstationinfoupdate");
-  this.defineEventHandlerGetterSetter("onopennetworknotification");
+  this.defineEventHandlerGetterSetter("onopennetwork");
 }
 
 DOMWifiManager.prototype = {
@@ -116,7 +116,6 @@ DOMWifiManager.prototype = {
                       "WifiManager:getImportedCerts:Return:OK", "WifiManager:getImportedCerts:Return:NO",
                       "WifiManager:deleteCert:Return:OK", "WifiManager:deleteCert:Return:NO",
                       "WifiManager:setWifiEnabled:Return:OK", "WifiManager:setWifiEnabled:Return:NO",
-                      "WifiManager:setOpenNetworkNotify:Return:OK", "WifiManager:setOpenNetworkNotify:Return:NO",
                       "WifiManager:wifiDown", "WifiManager:wifiUp",
                       "WifiManager:onconnecting", "WifiManager:onassociate",
                       "WifiManager:onconnect", "WifiManager:ondisconnect",
@@ -124,7 +123,7 @@ DOMWifiManager.prototype = {
                       "WifiManager:onwpsoverlap", "WifiManager:connectioninfoupdate",
                       "WifiManager:onauthenticating", "WifiManager:ondhcpfailed",
                       "WifiManager:onauthenticationfailed", "WifiManager:onassociationreject",
-                      "WifiManager:stationinfoupdate", "WifiManager:opennetworknotification"];
+                      "WifiManager:stationinfoupdate", "WifiManager:opennetwork"];
     this.initDOMRequestHelper(aWindow, messages);
     this._mm = Cc["@mozilla.org/childprocessmessagemanager;1"].getService(Ci.nsISyncMessageSender);
 
@@ -259,14 +258,6 @@ DOMWifiManager.prototype = {
         break;
 
       case "WifiManager:setPowerSavingMode:Return:NO":
-        Services.DOMRequest.fireError(request, msg.data);
-        break;
-
-      case "WifiManager:setOpenNetworkNotify:Return:OK":
-        Services.DOMRequest.fireSuccess(request, msg.data);
-        break;
-
-      case "WifiManager:setOpenNetworkNotify:Return:NO":
         Services.DOMRequest.fireError(request, msg.data);
         break;
 
@@ -405,9 +396,9 @@ DOMWifiManager.prototype = {
         this._fireStationInfoUpdate(msg);
         break;
 
-      case "WifiManager:opennetworknotification":
-        this._notification = msg.enabled;
-        this._fireOpenNetworkNotification(msg);
+      case "WifiManager:opennetwork":
+        this._notification = msg.availability;
+        this._fireOpenNetwork(msg);
         break;
     }
   },
@@ -443,10 +434,10 @@ DOMWifiManager.prototype = {
     this.__DOM_IMPL__.dispatchEvent(evt);
   },
 
-  _fireOpenNetworkNotification: function onOpenNetworkNotification(notify) {
-    var evt = new this._window.WifiOpenNetworkNotificationEvent("opennetworknotification",
-                                                                { enabled: this._notification }
-                                                               );
+  _fireOpenNetwork: function onOpenNetwork(notify) {
+    var evt = new this._window.WifiOpenNetworkEvent("opennetwork",
+                                                    { availability: this._notification }
+                                                   );
     this.__DOM_IMPL__.dispatchEvent(evt);
   },
 
@@ -491,12 +482,6 @@ DOMWifiManager.prototype = {
   setPowerSavingMode: function setPowerSavingMode(enabled) {
     var request = this.createRequest();
     this._sendMessageForRequest("WifiManager:setPowerSavingMode", enabled, request);
-    return request;
-  },
-
-  setOpenNetworkNotify: function setOpenNetworkNotify(enable) {
-    var request = this.createRequest();
-    this._sendMessageForRequest("WifiManager:setOpenNetworkNotify", enable, request);
     return request;
   },
 

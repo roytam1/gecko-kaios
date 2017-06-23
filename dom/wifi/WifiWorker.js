@@ -58,6 +58,9 @@ const SETTINGS_USB_DHCPSERVER_ENDIP    = "tethering.usb.dhcpserver.endip";
 const SETTINGS_AIRPLANE_MODE           = "airplaneMode.enabled";
 const SETTINGS_AIRPLANE_MODE_STATUS    = "airplaneMode.status";
 
+// Settings DB for open network notify
+const SETTINGS_WIFI_NOTIFYCATION     = "wifi.notification";
+
 // Default value for WIFI tethering.
 const DEFAULT_WIFI_IP                  = "192.168.1.1";
 const DEFAULT_WIFI_PREFIX              = "24";
@@ -2313,7 +2316,6 @@ function WifiWorker() {
                     "WifiManager:associate", "WifiManager:forget",
                     "WifiManager:wps", "WifiManager:getState",
                     "WifiManager:setPowerSavingMode",
-                    "WifiManager:setOpenNetworkNotify",
                     "WifiManager:setHttpProxy",
                     "WifiManager:setStaticIpMode",
                     "WifiManager:importCert",
@@ -2914,7 +2916,7 @@ function WifiWorker() {
   };
 
   WifiNotificationController.onopennetworknotification = function() {
-    self._fireEvent("opennetworknotification", { enabled: this.enabled });
+    self._fireEvent("opennetwork", { availability: this.enabled });
   };
 
   WifiManager.onstopconnectioninfotimer = function() {
@@ -2986,6 +2988,20 @@ function WifiWorker() {
     }
   };
 
+  var initWifiNotifycationCb = {
+    handle: function handle(aName, aResult) {
+      if (aName !== SETTINGS_WIFI_NOTIFYCATION)
+        return;
+      if (aResult === null)
+        aResult = false;
+      WifiNotificationController.setNotificationEnabled(aResult);
+    },
+    handleError: function handleError(aErrorMessage) {
+      debug("Error reading the 'SETTINGS_WIFI_NOTIFYCATION' setting.");
+      WifiNotificationController.setNotificationEnabled(true);
+    }
+  };
+
   this.initTetheringSettings();
 
   let lock = gSettingsService.createLock();
@@ -2993,6 +3009,7 @@ function WifiWorker() {
   lock.get(SETTINGS_WIFI_DEBUG_ENABLED, initWifiDebuggingEnabledCb);
   lock.get(SETTINGS_AIRPLANE_MODE, initAirplaneModeCb);
   lock.get(SETTINGS_TELEPHONY_DEFAULT_SERVICE_ID, initTelephonyDefaultServiceIdCb);
+  lock.get(SETTINGS_WIFI_NOTIFYCATION, initWifiNotifycationCb);
 
   lock.get(SETTINGS_WIFI_SSID, this);
   lock.get(SETTINGS_WIFI_SECURITY_TYPE, this);
@@ -3473,9 +3490,6 @@ WifiWorker.prototype = {
         break;
       case "WifiManager:setPowerSavingMode":
         this.setPowerSavingMode(msg);
-        break;
-      case "WifiManager:setOpenNetworkNotify":
-        this.setOpenNetworkNotify(msg);
         break;
       case "WifiManager:setHttpProxy":
         this.setHttpProxy(msg);
@@ -4109,13 +4123,6 @@ WifiWorker.prototype = {
     });
   },
 
-  setOpenNetworkNotify: function(msg) {
-    const message = "WifiManager:setOpenNetworkNotify:Return";
-    let enabled = msg.data;
-    WifiNotificationController.setNotificationEnabled(enabled);
-    this._sendMessage(message, true, true, msg);
-  },
-
   setHttpProxy: function(msg) {
     const message = "WifiManager:setHttpProxy:Return";
     let self = this;
@@ -4518,6 +4525,9 @@ WifiWorker.prototype = {
         break;
       case SETTINGS_AIRPLANE_MODE_STATUS:
         this._airplaneMode_status = aResult;
+        break;
+      case SETTINGS_WIFI_NOTIFYCATION:
+        WifiNotificationController.setNotificationEnabled(aResult);
         break;
       case SETTINGS_WIFI_TETHERING_ENABLED:
         this._oldWifiTetheringEnabledState = this.tetheringSettings[SETTINGS_WIFI_TETHERING_ENABLED];

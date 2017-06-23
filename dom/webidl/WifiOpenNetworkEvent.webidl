@@ -6,16 +6,16 @@
 * All other trademarks are the property of their respective owners.
 */
 
-[Constructor(DOMString type, optional WifiOpenNetworkNotificationEventInit eventInitDict)]
-interface WifiOpenNetworkNotificationEvent : Event
+[Constructor(DOMString type, optional WifiOpenNetworkEventInit eventInitDict)]
+interface WifiOpenNetworkEvent : Event
 {
   /**
-   * Open network notification is enabled or not.
+   * Open network notification availability.
    */
-  readonly attribute boolean enabled;
+  readonly attribute boolean availability;
 };
 
-dictionary WifiOpenNetworkNotificationEventInit : EventInit
+dictionary WifiOpenNetworkEventInit : EventInit
 {
-  boolean enabled = false;
+  boolean availability = false;
 };
