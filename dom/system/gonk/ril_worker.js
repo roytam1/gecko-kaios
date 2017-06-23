@@ -4238,15 +4238,16 @@ RilObject.prototype[REQUEST_UDUB] = function REQUEST_UDUB(length, options) {
 };
 RilObject.prototype[REQUEST_LAST_CALL_FAIL_CAUSE] = function REQUEST_LAST_CALL_FAIL_CAUSE(length, options) {
   // Treat it as CALL_FAIL_ERROR_UNSPECIFIED if the request failed.
-  let failCause = CALL_FAIL_ERROR_UNSPECIFIED;
+  let failCause = RIL_CALL_FAILCAUSE_TO_GECKO_CALL_ERROR[CALL_FAIL_ERROR_UNSPECIFIED];
 
   if (!options.errorMsg) {
     let Buf = this.context.Buf;
-    let num = length ? Buf.readInt32() : 0;
 
-    if (num) {
+    if (length) {
       let causeNum = Buf.readInt32();
       failCause = RIL_CALL_FAILCAUSE_TO_GECKO_CALL_ERROR[causeNum] || failCause;
+      // Per ril.h struct RIL_LastCallFailCauseInfo contains {enum, char*}
+      // Kai doesn't support vendor_cause currently.
     }
     if (DEBUG) this.context.debug("Last call fail cause: " + failCause);
   }
