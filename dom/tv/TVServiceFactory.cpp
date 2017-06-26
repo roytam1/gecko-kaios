@@ -13,7 +13,7 @@
 #include "nsITVService.h"
 #include "nsITVSimulatorService.h"
 #include "nsServiceManagerUtils.h"
-
+#include "mozilla/Preferences.h"
 
 namespace mozilla {
 namespace dom {
@@ -52,7 +52,11 @@ TVServiceFactory::AutoCreateTVService()
 
   if (!service) {
     // Fallback to TV simulator service, especially for TV simulator on WebIDE.
-    service = do_CreateInstance(TV_SIMULATOR_SERVICE_CONTRACTID);
+    if (mozilla::Preferences::GetBool("dom.tv.simulator.enabled", true)) {
+      service = do_CreateInstance(TV_SIMULATOR_SERVICE_CONTRACTID);
+    } else {
+      return nullptr;
+    }
   }
 
   return service.forget();

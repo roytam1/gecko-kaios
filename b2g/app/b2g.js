@@ -1104,7 +1104,9 @@ pref("dom.system_update.enabled", true);
 pref("dom.udpsocket.enabled", true);
 
 // Enable TV Manager API
-pref("dom.tv.enabled", true);
+pref("dom.tv.enabled", false);
+// Enable TV Simulator API
+pref("dom.tv.simulator.enabled", false);
 
 // Enable Inputport Manager API
 pref("dom.inputport.enabled", true);
