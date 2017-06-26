@@ -785,20 +785,6 @@ this.DOMApplicationRegistry = {
       } catch(e) {} // getCharPref will throw on non-b2g platforms. That's ok.
 
       if (runUpdate || !loadAppPermission) {
-
-        // Run migration before uninstall of core apps happens.
-        let appMigrator = Components.classes["@mozilla.org/app-migrator;1"];
-        if (appMigrator) {
-          try {
-              appMigrator = appMigrator.createInstance(Components.interfaces.nsIObserver);
-              appMigrator.observe(null, "webapps-before-update-merge", null);
-          } catch(e) {
-            debug("Exception running app migration: ");
-            debug(e.name + " " + e.message);
-            debug("Skipping app migration.");
-          }
-        }
-
         if (AppConstants.MOZ_B2G) {
           yield this.installSystemApps();
         }
