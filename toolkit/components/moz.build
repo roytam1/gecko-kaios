@@ -44,7 +44,6 @@ DIRS += [
     'perfmonitoring',
     'places',
     'privatebrowsing',
-    'processsingleton',
     'promiseworker',
     'prompts',
     'protobuf',
@@ -107,6 +106,11 @@ if not CONFIG['MOZ_B2G']:
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] != "gonk" and CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
     DIRS += ['terminator']
+
+# Firefox-e10s uses a singleton of child process to listen console logs and
+# forward them to parent. Disable it on Gonk platform since it's built for e10s.
+if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'gonk':
+    DIRS += ['processsingleton'];
 
 DIRS += ['build']
 
