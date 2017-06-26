@@ -23,8 +23,9 @@ const {PushDB} = Cu.import("resource://gre/modules/PushDB.jsm");
 const CONNECTION_PROTOCOLS = (function() {
   if ('android' != AppConstants.MOZ_WIDGET_TOOLKIT) {
     const {PushServiceWebSocket} = Cu.import("resource://gre/modules/PushServiceWebSocket.jsm");
-    const {PushServiceHttp2} = Cu.import("resource://gre/modules/PushServiceHttp2.jsm");
-    return [PushServiceWebSocket, PushServiceHttp2];
+    // KaiOS: disable the http2 service since we don't support it.
+    // const {PushServiceHttp2} = Cu.import("resource://gre/modules/PushServiceHttp2.jsm");
+    return [PushServiceWebSocket];
   } else {
     const {PushServiceAndroidGCM} = Cu.import("resource://gre/modules/PushServiceAndroidGCM.jsm");
     return [PushServiceAndroidGCM];
