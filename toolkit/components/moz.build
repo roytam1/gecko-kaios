@@ -90,7 +90,10 @@ if CONFIG['MOZ_HELP_VIEWER']:
     DIRS += ['help']
 
 if CONFIG['MOZ_XUL']:
-    DIRS += ['autocomplete', 'satchel']
+    DIRS += ['autocomplete']
+
+if CONFIG['MOZ_XUL'] and CONFIG['MOZ_WIDGET_TOOLKIT'] != "gonk":
+    DIRS += ['satchel']
 
 if CONFIG['MOZ_TOOLKIT_SEARCH']:
     DIRS += ['search']

@@ -147,7 +147,7 @@ pref("signon.rememberSignons", true);
 pref("signon.expireMasterPassword", false);
 
 /* autocomplete */
-pref("browser.formfill.enable", true);
+pref("browser.formfill.enable", false);
 
 /* spellcheck */
 pref("layout.spellcheckDefault", 0);
