@@ -30,6 +30,10 @@ XPCOMUtils.defineLazyServiceGetter(this, "gDataCallInterfaceService",
                                    "@mozilla.org/datacall/interfaceservice;1",
                                    "nsIDataCallInterfaceService");
 
+XPCOMUtils.defineLazyServiceGetter(this, "gCustomizationInfo",
+                                   "@kaiostech.com/customizationinfo;1",
+                                   "nsICustomizationInfo");
+
 XPCOMUtils.defineLazyGetter(this, "RIL", function() {
   let obj = {};
   Cu.import("resource://gre/modules/ril_consts.js", obj);
@@ -282,6 +286,9 @@ DataCallManager.prototype = {
           let handler = this._connectionHandlers[clientId];
           let apnSetting = aResult[clientId];
           if (handler && apnSetting) {
+            if (gCustomizationInfo.getCustomizedValue(clientId, "xcap") != null) {
+              apnSetting.push(gCustomizationInfo.getCustomizedValue(clientId, "xcap"));
+            }
             handler.updateApnSettings(apnSetting);
           }
         }
