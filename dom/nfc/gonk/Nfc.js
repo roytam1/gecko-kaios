@@ -1034,6 +1034,11 @@ Nfc.prototype = {
 
 
   openConnection: function(callback) {
+    if (!this.nfcService) {
+      callback.notifyError("NotInitialize");
+      return;
+    }
+
     let command = CommandMsgTable["NFC:OpenConnection"];
     if (!command) {
       debug("Unknown message");
@@ -1068,6 +1073,11 @@ Nfc.prototype = {
   },
 
   transmit: function(handle, data, callback) {
+    if (!this.nfcService) {
+      callback.notifyError("NotInitialize");
+      return;
+    }
+
     let command = CommandMsgTable["NFC:Transmit"];
     if (!command) {
       debug("Unknown message");
@@ -1109,6 +1119,11 @@ Nfc.prototype = {
   },
 
   closeConnection: function(handle, callback) {
+    if (!this.nfcService) {
+      callback.notifyError("NotInitialize");
+      return;
+    }
+
     let command = CommandMsgTable["NFC:CloseConnection"];
     if (!command) {
       debug("Unknown message");
@@ -1144,6 +1159,11 @@ Nfc.prototype = {
   },
 
   resetSecureElement: function(handle, callback) {
+    if (!this.nfcService) {
+      callback.notifyError("NotInitialize");
+      return;
+    }
+
     let command = CommandMsgTable["NFC:ResetSecureElement"];
     if (!command) {
       debug("Unknown message");
@@ -1180,6 +1200,11 @@ Nfc.prototype = {
   },
 
   getAtr: function(handle, callback) {
+    if (!this.nfcService) {
+      callback.notifyError("NotInitialize");
+      return;
+    }
+
     let command = CommandMsgTable["NFC:GetAtr"];
     if (!command) {
       debug("Unknown message");
@@ -1258,6 +1283,11 @@ Nfc.prototype = {
   },
 
   lsExecuteScript: function(msg, callback) {
+    if (!this.nfcService) {
+      callback.notifyError("NotInitialize");
+      return;
+    }
+
     let command = CommandMsgTable["NFC:LsExecuteScript"];
     if (!command) {
       debug("Unknown message");
@@ -1370,6 +1400,11 @@ Nfc.prototype = {
   },
 
   lsGetVersion: function(msg, callback) {
+    if (!this.nfcService) {
+      callback.notifyError("NotInitialize");
+      return;
+    }
+
     let command = CommandMsgTable["NFC:LsGetVersion"];
     if (!command) {
       debug("Unknown message");
