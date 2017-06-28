@@ -903,9 +903,6 @@ pref("memory.dump_reports_on_oom", false);
 pref("layout.framevisibility.numscrollportwidths", 1);
 pref("layout.framevisibility.numscrollportheights", 1);
 
-// Enable native identity (persona/browserid)
-pref("dom.identity.enabled", true);
-
 // Wait up to this much milliseconds when orientation changed
 pref("layers.orientation.sync.timeout", 1000);
 
@@ -1084,7 +1081,10 @@ pref("layout.accessiblecaret.use_long_tap_injector", false);
 // Hide carets and text selection dialog during scrolling.
 pref("layout.accessiblecaret.always_show_when_scrolling", false);
 
-// Enable sync and mozId with KaiOS Accounts.
+// Disable mozId (IdentityManager) API
+pref("dom.identity.enabled", false);
+
+// Disable KaiOS Accounts.
 pref("identity.kaiaccounts.enabled", false);
 
 // Mobile Identity API.
