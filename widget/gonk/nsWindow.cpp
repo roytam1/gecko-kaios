@@ -900,6 +900,12 @@ nsWindow::NewCompositorBridgeParent(int aSurfaceWidth, int aSurfaceHeight)
 void
 nsWindow::BringToTop()
 {
+    // Only bring primary screen to top to avoid shifting focus away from
+    // primary window.
+    if (!mScreen->IsPrimaryScreen()) {
+        return;
+    }
+
     const nsTArray<nsWindow*>& windows = mScreen->GetTopWindows();
     if (!windows.IsEmpty()) {
         if (nsIWidgetListener* listener = windows[0]->GetWidgetListener()) {
