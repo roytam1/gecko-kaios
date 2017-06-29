@@ -248,8 +248,8 @@ class OpenSlesInput {
   bool agc_enabled_;
 
 #if defined(WEBRTC_GONK) && defined(WEBRTC_HARDWARE_AEC_NS)
-  android::AudioEffect* aec_;
-  android::AudioEffect* ns_;
+  android::sp<android::AudioEffect> aec_;
+  android::sp<android::AudioEffect> ns_;
 #endif
   // Audio status
   uint16_t recording_delay_;

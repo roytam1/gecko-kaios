@@ -508,16 +508,15 @@ void OpenSlesInput::SetupAECAndNS() {
 #else
       aec_ = new android::AudioEffect(FX_IID_AEC, NULL, 0, 0, 0, sessionId, 0);
 #endif
-      WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "OpenSL aec: %p", aec_);
+      WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "OpenSL aec: %p", aec_.get());
 
-      if (aec_) {
+      if (aec_ != NULL) {
         android::status_t status = aec_->initCheck();
         if (status == android::NO_ERROR || status == android::ALREADY_EXISTS) {
           WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "OpenSL aec enabled");
           aec_->setEnabled(true);
         } else {
           WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "OpenSL aec disabled: %d", status);
-          delete aec_;
           aec_ = NULL;
         }
       }
@@ -526,16 +525,15 @@ void OpenSlesInput::SetupAECAndNS() {
 #else
       ns_ = new android::AudioEffect(FX_IID_NS, NULL, 0, 0, 0, sessionId, 0);
 #endif
-      WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "OpenSL ns: %p", ns_);
+      WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "OpenSL ns: %p", ns_.get());
 
-      if (ns_) {
+      if (ns_ != NULL) {
         android::status_t status = ns_->initCheck();
         if (status == android::NO_ERROR || status == android::ALREADY_EXISTS) {
           WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "OpenSL ns enabled");
           ns_->setEnabled(true);
         } else {
           WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "OpenSL ns disabled: %d", status);
-          delete ns_;
           ns_ = NULL;
         }
       }
@@ -624,8 +622,6 @@ void OpenSlesInput::DestroyAudioRecorder() {
   event_.Stop();
 
 #if defined(WEBRTC_GONK) && defined(WEBRTC_HARDWARE_AEC_NS)
-  delete aec_;
-  delete ns_;
   aec_ = NULL;
   ns_ = NULL;
 #endif
