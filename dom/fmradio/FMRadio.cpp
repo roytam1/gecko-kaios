@@ -105,8 +105,7 @@ private:
 NS_IMPL_ISUPPORTS_INHERITED0(FMRadioRequest, DOMRequest)
 
 FMRadio::FMRadio()
-  : mHeadphoneState(hal::SWITCH_STATE_OFF)
-  , mRdsGroupMask(0)
+  : mRdsGroupMask(0)
   , mAudioChannelAgentEnabled(false)
   , mHasInternalAntenna(false)
   , mIsShutdown(false)
@@ -127,13 +126,6 @@ FMRadio::Init(nsPIDOMWindowInner *aWindow)
 
   mHasInternalAntenna = Preferences::GetBool(DOM_FM_ANTENNA_INTERNAL_PREF,
                                              /* default = */ false);
-  if (mHasInternalAntenna) {
-    LOG("We have an internal antenna.");
-  } else {
-    mHeadphoneState = hal::GetCurrentSwitchState(hal::SWITCH_HEADPHONES);
-    hal::RegisterSwitchObserver(hal::SWITCH_HEADPHONES, this);
-  }
-
   nsCOMPtr<nsIAudioChannelAgent> audioChannelAgent =
     do_CreateInstance("@mozilla.org/audiochannelagent;1");
   NS_ENSURE_TRUE_VOID(audioChannelAgent);
@@ -153,10 +145,6 @@ FMRadio::Shutdown()
 {
   IFMRadioService::Singleton()->RemoveObserver(this);
 
-  if (!mHasInternalAntenna) {
-    hal::UnregisterSwitchObserver(hal::SWITCH_HEADPHONES, this);
-  }
-
   mIsShutdown = true;
 }
 
@@ -164,18 +152,6 @@ JSObject*
 FMRadio::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 {
   return FMRadioBinding::Wrap(aCx, this, aGivenProto);
-}
-
-void
-FMRadio::Notify(const hal::SwitchEvent& aEvent)
-{
-  MOZ_ASSERT(!mHasInternalAntenna);
-
-  if (mHeadphoneState != aEvent.status()) {
-    mHeadphoneState = aEvent.status();
-
-    DispatchTrustedEvent(NS_LITERAL_STRING("antennaavailablechange"));
-  }
 }
 
 void
@@ -240,8 +216,7 @@ FMRadio::RdsEnabled()
 bool
 FMRadio::AntennaAvailable() const
 {
-  return mHasInternalAntenna ? true : (mHeadphoneState != hal::SWITCH_STATE_OFF) &&
-    (mHeadphoneState != hal::SWITCH_STATE_UNKNOWN);
+  return mHasInternalAntenna;
 }
 
 Nullable<double>

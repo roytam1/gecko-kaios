@@ -9,7 +9,7 @@ interface FMRadio : EventTarget {
   /* Indicates if RDS reception is enabled */
   readonly attribute boolean rdsEnabled;
 
-  /* Indicates if the antenna is plugged and available. */
+  /* Indicates if there is an internal antenna. */
   readonly attribute boolean antennaAvailable;
 
   /**
@@ -85,12 +85,6 @@ interface FMRadio : EventTarget {
 
   /* Fired when the RDS is disabled. */
   attribute EventHandler onrdsdisabled;
-
-  /**
-   * Fired when the antenna becomes available or unavailable, i.e., fired when
-   * the antennaAvailable attribute changes.
-   */
-  attribute EventHandler onantennaavailablechange;
 
   /* Fired when the FM radio's frequency is changed. */
   attribute EventHandler onfrequencychange;

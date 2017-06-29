@@ -19,7 +19,6 @@ BEGIN_FMRADIO_NAMESPACE
 class DOMRequest;
 
 class FMRadio final : public DOMEventTargetHelper
-                    , public hal::SwitchObserver
                     , public FMRadioEventObserver
                     , public nsSupportsWeakReference
                     , public nsIAudioChannelAgentCallback
@@ -38,8 +37,6 @@ public:
   void Init(nsPIDOMWindowInner *aWindow);
   void Shutdown();
 
-  /* hal::SwitchObserver */
-  virtual void Notify(const hal::SwitchEvent& aEvent) override;
   /* FMRadioEventObserver */
   virtual void Notify(const FMRadioEventType& aType) override;
 
@@ -98,7 +95,6 @@ public:
   IMPL_EVENT_HANDLER(disabled);
   IMPL_EVENT_HANDLER(rdsenabled);
   IMPL_EVENT_HANDLER(rdsdisabled);
-  IMPL_EVENT_HANDLER(antennaavailablechange);
   IMPL_EVENT_HANDLER(frequencychange);
   IMPL_EVENT_HANDLER(pichange);
   IMPL_EVENT_HANDLER(ptychange);
@@ -111,7 +107,6 @@ private:
 
   void EnableAudioChannelAgent();
 
-  hal::SwitchState mHeadphoneState;
   uint32_t mRdsGroupMask;
   bool mAudioChannelAgentEnabled;
   bool mHasInternalAntenna;
