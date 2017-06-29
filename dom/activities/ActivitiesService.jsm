@@ -44,9 +44,14 @@ function ActivitiesDb() {
 
 ActivitiesDb.prototype = {
   __proto__: IndexedDBHelper.prototype,
+  kaipayManifest: null,
 
   init: function actdb_init() {
     this.initDBHelper(DB_NAME, DB_VERSION, [STORE_NAME]);
+    try {
+      this.kaipayManifest = Services.prefs.getCharPref("apps.kaiPayment.manifest");
+    } catch(e) {}
+    debug("Read apps.kaiPayment.manifest:" + this.kaipayManifest);
   },
 
   /**
@@ -129,6 +134,10 @@ ActivitiesDb.prototype = {
   add: function actdb_add(aObjects, aSuccess, aError) {
     this.newTxn("readwrite", STORE_NAME, function (txn, store) {
       aObjects.forEach(function (aObject) {
+        if (aObject.name == "kaipay" &&
+            aObject.manifest != this.kaipayManifest) {
+          return;
+        }
         let object = {
           manifest: aObject.manifest,
           name: aObject.name,
@@ -309,8 +318,14 @@ var Activities = {
               return;
             }
 
-            debug("Sending system message...");
             let result = aResults.options[aResult];
+            let isKaipay = result.manifest == self.db.kaipayManifest;
+            let extra = {
+              "manifestURL": self.callers[aMsg.id].manifestURL,
+              "pageURL": self.callers[aMsg.id].pageURL,
+              "isPaymentRequest": isKaipay
+            };
+            debug("Sending system message, isPaymentRequest: " + isKaipay);
             sysmm.sendMessage("activity", {
                 "id": aMsg.id,
                 "payload": aMsg.options,
@@ -318,10 +333,7 @@ var Activities = {
               },
               Services.io.newURI(result.description.href, null, null),
               Services.io.newURI(result.manifest, null, null),
-              {
-                "manifestURL": self.callers[aMsg.id].manifestURL,
-                "pageURL": self.callers[aMsg.id].pageURL
-              });
+              extra);
 
             if (!result.description.returnValue) {
               // No need to notify observers, since we don't want the caller

@@ -286,6 +286,7 @@ WEBIDL_FILES = [
     'InterAppConnectionRequest.webidl',
     'InterAppMessagePort.webidl',
     'IterableIterator.webidl',
+    'Kaipay.webidl',
     'KeyAlgorithm.webidl',
     'KeyboardEvent.webidl',
     'KeyboardEventGenerator.webidl',
