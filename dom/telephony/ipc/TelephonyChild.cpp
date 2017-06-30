@@ -235,7 +235,10 @@ TelephonyRequestChild::DoResponse(const DialResponseCallSuccess& aResponse)
   callback->NotifyDialCallSuccess(aResponse.clientId(), aResponse.callIndex(),
                                   aResponse.number(),
                                   aResponse.isEmergency(),
-                                  aResponse.voiceQuality());
+                                  aResponse.voiceQuality(),
+                                  aResponse.videoCallState(),
+                                  aResponse.capabilities(),
+                                  aResponse.radioTech());
   return true;
 }
 

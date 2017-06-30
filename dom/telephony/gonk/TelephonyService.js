@@ -36,6 +36,7 @@ const kPrefDefaultServiceId = "dom.telephony.defaultServiceId";
 
 const nsITelephonyAudioService = Ci.nsITelephonyAudioService;
 const nsITelephonyService = Ci.nsITelephonyService;
+const nsITelephonyCallInfo = Ci.nsiTelephonyCallInfo;
 const nsIMobileConnection = Ci.nsIMobileConnection;
 
 const CALL_WAKELOCK_TIMEOUT = 5000;
@@ -1015,7 +1016,10 @@ TelephonyService.prototype = {
       aCallback.notifyDialCallSuccess(aClientId, CDMA_SECOND_CALL_INDEX,
                                       aOptions.number,
                                       aOptions.isEmergency,
-                                      nsITelephonyService.CALL_VOICE_QUALITY_NORMAL);
+                                      nsITelephonyService.CALL_VOICE_QUALITY_NORMAL,
+                                      nsITelephonyCallInfo.STATE_AUDIO_ONLY,
+                                      nsITelephonyCallInfo.CAPABILITY_SUPPORTS_NONE,
+                                      nsITelephonyCallInfo.RADIO_TECH_CS);
 
       let childCall = this._currentCalls[aClientId][CDMA_SECOND_CALL_INDEX] =
         new Call(aClientId, CDMA_SECOND_CALL_INDEX);

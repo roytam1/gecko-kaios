@@ -578,12 +578,18 @@ TelephonyRequestParent::DialCallback::NotifyDialCallSuccess(uint32_t aClientId,
                                                             uint32_t aCallIndex,
                                                             const nsAString& aNumber,
                                                             bool aIsEmergency,
-                                                            uint16_t aVoiceQuality)
+                                                            uint16_t aVoiceQuality,
+                                                            uint16_t aVideoCallState,
+                                                            uint32_t aCapabilities,
+                                                            uint16_t aRadioTech)
 {
   return SendResponse(DialResponseCallSuccess(aClientId, aCallIndex,
                                               nsAutoString(aNumber),
                                               aIsEmergency,
-                                              aVoiceQuality));
+                                              aVoiceQuality,
+                                              aVideoCallState,
+                                              aCapabilities,
+                                              aRadioTech));
 }
 
 NS_IMETHODIMP

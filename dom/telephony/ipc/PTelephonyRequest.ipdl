@@ -35,6 +35,9 @@ struct DialResponseCallSuccess
   nsString number;
   bool isEmergency;
   uint16_t voiceQuality;
+  uint16_t videoCallState;
+  uint32_t capabilities;
+  uint16_t radioTech;
 };
 
 struct DialResponseMMISuccess

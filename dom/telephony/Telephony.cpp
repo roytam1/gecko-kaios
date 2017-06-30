@@ -278,12 +278,12 @@ Telephony::CreateCall(TelephonyCallId* aId, uint32_t aServiceId,
   }
 
   RefPtr<TelephonyCall> call =
-    TelephonyCall::Create(this, aId, aServiceId, aCallIndex, aState, aVoiceQuality,
-                          aEmergency, aConference, aSwitchable, aMergeable,
-                          aConferenceParent,
-                          aCapabilities,
-                          static_cast<TelephonyVideoCallState>(aVideoCallState),
-                          static_cast<TelephonyCallRadioTech>(aRadioTech));
+  TelephonyCall::Create(this, aId, aServiceId, aCallIndex, aState, aVoiceQuality,
+                        aEmergency, aConference, aSwitchable, aMergeable,
+                        aConferenceParent,
+                        aCapabilities,
+                        static_cast<TelephonyVideoCallState>(aVideoCallState),
+                        static_cast<TelephonyCallRadioTech>(aRadioTech));
 
   NS_ASSERTION(call, "This should never fail!");
   NS_ASSERTION(aConference ? mGroup->CallsArray().Contains(call)

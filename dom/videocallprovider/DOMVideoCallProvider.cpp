@@ -89,7 +89,7 @@ SurfaceControlBack::OnProducerDestroyed()
 void
 SurfaceControlBack::setProducer(android::sp<android::IGraphicBufferProducer> aProducer)
 {
-  LOG("setProducer, mType: %d", mType);
+  LOG("%s, mType: %d", __FUNCTION__, mType);
   mProvider->SetSurface(mType, aProducer, mWidth, mHeight);
 }
 
@@ -259,7 +259,7 @@ DOMVideoCallProvider::SetCamera(const Optional<nsAString>& aCamera, ErrorResult&
     return nullptr;
   }
 
-  int16_t cameraId = 0;
+  int16_t cameraId = 0; // back (or forward-facing) camera by default
 
   if (!aCamera.WasPassed()) {
     cameraId = -1;
@@ -669,6 +669,7 @@ DOMVideoCallProvider::SetSurface(const int16_t aType, android::sp<android::IGrap
 void
 DOMVideoCallProvider::SetDataSourceSize(const int16_t aType, const uint16_t aWidth, const uint16_t aHeight)
 {
+  LOG("%s, type: %d, width: %d, height: %d", __FUNCTION__, aType, aWidth, aHeight);
   if (aType == TYPE_DISPLAY) {
     mDisplayControl->SetDataSourceSize(aWidth, aHeight);
   } else {
@@ -706,6 +707,7 @@ DOMVideoCallProvider::OnHandleCallSessionEvent(int16_t event)
 NS_IMETHODIMP
 DOMVideoCallProvider::OnChangePeerDimensions(uint16_t aWidth, uint16_t aHeight)
 {
+  LOG("%s, width: %d, height: %d", __FUNCTION__, aWidth, aHeight);
   DispatchChangePeerDimensionsEvent(NS_LITERAL_STRING("changepeerdimensions"), aWidth, aHeight);
   SetDataSourceSize(TYPE_DISPLAY, aWidth, aHeight);
   return NS_OK;
@@ -713,7 +715,7 @@ DOMVideoCallProvider::OnChangePeerDimensions(uint16_t aWidth, uint16_t aHeight)
 NS_IMETHODIMP
 DOMVideoCallProvider::OnChangeCameraCapabilities(nsIVideoCallCameraCapabilities *capabilities)
 {
-  LOG("OnChangeCameraCapabilities");
+  LOG("%s", __FUNCTION__);
   DispatchCameraCapabilitiesEvent(NS_LITERAL_STRING("changecameracapabilities"), capabilities);
   if (mPreviewControl) {
     uint16_t width;
