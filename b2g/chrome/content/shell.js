@@ -787,7 +787,8 @@ var shell = {
     Cu.import('resource://gre/modules/AlarmService.jsm');
     Cu.import('resource://gre/modules/AboutServiceWorkers.jsm');
     Cu.import('resource://gre/modules/UserAgentOverrides.jsm');
-    Cu.import('resource://gre/modules/Payment.jsm');
+    // We don't preprocess this file so we can't #ifdef MOZ_PAY here...
+    // Cu.import('resource://gre/modules/Payment.jsm');
     Cu.import('resource://gre/modules/DownloadsAPI.jsm');
     Cu.import('resource://gre/modules/RequestSyncService.jsm');
     Cu.import('resource://gre/modules/SystemUpdateService.jsm');
