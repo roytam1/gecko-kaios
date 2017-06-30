@@ -2672,7 +2672,9 @@ BluetoothServiceBluedroid::BondStateChangedNotification(
     // Use the cached CoD which is got from pairing request
     uint32_t remoteCod = 0;
     mDeviceCodMap.Get(aRemoteBdAddr, &remoteCod);
-    AppendNamedValue(propertiesArray, "Cod", remoteCod);
+    if (remoteCod) {
+      AppendNamedValue(propertiesArray, "Cod", remoteCod);
+    }
   }
 
   // Notify device of attribute changed
