@@ -56,7 +56,6 @@ const SE_IPC_SECUREELEMENT_MSG_NAMES = [
   "SE:ResetSecureElement",
   "SE:LsExecuteScript",
   "SE:LsGetVersion",
-  "NFC:ChangeRFState"
 ];
 
 const SECUREELEMENTMANAGER_CONTRACTID =
@@ -87,6 +86,8 @@ XPCOMUtils.defineLazyGetter(this, "EseConnector", () => {
 });
 
 const gSecureElementType = libcutils.property_get("ro.moz.nfc.secureelementtype", SE.TYPE_ESE);
+const TOPIC_NFCD_UNINITIALIZED = "nfcd_uninitialized";
+const TOPIC_CHANGE_RF_STATE = "nfc_change_rf_state";
 
 function getConnector(type) {
   switch (type) {
@@ -231,6 +232,8 @@ XPCOMUtils.defineLazyGetter(this, "gMap", function() {
 function SecureElementManager() {
   this._registerMessageListeners();
   Services.obs.addObserver(this, NS_XPCOM_SHUTDOWN_OBSERVER_ID, false);
+  Services.obs.addObserver(this, TOPIC_NFCD_UNINITIALIZED, false);
+  Services.obs.addObserver(this, TOPIC_CHANGE_RF_STATE, false);
   this._acEnforcer =
     Cc["@mozilla.org/secureelement/access-control/ace;1"]
     .getService(Ci.nsIAccessControlEnforcer);
@@ -260,6 +263,8 @@ SecureElementManager.prototype = {
     this._acEnforcer = null;
     this.secureelement = null;
     Services.obs.removeObserver(this, NS_XPCOM_SHUTDOWN_OBSERVER_ID);
+    Services.obs.removeObserver(this, TOPIC_NFCD_UNINITIALIZED);
+    Services.obs.removeObserver(this, TOPIC_CHANGE_RF_STATE);
     this._unregisterMessageListeners();
     this._unregisterSEListeners();
   },
@@ -309,7 +314,11 @@ SecureElementManager.prototype = {
     this._sePresence[type] = isPresent;
     gMap.getTargets().forEach(target => {
       let result = { type: type, isPresent: isPresent };
-      target.sendAsyncMessage("SE:ReaderPresenceChanged", { result: result });
+      try {
+        target.sendAsyncMessage("SE:ReaderPresenceChanged", { result: result });
+      } catch (err) {
+        debug("Target is not available");
+      }
     });
   },
 
@@ -642,6 +651,14 @@ SecureElementManager.prototype = {
   },
 
   _handleChildProcessShutdown: function(target) {
+
+    // Remove the requests when child process is dead.
+    for (let i = this._stateRequests.length - 1; i >= 0; i--) {
+      if (this._stateRequests[i].msg.target === target) {
+        this._stateRequests.splice(i, 1);
+      }
+    }
+
     let channels = gMap.getChannelsByTarget(target);
 
     let createCb = (seType, channelNumber) => {
@@ -673,7 +690,11 @@ SecureElementManager.prototype = {
   _sendSEResponse: function(msg, result) {
     let promiseStatus = (result.error === SE.ERROR_NONE) ? "Resolved" : "Rejected";
     result.resolverId = msg.data.resolverId;
-    msg.target.sendAsyncMessage(msg.name + promiseStatus, {result: result});
+    try {
+      msg.target.sendAsyncMessage(msg.name + promiseStatus, {result: result});
+    } catch (err) {
+      debug("Target is not available");
+    }
     this.requestDone();
   },
 
@@ -689,21 +710,24 @@ SecureElementManager.prototype = {
     return isValidMsg ? true : appIdValid;
   },
 
-  _handleRFStateChange: function(data) {
-    debug("_handleRFStateChange: " + JSON.stringify(data));
-    if (data.rfState === NFC.NFC_RF_STATE_IDLE) {
+  _handleRFStateChange: function(rfState) {
+    debug("_handleRFStateChange: " + JSON.stringify(rfState));
+    if (rfState === NFC.NFC_RF_STATE_IDLE) {
       // TODO, handle screen off case.
       //this._unregisterSEListeners();
-    } else if (data.rfState === NFC.NFC_RF_STATE_LISTEN || data.rfState === NFC.NFC_RF_STATE_DISCOVERY) {
+      this._handleSEError();
+    } else if (rfState === NFC.NFC_RF_STATE_LISTEN || rfState === NFC.NFC_RF_STATE_DISCOVERY) {
       this._registerSEListeners();
     } else {
-      debug("Unknow RF state " + data.rfState);
+      debug("Unknow RF state " + rfState);
     }
   },
 
   _stateRequests: [],
 
-  requestProcessing: false,
+  _requestProcessing: false,
+
+  _currentRequest: null,
 
   queueRequest: function(msg, callback) {
     if (!callback) {
@@ -719,7 +743,8 @@ SecureElementManager.prototype = {
   },
 
   requestDone: function requestDone() {
-    this.requestProcessing = false;
+    this._currentRequest = null;
+    this._requestProcessing = false;
     this.nextRequest();
   },
 
@@ -730,16 +755,16 @@ SecureElementManager.prototype = {
     }
 
     // Handling request, wait for it.
-    if (this.requestProcessing) {
+    if (this._requestProcessing) {
       return;
     }
     // Hold processing lock
-    this.requestProcessing = true;
+    this._requestProcessing = true;
 
     // Find next valid request
-    let request = this._stateRequests.shift();
+    this._currentRequest = this._stateRequests.shift();
 
-    this.handleRequest(request);
+    this.handleRequest(this._currentRequest);
   },
 
   handleRequest: function(request) {
@@ -788,10 +813,6 @@ SecureElementManager.prototype = {
       this._handleChildProcessShutdown(msg.target);
       return null;
     }
-    if (msg.name === "NFC:ChangeRFState" && !msg.target.assertPermission("nfc-manager")) {
-      debug("Received " + msg.name + " from a content process without nfc-manager permissions");
-      return;
-    }
 
     if (SE_IPC_SECUREELEMENT_MSG_NAMES.indexOf(msg.name) !== -1) {
       if (!msg.target.assertPermission("secureelement-manage")) {
@@ -812,14 +833,61 @@ SecureElementManager.prototype = {
       return null;
     }
 
-    if (msg.name === "NFC:ChangeRFState") {
-      this._handleRFStateChange(msg.data);
-      return null;
-    }
-
     this.queueRequest(msg, callback);
 
     return null;
+  },
+
+
+  _sendSEError: function(msg, result) {
+    let promiseStatus = (result.error === SE.ERROR_NONE) ? "Resolved" : "Rejected";
+    result.resolverId = msg.data.resolverId;
+    if (msg.name == "SE:LsExecuteScript" || msg.name == "SE:LsExecuteScript") {
+      result.reason = "00000000";
+    } else {
+      result.reason = "SE is not available";
+    }
+
+    // This might be failed when child process is dead.
+    try {
+      msg.target.sendAsyncMessage(msg.name + promiseStatus, {result: result});
+    } catch (err) {
+      debug("Child process might be dead");
+    }
+  },
+
+  _handleSEError: function () {
+    debug("_handleSEError");
+    // Check and notify error to current request.
+    if (this._currentRequest) {
+      let msg = this._currentRequest.msg;
+      this._sendSEError(msg, {error:SE.ERROR_NOTPRESENT});
+    }
+
+    // Check and notify error to others request in queue.
+    while (this._stateRequests.length) {
+      let request = this._stateRequests.shift();
+      let msg = request.msg;
+      this._sendSEError(msg, {error:SE.ERROR_NOTPRESENT});
+    }
+
+    this._requestProcessing = false;
+
+    let connector = getConnector(gSecureElementType);
+
+    if (!connector) {
+      return;
+    }
+
+    connector.closeConnection({
+      notifyCloseConnectionSuccess: function () {
+        debug("Close secure element connection successfully");
+      },
+
+      notifyError: function() {
+        debug("Failed to close secure element connection");
+      }
+    });
   },
 
   /**
@@ -827,8 +895,13 @@ SecureElementManager.prototype = {
    */
 
   observe: function(subject, topic, data) {
+    let self = this;
     if (topic === NS_XPCOM_SHUTDOWN_OBSERVER_ID) {
       this._shutdown();
+    } else if (topic === TOPIC_NFCD_UNINITIALIZED) {
+      this._handleSEError();
+    } else if (topic === TOPIC_CHANGE_RF_STATE) {
+      this._handleRFStateChange(data);
     }
   }
 };

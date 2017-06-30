@@ -43,6 +43,8 @@ Cu.import("resource://gre/modules/systemlibs.js");
 const NFC_ENABLED = libcutils.property_get("ro.moz.nfc.enabled", "false") === "true";
 const LOADER_SERVICE_TMP = "/data/nfc/";
 const LOADER_SERVICE_SD = "/storage/emulated/";
+const TOPIC_NFCD_UNINITIALIZED = "nfcd_uninitialized";
+const TOPIC_CHANGE_RF_STATE = "nfc_change_rf_state";
 // set to true in nfc_consts.js to see debug messages
 var DEBUG = NFC.DEBUG_NFC;
 
@@ -171,7 +173,8 @@ const NfcNotificationType = {
   RF_FIELD_ACTIVATED_EVENT: "rfFieldActivateEvent",
   RF_FIELD_DEACTIVATED_EVENT: "rfFieldDeActivateEvent",
   LISTEN_MODE_ACTIVATED_EVENT: "listenModeActivateEvent",
-  LISTEN_MODE_DEACTIVATED_EVENT: "listenModeDeActivateEvent"
+  LISTEN_MODE_DEACTIVATED_EVENT: "listenModeDeActivateEvent",
+  UNINITIALIZED: "unInitialized"
 };
 
 XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
@@ -788,6 +791,9 @@ Nfc.prototype = {
         }
         this.pendingNfcService = null;
         break;
+      case NfcNotificationType.UNINITIALIZED:
+        Services.obs.notifyObservers(event, TOPIC_NFCD_UNINITIALIZED, null);
+        break;
       case NfcNotificationType.TECH_DISCOVERED:
         // Update the upper layers with a session token (alias)
         message.sessionToken =
@@ -845,7 +851,7 @@ Nfc.prototype = {
         // Report the event even if there is a error.　　
         this.rfState = message.rfState;
         gMessageManager.onRFStateChanged(this.rfState);
-
+        Services.obs.notifyObservers(null, TOPIC_CHANGE_RF_STATE, this.rfState);
         if (this.rfState == NFC.NFC_RF_STATE_IDLE) {
           this.shutdownNfcService();
         }
