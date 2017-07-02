@@ -35,6 +35,16 @@ class SurfaceControlBack;
 class DOMVideoCallProvider final : public DOMEventTargetHelper
                                  , private nsIVideoCallCallback
 {
+  /**
+   * Class DOMVideoCallProvider doesn't actually expose
+   * nsIVideoCallCallback. Instead, it owns an
+   * nsIVideoCallCallback derived instance mListener and passes it to
+   * nsIVideoCallProvider. The onreceived events are first delivered to
+   * mListener and then forwarded to its owner, DOMVideoCallProvider.
+   * See also bug 775997 comment #51.
+   */
+  class Listener;
+
 public:
   NS_DECL_ISUPPORTS_INHERITED
   NS_DECL_NSIVIDEOCALLCALLBACK
@@ -144,6 +154,8 @@ private:
   bool mZoomSupported;
 
   nsCOMPtr<nsIVideoCallProvider> mProvider;
+  RefPtr<Listener> mListener;
+
   RefPtr<nsDOMSurfaceControl> mDisplayControl;
   RefPtr<nsDOMSurfaceControl> mPreviewControl;
   SurfaceControlBack* mDisplayCallback;

@@ -25,7 +25,7 @@
 #define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "DOMVideoCallProvider" , ## args)
 
 #define FEED_TEST_DATA_TO_PRODUCER
-#ifdef FEED_TEST_DATA_TO_PRODUCER 
+#ifdef FEED_TEST_DATA_TO_PRODUCER
 #include <cutils/properties.h>
 #endif
 
@@ -98,6 +98,35 @@ SurfaceControlBack::Shutdown()
 {
 }
 
+class DOMVideoCallProvider::Listener final : public nsIVideoCallCallback
+{
+  DOMVideoCallProvider* mVideoCallProvider;
+
+public:
+  NS_DECL_ISUPPORTS
+  NS_FORWARD_SAFE_NSIVIDEOCALLCALLBACK(mVideoCallProvider)
+
+  explicit Listener(DOMVideoCallProvider* aVideoCallProvider)
+    : mVideoCallProvider(aVideoCallProvider)
+  {
+    MOZ_ASSERT(mVideoCallProvider);
+  }
+
+  void Disconnect()
+  {
+    MOZ_ASSERT(mVideoCallProvider);
+    mVideoCallProvider = nullptr;
+  }
+
+private:
+  ~Listener()
+  {
+    MOZ_ASSERT(!mVideoCallProvider);
+  }
+};
+
+NS_IMPL_ISUPPORTS(DOMVideoCallProvider::Listener, nsIVideoCallCallback)
+
 // WebAPI VideoCallProvider.webidl
 
 NS_IMPL_ADDREF_INHERITED(DOMVideoCallProvider, DOMEventTargetHelper)
@@ -106,6 +135,10 @@ NS_IMPL_RELEASE_INHERITED(DOMVideoCallProvider, DOMEventTargetHelper)
 NS_IMPL_CYCLE_COLLECTION_CLASS(DOMVideoCallProvider)
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(DOMVideoCallProvider, DOMEventTargetHelper)
+  // Don't traverse mListener because it doesn't keep any reference to
+  // DOMVideoCallProvider but a raw pointer instead. Neither does mVideoCallProvider
+  // because it's an xpcom service owned object and is only released at shutting
+  // down.
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mProvider)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
@@ -132,7 +165,8 @@ DOMVideoCallProvider::DOMVideoCallProvider(nsPIDOMWindowInner *aWindow, nsIVideo
 {
   MOZ_ASSERT(mProvider);
   LOG("constructor");
-  mProvider->RegisterCallback(this);
+  mListener = new Listener(this);
+  mProvider->RegisterCallback(mListener);
 }
 
 DOMVideoCallProvider::~DOMVideoCallProvider()
@@ -177,17 +211,28 @@ DOMVideoCallProvider::Shutdown()
   }
 
   if (mProvider) {
-#ifdef FEED_TEST_DATA_TO_PRODUCER 
+#ifdef FEED_TEST_DATA_TO_PRODUCER
     char prop[128];
-    if ((property_get("vt.loopback", prop, NULL) != 0) && 
+    if ((property_get("vt.loopback", prop, NULL) != 0) &&
         (strcmp(prop, "1") == 0)) {
       android::sp<android::IGraphicBufferProducer> nullProducer;
       mProvider->SetPreviewSurface(nullProducer, 0, 0);
       mProvider->SetDisplaySurface(nullProducer, 0, 0);
     }
 #endif
-    mProvider->UnregisterCallback(this);
-    mProvider = nullptr;
+    if (mListener) {
+      if (mProvider) {
+        mProvider->UnregisterCallback(mListener);
+      }
+
+      mListener->Disconnect();
+      mListener = nullptr;
+    }
+
+    if (mProvider) {
+      mProvider = nullptr;
+    }
+
     LOG("null pointer mProvider");
   }
 }
