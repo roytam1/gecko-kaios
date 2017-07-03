@@ -44,6 +44,23 @@ Cu.import("resource://gre/modules/Task.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
 Cu.import("resource://gre/modules/MessageBroadcaster.jsm");
 
+XPCOMUtils.defineLazyGetter(this, "UserCustomizations", function() {
+  let enabled = false;
+  try {
+    enabled = Services.prefs.getBoolPref("dom.apps.customization.enabled");
+  } catch(e) {}
+
+  if (enabled) {
+    return Cu.import("resource://gre/modules/UserCustomizations.jsm", {})
+             .UserCustomizations;
+  } else {
+    return {
+      register: function() {},
+      unregister: function() {}
+    };
+  }
+});
+
 XPCOMUtils.defineLazyModuleGetter(this, "TrustedRootCertificate",
   "resource://gre/modules/StoreTrustAnchor.jsm");
 
@@ -424,6 +441,7 @@ this.DOMApplicationRegistry = {
           app.redirects = this.sanitizeRedirects(aResult.redirects);
         }
         app.kind = this.appKind(app, aResult.manifest);
+        UserCustomizations.register(app);
         Langpacks.register(app, aResult.manifest);
       });
 
@@ -1163,6 +1181,7 @@ this.DOMApplicationRegistry = {
         this._registerSystemMessages(manifest, app);
         this._registerInterAppConnections(manifest, app);
         appsToRegister.push({ manifest: manifest, app: app });
+        UserCustomizations.register(app);
         Langpacks.register(app, manifest);
       });
       this._safeToClone.resolve();
@@ -2062,8 +2081,10 @@ this.DOMApplicationRegistry = {
 
     // Update user customizations and langpacks.
     if (aOldManifest) {
+      UserCustomizations.unregister(aApp);
       Langpacks.unregister(aApp, aOldManifest);
     }
+    UserCustomizations.register(aApp);
     Langpacks.register(aApp, aNewManifest);
   },
 
@@ -3811,6 +3832,18 @@ this.DOMApplicationRegistry = {
     let newManifest = JSON.parse(converter.ConvertToUnicode(
           NetUtil.readInputStreamToString(istream, istream.available()) || ""));
 
+    if (!hasWebappManifest) {
+      // Validate the extension manifest, and convert it.
+      if (!UserCustomizations.checkExtensionManifest(newManifest)) {
+        throw "INVALID_MANIFEST";
+      }
+      newManifest = UserCustomizations.convertManifest(newManifest);
+      // Keep track of the add-on version, to use for blocklisting.
+      if (newManifest.version) {
+        aNewApp.extensionVersion = newManifest.version;
+      }
+    }
+
     if (!AppsUtils.checkManifest(newManifest, aOldApp)) {
       throw "INVALID_MANIFEST";
     }
@@ -4192,6 +4225,7 @@ this.DOMApplicationRegistry = {
     if (supportSystemMessages()) {
       this._unregisterActivities(aApp.manifest, aApp);
     }
+    UserCustomizations.unregister(aApp);
     Langpacks.unregister(aApp, aApp.manifest);
 
     let dir = this._getAppDir(id);
@@ -4610,6 +4644,32 @@ this.DOMApplicationRegistry = {
       });
       MessageBroadcaster.broadcastMessage("Webapps:SetEnabled:Return", app);
     });
+
+    // Update customization.
+    if (app.enabled) {
+      UserCustomizations.register(app);
+    } else {
+      UserCustomizations.unregister(app);
+    }
+  },
+
+  // Returns a promise that resolves once all the add-ons are disabled.
+  disableAllAddons: function() {
+    for (let id in this.webapps) {
+      let app = this.webapps[id];
+      if (app.role == "addon" && app.enabled) {
+        app.enabled = false;
+        MessageBroadcaster.broadcastMessage("Webapps:UpdateState", {
+          app: app,
+          id: app.id
+        });
+        MessageBroadcaster.broadcastMessage("Webapps:SetEnabled:Return", app);
+
+        UserCustomizations.unregister(app);
+      }
+    }
+
+    return this._saveApps();
   },
 
   getManifestFor: function(aManifestURL, aEntryPoint) {

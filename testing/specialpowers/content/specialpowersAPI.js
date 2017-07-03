@@ -1160,6 +1160,14 @@ SpecialPowersAPI.prototype = {
     });
   },
 
+  // Turn on debug information from UserCustomizations.jsm
+  debugUserCustomizations: function(value) {
+    this._sendSyncMessage("SPWebAppService", {
+      op: "debug-customizations",
+      value: value
+    });
+  },
+
   // Force-registering an app in the registry
   injectApp: function(aAppId, aApp) {
     this._sendSyncMessage("SPWebAppService", {

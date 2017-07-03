@@ -584,6 +584,7 @@ NeckoParent::AllocPRemoteOpenFileParent(const SerializedLoadContext& aSerialized
     if (!appsService) {
       return nullptr;
     }
+    bool haveValidBrowser = false;
     bool hasManage = false;
     nsCOMPtr<mozIApplication> mozApp;
     nsTArray<TabContext> contextArray =
@@ -603,11 +604,24 @@ NeckoParent::AllocPRemoteOpenFileParent(const SerializedLoadContext& aSerialized
         if (NS_FAILED(rv)) {
           break;
         }
+        haveValidBrowser = true;
         break;
       }
     }
 
     nsCOMPtr<nsIURI> appUri = DeserializeURI(aAppURI);
+
+    if (!haveValidBrowser) {
+      // Extension loads come from chrome and have no valid browser, so we check
+      // for these early on.
+      bool fromExtension = false;
+      if (NS_SUCCEEDED(appsService->IsExtensionResource(appUri, &fromExtension)) &&
+          fromExtension) {
+        RemoteOpenFileParent* parent = new RemoteOpenFileParent(fileURL);
+        return parent;
+      }
+      return nullptr;
+    }
 
     nsAutoCString requestedPath;
     fileURL->GetPath(requestedPath);

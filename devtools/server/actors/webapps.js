@@ -10,6 +10,7 @@ Cu.import("resource://gre/modules/NetUtil.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/osfile.jsm");
 Cu.import("resource://gre/modules/FileUtils.jsm");
+Cu.import("resource://gre/modules/UserCustomizations.jsm");
 Cu.importGlobalProperties(["FileReader"]);
 
 var promise = require("promise");
@@ -515,6 +516,14 @@ WebappsActor.prototype = {
           } catch(e) {
             self._sendError(deferred, "Error Parsing " + manifestName + ": " + e, aId);
             return;
+          }
+
+          if (manifestName === "manifest.json") {
+            if (!UserCustomizations.checkExtensionManifest(manifest)) {
+              self._sendError(deferred, "Invalid manifest", aId);
+              return;
+            }
+            manifest = UserCustomizations.convertManifest(manifest);
           }
 
           // Completely forbid pushing apps asking for unsafe permissions

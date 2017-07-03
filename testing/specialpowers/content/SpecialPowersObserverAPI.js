@@ -362,6 +362,13 @@ SpecialPowersObserverAPI.prototype = {
               utils.AppsUtils.allowUnsignedAddons = true;
               return;
             }
+          case "debug-customizations":
+            {
+              let scope = {};
+              Components.utils.import("resource://gre/modules/UserCustomizations.jsm", scope);
+              scope.UserCustomizations._debug = aMessage.json.value;
+              return;
+            }
           case "inject-app":
             {
               let aAppId = aMessage.json.appId;
