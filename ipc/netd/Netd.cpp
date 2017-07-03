@@ -7,6 +7,8 @@
 #include <cutils/sockets.h>
 #include <fcntl.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "android/log.h"
 
@@ -375,8 +377,17 @@ InitNetdIOThread()
     return;
   }
 
+  // XXX: Workaround, not to restart netd if first boot-up.
+  char value[Property::VALUE_MAX_LENGTH];
+  Property::Get("dev.b2g.pid", value, "0");
+  unsigned int prePid = atoi(value);
+  unsigned int curPid = getpid();
+
+  snprintf(value, Property::VALUE_MAX_LENGTH - 1, "%d", curPid);
+  Property::Set("dev.b2g.pid", value);
+
   // Restart netd to flush previous network configuration.
-  if (NS_WARN_IF(Property::Set("ctl.stop", "netd") < 0)){
+  if (prePid > 0 && NS_WARN_IF(Property::Set("ctl.stop", "netd") < 0)) {
     NETD_LOG("Can't stop netd");
   }
 
