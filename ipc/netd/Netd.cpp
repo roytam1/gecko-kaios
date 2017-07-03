@@ -7,8 +7,6 @@
 #include <cutils/sockets.h>
 #include <fcntl.h>
 #include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #include "android/log.h"
 
@@ -362,20 +360,6 @@ InitNetdIOThread()
 
   if (!gNetdClient) {
     NETD_LOG("Failed to create netd client");
-    return;
-  }
-
-  // XXX: Workaround, not to restart netd if first boot-up.
-  char value[Property::VALUE_MAX_LENGTH];
-  Property::Get("dev.b2g.pid", value, "0");
-  unsigned int prePid = atoi(value);
-  unsigned int curPid = getpid();
-
-  snprintf(value, Property::VALUE_MAX_LENGTH - 1, "%d", curPid);
-  Property::Set("dev.b2g.pid", value);
-
-  if (prePid <= 0) {
-    NETD_LOG("First boot, no need to stop netd");
     return;
   }
 
