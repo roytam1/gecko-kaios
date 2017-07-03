@@ -4523,8 +4523,8 @@ pref("geo.enabled", true);
 // Timeout for outbound network geolocation provider XHR
 pref("geo.wifi.xhr.timeout", 60000);
 
-// Enable/Disable the orientation API for content
-pref("device.sensors.enabled", true);
+// Enable/Disable the device sensors API for content
+pref("device.sensors.enabled", false);
 
 // Enable/Disable the device storage API for content
 pref("device.storage.enabled", false);
