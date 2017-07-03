@@ -39,7 +39,7 @@
 #include "nsXULAppAPI.h" // For XRE_GetProcessType()
 
 #define FEED_TEST_DATA_TO_PRODUCER
-#ifdef FEED_TEST_DATA_TO_PRODUCER 
+#ifdef FEED_TEST_DATA_TO_PRODUCER
 #include <cutils/properties.h>
 #include "mozilla/dom/FakeVideoCallProvider.h"
 #endif
@@ -373,8 +373,8 @@ Telephony::HandleCallInfo(nsITelephonyCallInfo* aInfo)
   // Handle a newly created call.
   if (!call) {
     RefPtr<TelephonyCallId> id = CreateCallId(aInfo);
-    call = CreateCall(id, serviceId, callIndex, state, quality, isEmergency,
-                      videoCallState, capabilities, radioTech,
+    call = CreateCall(id, serviceId, callIndex, state, quality,
+                      videoCallState, capabilities, radioTech, isEmergency,
                       isConference, isSwitchable, isMergeable, isConferenceParent);
     // The newly created call is an incoming call.
     if (call &&
@@ -683,10 +683,10 @@ Telephony::GetLoopbackProvider() const
       return provider.forget();
   } else {
     LOG("return new provider");
-    nsCOMPtr<nsIVideoCallProvider> handler;    
-#ifdef FEED_TEST_DATA_TO_PRODUCER 
+    nsCOMPtr<nsIVideoCallProvider> handler;
+#ifdef FEED_TEST_DATA_TO_PRODUCER
     char prop[128];
-    if ((property_get("vt.loopback", prop, NULL) != 0) && 
+    if ((property_get("vt.loopback", prop, NULL) != 0) &&
         (strcmp(prop, "1") == 0)) {
       handler = new FakeVideoCallProvider();
     } else {
