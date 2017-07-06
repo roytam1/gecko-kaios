@@ -186,7 +186,9 @@
 @RESPATH@/components/dom_notification.xpt
 @RESPATH@/components/dom_html.xpt
 @RESPATH@/components/dom_offline.xpt
+#ifdef MOZ_PAY
 @RESPATH@/components/dom_payment.xpt
+#endif
 @RESPATH@/components/dom_json.xpt
 @RESPATH@/components/dom_messages.xpt
 @RESPATH@/components/dom_power.xpt
@@ -664,10 +666,12 @@
 @RESPATH@/components/ActivityWrapper.js
 @RESPATH@/components/ActivityMessageConfigurator.js
 
+#ifdef MOZ_PAY
 @RESPATH@/components/Payment.js
 @RESPATH@/components/PaymentFlowInfo.js
 @RESPATH@/components/PaymentProvider.js
 @RESPATH@/components/Payment.manifest
+#endif
 
 @RESPATH@/components/DownloadsAPI.js
 @RESPATH@/components/DownloadsAPI.manifest
