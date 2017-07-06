@@ -1266,7 +1266,11 @@ Nfc.prototype = {
     dest.initWithPath(destPath + fileNewName);
 
     if (dest.exists()) {
-      dest.remove(false);
+      try {
+        dest.remove(false);
+      } catch (e) {
+        debug("Unable to remove the file");
+      }
     }
 
     let cbData = {};
@@ -1328,7 +1332,11 @@ Nfc.prototype = {
     let destFile = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
     destFile.initWithPath(dstDir + responseFileName);
     if (!destFile.exists()) {
-      destFile.create(Ci.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_DIRECTORY);
+      try {
+        destFile.create(Ci.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_DIRECTORY);
+      } catch (e) {
+        debug("Failed to create the file");
+      }
     }
 
     // Copy the applet file
@@ -1383,10 +1391,22 @@ Nfc.prototype = {
       // Remove the temporary files.
       let script = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
       script.initWithPath((LOADER_SERVICE_TMP + path.scriptFileName));
-      script.remove(false);
+      if (script.exists()) {
+        try {
+          script.remove(false);
+        } catch (e) {
+          debug("Unable to remove the file");
+        }
+      }
       let rsp = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
       rsp.initWithPath((LOADER_SERVICE_TMP + path.responseFileName));
-      rsp.remove(false);
+      if (rsp.exists()) {
+        try {
+          rsp.remove(false);
+        } catch (e) {
+          debug("Unable to remove the file");
+        }
+      }
 
       if (!message.response) {
         debug("lsExecuteScriptResponse: no valid response from eSE " + JSON.stringify(message));
