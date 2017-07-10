@@ -50,6 +50,12 @@ struct cubeb {
 
 #define NELEMS(A) (sizeof(A) / sizeof A[0])
 #define NBUFS 4
+// FastMixer uses double buffers, see
+// https://git.kaiostech.com/KaiOS/platform_frameworks_av/blob/
+// 2bd59ede7c5da1a74d3c77617e2e89fe51f130c4/services/audioflinger/Threads.cpp#L184
+// libcubeb should have the same amount of buffers or FastMixer could
+// ocassionally have buffer underrun problem.
+#define FAST_NBUFS 2
 #define AUDIO_STREAM_TYPE_MUSIC 3
 
 struct cubeb_stream {
@@ -59,7 +65,7 @@ struct cubeb_stream {
   SLPlayItf play;
   SLBufferQueueItf bufq;
   SLVolumeItf volume;
-  uint8_t *queuebuf[NBUFS];
+  uint8_t **queuebuf;
   int queuebuf_idx;
   long queuebuf_len;
   long bytespersec;
@@ -79,6 +85,7 @@ struct cubeb_stream {
   int64_t lastPosition;
   int64_t lastPositionTimeStamp;
   int64_t lastCompensativePosition;
+  uint8_t numBuffers;
 };
 
 static void
@@ -117,7 +124,7 @@ bufferqueue_callback(SLBufferQueueItf caller, void * user_ptr)
     return;
 
   SLuint32 i;
-  for (i = state.count; i < NBUFS; i++) {
+  for (i = state.count; i < stm->numBuffers; i++) {
     uint8_t *buf = stm->queuebuf[stm->queuebuf_idx];
     long written = 0;
     pthread_mutex_lock(&stm->mutex);
@@ -139,7 +146,7 @@ bufferqueue_callback(SLBufferQueueItf caller, void * user_ptr)
     memset(buf + written * stm->framesize, 0, stm->queuebuf_len - written * stm->framesize);
     res = (*stm->bufq)->Enqueue(stm->bufq, buf, stm->queuebuf_len);
     assert(res == SL_RESULT_SUCCESS);
-    stm->queuebuf_idx = (stm->queuebuf_idx + 1) % NBUFS;
+    stm->queuebuf_idx = (stm->queuebuf_idx + 1) % stm->numBuffers;
     if (written > 0) {
       pthread_mutex_lock(&stm->mutex);
       stm->written += written;
@@ -476,7 +483,7 @@ opensl_get_min_latency(cubeb * ctx, cubeb_stream_params params, uint32_t * laten
   /* To get a fast track in Android's mixer, we need to be at the native
    * samplerate, which is device dependant. Some devices might be able to
    * resample when playing a fast track, but it's pretty rare. */
-  *latency_ms = NBUFS * primary_buffer_size / (primary_sampling_rate / 1000);
+  *latency_ms = FAST_NBUFS * primary_buffer_size / (primary_sampling_rate / 1000);
 
   dlclose(libmedia);
 
@@ -561,13 +568,22 @@ opensl_stream_init(cubeb * ctx, cubeb_stream ** stream, char const * stream_name
   stm->lastPosition = -1;
   stm->lastPositionTimeStamp = 0;
   stm->lastCompensativePosition = -1;
+  {
+    int min_latency;
+    if (opensl_get_min_latency(ctx, *output_stream_params, &min_latency) == CUBEB_OK &&
+        min_latency == latency) {
+      stm->numBuffers = FAST_NBUFS;
+    } else {
+      stm->numBuffers = NBUFS;
+    }
+  }
 
   int r = pthread_mutex_init(&stm->mutex, NULL);
   assert(r == 0);
 
   SLDataLocator_BufferQueue loc_bufq;
   loc_bufq.locatorType = SL_DATALOCATOR_BUFFERQUEUE;
-  loc_bufq.numBuffers = NBUFS;
+  loc_bufq.numBuffers = stm->numBuffers;
   SLDataSource source;
   source.pLocator = &loc_bufq;
   source.pFormat = &format;
@@ -630,7 +646,7 @@ opensl_stream_init(cubeb * ctx, cubeb_stream ** stream, char const * stream_name
 
   stm->outputrate = preferred_sampling_rate;
   stm->bytespersec = stm->outputrate * stm->framesize;
-  stm->queuebuf_len = (stm->bytespersec * latency) / (1000 * NBUFS);
+  stm->queuebuf_len = (stm->bytespersec * latency) / (1000 * stm->numBuffers);
   // round up to the next multiple of stm->framesize, if needed.
   if (stm->queuebuf_len % stm->framesize) {
     stm->queuebuf_len += stm->framesize - (stm->queuebuf_len % stm->framesize);
@@ -651,7 +667,9 @@ opensl_stream_init(cubeb * ctx, cubeb_stream ** stream, char const * stream_name
   }
 
   int i;
-  for (i = 0; i < NBUFS; i++) {
+  stm->queuebuf = malloc(sizeof(uint8_t*) * stm->numBuffers);
+  assert(stm->queuebuf);
+  for (i = 0; i < stm->numBuffers; i++) {
     stm->queuebuf[i] = malloc(stm->queuebuf_len);
     assert(stm->queuebuf[i]);
   }
@@ -739,9 +757,14 @@ opensl_stream_destroy(cubeb_stream * stm)
 {
   if (stm->playerObj)
     (*stm->playerObj)->Destroy(stm->playerObj);
-  int i;
-  for (i = 0; i < NBUFS; i++) {
-    free(stm->queuebuf[i]);
+
+  if (stm->queuebuf) {
+    int i;
+    for (i = 0; i < stm->numBuffers; i++) {
+      free(stm->queuebuf[i]);
+    }
+
+    free(stm->queuebuf);
   }
   pthread_mutex_destroy(&stm->mutex);
 
