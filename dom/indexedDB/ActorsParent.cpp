@@ -10480,6 +10480,10 @@ DatabaseConnection::DisableQuotaChecks()
   AssertIsOnConnectionThread();
   MOZ_ASSERT(mStorageConnection);
 
+  if (NS_WARN_IF(IndexedDatabaseManager::InLowDiskSpaceMode())) {
+    return NS_ERROR_DOM_INDEXEDDB_QUOTA_ERR;
+  }
+
   if (!mQuotaObject) {
     MOZ_ASSERT(!mJournalQuotaObject);
 
@@ -10506,6 +10510,11 @@ DatabaseConnection::EnableQuotaChecks()
   AssertIsOnConnectionThread();
   MOZ_ASSERT(mQuotaObject);
   MOZ_ASSERT(mJournalQuotaObject);
+
+
+  if (NS_WARN_IF(IndexedDatabaseManager::InLowDiskSpaceMode())) {
+    return;
+  }
 
   RefPtr<QuotaObject> quotaObject;
   RefPtr<QuotaObject> journalQuotaObject;
