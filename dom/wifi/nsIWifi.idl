@@ -41,6 +41,11 @@ interface nsIWifiScanResultsReady : nsISupports {
     void onfailure();
 };
 
+[scriptable, uuid(07445824-384a-413a-940b-04ccf2a4ccb7)]
+interface nsIWifiWorkerListener : nsISupports {
+  void notifyIpChanged(in DOMString ipAddress);
+};
+
 [scriptable, uuid(08dfefed-5c5d-4468-8c5d-2c65c24692d9)]
 interface nsIWifi : nsISupports
 {
@@ -62,4 +67,14 @@ interface nsIWifi : nsISupports
      * Returns the device WIFI MAC address.
      */
     readonly attribute DOMString macAddress;
+
+    /**
+     * Called to register wifi-related changed.
+     */
+    void registerListener(in nsIWifiWorkerListener aListener);
+
+    /**
+     * Called to unregister wifi-related changed.
+     */
+    void unregisterListener(in nsIWifiWorkerListener aListener);
 };

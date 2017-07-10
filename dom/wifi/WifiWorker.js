@@ -513,18 +513,6 @@ var WifiManager = (function() {
   }
 
   function notifyStateChange(fields) {
-    // If we're already in the COMPLETED state, we might receive events from
-    // the supplicant that tell us that we're re-authenticating or reminding
-    // us that we're associated to a network. In those cases, we don't need to
-    // do anything, so just ignore them.
-    if (manager.state === "COMPLETED" &&
-        fields.state !== "DISCONNECTED" &&
-        fields.state !== "INTERFACE_DISABLED" &&
-        fields.state !== "INACTIVE" &&
-        fields.state !== "SCANNING") {
-      return false;
-    }
-
     // Enable background scan when device disconnected and screen off.
     // Disable background scan when device connecting and screen off.
     if(!screenOn) {
@@ -544,11 +532,11 @@ var WifiManager = (function() {
     // Don't update state when and after disabling.
     if (manager.state === "DISABLING" ||
         manager.state === "UNINITIALIZED") {
-      return false;
+      return;
     }
 
     manager.state = fields.state;
-    return true;
+    return;
   }
 
   function parseStatus(status) {
@@ -594,7 +582,8 @@ var WifiManager = (function() {
     if (ip_address)
       dhcpInfo = { ip_address: ip_address };
 
-    notifyStateChange({ state: state, fromStatus: true });
+    notifyStateChange({state: state,
+      fromStatus: true, isDriverRoaming: isDriverRoaming});
 
     // If we parse the status and the supplicant has already entered the
     // COMPLETED state, then we need to set up DHCP right away.
@@ -677,28 +666,35 @@ var WifiManager = (function() {
       setSuspendOptimizationsMode(POWER_MODE_DHCP, false, function(ok) {});
       manager.setPowerMode("ACTIVE", function(ok) {});
 
-      netUtil.runDhcp(manager.ifname, dhcpRequestGen++, function(data, gen) {
-        // Re-enable power saving mode after dhcp is done
-        setSuspendOptimizationsMode(POWER_MODE_DHCP, true, function(ok) {});
-        manager.setPowerMode("AUTO", function(ok) {});
+      gNetworkService.configureInterface( { ifname: manager.ifname,
+                                            ipaddr: 0,
+                                            mask: 0,
+                                            gateway: 0,
+                                            dns1: 0,
+                                            dns2: 0 }, function (data) {
+        netUtil.runDhcp(manager.ifname, dhcpRequestGen++, function(data, gen) {
+          // Re-enable power saving mode after dhcp is done
+          setSuspendOptimizationsMode(POWER_MODE_DHCP, true, function(ok) {});
+          manager.setPowerMode("AUTO", function(ok) {});
 
-        dhcpInfo = data.info;
-        debug('dhcpRequestGen: ' + dhcpRequestGen + ', gen: ' + gen);
-        // Only handle dhcp response in COMPLETED state.
-        if (manager.state !== "COMPLETED") {
-          return;
-        }
-
-        if (!dhcpInfo) {
-          if (gen + 1 < dhcpRequestGen) {
-            debug('Do not bother younger DHCP request.');
+          dhcpInfo = data.info;
+          debug("dhcpRequestGen: " + dhcpRequestGen + ", gen: " + gen);
+          // Only handle dhcp response in COMPLETED state.
+          if (manager.state !== "COMPLETED") {
             return;
           }
-          notify("networkdisable", {reason: "DISABLED_DHCP_FAILURE"});
-        } else {
-          manager.dhcpFailuresCount = 0;
-          notify("networkconnected", data);
-        }
+
+          if (!dhcpInfo) {
+            if (gen + 1 < dhcpRequestGen) {
+              debug("Do not bother younger DHCP request.");
+              return;
+            }
+            notify("networkdisable", {reason: "DISABLED_DHCP_FAILURE"});
+          } else {
+            manager.dhcpFailuresCount = 0;
+            notify("networkconnected", data);
+          }
+        });
       });
     });
   }
@@ -795,6 +791,7 @@ var WifiManager = (function() {
     return true;
   }
 
+  var isDriverRoaming = false;
   // Handle events sent to us by the event worker.
   function handleEvent(event) {
     debug("Event coming in: " + event);
@@ -865,8 +862,21 @@ var WifiManager = (function() {
         }
       }
 
-      if (notifyStateChange(fields) && fields.state === "COMPLETED") {
+      if (manager.state === "COMPLETED" && fields.state === "ASSOCIATED") {
+        debug("Driver Roaming starts.");
+        isDriverRoaming = true;
+      } else if (!manager.isConnectState(fields.state)) {
+        debug("Driver Roaming resets flag.")
+        isDriverRoaming = false;
+      }
+
+      fields.isDriverRoaming = isDriverRoaming;
+      notifyStateChange(fields);
+      if (fields.state === "COMPLETED") {
         onconnected();
+        if (isDriverRoaming) {
+          isDriverRoaming = false;
+        }
       }
       return true;
     }
@@ -2364,6 +2374,7 @@ function WifiWorker() {
   this._lastConnectionInfo = null;
   this._connectionInfoTimer = null;
   this._reconnectOnDisconnect = false;
+  this._listeners = [];
 
   // Create p2pObserver and assign to p2pManager.
   if (WifiManager.p2pSupported()) {
@@ -2688,9 +2699,12 @@ function WifiWorker() {
               ssid: quote(WifiManager.connectionInfo.ssid) };
         }
         self.currentNetwork.netId = this.id;
+        self.currentNetwork.isDriverRoaming = this.isDriverRoaming;
         WifiManager.getNetworkConfiguration(self.currentNetwork, function (){
-          // Notify again because we get complete network information.
-          self._fireEvent("onconnecting", { network: netToDOM(self.currentNetwork) });
+          if (!self.currentNetwork.isDriverRoaming) {
+            // Notify again because we get complete network information.
+            self._fireEvent("onconnecting", { network: netToDOM(self.currentNetwork) });
+          }
         });
         break;
       case "COMPLETED":
@@ -2710,7 +2724,9 @@ function WifiWorker() {
           WifiManager.loopDetectionCount = 0;
           WifiManager.associationRejectCount = 0;
           self._startConnectionInfoTimer();
-          self._fireEvent("onassociate", { network: netToDOM(self.currentNetwork) });
+          if (!self.currentNetwork.isDriverRoaming) {
+            self._fireEvent("onassociate", { network: netToDOM(self.currentNetwork) });
+          }
         };
 
         // We get the ASSOCIATED event when we've associated but not connected, so
@@ -2721,9 +2737,11 @@ function WifiWorker() {
           // network here.
           self.currentNetwork = { bssid: WifiManager.connectionInfo.bssid,
                                   ssid: quote(WifiManager.connectionInfo.ssid),
-                                  netId: WifiManager.connectionInfo.id };
+                                  netId: WifiManager.connectionInfo.id,
+                                  isDriverRoaming: this.isDriverRoaming };
           WifiManager.getNetworkConfiguration(self.currentNetwork, _oncompleted);
         } else {
+          self.currentNetwork.isDriverRoaming = this.isDriverRoaming;
           _oncompleted();
         }
         break;
@@ -2793,6 +2811,11 @@ function WifiWorker() {
       return;
     }
 
+    if (WifiNetworkInterface.info.ips.length !== 0 &&
+      WifiNetworkInterface.info.ips !== this.info.ipaddr_str) {
+      self.deliverListenerEvent("notifyIpChanged", [this.info.ipaddr_str]);
+    }
+
     let maskLength =
       netHelpers.getMaskLength(netHelpers.stringToIP(this.info.mask_str));
     if (!maskLength) {
@@ -2828,7 +2851,9 @@ function WifiWorker() {
     // connectionInformation event with the IP address the next time the
     // timer fires.
     self._lastConnectionInfo = null;
-    self._fireEvent("onconnect", { network: netToDOM(self.currentNetwork) });
+    if (!self.currentNetwork.isDriverRoaming) {
+      self._fireEvent("onconnect", { network: netToDOM(self.currentNetwork) });
+    }
   };
 
   WifiManager.onenableAllNetworks = function() {
@@ -3094,6 +3119,8 @@ WifiWorker.prototype = {
 
   _airplaneMode: false,
   _airplaneMode_status: null,
+
+  _listeners: null,
 
   _needToEnableNetworks: false,
   tetheringSettings: {},
@@ -3644,6 +3671,40 @@ WifiWorker.prototype = {
         }
       }
       return result;
+    }
+  },
+
+  registerListener: function(aListener) {
+    if (this._listeners.indexOf(aListener) >= 0) {
+      throw Cr.NS_ERROR_UNEXPECTED;
+    }
+    this._listeners.push(aListener);
+  },
+
+  unregisterListener: function(aListener) {
+    let index = this._listeners.indexOf(aListener);
+    if (index >= 0) {
+      this._listeners.splice(index, 1);
+    }
+  },
+
+  deliverListenerEvent: function(aName, aArgs) {
+    let listeners = this._listeners.slice();
+    for (let listener of listeners) {
+      if (this._listeners.indexOf(listener) === -1) {
+        continue;
+      }
+      let handler = listener[aName];
+      if (typeof handler != "function") {
+        throw new Error("No handler for " + aName);
+      }
+      try {
+        handler.apply(listener, aArgs);
+      } catch (e) {
+        if (DEBUG) {
+          this._debug("listener for " + aName + " threw an exception: " + e);
+        }
+      }
     }
   },
 

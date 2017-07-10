@@ -396,11 +396,11 @@ NetworkManager.prototype = {
       return true;
     }
 
-    preIface.ips.forEach((aIpAddress) => {
-      if (newIface.ips.indexOf(aIpAddress) == -1) {
+    for (let i in preIface.ips) {
+      if (newIface.ips.indexOf(preIface.ips[i]) == -1) {
         return true;
       }
-    });
+    }
 
     // TODO: We may need to add more check (such as gatways, dnses etc...) if
     //       necessary. For now, we only check state/IPs change or not.
