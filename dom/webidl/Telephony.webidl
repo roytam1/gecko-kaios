@@ -57,7 +57,6 @@ interface Telephony : EventTarget {
    *        One of Telephony.CALL_TYPE_* values.
    * TelephonyCall - for call setup
    * MMICall - for MMI code
-   * ETA: 3/24
    * TODO rename to dial() once we have removed original dial method.
    *
    */

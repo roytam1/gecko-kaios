@@ -40,13 +40,11 @@ interface TelephonyCall : EventTarget {
 
   /**
    * Indicate current video call state.
-   * ETA 3/24
    */
   readonly attribute TelephonyVideoCallState videoCallState;
 
   /**
    * Indicate current call capabilities.
-   * ETA 3/24
    */
   readonly attribute TelephonyCallCapabilities capabilities;
 
@@ -58,6 +56,12 @@ interface TelephonyCall : EventTarget {
 
   [NewObject]
   Promise<void> answer();
+  /**
+   * To answer call with given type.
+   * @param type
+   *        The call type you are going to answer.
+   *        One of Telephony.CALL_TYPE_* values.
+   */
   [NewObject]
   Promise<void> answerVT(unsigned short type);
   [NewObject]
@@ -69,7 +73,6 @@ interface TelephonyCall : EventTarget {
 
   /**
    * To acquire the video call handler which helps app to operate video call related function.
-   * ETA: 3/24
    */
   [Throws]
   readonly attribute VideoCallProvider? videoCallProvider;
