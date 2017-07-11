@@ -700,7 +700,10 @@ child:
                                  nsString aTag,
                                  nsString aIcon,
                                  nsString aData,
-                                 nsString aBehavior);
+                                 nsString aBehavior,
+                                 bool aRequireInteraction,
+                                 nsString aActions,
+                                 nsString aUserAction);
 
     /**
      * Windows specific: associate this content process with the browsers

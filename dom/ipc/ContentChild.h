@@ -570,7 +570,10 @@ public:
                              const nsString& aTag,
                              const nsString& aIcon,
                              const nsString& aData,
-                             const nsString& aBehavior) override;
+                             const nsString& aBehavior,
+                             const bool& aRequireInteraction,
+                             const nsString& aActions,
+                             const nsString& aUserAction) override;
 
   // Get the directory for IndexedDB files. We query the parent for this and
   // cache the value

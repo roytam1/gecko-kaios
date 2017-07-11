@@ -1134,6 +1134,7 @@ pref("dom.activities.developer_mode_only", "import-app");
 // Enable W3C Push API
 pref("dom.serviceWorkers.enabled", true);
 pref("dom.webnotifications.serviceworker.enabled", true);
+pref("dom.webnotifications.serviceworker.maxActions", 2);
 pref("dom.serviceWorkers.focus.enabled", false);
 pref("dom.push.enabled", true);
 // Enable Adaptive ping

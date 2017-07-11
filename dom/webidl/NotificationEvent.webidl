@@ -15,10 +15,12 @@
  Exposed=ServiceWorker,Func="mozilla::dom::Notification::PrefEnabled"]
 interface NotificationEvent : ExtendableEvent {
   readonly attribute Notification notification;
+  readonly attribute DOMString action;
 };
 
 dictionary NotificationEventInit : ExtendableEventInit {
   required Notification notification;
+  DOMString action = "";
 };
 
 partial interface ServiceWorkerGlobalScope {

@@ -132,6 +132,8 @@ AlertsService.prototype = {
       timestamp: aDetails.timestamp || undefined,
       dataObj: aDetails.data || undefined,
       mozbehavior: aDetails.mozbehavior,
+      requireInteraction: aDetails.requireInteraction || false,
+      actions: aDetails.actions || "[]",
       serviceWorkerRegistrationID: aDetails.serviceWorkerRegistrationID
     };
 
@@ -155,9 +157,13 @@ AlertsService.prototype = {
     }
 
     let topic = data.topic;
+    let userAction = "";
+    if (data.extra && typeof data.extra === 'string') {
+      userAction = data.extra;
+    }
 
     try {
-      listener.observer.observe(null, topic, null);
+      listener.observer.observe(null, topic, userAction);
     } catch (e) {
       // The non-empty serviceWorkerRegistrationID means the notification
       // is issued by service worker, so deal with this listener
@@ -178,7 +184,10 @@ AlertsService.prototype = {
             listener.tag,
             listener.imageURL,
             listener.dataObj || undefined,
-            listener.mozbehavior
+            listener.mozbehavior,
+            listener.requireInteraction,
+            listener.actions,
+            userAction
           );
         }
       } else {
@@ -202,6 +211,8 @@ AlertsService.prototype = {
                 tag: listener.tag,
                 timestamp: listener.timestamp,
                 data: dataObj || undefined,
+                requireInteraction: listener.requireInteraction,
+                actions: []
               },
               Services.io.newURI(data.target, null, null),
               Services.io.newURI(listener.manifestURL, null, null)

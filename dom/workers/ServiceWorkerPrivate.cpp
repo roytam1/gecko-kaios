@@ -979,7 +979,10 @@ class SendNotificationClickEventRunnable final : public ExtendableEventWorkerRun
   const nsString mIcon;
   const nsString mData;
   const nsString mBehavior;
+  const bool mRequireInteraction;
+  const nsString mActions;
   const nsString mScope;
+  const nsString mUserAction;
 
 public:
   SendNotificationClickEventRunnable(WorkerPrivate* aWorkerPrivate,
@@ -993,7 +996,10 @@ public:
                                      const nsAString& aIcon,
                                      const nsAString& aData,
                                      const nsAString& aBehavior,
-                                     const nsAString& aScope)
+                                     const bool& aRequireInteraction,
+                                     const nsAString& aActions,
+                                     const nsAString& aScope,
+                                     const nsAString& aUserAction)
       : ExtendableEventWorkerRunnable(aWorkerPrivate, aKeepAliveToken)
       , mID(aID)
       , mTitle(aTitle)
@@ -1004,7 +1010,10 @@ public:
       , mIcon(aIcon)
       , mData(aData)
       , mBehavior(aBehavior)
+      , mRequireInteraction(aRequireInteraction)
+      , mActions(aActions)
       , mScope(aScope)
+      , mUserAction(aUserAction)
   {
     AssertIsOnMainThread();
     MOZ_ASSERT(aWorkerPrivate);
@@ -1022,13 +1031,15 @@ public:
     RefPtr<Notification> notification =
       Notification::ConstructFromFields(aWorkerPrivate->GlobalScope(), mID,
                                         mTitle, mDir, mLang, mBody, mTag, mIcon,
-                                        mData, mScope, result);
+                                        mData, mRequireInteraction, mActions,
+                                        mScope, result);
     if (NS_WARN_IF(result.Failed())) {
       return false;
     }
 
     NotificationEventInit nei;
     nei.mNotification = notification;
+    nei.mAction = mUserAction;
     nei.mBubbles = false;
     nei.mCancelable = false;
 
@@ -1068,7 +1079,10 @@ ServiceWorkerPrivate::SendNotificationClickEvent(const nsAString& aID,
                                                  const nsAString& aIcon,
                                                  const nsAString& aData,
                                                  const nsAString& aBehavior,
-                                                 const nsAString& aScope)
+                                                 const bool& aRequireInteraction,
+                                                 const nsAString& aActions,
+                                                 const nsAString& aScope,
+                                                 const nsAString& aUserAction)
 {
   nsresult rv = SpawnWorkerIfNeeded(NotificationClickEvent, nullptr);
   NS_ENSURE_SUCCESS(rv, rv);
@@ -1079,7 +1093,8 @@ ServiceWorkerPrivate::SendNotificationClickEvent(const nsAString& aID,
     new SendNotificationClickEventRunnable(mWorkerPrivate, mKeepAliveToken,
                                            aID, aTitle, aDir, aLang,
                                            aBody, aTag, aIcon, aData,
-                                           aBehavior, aScope);
+                                           aBehavior, aRequireInteraction,
+                                           aActions, aScope, aUserAction);
   if (NS_WARN_IF(!r->Dispatch())) {
     return NS_ERROR_FAILURE;
   }

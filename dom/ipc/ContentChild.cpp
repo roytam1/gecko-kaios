@@ -3405,7 +3405,10 @@ ContentChild::RecvNotificationClickEvent(const nsCString& aOriginSuffix,
                                          const nsString& aTag,
                                          const nsString& aIcon,
                                          const nsString& aData,
-                                         const nsString& aBehavior)
+                                         const nsString& aBehavior,
+                                         const bool& aRequireInteraction,
+                                         const nsString& aActions,
+                                         const nsString& aUserAction)
 {
   nsCOMPtr<nsIServiceWorkerManager> swm =
     do_GetService("@mozilla.org/serviceworkers/manager;1");
@@ -3422,7 +3425,10 @@ ContentChild::RecvNotificationClickEvent(const nsCString& aOriginSuffix,
                                                 aTag,
                                                 aIcon,
                                                 aData,
-                                                aBehavior);
+                                                aBehavior,
+                                                aRequireInteraction,
+                                                aActions,
+                                                aUserAction);
   Unused << NS_WARN_IF(NS_FAILED(rv));
   return true;
 }

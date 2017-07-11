@@ -98,7 +98,7 @@ var AlertsHelper = {
   handleEvent: function(evt) {
     let detail = evt.detail;
 
-    switch(detail.type) {
+    switch (detail.type) {
       case kDesktopNotificationShow:
       case kDesktopNotificationClick:
       case kDesktopNotificationClose:
@@ -140,7 +140,8 @@ var AlertsHelper = {
         listener.mm.sendAsyncMessage(kMessageAppNotificationReturn, {
           uid: uid,
           topic: topic,
-          target: listener.target
+          target: listener.target,
+          extra: detail.action
         });
       } catch (e) {
         // The non-empty serviceWorkerRegistrationID means the notification
@@ -150,6 +151,10 @@ var AlertsHelper = {
           if (topic == kTopicAlertClickCallback) {
             let appId = appsService.getAppLocalIdByManifestURL(listener.manifestURL);
             let originSuffix = "^appId=" + appId;
+            let userAction = "";
+            if (detail.action && typeof detail.action === 'string') {
+              userAction = detail.action;
+            }
 
             serviceWorkerManager.sendNotificationClickEvent(
               originSuffix,
@@ -162,7 +167,10 @@ var AlertsHelper = {
               listener.tag,
               listener.imageURL,
               listener.dataObj || undefined,
-              listener.mozbehavior
+              listener.mozbehavior,
+              listener.requireInteraction,
+              listener.actions,
+              userAction
             );
           }
         } else {
@@ -182,7 +190,9 @@ var AlertsHelper = {
                 id: listener.id,
                 tag: listener.tag,
                 timestamp: listener.timestamp,
-                data: dataObj || undefined
+                data: dataObj || undefined,
+                requireInteraction: listener.requireInteraction,
+                actions: []
               },
               Services.io.newURI(listener.target, null, null),
               Services.io.newURI(listener.manifestURL, null, null)
@@ -262,8 +272,13 @@ var AlertsHelper = {
 
   showNotification: function(imageURL, title, text, textClickable, cookie,
                              uid, dir, lang, dataObj, manifestURL, timestamp,
-                             behavior, serviceWorkerRegistrationID) {
+                             behavior, requireInteraction, actions,
+                             serviceWorkerRegistrationID) {
     function send(appName, appIcon) {
+      let actionsObj;
+      try {
+        actionsObj = JSON.parse(actions);
+      } catch (e) {}
       SystemAppProxy._sendCustomEvent(kMozChromeNotificationEvent, {
         type: kDesktopNotification,
         id: uid,
@@ -278,6 +293,8 @@ var AlertsHelper = {
         timestamp: timestamp,
         data: dataObj,
         mozbehavior: behavior,
+        requireInteraction: requireInteraction,
+        actions: actionsObj || [],
         serviceWorkerRegistrationID: serviceWorkerRegistrationID
       });
     }
@@ -326,13 +343,17 @@ var AlertsHelper = {
       tag: details.tag || undefined,
       timestamp: details.timestamp || undefined,
       dataObj: details.data || undefined,
+      requireInteraction: details.requireInteraction || false,
+      actions: details.actions || "[]",
       serviceWorkerRegistrationID: details.serviceWorkerRegistrationID
     };
     this.registerAppListener(data.uid, listener);
     this.showNotification(data.imageURL, data.title, data.text,
                           details.textClickable, null, data.uid, details.dir,
                           details.lang, details.data, details.manifestURL,
-                          details.timestamp, details.mozbehavior, details.serviceWorkerRegistrationID);
+                          details.timestamp, details.mozbehavior,
+                          details.requireInteraction, details.actions,
+                          details.serviceWorkerRegistrationID);
   },
 
   closeAlert: function(name) {

@@ -102,7 +102,10 @@ public:
                              const nsAString& aIcon,
                              const nsAString& aData,
                              const nsAString& aBehavior,
-                             const nsAString& aScope);
+                             const bool& aRequireInteraction,
+                             const nsAString& aActions,
+                             const nsAString& aScope,
+                             const nsAString& aUserAction);
 
   nsresult
   SendFetchEvent(nsIInterceptedChannel* aChannel,

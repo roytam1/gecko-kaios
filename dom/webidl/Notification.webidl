@@ -25,6 +25,8 @@ interface Notification : EventTarget {
   [Throws, Func="mozilla::dom::Notification::IsGetEnabled"]
   static Promise<sequence<Notification>> get(optional GetNotificationOptions filter);
 
+  static readonly attribute unsigned long maxActions;
+
   attribute EventHandler onclick;
 
   attribute EventHandler onshow;
@@ -54,6 +56,11 @@ interface Notification : EventTarget {
   [Constant]
   readonly attribute any data;
 
+  readonly attribute boolean requireInteraction;
+
+  [Frozen, Cached, Pure]
+  readonly attribute sequence<NotificationAction> actions;
+
   void close();
 };
 
@@ -65,6 +72,8 @@ dictionary NotificationOptions {
   DOMString icon = "";
   any data = null;
   NotificationBehavior mozbehavior = null;
+  boolean requireInteraction = false;
+  sequence<NotificationAction> actions = [];
 };
 
 dictionary GetNotificationOptions {
@@ -91,6 +100,11 @@ enum NotificationDirection {
   "auto",
   "ltr",
   "rtl"
+};
+
+dictionary NotificationAction {
+  required DOMString action;
+  required DOMString title;
 };
 
 partial interface ServiceWorkerRegistration {

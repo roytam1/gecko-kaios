@@ -185,6 +185,8 @@ public:
     const nsAString& aTag,
     const nsAString& aIcon,
     const nsAString& aData,
+    const bool& aRequireInteraction,
+    const nsAString& aActions,
     const nsAString& aServiceWorkerRegistrationID,
     ErrorResult& aRv);
 
@@ -231,6 +233,13 @@ public:
   {
     return mIsStored;
   }
+
+  bool RequireInteraction() const
+  {
+    return mRequireInteraction;
+  }
+
+  static uint32_t MaxActions(const GlobalObject& global);
 
   static bool RequestPermissionEnabledForScope(JSContext* aCx, JSObject* /* unused */);
 
@@ -282,6 +291,8 @@ public:
 
   void GetData(JSContext* aCx, JS::MutableHandle<JS::Value> aRetval);
 
+  void GetActions(nsTArray<NotificationAction>& aRetVal) const;
+
   void InitFromJSVal(JSContext* aCx, JS::Handle<JS::Value> aData, ErrorResult& aRv);
 
   void InitFromBase64(const nsAString& aData, ErrorResult& aRv);
@@ -329,7 +340,9 @@ protected:
                const nsAString& aTitle, const nsAString& aBody,
                NotificationDirection aDir, const nsAString& aLang,
                const nsAString& aTag, const nsAString& aIconUrl,
-               const NotificationBehavior& aBehavior);
+               const NotificationBehavior& aBehavior,
+               const bool& aRequireInteraction,
+               const nsTArray<NotificationAction>& aActions);
 
   static already_AddRefed<Notification> CreateInternal(nsIGlobalObject* aGlobal,
                                                        const nsAString& aID,
@@ -399,6 +412,9 @@ protected:
   const nsString mIconUrl;
   nsString mDataAsBase64;
   const NotificationBehavior mBehavior;
+  const bool mRequireInteraction;
+  const nsTArray<NotificationAction> mActions;
+  nsString mActionsString;
 
   // It's null until GetData is first called
   JS::Heap<JS::Value> mData;

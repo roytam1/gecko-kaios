@@ -84,7 +84,8 @@ NotificationStorage.prototype = {
   },
 
   put: function(origin, id, title, dir, lang, body, tag, icon, alertName,
-                data, behavior, serviceWorkerRegistrationID) {
+                data, behavior, requireInteraction, actions,
+                serviceWorkerRegistrationID) {
     if (DEBUG) { debug("PUT: " + origin + " " + id + ": " + title); }
     var notification = {
       id: id,
@@ -99,6 +100,8 @@ NotificationStorage.prototype = {
       origin: origin,
       data: data,
       mozbehavior: behavior,
+      requireInteraction: requireInteraction,
+      actions: actions,
       serviceWorkerRegistrationID: serviceWorkerRegistrationID,
     };
 
@@ -141,9 +144,15 @@ NotificationStorage.prototype = {
       this.searchID = id;
       this.originalCallback = originalCallback;
       var self = this;
-      this.handle = function(id, title, dir, lang, body, tag, icon, data, behavior, serviceWorkerRegistrationID) {
+      this.handle = function(id, title, dir, lang, body,
+                             tag, icon, data, behavior,
+                             requireInteraction, actions,
+                             serviceWorkerRegistrationID) {
         if (id == this.searchID) {
-          self.originalCallback.handle(id, title, dir, lang, body, tag, icon, data, behavior, serviceWorkerRegistrationID);
+          self.originalCallback.handle(id, title, dir, lang, body,
+                                       tag, icon, data, behavior,
+                                       requireInteraction, actions,
+                                       serviceWorkerRegistrationID);
         }
       };
       this.done = function() {
@@ -246,6 +255,8 @@ NotificationStorage.prototype = {
                                notification.icon,
                                notification.data,
                                notification.mozbehavior,
+                               notification.requireInteraction,
+                               notification.actions,
                                notification.serviceWorkerRegistrationID),
           Ci.nsIThread.DISPATCH_NORMAL);
       } catch (e) {

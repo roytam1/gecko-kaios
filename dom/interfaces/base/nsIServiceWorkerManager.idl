@@ -77,7 +77,7 @@ interface nsIServiceWorkerManagerListener : nsISupports
   void onUnregister(in nsIServiceWorkerRegistrationInfo aInfo);
 };
 
-[scriptable, builtinclass, uuid(7404c8e8-4d47-4449-8ed1-47d1261d4e33)]
+[scriptable, builtinclass, uuid(6fc2086a-032d-47f9-85c7-747bee0290b1)]
 interface nsIServiceWorkerManager : nsISupports
 {
   /**
@@ -184,11 +184,16 @@ interface nsIServiceWorkerManager : nsISupports
                                   in AString aTag,
                                   in AString aIcon,
                                   in AString aData,
-                                  in AString aBehavior);
+                                  in AString aBehavior,
+                                  in boolean aRequireInteraction,
+                                  in AString aActions,
+                                  in AString aUserAction);
+
   [optional_argc] void sendPushEvent(in ACString aOriginAttributes,
                                      in ACString aScope,
                                      [optional] in uint32_t aDataLength,
                                      [optional, array, size_is(aDataLength)] in uint8_t aDataBytes);
+
   void sendPushSubscriptionChangeEvent(in ACString aOriginAttributes,
                                        in ACString scope);
 

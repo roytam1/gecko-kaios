@@ -44,6 +44,7 @@ public:
     e->InitEvent(aType, aOptions.mBubbles, aOptions.mCancelable);
     e->SetTrusted(trusted);
     e->mNotification = aOptions.mNotification;
+    e->mAction = aOptions.mAction;
     e->SetWantsPopupControlCheck(e->IsTrusted());
     return e.forget();
   }
@@ -65,8 +66,14 @@ public:
     return n.forget();
   }
 
+  void GetAction(nsString& aRetVal) const
+  {
+    aRetVal = mAction;
+  }
+
 private:
   RefPtr<Notification> mNotification;
+  nsString mAction;
 };
 
 END_WORKERS_NAMESPACE

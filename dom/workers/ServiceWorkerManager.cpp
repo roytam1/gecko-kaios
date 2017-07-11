@@ -1071,7 +1071,10 @@ ServiceWorkerManager::SendNotificationClickEvent(const nsACString& aOriginSuffix
                                                  const nsAString& aTag,
                                                  const nsAString& aIcon,
                                                  const nsAString& aData,
-                                                 const nsAString& aBehavior)
+                                                 const nsAString& aBehavior,
+                                                 bool aRequireInteraction,
+                                                 const nsAString& aActions,
+                                                 const nsAString& aUserAction)
 {
   PrincipalOriginAttributes attrs;
   if (!attrs.PopulateFromSuffix(aOriginSuffix)) {
@@ -1086,18 +1089,23 @@ ServiceWorkerManager::SendNotificationClickEvent(const nsACString& aOriginSuffix
     ContentParent::GetAll(contentActors);
     for (uint32_t i = 0; i < contentActors.Length(); ++i) {
       const nsString nAppManifestURL = contentActors[i]->AppManifestURL();
+
       if (CheckAppPrincipalOriginAttributes(contentActors[i], attrs)) {
-        ok &= contentActors[i]->SendNotificationClickEvent(PromiseFlatCString(aOriginSuffix),
-                                                           PromiseFlatCString(aScope),
-                                                           PromiseFlatString(aID),
-                                                           PromiseFlatString(aTitle),
-                                                           PromiseFlatString(aDir),
-                                                           PromiseFlatString(aLang),
-                                                           PromiseFlatString(aBody),
-                                                           PromiseFlatString(aTag),
-                                                           PromiseFlatString(aIcon),
-                                                           PromiseFlatString(aData),
-                                                           PromiseFlatString(aBehavior));
+        ok &= contentActors[i]->SendNotificationClickEvent(
+                PromiseFlatCString(aOriginSuffix),
+                PromiseFlatCString(aScope),
+                PromiseFlatString(aID),
+                PromiseFlatString(aTitle),
+                PromiseFlatString(aDir),
+                PromiseFlatString(aLang),
+                PromiseFlatString(aBody),
+                PromiseFlatString(aTag),
+                PromiseFlatString(aIcon),
+                PromiseFlatString(aData),
+                PromiseFlatString(aBehavior),
+                aRequireInteraction,
+                PromiseFlatString(aActions),
+                PromiseFlatString(aUserAction));
         return ok ? NS_OK : NS_ERROR_FAILURE;
       }
     }
@@ -1112,7 +1120,9 @@ ServiceWorkerManager::SendNotificationClickEvent(const nsACString& aOriginSuffix
   return workerPrivate->SendNotificationClickEvent(aID, aTitle, aDir,
                                                    aLang, aBody, aTag,
                                                    aIcon, aData, aBehavior,
-                                                   NS_ConvertUTF8toUTF16(aScope));
+                                                   aRequireInteraction, aActions,
+                                                   NS_ConvertUTF8toUTF16(aScope),
+                                                   aUserAction);
 }
 
 NS_IMETHODIMP

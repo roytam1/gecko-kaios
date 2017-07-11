@@ -4,7 +4,7 @@
 
 #include "domstubs.idl"
 
-[scriptable, uuid(c1622232-259c-43b0-b52e-89c39dcd9796)]
+[scriptable, uuid(293f7774-c62f-49d2-95a2-048680aa2acc)]
 interface nsINotificationStorageCallback : nsISupports
 {
   /**
@@ -28,6 +28,8 @@ interface nsINotificationStorageCallback : nsISupports
               in DOMString icon,
               in DOMString data,
               in DOMString behavior,
+              in boolean requireInteraction,
+              in DOMString actions,
               in DOMString serviceWorkerRegistrationID);
 
   /**
@@ -40,7 +42,7 @@ interface nsINotificationStorageCallback : nsISupports
 /**
  * Interface for notification persistence layer.
  */
-[scriptable, uuid(17f85e52-fe57-440e-9ba1-5c312ca02b95)]
+[scriptable, uuid(d0c1f1fa-9f7a-48bb-8ad1-060de19fe745)]
 interface nsINotificationStorage : nsISupports
 {
 
@@ -76,6 +78,8 @@ interface nsINotificationStorage : nsISupports
            in DOMString alertName,
            in DOMString data,
            in DOMString behavior,
+           in boolean requireInteraction,
+           in DOMString actions,
            in DOMString serviceWorkerRegistrationID);
 
   /**

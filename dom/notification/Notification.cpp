@@ -66,7 +66,12 @@ namespace dom {
 
 using namespace workers;
 
-struct NotificationStrings
+static const char *kPrefNotificationMaxActions = "dom.webnotifications.serviceworker.maxActions";
+static const uint32_t kMaxNotificationMaxActions = 4u;
+// Tracks the "dom.webnotifications.serviceworker.maxActions" preference.
+Atomic<uint32_t> gDOMMaxActions(0);
+
+struct NotificationFields
 {
   const nsString mID;
   const nsString mTitle;
@@ -77,6 +82,8 @@ struct NotificationStrings
   const nsString mIcon;
   const nsString mData;
   const nsString mBehavior;
+  const bool mRequireInteraction;
+  const nsString mActions;
   const nsString mServiceWorkerRegistrationID;
 };
 
@@ -97,6 +104,8 @@ public:
                     const nsAString& aIcon,
                     const nsAString& aData,
                     const nsAString& aBehavior,
+                    bool aRequireInteraction,
+                    const nsAString& aActions,
                     const nsAString& aServiceWorkerRegistrationID) final
   {
     AssertIsOnMainThread();
@@ -107,7 +116,7 @@ public:
       return NS_OK;
     }
 
-    NotificationStrings strings = {
+    NotificationFields fields = {
       nsString(aID),
       nsString(aTitle),
       nsString(aDir),
@@ -117,10 +126,12 @@ public:
       nsString(aIcon),
       nsString(aData),
       nsString(aBehavior),
+      aRequireInteraction,
+      nsString(aActions),
       nsString(aServiceWorkerRegistrationID),
     };
 
-    mStrings.AppendElement(Move(strings));
+    mFields.AppendElement(Move(fields));
     return NS_OK;
   }
 
@@ -130,7 +141,7 @@ protected:
   virtual ~ScopeCheckingGetCallback()
   {}
 
-  nsTArray<NotificationStrings> mStrings;
+  nsTArray<NotificationFields> mFields;
 };
 
 class NotificationStorageCallback final : public ScopeCheckingGetCallback
@@ -155,20 +166,22 @@ public:
     ErrorResult result;
     AutoTArray<RefPtr<Notification>, 5> notifications;
 
-    for (uint32_t i = 0; i < mStrings.Length(); ++i) {
+    for (uint32_t i = 0; i < mFields.Length(); ++i) {
       RefPtr<Notification> n =
         Notification::ConstructFromFields(mWindow,
-                                          mStrings[i].mID,
-                                          mStrings[i].mTitle,
-                                          mStrings[i].mDir,
-                                          mStrings[i].mLang,
-                                          mStrings[i].mBody,
-                                          mStrings[i].mTag,
-                                          mStrings[i].mIcon,
-                                          mStrings[i].mData,
-                                          /* mStrings[i].mBehavior, not
+                                          mFields[i].mID,
+                                          mFields[i].mTitle,
+                                          mFields[i].mDir,
+                                          mFields[i].mLang,
+                                          mFields[i].mBody,
+                                          mFields[i].mTag,
+                                          mFields[i].mIcon,
+                                          mFields[i].mData,
+                                          /* mFields[i].mBehavior, not
                                            * supported */
-                                          mStrings[i].mServiceWorkerRegistrationID,
+                                          mFields[i].mRequireInteraction,
+                                          mFields[i].mActions,
+                                          mFields[i].mServiceWorkerRegistrationID,
                                           result);
 
       n->SetStoredState(true);
@@ -523,12 +536,12 @@ public:
 class NotificationTask : public nsRunnable
 {
 public:
-  enum NotificationAction {
+  enum NotificationTaskAction {
     eShow,
     eClose
   };
 
-  NotificationTask(UniquePtr<NotificationRef> aRef, NotificationAction aAction)
+  NotificationTask(UniquePtr<NotificationRef> aRef, NotificationTaskAction aAction)
     : mNotificationRef(Move(aRef)), mAction(aAction)
   {}
 
@@ -538,7 +551,7 @@ protected:
   virtual ~NotificationTask() {}
 
   UniquePtr<NotificationRef> mNotificationRef;
-  NotificationAction mAction;
+  NotificationTaskAction mAction;
 };
 
 uint32_t Notification::sCount = 0;
@@ -975,12 +988,15 @@ Notification::Notification(nsIGlobalObject* aGlobal, const nsAString& aID,
                            const nsAString& aTitle, const nsAString& aBody,
                            NotificationDirection aDir, const nsAString& aLang,
                            const nsAString& aTag, const nsAString& aIconUrl,
-                           const NotificationBehavior& aBehavior)
+                           const NotificationBehavior& aBehavior,
+                           const bool& aRequireInteraction,
+                           const nsTArray<NotificationAction>& aActions)
   : DOMEventTargetHelper(),
     mWorkerPrivate(nullptr), mObserver(nullptr),
     mID(aID), mTitle(aTitle), mBody(aBody), mDir(aDir), mLang(aLang),
-    mTag(aTag), mIconUrl(aIconUrl), mBehavior(aBehavior), mData(JS::NullValue()),
-    mIsClosed(false), mIsStored(false), mTaskCount(0)
+    mTag(aTag), mIconUrl(aIconUrl), mBehavior(aBehavior),
+    mRequireInteraction(aRequireInteraction), mActions(aActions),
+    mData(JS::NullValue()), mIsClosed(false), mIsStored(false), mTaskCount(0)
 {
   if (NS_IsMainThread()) {
     // We can only call this on the main thread because
@@ -1056,6 +1072,11 @@ Notification::Constructor(const GlobalObject& aGlobal,
     return nullptr;
   }
 
+  if (aOptions.mActions.Length()) {
+    aRv.ThrowTypeError<MSG_NOTIFICATION_ACTIONS_NOT_IN_SERVICEWORKER>();
+    return nullptr;
+  }
+
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(aGlobal.GetAsSupports());
   RefPtr<Notification> notification =
     CreateAndShow(aGlobal.Context(), global, aTitle, aOptions,
@@ -1072,17 +1093,19 @@ Notification::Constructor(const GlobalObject& aGlobal,
 // static
 already_AddRefed<Notification>
 Notification::ConstructFromFields(
-    nsIGlobalObject* aGlobal,
-    const nsAString& aID,
-    const nsAString& aTitle,
-    const nsAString& aDir,
-    const nsAString& aLang,
-    const nsAString& aBody,
-    const nsAString& aTag,
-    const nsAString& aIcon,
-    const nsAString& aData,
-    const nsAString& aServiceWorkerRegistrationID,
-    ErrorResult& aRv)
+  nsIGlobalObject* aGlobal,
+  const nsAString& aID,
+  const nsAString& aTitle,
+  const nsAString& aDir,
+  const nsAString& aLang,
+  const nsAString& aBody,
+  const nsAString& aTag,
+  const nsAString& aIcon,
+  const nsAString& aData,
+  const bool& aRequireInteraction,
+  const nsAString& aActions,
+  const nsAString& aServiceWorkerRegistrationID,
+  ErrorResult& aRv)
 {
   MOZ_ASSERT(aGlobal);
 
@@ -1092,10 +1115,41 @@ Notification::ConstructFromFields(
   options.mBody = aBody;
   options.mTag = aTag;
   options.mIcon = aIcon;
+  options.mRequireInteraction = aRequireInteraction;
+  nsAutoString actions(aActions);
+
+  if (!actions.EqualsLiteral("[]")) {
+    JSContext* cx = nsContentUtils::RootingCxForThread();
+    JS::Rooted<JS::Value> json(cx);
+
+    if (JS_ParseJSON(cx, actions.get(), actions.Length(), &json)) {
+      uint32_t length;
+      JS::Rooted<JSObject*> obj(cx, json.toObjectOrNull());
+
+      if (JS_GetArrayLength(cx, obj, &length)) {
+        NotificationAction action;
+
+        for (uint32_t i = 0; i < length; ++i) {
+          JS::Rooted<JS::Value> elt(cx);
+
+          if (!JS_GetElement(cx, obj, i, &elt)) {
+            continue;
+          }
+
+          action.Init(cx, elt, "Value", false);
+          nsAutoString t;
+          action.ToJSON(t);
+          options.mActions.AppendElement(action, mozilla::fallible);
+        }
+      }
+    }
+  }
+
   RefPtr<Notification> notification = CreateInternal(aGlobal, aID, aTitle,
                                                      options);
 
   notification->InitFromBase64(aData, aRv);
+
   if (NS_WARN_IF(aRv.Failed())) {
     return nullptr;
   }
@@ -1103,6 +1157,38 @@ Notification::ConstructFromFields(
   notification->SetScope(aServiceWorkerRegistrationID);
 
   return notification.forget();
+}
+
+nsresult
+NotificationActionsToString(const nsTArray<NotificationAction>& aArray,
+                            nsAString& aActionsString)
+{
+  nsresult rv = NS_OK;
+  nsAutoString t;
+  aActionsString = EmptyString();
+  aActionsString.AppendLiteral("[");
+
+  for (size_t i = 0; i < aArray.Length(); i++) {
+    if (i == gDOMMaxActions) {
+      break;
+    }
+
+    if (i != 0) {
+      aActionsString.AppendLiteral(",");
+    }
+
+    t = EmptyString();
+
+    if (!aArray[i].ToJSON(t)) {
+      rv = NS_ERROR_FAILURE;
+      break;
+    }
+
+    aActionsString.Append(t);
+  }
+
+  aActionsString.AppendLiteral("]");
+  return rv;
 }
 
 nsresult
@@ -1133,6 +1219,12 @@ Notification::PersistNotification()
     return NS_ERROR_FAILURE;
   }
 
+  rv = NotificationActionsToString(mActions, mActionsString);
+
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+
   rv = notificationStorage->Put(origin,
                                 id,
                                 mTitle,
@@ -1144,6 +1236,8 @@ Notification::PersistNotification()
                                 alertName,
                                 mDataAsBase64,
                                 behavior,
+                                mRequireInteraction,
+                                mActionsString,
                                 mScope);
 
   if (NS_FAILED(rv)) {
@@ -1197,12 +1291,14 @@ Notification::CreateInternal(nsIGlobalObject* aGlobal,
   }
 
   RefPtr<Notification> notification = new Notification(aGlobal, id, aTitle,
-                                                         aOptions.mBody,
-                                                         aOptions.mDir,
-                                                         aOptions.mLang,
-                                                         aOptions.mTag,
-                                                         aOptions.mIcon,
-                                                         aOptions.mMozbehavior);
+                                                       aOptions.mBody,
+                                                       aOptions.mDir,
+                                                       aOptions.mLang,
+                                                       aOptions.mTag,
+                                                       aOptions.mIcon,
+                                                       aOptions.mMozbehavior,
+                                                       aOptions.mRequireInteraction,
+                                                       aOptions.mActions);
   rv = notification->Init();
   NS_ENSURE_SUCCESS(rv, nullptr);
   return notification.forget();
@@ -1569,8 +1665,9 @@ public:
   NS_DECL_ISUPPORTS
 
   NotificationClickEventCallback(nsIPrincipal* aPrincipal,
-                                 const nsAString& aScope)
-  : mPrincipal(aPrincipal), mScope(aScope)
+                                 const nsAString& aScope,
+                                 const nsAString& aUserAction)
+   : mPrincipal(aPrincipal), mScope(aScope), mUserAction(aUserAction)
   {
     MOZ_ASSERT(aPrincipal);
   }
@@ -1584,6 +1681,8 @@ public:
                     const nsAString& aIcon,
                     const nsAString& aData,
                     const nsAString& aBehavior,
+                    bool aRequireInteraction,
+                    const nsAString& aActions,
                     const nsAString& aServiceWorkerRegistrationID) override
   {
     MOZ_ASSERT(!aID.IsEmpty());
@@ -1611,8 +1710,12 @@ public:
                                       aTag,
                                       aIcon,
                                       aData,
-                                      aBehavior);
+                                      aBehavior,
+                                      aRequireInteraction,
+                                      aActions,
+                                      mUserAction);
     }
+
     return NS_OK;
   }
 
@@ -1628,6 +1731,7 @@ private:
 
   nsCOMPtr<nsIPrincipal> mPrincipal;
   nsString mScope;
+  nsString mUserAction;
 };
 
 NS_IMPL_ISUPPORTS(NotificationClickEventCallback, nsINotificationStorageCallback)
@@ -1643,20 +1747,26 @@ ServiceWorkerNotificationObserver::Observe(nsISupports* aSubject,
     nsresult rv;
     nsCOMPtr<nsINotificationStorage> notificationStorage =
       do_GetService(NS_NOTIFICATION_STORAGE_CONTRACTID, &rv);
+
     if (NS_WARN_IF(NS_FAILED(rv))) {
       return rv;
     }
 
+    const char16_t* defaultAction = MOZ_UTF16("");
+    nsDependentString userAction(aData ? aData : defaultAction);
+
     nsCOMPtr<nsINotificationStorageCallback> callback =
-      new NotificationClickEventCallback(mPrincipal, mScope);
+      new NotificationClickEventCallback(mPrincipal, mScope, userAction);
 
     nsAutoString origin;
     rv = Notification::GetOrigin(mPrincipal, origin);
+
     if (NS_WARN_IF(NS_FAILED(rv))) {
       return rv;
     }
 
     rv = notificationStorage->GetByID(origin, mID, callback);
+
     if (NS_WARN_IF(NS_FAILED(rv))) {
       return rv;
     }
@@ -1730,6 +1840,7 @@ Notification::ShowInternal()
   // We rely on GetPermissionInternal returning Denied on all failure codepaths.
   MOZ_ASSERT_IF(result.Failed(), permission == NotificationPermission::Denied);
   result.SuppressException();
+
   if (permission != NotificationPermission::Granted || !alertService) {
     if (mWorkerPrivate) {
       RefPtr<NotificationEventWorkerRunnable> r =
@@ -1789,9 +1900,11 @@ Notification::ShowInternal()
     }
 
     if (appId != nsIScriptSecurityManager::UNKNOWN_APP_ID) {
-      nsCOMPtr<nsIAppsService> appsService = do_GetService("@mozilla.org/AppsService;1");
+      nsCOMPtr<nsIAppsService> appsService =
+        do_GetService("@mozilla.org/AppsService;1");
       nsString manifestUrl = EmptyString();
       nsresult rv = appsService->GetManifestURLByLocalId(appId, manifestUrl);
+
       if (NS_SUCCEEDED(rv)) {
         mozilla::AutoSafeJSContext cx;
         JS::Rooted<JS::Value> val(cx);
@@ -1807,6 +1920,8 @@ Notification::ShowInternal()
         ops.mMozbehavior = mBehavior;
         ops.mMozbehavior.mSoundFile = soundUrl;
         ops.mServiceWorkerRegistrationID = mScope;
+        ops.mRequireInteraction = mRequireInteraction;
+        ops.mActions = mActionsString;
 
         if (!ToJSValue(cx, ops, &val)) {
           NS_WARNING("Converting dict to object failed!");
@@ -2100,14 +2215,14 @@ Notification::Get(const GlobalObject& aGlobal,
 class WorkerGetResultRunnable final : public NotificationWorkerRunnable
 {
   RefPtr<PromiseWorkerProxy> mPromiseProxy;
-  const nsTArray<NotificationStrings> mStrings;
+  const nsTArray<NotificationFields> mFields;
 public:
   WorkerGetResultRunnable(WorkerPrivate* aWorkerPrivate,
                           PromiseWorkerProxy* aPromiseProxy,
-                          const nsTArray<NotificationStrings>&& aStrings)
+                          const nsTArray<NotificationFields>&& aFields)
     : NotificationWorkerRunnable(aWorkerPrivate)
     , mPromiseProxy(aPromiseProxy)
-    , mStrings(Move(aStrings))
+    , mFields(Move(aFields))
   {
   }
 
@@ -2118,20 +2233,22 @@ public:
 
     ErrorResult result;
     AutoTArray<RefPtr<Notification>, 5> notifications;
-    for (uint32_t i = 0; i < mStrings.Length(); ++i) {
+    for (uint32_t i = 0; i < mFields.Length(); ++i) {
       RefPtr<Notification> n =
         Notification::ConstructFromFields(aWorkerPrivate->GlobalScope(),
-                                          mStrings[i].mID,
-                                          mStrings[i].mTitle,
-                                          mStrings[i].mDir,
-                                          mStrings[i].mLang,
-                                          mStrings[i].mBody,
-                                          mStrings[i].mTag,
-                                          mStrings[i].mIcon,
-                                          mStrings[i].mData,
-                                          /* mStrings[i].mBehavior, not
+                                          mFields[i].mID,
+                                          mFields[i].mTitle,
+                                          mFields[i].mDir,
+                                          mFields[i].mLang,
+                                          mFields[i].mBody,
+                                          mFields[i].mTag,
+                                          mFields[i].mIcon,
+                                          mFields[i].mData,
+                                          /* mFields[i].mBehavior, not
                                            * supported */
-                                          mStrings[i].mServiceWorkerRegistrationID,
+                                          mFields[i].mRequireInteraction,
+                                          mFields[i].mActions,
+                                          mFields[i].mServiceWorkerRegistrationID,
                                           result);
 
       n->SetStoredState(true);
@@ -2173,7 +2290,7 @@ public:
     RefPtr<WorkerGetResultRunnable> r =
       new WorkerGetResultRunnable(proxy->GetWorkerPrivate(),
                                   proxy,
-                                  Move(mStrings));
+                                  Move(mFields));
 
     r->Dispatch();
     return NS_OK;
@@ -2380,6 +2497,23 @@ Notification::GetData(JSContext* aCx,
 
   JS::ExposeValueToActiveJS(mData);
   aRetval.set(mData);
+}
+
+/* static */ uint32_t
+Notification::MaxActions(const GlobalObject& global)
+{
+  if (!gDOMMaxActions) {
+    gDOMMaxActions = std::min(kMaxNotificationMaxActions,
+                              Preferences::GetUint(kPrefNotificationMaxActions));
+  }
+
+  return gDOMMaxActions;
+}
+
+void
+Notification::GetActions(nsTArray<NotificationAction>& aRetVal) const
+{
+  aRetVal = mActions;
 }
 
 void
@@ -2668,6 +2802,10 @@ Notification::ShowPersistentNotification(JSContext* aCx,
     }
   }
 
+  if (!gDOMMaxActions) {
+    gDOMMaxActions = std::min(kMaxNotificationMaxActions,
+                              Preferences::GetUint(kPrefNotificationMaxActions));
+  }
 
   RefPtr<Promise> p = Promise::Create(aGlobal, aRv);
   if (NS_WARN_IF(aRv.Failed())) {
