@@ -282,7 +282,8 @@ this.WifiCommand = function(aControlMessage, aInterface, aSdkVersion) {
   };
 
   let infoKeys = [{regexp: /RSSI=/i,      prop: 'rssi'},
-                  {regexp: /LINKSPEED=/i, prop: 'linkspeed'}];
+                  {regexp: /LINKSPEED=/i, prop: 'linkspeed'},
+                  {regexp: /FREQUENCY=/i, prop: 'frequency'}];
 
   command.getConnectionInfoICS = function (callback) {
     doStringCommand("SIGNAL_POLL", function(reply) {

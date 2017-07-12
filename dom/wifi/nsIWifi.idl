@@ -7,6 +7,7 @@
 #include "nsIDOMEvent.idl"
 
 interface nsIVariant;
+interface nsIWifiInfo;
 
 [scriptable, uuid(cf1ac02b-1f39-446e-815b-651ac78d2233)]
 interface nsIWifiScanResult : nsISupports {
@@ -41,12 +42,13 @@ interface nsIWifiScanResultsReady : nsISupports {
     void onfailure();
 };
 
-[scriptable, uuid(07445824-384a-413a-940b-04ccf2a4ccb7)]
+[scriptable, uuid(c10c6762-8035-4318-9039-5e3f53e2abaa)]
 interface nsIWifiWorkerListener : nsISupports {
   void notifyIpChanged(in DOMString ipAddress);
+  void notifyRssiChanged(in long rssi);
 };
 
-[scriptable, uuid(08dfefed-5c5d-4468-8c5d-2c65c24692d9)]
+[scriptable, uuid(0597e1f7-1dbb-474e-8a66-dd9fb39d04dd)]
 interface nsIWifi : nsISupports
 {
     /**
@@ -77,4 +79,62 @@ interface nsIWifi : nsISupports
      * Called to unregister wifi-related changed.
      */
     void unregisterListener(in nsIWifiWorkerListener aListener);
+
+    /**
+     * Returns the WIFI connection informations.
+     */
+    readonly attribute nsIWifiInfo wifiNetworkInfo;
+};
+
+[scriptable, uuid(b7226f0c-7cab-5cac-bcd3-a83d7a249e0e)]
+interface nsIWifiInfo : nsISupports
+{
+  /**
+   * Return the detailed state of the supplicant's negotiation with an
+   * access point.
+   */
+  readonly attribute DOMString supplicantState;
+
+  /**
+   * Return the basic service set identifier (BSSID) of the current access point.
+   */
+  readonly attribute DOMString bssid;
+
+  /**
+   * Returns the service set identifier (SSID) of the current 802.11 network.
+   */
+  readonly attribute DOMString wifiSsid;
+
+  /**
+   * Returns the current connection security type.
+   */
+  readonly attribute DOMString security;
+
+  /**
+   * Each configured network has a unique small integer ID, used to identify
+   * the network when performing operations on the supplicant. This method
+   * returns the ID for the currently connected network.
+   */
+  readonly attribute long networkId;
+
+  /**
+   * Returns the received signal strength indicator of the current 802.11
+   * network, in dBm.
+   */
+  readonly attribute long rssi;
+
+  /**
+   * Returns the current connection link speed.
+   */
+  readonly attribute long linkSpeed;
+
+  /**
+   * Returns the current connection frequency.
+   */
+  readonly attribute long frequency;
+
+  /**
+   * Returns the current connection ipv4 Address.
+   */
+  readonly attribute DOMString ipAddress;
 };
