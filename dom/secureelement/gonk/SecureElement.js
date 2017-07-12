@@ -26,6 +26,10 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/systemlibs.js");
 
+XPCOMUtils.defineLazyServiceGetter(this, "gSettingsService",
+                                   "@mozilla.org/settingsService;1",
+                                   "nsISettingsService");
+
 XPCOMUtils.defineLazyGetter(this, "SE", () => {
   let obj = {};
   Cu.import("resource://gre/modules/se_consts.js", obj);
@@ -37,14 +41,6 @@ XPCOMUtils.defineLazyGetter(this, "NFC", function () {
   Cu.import("resource://gre/modules/nfc_consts.js", obj);
   return obj;
 });
-
-// set to true in se_consts.js to see debug messages
-var DEBUG = SE.DEBUG_SE;
-function debug(s) {
-  if (DEBUG) {
-    dump("-*- SecureElement: " + s + "\n");
-  }
-}
 
 const SE_IPC_SECUREELEMENT_MSG_NAMES = [
   "SE:GetSEReaders",
@@ -88,6 +84,22 @@ XPCOMUtils.defineLazyGetter(this, "EseConnector", () => {
 const gSecureElementType = libcutils.property_get("ro.moz.nfc.secureelementtype", SE.TYPE_ESE);
 const TOPIC_NFCD_UNINITIALIZED = "nfcd_uninitialized";
 const TOPIC_CHANGE_RF_STATE = "nfc_change_rf_state";
+const SETTING_SE_DEBUG = "nfc.debugging.enabled";
+const TOPIC_MOZSETTINGS_CHANGED = "mozsettings-changed";
+
+// set to true in se_consts.js to see debug messages
+var DEBUG = SE.DEBUG_SE;
+var debug;
+function updateDebug() {
+  if (DEBUG || SE.DEBUG_SE) {
+    debug = function (s) {
+      dump("-*- SecureElement: " + s + "\n");
+    };
+  } else {
+    debug = function (s) {};
+  }
+};
+updateDebug();
 
 function getConnector(type) {
   switch (type) {
@@ -230,6 +242,10 @@ XPCOMUtils.defineLazyGetter(this, "gMap", function() {
  * @TODO: Bug 1118101 Introduce SE type specific permissions
  */
 function SecureElementManager() {
+  let lock = gSettingsService.createLock();
+  lock.get(SETTING_SE_DEBUG, this);
+  Services.obs.addObserver(this, TOPIC_MOZSETTINGS_CHANGED, false);
+
   this._registerMessageListeners();
   Services.obs.addObserver(this, NS_XPCOM_SHUTDOWN_OBSERVER_ID, false);
   Services.obs.addObserver(this, TOPIC_NFCD_UNINITIALIZED, false);
@@ -891,6 +907,18 @@ SecureElementManager.prototype = {
   },
 
   /**
+   * nsISettingsServiceCallback
+   */
+  handle: function handle(name, result) {
+    switch (name) {
+      case SETTING_SE_DEBUG:
+        DEBUG = result;
+        updateDebug();
+        break;
+    }
+  },
+
+  /**
    * nsIObserver interface methods.
    */
 
@@ -902,6 +930,13 @@ SecureElementManager.prototype = {
       this._handleSEError();
     } else if (topic === TOPIC_CHANGE_RF_STATE) {
       this._handleRFStateChange(data);
+    } else if (topic === TOPIC_MOZSETTINGS_CHANGED) {
+      if ("wrappedJSObject" in subject) {
+        subject = subject.wrappedJSObject;
+      }
+      if (subject) {
+        this.handle(subject.key, subject.value);
+      }
     }
   }
 };

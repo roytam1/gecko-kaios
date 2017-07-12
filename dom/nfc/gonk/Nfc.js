@@ -54,8 +54,12 @@ function updateDebug() {
     debug = function (s) {
       dump("-*- Nfc: " + s + "\n");
     };
+    // Update the debug property used in nfcd.
+    libcutils.property_set("debug.nfcd.enabled", "true");
   } else {
     debug = function (s) {};
+    // Update the debug property used in nfcd.
+    libcutils.property_set("debug.nfcd.enabled", "false");
   }
 };
 updateDebug();

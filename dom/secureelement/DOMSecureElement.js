@@ -8,7 +8,7 @@
 
 /* globals dump, Components, XPCOMUtils, DOMRequestIpcHelper, cpmm, SE  */
 
-const DEBUG = true;
+const DEBUG = false;
 function debug(s) {
   if (DEBUG) {
     dump("-*- SecureElement DOM: " + s + "\n");
