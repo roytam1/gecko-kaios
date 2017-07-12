@@ -162,10 +162,10 @@ GonkDiskSpaceWatcher::GonkDiskSpaceWatcher() :
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(gHalDiskSpaceWatcher == nullptr);
 
-  // Default values: 5MB for low threshold, 10MB for high threshold, and
+  // Default values: 30MB for low threshold, 32MB for high threshold, and
   // a timeout of 5 seconds.
-  mLowThreshold = Preferences::GetInt(WATCHER_PREF_LOW, 5) * 1024 * 1024;
-  mHighThreshold = Preferences::GetInt(WATCHER_PREF_HIGH, 10) * 1024 * 1024;
+  mLowThreshold = Preferences::GetInt(WATCHER_PREF_LOW, 30) * 1024 * 1024;
+  mHighThreshold = Preferences::GetInt(WATCHER_PREF_HIGH, 32) * 1024 * 1024;
   mTimeout = TimeDuration::FromSeconds(Preferences::GetInt(WATCHER_PREF_TIMEOUT, 5));
   mSizeDelta = Preferences::GetInt(WATCHER_PREF_SIZE_DELTA, 1) * 1024 * 1024;
 }
