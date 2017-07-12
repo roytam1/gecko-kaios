@@ -507,8 +507,10 @@ nsresult
 DOMVideoCallProvider::DispatchSessionModifyRequestEvent(const nsAString& aType,
                                                         nsIVideoCallProfile *aRequest)
 {
+  LOG("%s", __FUNCTION__);
   AutoJSAPI jsapi;
   if (NS_WARN_IF(!jsapi.Init(GetOwner()))) {
+    LOG("%s return due to fail to init jsapi", __FUNCTION__);
     return NS_ERROR_FAILURE;
   }
 
@@ -636,8 +638,8 @@ DOMVideoCallProvider::DispatchCameraCapabilitiesEvent(const nsAString& aType, ns
   capabilities->GetMaxZoom(&init.mMaxZoom);
   capabilities->GetZoomSupported(&init.mZoomSupported);
 
-  capabilities->GetMaxZoom(&mMaxZoom);
-  capabilities->GetZoomSupported(&mZoomSupported);
+  mMaxZoom = init.mMaxZoom;
+  mZoomSupported = init.mZoomSupported;
 
   RefPtr<VideoCallCameraCapabilitiesChangeEvent> event =
       VideoCallCameraCapabilitiesChangeEvent::Constructor(this, aType, init);
@@ -682,6 +684,7 @@ DOMVideoCallProvider::SetDataSourceSize(const int16_t aType, const uint16_t aWid
 NS_IMETHODIMP
 DOMVideoCallProvider::OnReceiveSessionModifyRequest(nsIVideoCallProfile *request)
 {
+  LOG("%s", __FUNCTION__);
   DispatchSessionModifyRequestEvent(NS_LITERAL_STRING("sessionmodifyrequest"), request);
   return NS_OK;
 }
@@ -722,6 +725,12 @@ DOMVideoCallProvider::OnChangeCameraCapabilities(nsIVideoCallCameraCapabilities 
     uint16_t height;
     capabilities->GetWidth(&width);
     capabilities->GetHeight(&height);
+    LOG("%s width: %u, height: %u", __FUNCTION__, width, height);
+    if (width == 240 && height == 320) {
+      width = 320;
+      height = 240;
+      LOG("%s to switch w/h, width: %u, height: %u", __FUNCTION__, width, height);
+    }
     SetDataSourceSize(TYPE_PREVIEW, width, height);
   }
   return NS_OK;
