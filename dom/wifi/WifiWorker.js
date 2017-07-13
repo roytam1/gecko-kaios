@@ -1194,27 +1194,28 @@ var WifiManager = (function() {
   }
 
   function simIdentityRequest(networkId, eapMethod) {
-    // For SIM & AKA/AKA' EAP method Only, get identity from ICC
-    let icc = gIccService.getIccByServiceId(manager.telephonyServiceId);
-    if (!icc || !icc.imsi || !icc.iccInfo || !icc.iccInfo.mcc || 
-      !icc.iccInfo.mnc) {
-      debug("SIM is not ready or iccInfo is invalid");
-      manager.disableNetwork(networkId, function(){});
-      return;
-    }
+    wifiCommand.getNetworkVariable(networkId, "sim_num", function(sim_num) {
+      // For SIM & AKA/AKA' EAP method Only, get identity from ICC
+      let icc = gIccService.getIccByServiceId(sim_num - 1);
+      if (!icc || !icc.iccInfo || !icc.iccInfo.mcc || !icc.iccInfo.mnc) {
+        debug("SIM is not ready or iccInfo is invalid");
+        manager.disableNetwork(networkId, function(){});
+        return;
+      }
 
-    // imsi, mcc, mnc
-    let imsi = icc.imsi;
-    let mcc = icc.iccInfo.mcc;
-    let mnc = icc.iccInfo.mnc;
-    if(mnc.length === 2) {
-      mnc = "0" + mnc;
-    }
+      // imsi, mcc, mnc
+      let imsi = icc.imsi;
+      let mcc = icc.iccInfo.mcc;
+      let mnc = icc.iccInfo.mnc;
+      if(mnc.length === 2) {
+        mnc = "0" + mnc;
+      }
 
-    let identity = eapMethod +
-      imsi + "@wlan.mnc" + mnc + ".mcc" + mcc + ".3gppnetwork.org";
-    debug("identity = " + identity);
-    wifiCommand.simIdentityResponse(networkId, identity, function(){});
+      let identity = eapMethod +
+        imsi + "@wlan.mnc" + mnc + ".mcc" + mcc + ".3gppnetwork.org";
+      debug("identity = " + identity);
+      wifiCommand.simIdentityResponse(networkId, identity, function(){});
+    });
   }
 
   function simAuthRequest(requestName) {
@@ -1222,7 +1223,6 @@ var WifiManager = (function() {
       /SIM-([0-9]*):GSM-AUTH((:[0-9a-f]+)+) needed for SSID (.+)/.exec(requestName);
     let matchUmts =
       /SIM-([0-9]*):UMTS-AUTH:([0-9a-f]+):([0-9a-f]+) needed for SSID (.+)/.exec(requestName);
-    let icc = gIccService.getIccByServiceId(manager.telephonyServiceId);
     // EAP-SIM
     if (matchGsm) {
       let networdId = parseInt(matchGsm[1]);
@@ -1230,36 +1230,39 @@ var WifiManager = (function() {
       let authResponse = "";
       let count = 0;
 
-      for (let value in data) {
-        let challenge = data[value];
-        if (!challenge.length) {
-          continue;
-        }
-        let base64Challenge = gsmHexToBase64(challenge);
-        debug("base64Challenge = " + base64Challenge);
+      wifiCommand.getNetworkVariable(networkId, "sim_num", function(sim_num) {
+        let icc = gIccService.getIccByServiceId(sim_num - 1);
+        for (let value in data) {
+          let challenge = data[value];
+          if (!challenge.length) {
+            continue;
+          }
+          let base64Challenge = gsmHexToBase64(challenge);
+          debug("base64Challenge = " + base64Challenge);
 
-        // Try USIM first for authentication.
-        icc.getIccAuthentication(Ci.nsIIcc.APPTYPE_USIM, Ci.nsIIcc.AUTHTYPE_EAP_SIM, base64Challenge, {
-          notifyAuthResponse: function(iccResponse) {
-            debug("Receive USIM iccResponse: " + iccResponse);
-            iccResponseReady(iccResponse);
-          },
-          notifyError: function(aErrorMsg) {
-            debug("Receive USIM iccResponse error: " + aErrorMsg);
-            // In case of failure, retry as a simple SIM.
-            icc.getIccAuthentication(Ci.nsIIcc.APPTYPE_SIM, Ci.nsIIcc.AUTHTYPE_EAP_SIM, base64Challenge, {
-              notifyAuthResponse: function(iccResponse) {
-                debug("Receive SIM iccResponse: " + iccResponse);
-                iccResponseReady(iccResponse);
-              },
-              notifyError: function(aErrorMsg) {
-                debug("Receive SIM iccResponse error: " + aErrorMsg);
-                wifiCommand.simAuthFailedResponse(networdId, function(){});
-              },
-            });
-          },
-        });
-      }
+          // Try USIM first for authentication.
+          icc.getIccAuthentication(Ci.nsIIcc.APPTYPE_USIM, Ci.nsIIcc.AUTHTYPE_EAP_SIM, base64Challenge, {
+            notifyAuthResponse: function(iccResponse) {
+              debug("Receive USIM iccResponse: " + iccResponse);
+              iccResponseReady(iccResponse);
+            },
+            notifyError: function(aErrorMsg) {
+              debug("Receive USIM iccResponse error: " + aErrorMsg);
+              // In case of failure, retry as a simple SIM.
+              icc.getIccAuthentication(Ci.nsIIcc.APPTYPE_SIM, Ci.nsIIcc.AUTHTYPE_EAP_SIM, base64Challenge, {
+                notifyAuthResponse: function(iccResponse) {
+                  debug("Receive SIM iccResponse: " + iccResponse);
+                  iccResponseReady(iccResponse);
+                },
+                notifyError: function(aErrorMsg) {
+                  debug("Receive SIM iccResponse error: " + aErrorMsg);
+                  wifiCommand.simAuthFailedResponse(networdId, function(){});
+                },
+              });
+            },
+          });
+        }
+      });
 
       function iccResponseReady(iccResponse) {
         if (!iccResponse || iccResponse.length <= 4) {
@@ -1295,21 +1298,24 @@ var WifiManager = (function() {
       let rand = matchUmts[2];
       let authn = matchUmts[3];
 
-      if (rand == null || authn == null) {
-        debug("null rand or authn");
-        return;
-      }
-      let base64Challenge = umtsHexToBase64(rand, authn);
-      debug("base64Challenge = " + base64Challenge);
+      wifiCommand.getNetworkVariable(networkId, "sim_num", function(sim_num) {
+        let icc = gIccService.getIccByServiceId(sim_num - 1);
+        if (rand == null || authn == null) {
+          debug("null rand or authn");
+          return;
+        }
+        let base64Challenge = umtsHexToBase64(rand, authn);
+        debug("base64Challenge = " + base64Challenge);
 
-      icc.getIccAuthentication(Ci.nsIIcc.APPTYPE_USIM, Ci.nsIIcc.AUTHTYPE_EAP_AKA, base64Challenge, {
-        notifyAuthResponse: function(iccResponse) {
-          debug("Receive iccResponse: " + iccResponse);
-          iccResponseReady(iccResponse);
-        },
-        notifyError: function(aErrorMsg) {
-          debug("Receive iccResponse error: " + aErrorMsg);
-        },
+        icc.getIccAuthentication(Ci.nsIIcc.APPTYPE_USIM, Ci.nsIIcc.AUTHTYPE_EAP_AKA, base64Challenge, {
+          notifyAuthResponse: function(iccResponse) {
+            debug("Receive iccResponse: " + iccResponse);
+            iccResponseReady(iccResponse);
+          },
+          notifyError: function(aErrorMsg) {
+            debug("Receive iccResponse error: " + aErrorMsg);
+          },
+        });
       });
 
       function iccResponseReady(iccResponse) {
@@ -1627,7 +1633,8 @@ var WifiManager = (function() {
     {name: "engine_id",     type: "string"},
     {name: "key_id",        type: "string"},
     {name: "frequency",     type: "integer"},
-    {name: "mode",          type: "integer"}
+    {name: "mode",          type: "integer"},
+    {name: "sim_num",       type: "integer"}
   ];
   // These fields are only handled in IBSS (aka ad-hoc) mode
   var ibssNetworkConfigurationFields = [
@@ -2234,7 +2241,8 @@ Network.api = {
   phase1: "rw",
   phase2: "rw",
   serverCertificate: "rw",
-  userCertificate: "rw"
+  userCertificate: "rw",
+  sim_num: "rw"
 };
 
 // Note: We never use ScanResult.prototype, so the fact that it's unrelated to
@@ -2547,6 +2555,10 @@ function WifiWorker() {
     if (hasValidProperty("eap")) {
       if (hasValidProperty("pin")) {
         net.pin = quote(net.pin);
+      }
+
+      if (net.eap === "SIM" || net.eap === "AKA") {
+        configured.sim_num = net.sim_num = net.sim_num || 1;
       }
 
       if (hasValidProperty("phase1"))

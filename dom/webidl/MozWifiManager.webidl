@@ -62,6 +62,7 @@ dictionary NetworkProperties {
   DOMString serverCertificate;
   DOMString subjectMatch;
   DOMString userCertificate;
+  long sim_num;
 };
 
 [Constructor(optional NetworkProperties properties),
@@ -102,6 +103,7 @@ interface MozWifiNetwork {
            attribute DOMString? serverCertificate;
            attribute DOMString? subjectMatch;
            attribute DOMString? userCertificate;
+           attribute long? sim_num;
 };
 
 [JSImplementation="@mozilla.org/mozwificonnection;1",
