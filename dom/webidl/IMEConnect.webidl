@@ -23,4 +23,6 @@ interface IMEConnect {
   attribute long cursorPosition;
 
   readonly attribute unsigned long currentLID;
+
+  readonly attribute DOMString name;
 };

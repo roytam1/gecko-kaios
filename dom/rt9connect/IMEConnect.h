@@ -137,6 +137,11 @@ public:
     return mCurrentLID;
   }
 
+  void GetName(nsAString& aName) const
+  {
+    CopyASCIItoUTF16("RT9", aName);
+  }
+
   virtual JSObject* WrapObject(JSContext* aCx,
                                JS::Handle<JSObject*> aGivenProto) override;
 
