@@ -108,12 +108,8 @@ this.Keyboard = {
     }
 
     this._systemMMs.forEach((mm, i) => {
-      try {
-        data.inputManageId = i;
-        mm.sendAsyncMessage(name, data);
-      } catch(e) {
-        this._systemMMs.splice(i, 1);
-      }
+      data.inputManageId = i;
+      mm.sendAsyncMessage(name, data);
     });
   },
 
