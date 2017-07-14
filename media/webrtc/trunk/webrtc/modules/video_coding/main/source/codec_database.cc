@@ -146,8 +146,7 @@ bool VCMCodecDataBase::Codec(int list_id,
       settings->maxFramerate = VCM_DEFAULT_FRAME_RATE;
       settings->width = VCM_DEFAULT_CODEC_WIDTH;
       settings->height = VCM_DEFAULT_CODEC_HEIGHT;
-      // consider using 2 to avoid deal with 'odd' downscales
-      settings->resolution_divisor = 1; // may not actually be needed
+      settings->resolution_divisor = 2; // avoid dealing with 'odd' downscales
       settings->numberOfSimulcastStreams = 0;
       settings->qpMax = 56;
       settings->codecSpecific.VP8 = VideoEncoder::GetDefaultVp8Settings();
@@ -166,8 +165,7 @@ bool VCMCodecDataBase::Codec(int list_id,
       settings->maxFramerate = VCM_DEFAULT_FRAME_RATE;
       settings->width = VCM_DEFAULT_CODEC_WIDTH;
       settings->height = VCM_DEFAULT_CODEC_HEIGHT;
-      // consider using 2 to avoid deal with 'odd' downscales
-      settings->resolution_divisor = 1; // may not actually be needed
+      settings->resolution_divisor = 2; // avoid dealing with 'odd' downscales
       settings->numberOfSimulcastStreams = 0;
       settings->qpMax = 56;
       settings->codecSpecific.VP9 = VideoEncoder::GetDefaultVp9Settings();
@@ -186,8 +184,7 @@ bool VCMCodecDataBase::Codec(int list_id,
       settings->maxFramerate = VCM_DEFAULT_FRAME_RATE;
       settings->width = VCM_DEFAULT_CODEC_WIDTH;
       settings->height = VCM_DEFAULT_CODEC_HEIGHT;
-      // consider using 2 to avoid deal with 'odd' downscales
-      settings->resolution_divisor = 1; // may not actually be needed
+      settings->resolution_divisor = 2; // avoid dealing with 'odd' downscales
       settings->numberOfSimulcastStreams = 0;
       settings->qpMax = 56;
       settings->codecSpecific.H264 = VideoEncoder::GetDefaultH264Settings();
@@ -208,11 +205,9 @@ bool VCMCodecDataBase::Codec(int list_id,
       settings->maxFramerate = VCM_DEFAULT_FRAME_RATE;
       settings->width = VCM_DEFAULT_CODEC_WIDTH;
       settings->height = VCM_DEFAULT_CODEC_HEIGHT;
-      settings->resolution_divisor = 1;
       settings->minBitrate = VCM_MIN_BITRATE;
       settings->numberOfSimulcastStreams = 0;
-      // consider using 2 to avoid deal with 'odd' downscales
-      settings->resolution_divisor = 1; // may not actually be needed
+      settings->resolution_divisor = 2; // avoid dealing with 'odd' downscales
       return true;
     }
 #endif

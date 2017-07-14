@@ -79,6 +79,7 @@ WebrtcVideoConduit::WebrtcVideoConduit():
   mCapId(-1),
   mCodecMutex("VideoConduit codec db"),
   mInReconfig(false),
+  mResolutionDivisor(1),
   mLastWidth(0), // forces a check for reconfig at start
   mLastHeight(0),
   mSendingWidth(0),
@@ -676,10 +677,10 @@ WebrtcVideoConduit::ConfigureSendMediaCodec(const VideoCodecConfig* codecConfig)
     if (codecConfig->mType == webrtc::kVideoCodecH264) {
       video_codec.resolution_divisor = 16;
     } else {
-      video_codec.resolution_divisor = 1; // We could try using it to handle odd resolutions
+      video_codec.resolution_divisor = 2; // Use it to handle odd resolutions
     }
 #else
-    video_codec.resolution_divisor = 1; // We could try using it to handle odd resolutions
+    video_codec.resolution_divisor = 2; // Use it to handle odd resolutions
 #endif
     video_codec.qpMax = 56;
     video_codec.numberOfSimulcastStreams = 1;
@@ -744,6 +745,7 @@ WebrtcVideoConduit::ConfigureSendMediaCodec(const VideoCodecConfig* codecConfig)
   mSendingWidth = 0;
   mSendingHeight = 0;
   mSendingFramerate = video_codec.maxFramerate;
+  mResolutionDivisor = video_codec.resolution_divisor;
 
   if(codecConfig->RtcpFbNackIsSet("")) {
     CSFLogDebug(logTag, "Enabling NACK (send) for video stream\n");
@@ -1118,6 +1120,38 @@ static void ConstrainPreservingAspectRatio(uint16_t max_width,
   }
 }
 
+// Try to avoid werid resolutions by stepping down the pixel size by roughly
+// half each time. The chosen scaling ratios are 3/4, 1/2, 3/8, 1/4, ....,
+// which are taken from VCMQmResolution and can match its strategy.
+// The pixel ratio of 3/4 scaling is (3/4)*(3/4) = 9/16, which is roughly half.
+static void ConstrainPreservingAspectRatioStepping(uint8_t divisor,
+                                                   uint16_t max_width,
+                                                   uint16_t max_height,
+                                                   unsigned short* width,
+                                                   unsigned short* height)
+{
+  unsigned short new_width = *width;
+  unsigned short new_height = *height;
+  // Cut width and height by half each time
+  while (new_width > max_width || new_height > max_height) {
+    new_width /= 2;
+    new_height /= 2;
+  }
+  // See if the last step can be replaced by 3/4 scaling
+  if (new_width * 3 / 2 <= max_width && new_height * 3 / 2 <= max_height) {
+    new_width = new_width * 3 / 2;  // = new_width / (1/2) * (3/4)
+    new_height = new_height * 3 / 2;
+  }
+  if (new_width != 0 && new_height != 0) {
+    *width = new_width;
+    *height = new_height;
+  } else {
+    ConstrainPreservingAspectRatio(max_width, max_height, width, height);
+  }
+  *width = (*width + divisor - 1) / divisor * divisor;
+  *height = (*height + divisor - 1) / divisor * divisor;
+}
+
 // XXX we need to figure out how to feed back changes in preferred capture
 // resolution to the getUserMedia source.
 // Returns boolean if we've submitted an async change (and took ownership
@@ -1183,7 +1217,9 @@ WebrtcVideoConduit::SelectSendResolution(unsigned short width,
 
       max_width = 16 * std::min(mb_width, mb_max);
       max_height = 16 * std::min(mb_height, mb_max);
-      ConstrainPreservingAspectRatio(max_width, max_height, &width, &height);
+
+      ConstrainPreservingAspectRatioStepping(mResolutionDivisor,
+                                             max_width, max_height, &width, &height);
     }
   }
 

@@ -391,6 +391,7 @@ private:
   nsAutoPtr<VideoCodecConfig> mCurSendCodecConfig;
   bool mInReconfig;
 
+  unsigned char  mResolutionDivisor;
   unsigned short mLastWidth;
   unsigned short mLastHeight;
   unsigned short mSendingWidth;
