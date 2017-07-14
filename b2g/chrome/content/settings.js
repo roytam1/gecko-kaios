@@ -169,8 +169,6 @@ Components.utils.import('resource://gre/modules/ctypes.jsm');
     product_device = libcutils.property_get('ro.product.device');
     build_number = libcutils.property_get('ro.build.version.incremental');
     sar_info = libcutils.property_get('ro.product.sar_value', '0');
-    version_tag = libcutils.property_get('ro.product.version_tag');
-    base_version = libcutils.property_get('ro.product.base_version');
 
     let build_type = libcutils.property_get('ro.build.type');
     if (build_type === 'eng' || build_type === 'userdebug') {
@@ -200,9 +198,7 @@ Components.utils.import('resource://gre/modules/ctypes.jsm');
       'deviceinfo.product_manufacturer': product_manufacturer,
       'deviceinfo.product_model': product_model,
       'deviceinfo.product_device': product_device,
-      'deviceinfo.sar_value': sar_info,
-      'deviceinfo.software_tag': version_tag,
-      'deviceinfo.base_version': base_version
+      'deviceinfo.sar_value': sar_info
     }
     lock.set(setting);
   }
