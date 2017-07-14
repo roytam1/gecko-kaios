@@ -2462,6 +2462,18 @@ TelephonyService.prototype = {
       }
     }
 
+    // This is the first poll call state after request dial.
+    // We expect ongoing call to appear in call list.
+    // If not, ongoing call is disappeared somehow.
+    if (this._ongoingDial) {
+      if (DEBUG) debug("_ongoingDial does not appear in call list, drop it after request getFailCause.");
+      let callback = this._ongoingDial.callback;
+      this._sendToRilWorker(aClientId, "getFailCause", null, response => {
+          callback.notifyError(response.failCause);
+        });
+      this._ongoingDial = null;
+    }
+
     // For correct conference detection, we should mark removedCalls as
     // DISCONNECTED first.
     let disconnectedCalls = this._disconnectCalls(aClientId, [...removedCalls], aFailCause);
