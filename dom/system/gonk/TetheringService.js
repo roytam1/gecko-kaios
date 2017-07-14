@@ -733,11 +733,12 @@ TetheringService.prototype = {
 
   // Enable/disable USB tethering by sending commands to netd.
   setUSBTethering: function(aEnable, aTetheringInterface, aCallback) {
+    let self = this;
     let params = this.getUSBTetheringParameters(aEnable, aTetheringInterface);
 
     if (params === null) {
       gNetworkService.enableUsbRndis(false, function() {
-        this.usbTetheringResultReport(aEnable, "Invalid parameters");
+        self.usbTetheringResultReport(aEnable, "Invalid parameters");
       });
       return;
     }
