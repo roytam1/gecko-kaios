@@ -7162,7 +7162,8 @@ PresShell::HandleEventRejectedByKeyboardApp(
 
 bool
 PresShell::TryRelayToKeyboardApp(WidgetKeyboardEvent& aEvent,
-                                 nsEventStatus* aStatus)
+                                 nsEventStatus* aStatus,
+                                 nsINode* aTarget)
 {
   if (XRE_GetProcessType() != GeckoProcessType_Default ||
       aEvent.mFlags.mGeneratedFromIME) {
@@ -7183,7 +7184,7 @@ PresShell::TryRelayToKeyboardApp(WidgetKeyboardEvent& aEvent,
       return false;
   }
 
-  rv = keyboardAppProxy->SendKey(&aEvent);
+  rv = keyboardAppProxy->SendKey(&aEvent, aTarget);
 
   if (rv == NS_OK) {
     aEvent.mFlags.mHandledByIME = true;
@@ -7206,13 +7207,14 @@ PresShell::HandleKeyboardEvent(nsINode* aTarget,
                                nsEventStatus* aStatus,
                                EventDispatchingCallback* aEventCB)
 {
+  MOZ_ASSERT(aTarget);
   // Dispatch event directly if the event is a keypress event, a key event on
   // plugin, or there is no need to fire beforeKey* and afterKey* events.
   if (aEvent.mMessage == eKeyPress ||
       aEvent.IsKeyEventOnPlugin() ||
       !BeforeAfterKeyboardEventEnabled() ||
       aEvent.mFlags.mGeneratedFromIME) {
-    if (TryRelayToKeyboardApp(aEvent, aStatus)) {
+    if (TryRelayToKeyboardApp(aEvent, aStatus, aTarget)) {
       return;
     }
     EventDispatcher::Dispatch(aTarget, mPresContext,
@@ -7220,7 +7222,6 @@ PresShell::HandleKeyboardEvent(nsINode* aTarget,
     return;
   }
 
-  MOZ_ASSERT(aTarget);
   MOZ_ASSERT(aEvent.mMessage == eKeyDown || aEvent.mMessage == eKeyUp);
 
   // Build up a target chain. Each item in the chain will receive a before event.
@@ -7256,7 +7257,7 @@ PresShell::HandleKeyboardEvent(nsINode* aTarget,
   // If Keyboard App is active then it should have a chance to process
   // this keyboard event first. Whether this event will be blocked or continued
   // depends on the async reply of Keyboard App.
-  if (TryRelayToKeyboardApp(aEvent, aStatus)) {
+  if (TryRelayToKeyboardApp(aEvent, aStatus, aTarget)) {
     return;
   }
 

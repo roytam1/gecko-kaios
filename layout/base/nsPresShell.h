@@ -846,7 +846,8 @@ private:
    *           nsEventStatus_eConsumeNoDefault.
    */
   bool TryRelayToKeyboardApp(mozilla::WidgetKeyboardEvent& aEvent,
-                             nsEventStatus* aStatus);
+                             nsEventStatus* aStatus,
+                             nsINode* aTarget);
 
 protected:
 #ifdef DEBUG
