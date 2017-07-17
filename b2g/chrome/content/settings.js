@@ -228,32 +228,6 @@ SettingsListener.observe('devtools.overlay', false, (value) => {
   }
 });
 
-if (isGonk) {
-  var LogShake;
-  (function() {
-    let scope = {};
-    Cu.import('resource://gre/modules/LogShake.jsm', scope);
-    LogShake = scope.LogShake;
-    LogShake.init();
-  })();
-
-  SettingsListener.observe('devtools.logshake.enabled', false, value => {
-    if (value) {
-      LogShake.enableDeviceMotionListener();
-    } else {
-      LogShake.disableDeviceMotionListener();
-    }
-  });
-
-  SettingsListener.observe('devtools.logshake.qa_enabled', false, value => {
-    if (value) {
-      LogShake.enableQAMode();
-    } else {
-      LogShake.disableQAMode();
-    }
-  });
-}
-
 // =================== Device Storage ====================
 SettingsListener.observe('device.storage.writable.name', 'sdcard', function(value) {
   if (Services.prefs.getPrefType('device.storage.writable.name') != Ci.nsIPrefBranch.PREF_STRING) {
