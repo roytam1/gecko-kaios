@@ -683,8 +683,12 @@ var WifiManager = (function() {
 
         dhcpInfo = data.info;
         debug('dhcpRequestGen: ' + dhcpRequestGen + ', gen: ' + gen);
-        // Only handle dhcp timeout case in COMPLETED state.
-        if (!dhcpInfo && manager.state === "COMPLETED"){
+        // Only handle dhcp response in COMPLETED state.
+        if (manager.state !== "COMPLETED") {
+          return;
+        }
+
+        if (!dhcpInfo) {
           if (gen + 1 < dhcpRequestGen) {
             debug('Do not bother younger DHCP request.');
             return;
