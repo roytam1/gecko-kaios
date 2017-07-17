@@ -94,6 +94,12 @@ const DEFAULT_USB_PREFIX               = "24";
 const DEFAULT_USB_DHCPSERVER_STARTIP   = "192.168.0.10";
 const DEFAULT_USB_DHCPSERVER_ENDIP     = "192.168.0.30";
 
+// Backup value for USB tethering.
+const BACKUP_USB_IP                    = "172.16.0.1";
+const BACKUP_USB_PREFIX                = "24";
+const BACKUP_USB_DHCPSERVER_STARTIP    = "172.16.0.10";
+const BACKUP_USB_DHCPSERVER_ENDIP      = "172.16.0.30";
+
 const DEFAULT_DNS1                     = "8.8.8.8";
 const DEFAULT_DNS2                     = "8.8.4.4";
 
@@ -242,6 +248,9 @@ TetheringService.prototype = {
 
   // Flag to indicate wether wifi tethering is being processed.
   _wifiTetheringRequestOngoing: false,
+
+  // Flag to notify restart USB tethering
+  _usbTetheringRequestRestart: false,
 
   // Arguments for pending wifi tethering request.
   _pendingWifiTetheringRequestArgs: null,
@@ -540,6 +549,10 @@ TetheringService.prototype = {
       return;
     }
 
+    // Refine USB tethering IP if subnet conflict with external interface
+    if (aEnable && this.isTetherSubnetConflict())
+      this.refineTetherSubnet(false);
+
     this.tetheringSettings[SETTINGS_USB_ENABLED] = true;
     this._usbTetheringAction = TETHERING_STATE_ONGOING;
 
@@ -794,6 +807,7 @@ TetheringService.prototype = {
       settingsLock.set("tethering.usb.enabled", false, null);
       // Skip others request when we found an error.
       this._usbTetheringRequestCount = 0;
+      this._usbTetheringRequestRestart = false;
       this._usbTetheringAction = TETHERING_STATE_IDLE;
       // If the thethering state is WIFI now, then just keep it,
         // if not, just change the state to INACTIVE.
@@ -816,6 +830,12 @@ TetheringService.prototype = {
         }
         if (this.tetheringSettings[SETTINGS_DUN_REQUIRED]) {
           this.handleDunConnection(false);
+        }
+        // Restart USB tethering if needed
+        if (this._usbTetheringRequestRestart) {
+          debug("Restart USB tethering by request");
+          this._usbTetheringRequestRestart = false;
+          settingsLock.set("tethering.usb.enabled", true, null);
         }
       }
 
@@ -911,6 +931,13 @@ TetheringService.prototype = {
         };
 
         let callback = (function() {
+
+          // Restart and refine USB tethering if subnet conflict with external interface
+          if (this.isTetherSubnetConflict()) {
+            this.refineTetherSubnet(true);
+            return;
+          }
+
           // Update external aNetworkInfo interface.
           debug("Update upstream interface to " + aNetworkInfo.name);
           gNetworkService.updateUpStream(tetheringType, previous, current, this.onExternalConnectionChangedReport.bind(this));
@@ -960,6 +987,85 @@ TetheringService.prototype = {
       }
     }
     return false;
+  },
+
+  // Check external/internal interface subnet conlict or not
+  isTetherSubnetConflict: function() {
+
+    // Check USB tethering only since no Wi-Fi concurrent mode
+    if (!this.tetheringSettings[SETTINGS_USB_ENABLED])
+      return false;
+
+    let allNetworkInfo = gNetworkManager.allNetworkInfo;
+    for (let networkId in allNetworkInfo) {
+      if (allNetworkInfo.hasOwnProperty(networkId) &&
+          allNetworkInfo[networkId].type == Ci.nsINetworkInfo.NETWORK_TYPE_WIFI &&
+          allNetworkInfo[networkId].state === Ci.nsINetworkInfo.NETWORK_STATE_CONNECTED) {
+
+        // Get external interface ipaddr & prefix
+        let ips = {};
+        let prefixLengths = {};
+        allNetworkInfo[networkId].getAddresses(ips, prefixLengths);
+
+        if (!this.tetheringSettings[SETTINGS_USB_IP] ||
+            !ips.value || !prefixLengths.value) {
+          debug("fail to compare subnet due to empty argument");
+          return false;
+        }
+
+        // Filter wan/lan interface network segment
+        let subnet = this.cidrToSubnet(prefixLengths.value);
+        let lanMask = [], wanMask = [];
+        let lanIpaddrStr = this.tetheringSettings[SETTINGS_USB_IP].toString().split(".");
+        let wanIpaddrStr = ips.value.toString().split(".");
+        let subnetStr = subnet.toString().split(".");
+
+        for (let i = 0;i < lanIpaddrStr.length; i++) {
+          lanMask.push(parseInt(lanIpaddrStr[i]) & parseInt(subnetStr[i]));
+          wanMask.push(parseInt(wanIpaddrStr[i]) & parseInt(subnetStr[i]));
+        }
+
+        if(lanMask.join(".") == wanMask.join(".")) {
+          debug("Internal/External interface subnet Conflict : " + lanMask);
+          return true;
+        }
+      }
+    }
+    return false;
+  },
+
+  // Transfer CIDR prefix to subnet
+  cidrToSubnet: function(cidr) {
+    let mask=[];
+    for (let i = 0; i < 4; i++) {
+      let n = Math.min(cidr, 8);
+      mask.push(256 - Math.pow(2, 8-n));
+      cidr -= n;
+    }
+    return mask.join('.');
+  },
+
+  // Replace non-conflict subnet for tether ipaddr
+  refineTetherSubnet: function(restartTether) {
+    let settingsLock = gSettingsService.createLock();
+
+    if (this.tetheringSettings[SETTINGS_USB_IP] == DEFAULT_USB_IP) {
+      debug("setup backup tethering settings");
+      settingsLock.set(SETTINGS_USB_IP, BACKUP_USB_IP, null);
+      settingsLock.set(SETTINGS_USB_DHCPSERVER_STARTIP, BACKUP_USB_DHCPSERVER_STARTIP, null);
+      settingsLock.set(SETTINGS_USB_DHCPSERVER_ENDIP, BACKUP_USB_DHCPSERVER_ENDIP, null);
+    } else {
+      debug("setup defaul tethering settings");
+      settingsLock.set(SETTINGS_USB_IP, DEFAULT_USB_IP, null);
+      settingsLock.set(SETTINGS_USB_DHCPSERVER_STARTIP, DEFAULT_USB_DHCPSERVER_STARTIP, null);
+      settingsLock.set(SETTINGS_USB_DHCPSERVER_ENDIP, DEFAULT_USB_DHCPSERVER_ENDIP, null);
+    }
+
+    if (restartTether) {
+      debug("restart USB tethering due to subnet conflict with external interface");
+      this._usbTetheringRequestRestart = restartTether;
+      settingsLock.set(SETTINGS_USB_ENABLED, false, null);
+    }
   },
 };
 
