@@ -474,7 +474,7 @@ var SettingsRequestManager = {
     return this.queueTaskReturn(aTask, {task: aTask});
   },
 
-  startRunning: function(aLockID) {
+  startRunning: function(aLockID, aUrgent) {
     let lock = this.lockInfo[aLockID];
 
     if (!lock) {
@@ -483,6 +483,17 @@ var SettingsRequestManager = {
     }
 
     lock.consumable = true;
+
+    // Process urgent requests as soon as possible by moving the lock to the
+    // front of the queue.
+    if (aUrgent) {
+      let index = this.settingsLockQueue.indexOf(aLockID);
+      if (index > 0) {
+        this.settingsLockQueue.splice(index, 1);
+        this.settingsLockQueue.splice(0, 0, aLockID);
+      }
+    }
+
     if (aLockID == this.settingsLockQueue[0] || this.settingsLockQueue.length == 0) {
       // If a lock is currently at the head of the queue, run all tasks for
       // it.
@@ -1206,7 +1217,7 @@ var SettingsRequestManager = {
       // running situation, but it also needs to queue a task.
       case "Settings:Run":
         if (VERBOSE) debug("Received Run");
-        this.startRunning(msg.lockID);
+        this.startRunning(msg.lockID, msg.urgent);
         break;
       default:
         if (DEBUG) debug("Wrong message: " + aMessage.name);

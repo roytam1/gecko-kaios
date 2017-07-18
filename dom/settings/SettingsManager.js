@@ -103,7 +103,12 @@ SettingsLock.prototype = {
     return !this._open;
   },
 
-  _closeHelper: function() {
+  forceClose: function() {
+    if (VERBOSE) debug("forceClose " + this._id);
+    this._closeHelper({ urgent: true });
+  },
+
+  _closeHelper: function(options) {
     if (VERBOSE) debug("closing lock " + this._id);
     this._open = false;
     this._closeCalled = false;
@@ -111,9 +116,12 @@ SettingsLock.prototype = {
       if (VERBOSE) debug("Requests exhausted, finalizing " + this._id);
       this._settingsManager.unregisterLock(this._id);
       this.sendMessage("Settings:Finalize", {lockID: this._id});
-    } else {
-      if (VERBOSE) debug("Requests left: " + Object.keys(this._requests).length);
-      this.sendMessage("Settings:Run", {lockID: this._id});
+    } else if (this._requests) {
+      let remaining = Object.keys(this._requests).length;
+      if (VERBOSE) debug("Requests left: " + remaining);
+      if (remaining > 0) {
+        this.sendMessage("Settings:Run", {lockID: this._id, urgent: options && options.urgent });
+      }
     }
   },
 
@@ -203,10 +211,10 @@ SettingsLock.prototype = {
         for (let i in msg.settings) {
           msg.settings[i] = this._wrap(msg.settings[i]);
         }
-            this._open = true;
+        this._open = true;
         Services.DOMRequest.fireSuccess(req.request, this._wrap(msg.settings));
-            this._open = false;
-          break;
+        this._open = false;
+        break;
       case "Settings:Set:OK":
       case "Settings:Clear:OK":
         this._open = true;
@@ -235,7 +243,7 @@ SettingsLock.prototype = {
     this.sendMessage("Settings:Get", {requestID: reqID,
                                       lockID: this._id,
                                       name: aName});
-      return req;
+    return req;
   },
 
   set: function set(aSettings) {

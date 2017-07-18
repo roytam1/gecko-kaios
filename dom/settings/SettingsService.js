@@ -211,6 +211,12 @@ SettingsServiceLock.prototype = {
                                         settings: settings});
   },
 
+  forceClose: function() {
+    if (VERBOSE) debug("forceClose");
+    this._open = false;
+    this.runOrFinalizeQueries();
+  },
+
   callHandle: function callHandle(aCallback, aName, aValue) {
     try {
         aCallback && aCallback.handle ? aCallback.handle(aName, aValue) : null;

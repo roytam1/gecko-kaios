@@ -43,11 +43,25 @@ XPCOMUtils.defineLazyServiceGetter(this, "gPACGenerator",
 // is resolved this helper could be removed.
 var SettingsListener = {
   _callbacks: {},
+  _lock: null,
 
   init: function sl_init() {
     if ('mozSettings' in navigator && navigator.mozSettings) {
       navigator.mozSettings.onsettingchange = this.onchange.bind(this);
     }
+  },
+
+  getSettingsLock: function(name) {
+    // If there is a lock present we return that
+    if (this._lock && !this._lock.closed) {
+      return this._lock;
+    }
+
+    // If there isn't we return one.
+    var settings = window.navigator.mozSettings;
+
+    // console.log("Performance creating new lock for " + name);
+    return (this._lock = settings.createLock());
   },
 
   onchange: function sl_onchange(evt) {
@@ -68,7 +82,7 @@ var SettingsListener = {
       throw new Error('Callback is not a function');
     }
 
-    var req = settings.createLock().get(name);
+    var req = this.getSettingsLock().get(name);
     req.addEventListener('success', (function onsuccess() {
       callback(typeof(req.result[name]) != 'undefined' ?
         req.result[name] : defaultValue);

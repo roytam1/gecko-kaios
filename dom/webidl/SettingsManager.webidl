@@ -10,6 +10,10 @@ interface SettingsLock : EventTarget {
   // Whether this lock is invalid
   readonly attribute boolean closed;
 
+  // Force the settings to be "closed", running all the tasks
+  // as soon as possible.
+  void forceClose();
+
   // Contains a JSON object with name/value pairs to be set.
   DOMRequest set(object settings);
 
