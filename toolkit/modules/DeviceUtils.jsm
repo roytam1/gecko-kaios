@@ -12,9 +12,6 @@ const Cu = Components.utils;
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
-#ifdef PROPRIETARY_JRD_SERVICE
-Cu.import('resource://gre/modules/jrd_service.jsm');
-#endif
 
 const PREF_SERVICE_DEVICE_TYPE = "services.kaiostech.device_type";
 const PREF_SERVICE_DEVICE_BRAND = "services.kaiostech.brand";
@@ -36,14 +33,9 @@ this.DeviceUtils = {
     let cuRefStr;
 
     try {
-      if (typeof JrdService != "undefined") {
-        let cuRef = JrdService._readNvitem(55, null);
-        if (cuRef.result == 'OK') {
-          cuRefStr = CommonUtils.byteArrayToString(cuRef.data).replace(/\0/g,'');
-        }
-      } else {
-          cuRefStr = Services.prefs.getCharPref("device.cuRef.default");
-      }
+      let sysLibs = {};
+      Cu.import("resource://gre/modules/systemlibs.js", sysLibs);
+      cuRefStr = sysLibs.libcutils.property_get("ro.fota.cu_ref");
     } catch(e) {}
     return cuRefStr;
   },
