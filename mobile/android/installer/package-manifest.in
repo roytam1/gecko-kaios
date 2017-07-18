@@ -112,7 +112,6 @@
 @BINPATH@/components/dom.xpt
 @BINPATH@/components/dom_activities.xpt
 @BINPATH@/components/dom_apps.xpt
-@BINPATH@/components/dom_newapps.xpt
 @BINPATH@/components/dom_base.xpt
 @BINPATH@/components/dom_canvas.xpt
 @BINPATH@/components/dom_core.xpt
@@ -288,8 +287,6 @@
 @BINPATH@/components/BrowserElementProxy.js
 @BINPATH@/components/FeedProcessor.manifest
 @BINPATH@/components/FeedProcessor.js
-@BINPATH@/components/PackagedAppUtils.manifest
-@BINPATH@/components/PackagedAppUtils.js
 @BINPATH@/components/PermissionSettings.js
 @BINPATH@/components/PermissionSettings.manifest
 @BINPATH@/components/PermissionPromptService.js
@@ -384,9 +381,6 @@
 @BINPATH@/components/SystemMessageManager.js
 @BINPATH@/components/SystemMessageCache.js
 @BINPATH@/components/SystemMessageManager.manifest
-
-@BINPATH@/components/InstallPackagedWebapp.manifest
-@BINPATH@/components/InstallPackagedWebapp.js
 
 #ifdef MOZ_WEBRTC
 @BINPATH@/components/PeerConnection.js

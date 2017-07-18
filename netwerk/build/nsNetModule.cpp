@@ -268,13 +268,9 @@ NS_GENERIC_FACTORY_CONSTRUCTOR(nsHttpDigestAuth)
 #endif // !NECKO_PROTOCOL_http
 
 #include "mozilla/net/Dashboard.h"
-#include "mozilla/net/PackagedAppService.h"
-#include "mozilla/net/PackagedAppVerifier.h"
 namespace mozilla {
 namespace net {
   NS_GENERIC_FACTORY_CONSTRUCTOR(Dashboard)
-  NS_GENERIC_FACTORY_CONSTRUCTOR(PackagedAppService)
-  NS_GENERIC_FACTORY_CONSTRUCTOR(PackagedAppVerifier)
 } // namespace net
 } // namespace mozilla
 #include "AppProtocolHandler.h"
@@ -885,8 +881,6 @@ static const mozilla::Module::CIDEntry kNeckoCIDs[] = {
     { &kNS_MIMEINPUTSTREAM_CID, false, nullptr, nsMIMEInputStreamConstructor },
     { &kNS_PROTOCOLPROXYSERVICE_CID, true, nullptr, nsProtocolProxyServiceConstructor },
     { &kNS_STREAMCONVERTERSERVICE_CID, false, nullptr, CreateNewStreamConvServiceFactory },
-    { &kNS_PACKAGEDAPPSERVICE_CID, false, NULL, mozilla::net::PackagedAppServiceConstructor },
-    { &kNS_PACKAGEDAPPVERIFIER_CID, false, NULL, mozilla::net::PackagedAppVerifierConstructor },
     { &kNS_DASHBOARD_CID, false, nullptr, mozilla::net::DashboardConstructor },
 #ifdef NECKO_PROTOCOL_ftp
     { &kNS_FTPDIRLISTINGCONVERTER_CID, false, nullptr, CreateNewFTPDirListingConv },

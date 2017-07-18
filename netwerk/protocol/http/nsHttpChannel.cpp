@@ -88,7 +88,6 @@
 #include "nsIX509Cert.h"
 #include "ScopedNSSTypes.h"
 #include "nsNullPrincipal.h"
-#include "nsIPackagedAppService.h"
 #include "nsIDeprecationWarner.h"
 #include "nsIDocument.h"
 #include "nsICompressConvStats.h"
@@ -258,7 +257,6 @@ nsHttpChannel::nsHttpChannel()
     , mIsPartialRequest(0)
     , mHasAutoRedirectVetoNotifier(0)
     , mPinCacheContent(0)
-    , mIsPackagedAppResource(0)
     , mIsCorsPreflightDone(0)
     , mPushedStream(nullptr)
     , mLocalBlocklist(false)
@@ -3696,12 +3694,6 @@ nsHttpChannel::OnCacheEntryAvailableInternal(nsICacheEntry *entry,
             return AsyncCall(&nsHttpChannel::HandleAsyncFallback);
         }
 
-        if (mIsPackagedAppResource) {
-            // We need to return FILE_NOT_FOUND in case an error occurs
-            // or we will take the user to the <you're offline> screen.
-            return NS_ERROR_FILE_NOT_FOUND;
-        }
-
         return NS_ERROR_DOCUMENT_NOT_CACHED;
     }
 
@@ -5151,15 +5143,6 @@ nsHttpChannel::AsyncOpen(nsIStreamListener *listener, nsISupports *context)
         return NS_ERROR_NOT_AVAILABLE;
     }
 
-    if (gHttpHandler->PackagedAppsEnabled()) {
-        nsAutoCString path;
-        nsCOMPtr<nsIURL> url(do_QueryInterface(mURI));
-        if (url) {
-            url->GetFilePath(path);
-        }
-        mIsPackagedAppResource = path.Find(PACKAGED_APP_TOKEN) != kNotFound;
-    }
-
     rv = NS_CheckPortSafety(mURI);
     if (NS_FAILED(rv)) {
         ReleaseListeners();
@@ -5395,33 +5378,6 @@ nsHttpChannel::BeginConnect()
     // clear the already recorded AsyncOpen value for consistency.
     if (!mTimingEnabled)
         mAsyncOpenTime = TimeStamp();
-
-    if (mIsPackagedAppResource) {
-        // If this is a packaged app resource, the content will be fetched
-        // by the packaged app service into the cache, and the cache entry will
-        // be passed to OnCacheEntryAvailable.
-
-        nsCOMPtr<nsIPackagedAppService> pas =
-            do_GetService("@mozilla.org/network/packaged-app-service;1", &rv);
-        if (NS_WARN_IF(NS_FAILED(rv))) {
-            AsyncAbort(rv);
-            return rv;
-        }
-
-        rv = pas->GetResource(this, this);
-        if (NS_FAILED(rv)) {
-            AsyncAbort(rv);
-        }
-
-        // We need to alter the flags so the cache entry returned by the
-        // packaged app service is always accepted. Revalidation is handled
-        // by the service.
-        mLoadFlags |= LOAD_ONLY_FROM_CACHE;
-        mLoadFlags |= LOAD_FROM_CACHE;
-        mLoadFlags &= ~VALIDATE_ALWAYS;
-
-        return rv;
-    }
 
     // when proxying only use the pipeline bit if ProxyPipelining() allows it.
     if (!mConnectionInfo->UsingConnect() && mConnectionInfo->UsingHttpProxy()) {

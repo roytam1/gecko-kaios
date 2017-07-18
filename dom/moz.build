@@ -114,7 +114,6 @@ DIRS += [
     'resourcestats',
     'manifest',
     'vr',
-    'newapps',
     'u2f',
     'datacall',
     'powersupply',
