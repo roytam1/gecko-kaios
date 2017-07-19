@@ -68,9 +68,6 @@ if (AppConstants.MOZ_SAFE_BROWSING) {
                 "resource://gre/modules/SafeBrowsing.jsm");
 }
 
-XPCOMUtils.defineLazyModuleGetter(this, "SafeMode",
-                                  "resource://gre/modules/SafeMode.jsm");
-
 window.performance.measure('gecko-shell-jsm-loaded', 'gecko-shell-loadstart');
 
 function debug(str) {
@@ -253,42 +250,39 @@ var shell = {
   bootstrap: function() {
     window.performance.mark('gecko-shell-bootstrap');
 
-    // Before anything, check if we want to start in safe mode.
-    SafeMode.check(window).then(() => {
-      let startManifestURL =
-        Cc['@mozilla.org/commandlinehandler/general-startup;1?type=b2gbootstrap']
-          .getService(Ci.nsISupports).wrappedJSObject.startManifestURL;
+    let startManifestURL =
+      Cc['@mozilla.org/commandlinehandler/general-startup;1?type=b2gbootstrap']
+        .getService(Ci.nsISupports).wrappedJSObject.startManifestURL;
 
-      // If --start-manifest hasn't been specified, we re-use the latest specified manifest.
-      // If it's the first launch, we will fallback to b2g.default.start_manifest_url
-      if (AppConstants.MOZ_GRAPHENE && !startManifestURL) {
-        try {
-          startManifestURL = Services.prefs.getCharPref("b2g.system_manifest_url");
-        } catch(e) {}
+    // If --start-manifest hasn't been specified, we re-use the latest specified manifest.
+    // If it's the first launch, we will fallback to b2g.default.start_manifest_url
+    if (AppConstants.MOZ_GRAPHENE && !startManifestURL) {
+      try {
+        startManifestURL = Services.prefs.getCharPref("b2g.system_manifest_url");
+      } catch(e) {}
+    }
+
+    if (!startManifestURL) {
+      try {
+        startManifestURL = Services.prefs.getCharPref("b2g.default.start_manifest_url");
+      } catch(e) {}
+    }
+
+    if (startManifestURL) {
+      Cu.import('resource://gre/modules/Bootstraper.jsm');
+
+      if (AppConstants.MOZ_GRAPHENE && Bootstraper.isInstallRequired(startManifestURL)) {
+        // Installing the app my take some time. We don't want to keep the
+        // native window hidden.
+        showInstallScreen();
       }
 
-      if (!startManifestURL) {
-        try {
-          startManifestURL = Services.prefs.getCharPref("b2g.default.start_manifest_url");
-        } catch(e) {}
-      }
-
-      if (startManifestURL) {
-        Cu.import('resource://gre/modules/Bootstraper.jsm');
-
-        if (AppConstants.MOZ_GRAPHENE && Bootstraper.isInstallRequired(startManifestURL)) {
-          // Installing the app my take some time. We don't want to keep the
-          // native window hidden.
-          showInstallScreen();
-        }
-
-        Bootstraper.ensureSystemAppInstall(startManifestURL)
-                   .then(this.start.bind(this))
-                   .catch(Bootstraper.bailout);
-      } else {
-        this.start();
-      }
-    });
+      Bootstraper.ensureSystemAppInstall(startManifestURL)
+                  .then(this.start.bind(this))
+                  .catch(Bootstraper.bailout);
+    } else {
+      this.start();
+    }
   },
 
   start: function shell_start() {

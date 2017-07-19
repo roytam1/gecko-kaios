@@ -43,7 +43,6 @@ EXTRA_JS_MODULES += [
     'PermissionsInstaller.jsm',
     'PermissionsTable.jsm',
     'StoreTrustAnchor.jsm',
-    'UserCustomizations.jsm',
 ]
 
 EXTRA_PP_JS_MODULES += [

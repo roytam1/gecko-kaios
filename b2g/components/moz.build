@@ -67,7 +67,6 @@ EXTRA_JS_MODULES += [
     'MultiscreenHandler.jsm',
     'OrientationChangeHandler.jsm',
     'PersistentDataBlock.jsm',
-    'SafeMode.jsm',
     'Screenshot.jsm',
     'SystemAppProxy.jsm',
     'TelURIParser.jsm',

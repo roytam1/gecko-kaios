@@ -24,7 +24,6 @@ DIRS += [
     'crashmonitor',
     'diskspacewatcher',
     'downloads',
-    'extensions',
     'exthelper',
     'filepicker',
     'filewatcher',
@@ -101,6 +100,9 @@ if CONFIG['MOZ_URL_CLASSIFIER']:
     DIRS += ['url-classifier']
 
 DIRS += ['captivedetect']
+
+if not CONFIG['MOZ_B2G']:
+    DIRS += ['extensions']
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] != "gonk" and CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
     DIRS += ['terminator']
