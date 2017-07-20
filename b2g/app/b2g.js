@@ -1210,3 +1210,6 @@ pref("toolkit.telemetry.enabled", false);
 
 // Set adaptor as default recognition service
 pref("media.webspeech.service.default", "adaptor");
+
+// Force fullscreen video in landscape mode if its width larger than height.
+pref("media.video.fullscreen.force-landscape", false);

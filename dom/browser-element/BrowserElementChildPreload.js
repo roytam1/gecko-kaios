@@ -62,6 +62,19 @@ function sendSyncMsg(msg, data) {
   return sendSyncMessage('browser-element-api:call', data);
 }
 
+function isVideo(element) {
+  let isVideoElement =
+    element instanceof content.document.defaultView.HTMLVideoElement;
+  if (!isVideoElement) {
+    return false;
+  }
+  // Firefox always creates a HTMLVideoElement when loading an ogg file
+  // directly. This would check if the media is actually audio.
+  let actuallyAudio = element.readyState >= element.HAVE_METADATA &&
+                      (element.videoWidth == 0 || element.videoHeight == 0);
+  return !actuallyAudio;
+}
+
 var CERTIFICATE_ERROR_PAGE_PREF = 'security.alternate_certificate_error_page';
 
 const OBSERVED_EVENTS = [
@@ -539,10 +552,31 @@ BrowserElementChild.prototype = {
       // to handle, neither we have been in fullscreen, tell the
       // parent to just exit.
       sendAsyncMsg("exit-dom-fullscreen");
+      return;
+    }
+    let fullscreenForceLandscape =
+      Services.prefs.getBoolPref('media.video.fullscreen.force-landscape');
+    if (fullscreenForceLandscape) {
+      let fullscreenElement = content.document.fullscreenElement;
+      if (isVideo(fullscreenElement)) {
+        if (fullscreenElement.videoWidth > fullscreenElement.videoHeight ) {
+          let window = content.document.defaultView;
+          window.screen.mozLockOrientation("landscape");
+        }
+      }
     }
   },
 
   _recvExitFullscreen: function() {
+    let fullscreenForceLandscape =
+      Services.prefs.getBoolPref('media.video.fullscreen.force-landscape');
+    if (fullscreenForceLandscape) {
+      let fullscreenElement = content.document.fullscreenElement;
+      if (isVideo(fullscreenElement)) {
+        let window = content.document.defaultView;
+        window.screen.mozLockOrientation("default");
+      }
+    }
     this._windowUtils.exitFullscreen();
   },
 
