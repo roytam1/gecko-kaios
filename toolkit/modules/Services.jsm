@@ -89,7 +89,6 @@ var initTable = [
   ["storage", "@mozilla.org/storage/service;1", "mozIStorageService"],
   ["domStorageManager", "@mozilla.org/dom/localStorage-manager;1", "nsIDOMStorageManager"],
   ["strings", "@mozilla.org/intl/stringbundle;1", "nsIStringBundleService"],
-  ["telemetry", "@mozilla.org/base/telemetry;1", "nsITelemetry"],
   ["tm", "@mozilla.org/thread-manager;1", "nsIThreadManager"],
   ["urlFormatter", "@mozilla.org/toolkit/URLFormatterService;1", "nsIURLFormatter"],
   ["vc", "@mozilla.org/xpcom/version-comparator;1", "nsIVersionComparator"],
@@ -106,6 +105,63 @@ var initTable = [
   ["loadContextInfo", "@mozilla.org/load-context-info-factory;1", "nsILoadContextInfoFactory"],
   ["qms", "@mozilla.org/dom/quota-manager-service;1", "nsIQuotaManagerService"],
 ];
+
+if (AppConstants.MOZ_TELEMETRY) {
+  initTable.push(["telemetry", "@mozilla.org/base/telemetry;1", "nsITelemetry"]);
+} else {
+  // Fake telemetry service
+  const histogramBuilder = () => {
+    return {
+        add: () => {},
+        snapshot: () => { return {} },
+        clear: () => {},
+        dataset: () => { return Ci.nsITelemetry.DATASET_RELEASE_CHANNEL_OPTOUT; }
+      }
+  }
+
+  const FakeTelemetry = {
+    histogramSnapshots: {},
+    snapshotSubsessionHistograms: (clear) => {
+      return {}
+    },
+    lastShutdownDuration: 0,
+    failedProfileLockCount: 0,
+    slowSQL: {},
+    debugSlowSQL: {},
+    webrtcStats: {},
+    maximalNumberOfConcurrentThreads: 1,
+    chromeHangs: 0,
+    threadHangStats: [],
+    lateWrites: {},
+    registeredHistograms: (dataset) => { 
+      return {}
+    },
+    newHistogram: histogramBuilder,
+    histogramFrom: histogramBuilder,
+    getHistogramById: histogramBuilder,
+    keyedHistogramSnapshots: {},
+    newKeyedHistogram: histogramBuilder,
+    registeredKeyedHistograms: () => { return [] },
+    getKeyedHistogramById: histogramBuilder,
+    canRecordBase: false,
+    canRecordExtended: false,
+    isOfficialTelemetry: false,
+    registerAddonHistogram: () => {},
+    getAddonHistogram: histogramBuilder,
+    unregisterAddonHistograms: () => {},
+    addonHistogramSnapshots: {},
+    asyncFetchTelemetryData: (callback) => {
+      callback.complete();
+    },
+    fileIOReports: {},
+    msSinceProcessStart: () => { return 0.0; },
+
+    QueryInterface: XPCOMUtils.generateQI([Ci.nsITelemetry, Ci.nsISupports]),
+    
+  }
+
+  XPCOMUtils.defineLazyGetter(Services, "telemetry", function () { return FakeTelemetry });
+}
 
 initTable.forEach(([name, contract, intf, enabled = true]) => {
   if (enabled) {

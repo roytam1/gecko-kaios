@@ -10,7 +10,9 @@
 #include "runnable_utils.h"
 #include "prcvar.h"
 
+#ifdef MOZ_TELEMETRY
 #include "mozilla/Telemetry.h"
+#endif
 #include "browser_logging/WebRtcLog.h"
 
 #if !defined(MOZILLA_EXTERNAL_LINKAGE)
@@ -197,6 +199,7 @@ FreeOnMain_m(nsAutoPtr<RTCStatsQueries> aQueryList) {
   MOZ_ASSERT(NS_IsMainThread());
 }
 
+#ifdef MOZ_TELEMETRY
 static void
 EverySecondTelemetryCallback_s(nsAutoPtr<RTCStatsQueries> aQueryList) {
   using namespace Telemetry;
@@ -350,6 +353,7 @@ PeerConnectionCtx::EverySecondTelemetryCallback_m(nsITimer* timer, void *closure
     NS_ENSURE_SUCCESS_VOID(rv);
   }
 }
+#endif // MOZ_TELEMETRY
 #endif
 
 nsresult PeerConnectionCtx::Initialize() {
@@ -357,6 +361,7 @@ nsresult PeerConnectionCtx::Initialize() {
 
 #if !defined(MOZILLA_EXTERNAL_LINKAGE)
   mConnectionCounter = 0;
+#ifdef MOZ_TELEMETRY
   Telemetry::GetHistogramById(Telemetry::WEBRTC_CALL_COUNT)->Add(0);
 
   mTelemetryTimer = do_CreateInstance(NS_TIMER_CONTRACTID);
@@ -365,6 +370,7 @@ nsresult PeerConnectionCtx::Initialize() {
   NS_ENSURE_SUCCESS(rv, rv);
   mTelemetryTimer->InitWithFuncCallback(EverySecondTelemetryCallback_m, this, 1000,
                                         nsITimer::TYPE_REPEATING_PRECISE_CAN_SKIP);
+#endif
 
   if (XRE_IsContentProcess()) {
     WebrtcGlobalChild::Create();

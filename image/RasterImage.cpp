@@ -96,7 +96,9 @@ RasterImage::RasterImage(ImageURL* aURI /* = nullptr */) :
   mAnimationFinished(false),
   mWantFullDecode(false)
 {
+#ifdef MOZ_TELEMETRY
   Telemetry::GetHistogramById(Telemetry::IMAGE_DECODE_COUNT)->Add(0);
+#endif
 }
 
 //******************************************************************************
@@ -1328,22 +1330,30 @@ RasterImage::Decode(const IntSize& aSize, uint32_t aFlags)
   }
 
   // Report telemetry.
+#ifdef MOZ_TELEMETRY
   Telemetry::GetHistogramById(Telemetry::IMAGE_DECODE_COUNT)
     ->Subtract(mDecodeCount);
+#endif
   mDecodeCount++;
+#ifdef MOZ_TELEMETRY
   Telemetry::GetHistogramById(Telemetry::IMAGE_DECODE_COUNT)
     ->Add(mDecodeCount);
+#endif
 
   if (mDecodeCount > sMaxDecodeCount) {
     // Don't subtract out 0 from the histogram, because that causes its count
     // to go negative, which is not kosher.
     if (sMaxDecodeCount > 0) {
+#ifdef MOZ_TELEMETRY
       Telemetry::GetHistogramById(Telemetry::IMAGE_MAX_DECODE_COUNT)
         ->Subtract(sMaxDecodeCount);
+#endif
     }
     sMaxDecodeCount = mDecodeCount;
+#ifdef MOZ_TELEMETRY
     Telemetry::GetHistogramById(Telemetry::IMAGE_MAX_DECODE_COUNT)
       ->Add(sMaxDecodeCount);
+#endif
   }
 
   // We're ready to decode; start the decoder.

@@ -7,6 +7,8 @@
 const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 const myScope = this;
 
+Cu.import("resource://gre/modules/AppConstants.jsm", this);
+
 Cu.import("resource://gre/modules/Log.jsm", this);
 Cu.import("resource://gre/modules/osfile.jsm", this);
 Cu.import("resource://gre/modules/Promise.jsm", this);
@@ -14,7 +16,7 @@ Cu.import("resource://gre/modules/Services.jsm", this);
 Cu.import("resource://gre/modules/Task.jsm", this);
 Cu.import("resource://gre/modules/Timer.jsm", this);
 Cu.import("resource://gre/modules/XPCOMUtils.jsm", this);
-Cu.import("resource://gre/modules/TelemetryController.jsm");
+AppConstants.MOZ_TELEMETRY && Cu.import("resource://gre/modules/TelemetryController.jsm");
 Cu.import("resource://gre/modules/KeyValueParser.jsm");
 
 this.EXPORTED_SYMBOLS = [
@@ -545,7 +547,7 @@ this.CrashManager.prototype = Object.freeze({
             sessionId = reportMeta.TelemetrySessionId;
             delete reportMeta.TelemetrySessionId;
           }
-          TelemetryController.submitExternalPing("crash",
+          AppConstants.MOZ_TELEMETRY && TelemetryController.submitExternalPing("crash",
             {
               version: 1,
               crashDate: date.toISOString().slice(0, 10), // YYYY-MM-DD

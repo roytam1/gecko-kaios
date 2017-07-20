@@ -3905,10 +3905,14 @@ PeerConnectionImpl::startCallTelem() {
   // If we want to track Loop calls independently here, we need two mConnectionCounters
   int &cnt = PeerConnectionCtx::GetInstance()->mConnectionCounter;
   if (cnt > 0) {
+#ifdef MOZ_TELEMETRY
     Telemetry::GetHistogramById(Telemetry::WEBRTC_CALL_COUNT)->Subtract(cnt);
+#endif
   }
   cnt++;
+#ifdef MOZ_TELEMETRY
   Telemetry::GetHistogramById(Telemetry::WEBRTC_CALL_COUNT)->Add(cnt);
+#endif
 }
 #endif
 

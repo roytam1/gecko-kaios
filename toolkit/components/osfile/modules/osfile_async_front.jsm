@@ -53,10 +53,12 @@ Cu.import("resource://gre/modules/osfile/ospath.jsm", Path);
 Cu.import("resource://gre/modules/Promise.jsm", this);
 Cu.import("resource://gre/modules/Task.jsm", this);
 
+Cu.import("resource://gre/modules/AppConstants.jsm", this);
+
 // The implementation of communications
 Cu.import("resource://gre/modules/PromiseWorker.jsm", this);
 Cu.import("resource://gre/modules/Services.jsm", this);
-Cu.import("resource://gre/modules/TelemetryStopwatch.jsm", this);
+AppConstants.MOZ_TELEMETRY && Cu.import("resource://gre/modules/TelemetryStopwatch.jsm", this);
 Cu.import("resource://gre/modules/AsyncShutdown.jsm", this);
 var Native = Cu.import("resource://gre/modules/osfile/osfile_native.jsm", {});
 
@@ -450,6 +452,10 @@ var Scheduler = this.Scheduler = {
    * This is only useful on first launch.
    */
   _updateTelemetry: function() {
+    if (!AppConstants.MOZ_TELEMETRY) {
+      return;
+    }
+    
     let worker = this.worker;
     let workerTimeStamps = worker.workerTimeStamps;
     if (!workerTimeStamps) {
@@ -1172,12 +1178,12 @@ File.writeAtomic = function writeAtomic(path, buffer, options = {}) {
     options.bytes = buffer.byteLength;
   };
   let refObj = {};
-  TelemetryStopwatch.start("OSFILE_WRITEATOMIC_JANK_MS", refObj);
+  AppConstants.MOZ_TELEMETRY && TelemetryStopwatch.start("OSFILE_WRITEATOMIC_JANK_MS", refObj);
   let promise = Scheduler.post("writeAtomic",
     [Type.path.toMsg(path),
      Type.void_t.in_ptr.toMsg(buffer),
      options], [options, buffer, path]);
-  TelemetryStopwatch.finish("OSFILE_WRITEATOMIC_JANK_MS", refObj);
+  AppConstants.MOZ_TELEMETRY && TelemetryStopwatch.finish("OSFILE_WRITEATOMIC_JANK_MS", refObj);
   return promise;
 };
 

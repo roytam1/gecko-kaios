@@ -397,3 +397,19 @@ set_config('OMNIJAR_NAME', omnijar_name)
 check_prog('TAR', ('gnutar', 'gtar', 'tar'))
 check_prog('UNZIP', ('unzip',))
 check_prog('ZIP', ('zip',))
+
+# Telemetry Support
+# ==============================================================
+option('--enable-telemetry',
+       help='Enable Gecko Telemetry')
+
+@depends('--disable-telemetry', target)
+def telemetry(value, target):
+    enabled = bool(value)
+#    die('--enable-telemetry value is %s', enabled)
+    if enabled:
+        return True
+
+set_config('MOZ_TELEMETRY', telemetry)
+set_define('MOZ_TELEMETRY', telemetry)
+

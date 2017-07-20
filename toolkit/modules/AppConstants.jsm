@@ -299,6 +299,13 @@ this.AppConstants = Object.freeze({
 #endif
   DEBUG_JS_MODULES: "@DEBUG_JS_MODULES@",
 
+  MOZ_TELEMETRY:
+#ifdef MOZ_TELEMETRY
+    true,
+#else
+    false,
+#endif
+
   // URL to the hg revision this was built from (e.g.
   // "https://hg.mozilla.org/mozilla-central/rev/6256ec9113c1")
   // On unofficial builds, this is an empty string.

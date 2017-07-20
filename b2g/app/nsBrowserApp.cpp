@@ -97,14 +97,18 @@ public:
 XRE_GetFileFromPathType XRE_GetFileFromPath;
 XRE_CreateAppDataType XRE_CreateAppData;
 XRE_FreeAppDataType XRE_FreeAppData;
+#ifdef MOZ_TELEMETRY
 XRE_TelemetryAccumulateType XRE_TelemetryAccumulate;
+#endif
 XRE_mainType XRE_main;
 
 static const nsDynamicFunctionLoad kXULFuncs[] = {
     { "XRE_GetFileFromPath", (NSFuncPtr*) &XRE_GetFileFromPath },
     { "XRE_CreateAppData", (NSFuncPtr*) &XRE_CreateAppData },
     { "XRE_FreeAppData", (NSFuncPtr*) &XRE_FreeAppData },
+#ifdef MOZ_TELEMETRY
     { "XRE_TelemetryAccumulate", (NSFuncPtr*) &XRE_TelemetryAccumulate },
+#endif
     { "XRE_main", (NSFuncPtr*) &XRE_main },
     { nullptr, nullptr }
 };
@@ -253,6 +257,7 @@ int main(int argc, _CONST char* argv[])
   }
 
   if (gotCounters) {
+#ifdef MOZ_TELEMETRY
 #if defined(XP_WIN)
     XRE_TelemetryAccumulate(mozilla::Telemetry::EARLY_GLUESTARTUP_READ_OPS,
                             int(ioCounters.ReadOperationCount));
@@ -275,6 +280,7 @@ int main(int argc, _CONST char* argv[])
     }
 #else
   #error "Unknown platform"  // having this here keeps cppcheck happy
+#endif
 #endif
   }
 

@@ -434,29 +434,6 @@ setUpdateTrackingId();
   });
 })();
 
-// =================== Telemetry  ======================
-(function setupTelemetrySettings() {
-  let gaiaSettingName = 'debug.performance_data.shared';
-  let geckoPrefName = 'toolkit.telemetry.enabled';
-  SettingsListener.observe(gaiaSettingName, null, function(value) {
-    if (value !== null) {
-      // Gaia setting has been set; update Gecko pref to that.
-      Services.prefs.setBoolPref(geckoPrefName, value);
-      return;
-    }
-    // Gaia setting has not been set; set the gaia setting to default.
-    let prefValue = AppConstants.MOZ_TELEMETRY_ON_BY_DEFAULT;
-    try {
-      prefValue = Services.prefs.getBoolPref(geckoPrefName);
-    } catch (e) {
-      // Pref not set; use default value.
-    }
-    let setting = {};
-    setting[gaiaSettingName] = prefValue;
-    window.navigator.mozSettings.createLock().set(setting);
-  });
-})();
-
 // =================== Low-precision buffer ======================
 (function setupLowPrecisionSettings() {
   // The gaia setting layers.low-precision maps to two gecko prefs
