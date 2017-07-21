@@ -30,17 +30,52 @@ TelephonyCallCapabilities::TelephonyCallCapabilities(nsPIDOMWindowInner* aWindow
 {
 }
 
+TelephonyCallCapabilities::TelephonyCallCapabilities(nsPIDOMWindowInner* aWindow, uint32_t aCapabilities)
+  : mWindow(aWindow)
+{
+  Update(aCapabilities);
+}
+
 TelephonyCallCapabilities::~TelephonyCallCapabilities()
 {
 }
 
 void
-TelephonyCallCapabilities::Update(uint32_t aCapabilities) {
+TelephonyCallCapabilities::Update(uint32_t aCapabilities)
+{
   mVtLocalRx = aCapabilities & nsITelephonyCallInfo::CAPABILITY_SUPPORTS_VT_LOCAL_RX;
   mVtLocalTx = aCapabilities & nsITelephonyCallInfo::CAPABILITY_SUPPORTS_VT_LOCAL_TX;
   mVtRemoteRx = aCapabilities & nsITelephonyCallInfo::CAPABILITY_SUPPORTS_VT_REMOTE_RX;
   mVtRemoteTx = aCapabilities & nsITelephonyCallInfo::CAPABILITY_SUPPORTS_VT_REMOTE_TX;
 }
+
+bool
+TelephonyCallCapabilities::Equals(RefPtr<TelephonyCallCapabilities>& aCompare)
+{
+  if (!aCompare) {
+    return false;
+  }
+
+  bool noChanged = mVtLocalRx == aCompare->VtLocalRx();
+  noChanged &= mVtLocalTx == aCompare->VtLocalTx();
+  noChanged &= mVtRemoteTx == aCompare->VtRemoteTx();
+  noChanged &= mVtRemoteRx == aCompare->VtRemoteRx();
+  return !noChanged;
+}
+
+bool
+TelephonyCallCapabilities::Equals(uint32_t aCapabilities)
+{
+  bool noChanged = true;
+
+  noChanged &=  mVtLocalRx == (aCapabilities & nsITelephonyCallInfo::CAPABILITY_SUPPORTS_VT_LOCAL_RX);
+  noChanged &= mVtLocalTx == (aCapabilities & nsITelephonyCallInfo::CAPABILITY_SUPPORTS_VT_LOCAL_TX);
+  noChanged &= mVtRemoteRx == (aCapabilities & nsITelephonyCallInfo::CAPABILITY_SUPPORTS_VT_REMOTE_RX);
+  noChanged &= mVtRemoteTx == (aCapabilities & nsITelephonyCallInfo::CAPABILITY_SUPPORTS_VT_REMOTE_TX);
+
+  return noChanged;
+}
+
 
 JSObject*
 TelephonyCallCapabilities::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)

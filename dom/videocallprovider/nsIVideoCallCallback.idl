@@ -42,7 +42,7 @@ interface nsIVideoCallCameraCapabilities : nsISupports
 
 interface nsIVideoCallProfile;
 
-[scriptable, uuid(576df4d4-3afb-4b13-9926-0e0a5fadceec)]
+[scriptable, uuid(488d538c-3f25-4024-9eb7-e83ca503de1b)]
 interface nsIVideoCallCallback : nsISupports
 {
   /**
@@ -106,17 +106,12 @@ interface nsIVideoCallCallback : nsISupports
    */
   void onChangeCameraCapabilities(in nsIVideoCallCameraCapabilities capabilities);
 
-  const unsigned short QUALITY_UNKNOWN = 0;
-  const unsigned short QUALITY_HIGH = 1;
-  const unsigned short QUALITY_MEDIUM = 2;
-  const unsigned short QUALITY_LOW = 3;
-  const unsigned short QUALITY_DEFAULT = 4;
   /**
    * Called when the video quality of the call has changed.
    * @param callIndex
    *        Indicate call id
    * @param quality
-   *        One of nsIVideoCallCallback::QUALITY_* values.
+   *        One of nsIVideoCallProfile::QUALITY_* values.
    * TODO phase 2.
    */
   void onChangeVideoQuality(in unsigned short quality);

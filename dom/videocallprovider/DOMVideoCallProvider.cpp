@@ -540,8 +540,10 @@ DOMVideoCallProvider::DispatchSessionModifyResponseEvent(const nsAString& aType,
                                                          DOMVideoCallProfile* aRequest,
                                                          DOMVideoCallProfile* aResponse)
 {
+  LOG("DispatchSessionModifyResponseEvent: %d", aStatus);
   AutoJSAPI jsapi;
   if (NS_WARN_IF(!jsapi.Init(GetOwner()))) {
+    LOG("%s, return due to fail to initiate jsapi", __FUNCTION__);
     return NS_ERROR_FAILURE;
   }
 
@@ -580,6 +582,7 @@ nsresult
 DOMVideoCallProvider::ConvertToJsValue(nsIVideoCallProfile *aProfile,
                                        JS::Rooted<JS::Value>* jsResult)
 {
+  LOG("%s", __FUNCTION__);
   uint16_t quality;
   uint16_t state;
   aProfile->GetQuality(&quality);
@@ -593,12 +596,14 @@ DOMVideoCallProvider::ConvertToJsValue(nsIVideoCallProfile *aProfile,
 
   AutoJSAPI jsapi;
   if (NS_WARN_IF(!jsapi.Init(GetOwner()))) {
+    LOG("%s, return, fail to init jsapi", __FUNCTION__);
     return NS_ERROR_FAILURE;
   }
 
   JSContext* cx = jsapi.cx();
   if (!ToJSValue(cx, requestParams, jsResult)) {
     JS_ClearPendingException(cx);
+    LOG("%s, return, fail to tojsvalue", __FUNCTION__);
     return NS_ERROR_TYPE_ERR;
   }
 
@@ -693,7 +698,12 @@ NS_IMETHODIMP
 DOMVideoCallProvider::OnReceiveSessionModifyResponse(uint16_t status,
     nsIVideoCallProfile *request, nsIVideoCallProfile *response)
 {
-  LOG("OnReceiveSessionModifyResponse, status: %d", status);
+  LOG("%s, status: %d", __FUNCTION__, status);
+  if (!request || !response) {
+    LOG("%s, request or response is invalid", __FUNCTION__);
+    return NS_ERROR_FAILURE;
+  }
+
   DispatchSessionModifyResponseEvent(NS_LITERAL_STRING("sessionmodifyresponse"), status,
       static_cast<DOMVideoCallProfile*>(request),
       static_cast<DOMVideoCallProfile*>(response));

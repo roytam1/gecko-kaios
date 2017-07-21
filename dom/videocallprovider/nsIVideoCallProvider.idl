@@ -15,9 +15,10 @@
 
 [ref] native AGraphicBuffProducer(android::sp<android::IGraphicBufferProducer>);
 
-[scriptable, uuid(df52e85e-fddf-441b-b3f7-63182411c4e8)]
+[scriptable, uuid(0704c863-24b0-4882-9165-2afbdc7e4dc3)]
 interface nsIVideoCallProfile : nsISupports
 {
+  const unsigned short QUALITY_UNKNOWN = 0;
   const unsigned short QUALITY_HIGH = 1;
   const unsigned short QUALITY_MEDIUM = 2;
   const unsigned short QUALITY_LOW = 3;

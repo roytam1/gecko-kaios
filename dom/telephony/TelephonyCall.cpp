@@ -76,14 +76,52 @@ TelephonyCallVoiceQuality
 TelephonyCall::ConvertToTelephonyCallVoiceQuality(uint16_t aQuality)
 {
   switch (aQuality) {
-  case nsITelephonyService::CALL_VOICE_QUALITY_HD:
-    return TelephonyCallVoiceQuality::HD;
-  case nsITelephonyService::CALL_VOICE_QUALITY_NORMAL:
-    return TelephonyCallVoiceQuality::Normal;
- }
+    case nsITelephonyService::CALL_VOICE_QUALITY_HD:
+      return TelephonyCallVoiceQuality::HD;
+    case nsITelephonyService::CALL_VOICE_QUALITY_NORMAL:
+      return TelephonyCallVoiceQuality::Normal;
+  }
 
   NS_NOTREACHED("Unknown quality!");
   return TelephonyCallVoiceQuality::Normal;
+}
+
+// static
+TelephonyVideoCallState
+TelephonyCall::ConvertToTelephonyVideoCallState(uint16_t aState)
+{
+  switch (aState) {
+    case nsITelephonyCallInfo::STATE_AUDIO_ONLY:
+      return TelephonyVideoCallState::Voice;
+    case nsITelephonyCallInfo::STATE_TX_ENABLED:
+      return TelephonyVideoCallState::TxEnabled;
+    case nsITelephonyCallInfo::STATE_RX_ENABLED:
+      return TelephonyVideoCallState::RxEnabled;
+    case nsITelephonyCallInfo::STATE_BIDIRECTIONAL:
+      return TelephonyVideoCallState::Bidirectional;
+    case nsITelephonyCallInfo::STATE_PAUSED:
+      return TelephonyVideoCallState::Paused;
+  }
+
+  NS_NOTREACHED("Unknown videocallstate!");
+  return TelephonyVideoCallState::Voice;
+}
+
+// static
+TelephonyCallRadioTech
+TelephonyCall::ConvertToTelephonyCallRadioTech(uint32_t aRadioTech)
+{
+  switch (aRadioTech) {
+    case nsITelephonyCallInfo::RADIO_TECH_CS:
+      return TelephonyCallRadioTech::Cs;
+    case nsITelephonyCallInfo::RADIO_TECH_PS:
+      return TelephonyCallRadioTech::Ps;
+    case nsITelephonyCallInfo::RADIO_TECH_WIFI:
+      return TelephonyCallRadioTech::Wifi;
+  }
+
+  NS_NOTREACHED("Unknown videocallstate!");
+  return TelephonyCallRadioTech::Cs;
 }
 
 // static
@@ -123,8 +161,7 @@ TelephonyCall::Create(Telephony* aTelephony,
 
   call->mVideoCallState = aVideoCallState;
   call->mCapabilities =
-      new TelephonyCallCapabilities(aTelephony->GetOwner());
-  call->mCapabilities->Update(aCapabilities);
+      new TelephonyCallCapabilities(aTelephony->GetOwner(), aCapabilities);
   call->mRadioTech = aRadioTech;
 
   call->ChangeStateInternal(aState, false);
@@ -139,6 +176,7 @@ TelephonyCall::TelephonyCall(nsPIDOMWindowInner* aOwner)
 
 TelephonyCall::~TelephonyCall()
 {
+  LOG("~TelephonyCall");
 }
 
 JSObject*

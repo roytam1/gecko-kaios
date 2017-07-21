@@ -25,6 +25,8 @@ public:
 
   TelephonyCallCapabilities(nsPIDOMWindowInner* aWindow);
 
+  TelephonyCallCapabilities(nsPIDOMWindowInner* aWindow, uint32_t aCapabilities);
+
   nsPIDOMWindowInner*
   GetParentObject() const
   {
@@ -74,6 +76,12 @@ public:
   {
     return mVtRemoteRx && mVtRemoteTx;
   }
+
+  bool
+  Equals(RefPtr<TelephonyCallCapabilities>& aCompare);
+
+  bool
+  Equals(uint32_t aCapabilities);
 
 private:
   ~TelephonyCallCapabilities();

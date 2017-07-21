@@ -173,6 +173,12 @@ public:
   static TelephonyCallVoiceQuality
   ConvertToTelephonyCallVoiceQuality(uint16_t aQuality);
 
+  static TelephonyVideoCallState
+  ConvertToTelephonyVideoCallState(uint16_t aState);
+
+  static TelephonyCallRadioTech
+  ConvertToTelephonyCallRadioTech(uint32_t aRadioTech);
+
   static already_AddRefed<TelephonyCall>
   Create(Telephony* aTelephony,
          TelephonyCallId* aId,
@@ -238,8 +244,8 @@ public:
   }
 
   void
-  UpdateVideoCallState(uint16_t aState) {
-    mVideoCallState = static_cast<TelephonyVideoCallState>(aState);
+  UpdateVideoCallState(TelephonyVideoCallState aState) {
+    mVideoCallState = aState;
   }
 
   void
@@ -248,8 +254,8 @@ public:
   }
 
   void
-  UpdateRadioTech(uint32_t aRadioTech) {
-    mRadioTech = static_cast<TelephonyCallRadioTech>(aRadioTech);
+  UpdateRadioTech(TelephonyCallRadioTech aRadioTech) {
+    mRadioTech = aRadioTech;
   }
 
   void

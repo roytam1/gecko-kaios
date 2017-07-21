@@ -266,8 +266,9 @@ already_AddRefed<TelephonyCall>
 Telephony::CreateCall(TelephonyCallId* aId, uint32_t aServiceId,
                       uint32_t aCallIndex, TelephonyCallState aState,
                       TelephonyCallVoiceQuality aVoiceQuality,
-                      uint16_t aVideoCallState, uint32_t aCapabilities,
-                      uint32_t aRadioTech,
+                      TelephonyVideoCallState aVideoCallState,
+                      uint32_t aCapabilities,
+                      TelephonyCallRadioTech aRadioTech,
                       bool aEmergency, bool aConference,
                       bool aSwitchable, bool aMergeable,
                       bool aConferenceParent)
@@ -282,8 +283,8 @@ Telephony::CreateCall(TelephonyCallId* aId, uint32_t aServiceId,
                         aEmergency, aConference, aSwitchable, aMergeable,
                         aConferenceParent,
                         aCapabilities,
-                        static_cast<TelephonyVideoCallState>(aVideoCallState),
-                        static_cast<TelephonyCallRadioTech>(aRadioTech));
+                        aVideoCallState,
+                        aRadioTech);
 
   NS_ASSERTION(call, "This should never fail!");
   NS_ASSERTION(aConference ? mGroup->CallsArray().Contains(call)
@@ -340,10 +341,10 @@ Telephony::HandleCallInfo(nsITelephonyCallInfo* aInfo)
   uint32_t serviceId;
   uint32_t callIndex;
   uint16_t callState;
-  uint16_t voiceQuality;
+  uint16_t callQuality;
   uint16_t videoCallState;
   uint32_t capabilities;
-  uint32_t radioTech;
+  uint32_t callRadioTech;
 
   bool isEmergency;
   bool isConference;
@@ -354,10 +355,10 @@ Telephony::HandleCallInfo(nsITelephonyCallInfo* aInfo)
   aInfo->GetClientId(&serviceId);
   aInfo->GetCallIndex(&callIndex);
   aInfo->GetCallState(&callState);
-  aInfo->GetVoiceQuality(&voiceQuality);
+  aInfo->GetVoiceQuality(&callQuality);
   aInfo->GetVideoCallState(&videoCallState);
   aInfo->GetCapabilities(&capabilities);
-  aInfo->GetRadioTech(&radioTech);
+  aInfo->GetRadioTech(&callRadioTech);
 
   aInfo->GetIsEmergency(&isEmergency);
   aInfo->GetIsConference(&isConference);
@@ -367,14 +368,18 @@ Telephony::HandleCallInfo(nsITelephonyCallInfo* aInfo)
 
   TelephonyCallState state = TelephonyCall::ConvertToTelephonyCallState(callState);
   TelephonyCallVoiceQuality quality =
-      TelephonyCall::ConvertToTelephonyCallVoiceQuality(voiceQuality);
+      TelephonyCall::ConvertToTelephonyCallVoiceQuality(callQuality);
+  TelephonyVideoCallState videoState =
+      TelephonyCall::ConvertToTelephonyVideoCallState(videoCallState);
+  TelephonyCallRadioTech radioTech =
+      TelephonyCall::ConvertToTelephonyCallRadioTech(callRadioTech);
 
   RefPtr<TelephonyCall> call = GetCallFromEverywhere(serviceId, callIndex);
   // Handle a newly created call.
   if (!call) {
     RefPtr<TelephonyCallId> id = CreateCallId(aInfo);
     call = CreateCall(id, serviceId, callIndex, state, quality,
-                      videoCallState, capabilities, radioTech, isEmergency,
+                      videoState, capabilities, radioTech, isEmergency,
                       isConference, isSwitchable, isMergeable, isConferenceParent);
     // The newly created call is an incoming call.
     if (call &&
@@ -386,14 +391,23 @@ Telephony::HandleCallInfo(nsITelephonyCallInfo* aInfo)
   }
 
   // Update an existing call
+  // TODO we should update call detail inside a call instance, instead of telephony.
+  // It is werid.
   call->UpdateEmergency(isEmergency);
   call->UpdateSwitchable(isSwitchable);
   call->UpdateMergeable(isMergeable);
 
+  bool changed = quality != call->VoiceQuality();
   call->UpdateVoiceQuality(quality);
 
-  call->UpdateVideoCallState(videoCallState);
+  changed |= videoState != call->VideoCallState();
+  call->UpdateVideoCallState(videoState);
+
+  RefPtr<TelephonyCallCapabilities> prevCapabilities= call->Capabilities();
   call->UpdateCapabilities(capabilities);
+  changed |= prevCapabilities->Equals(capabilities);
+
+  changed |= radioTech != call->RadioTech();
   call->UpdateRadioTech(radioTech);
 
   nsAutoString number;
@@ -404,8 +418,10 @@ Telephony::HandleCallInfo(nsITelephonyCallInfo* aInfo)
   nsAutoString disconnectedReason;
   aInfo->GetDisconnectedReason(disconnectedReason);
 
+  changed |= call->State() != state;
+
   // State changed.
-  if (call->State() != state) {
+  if (changed) {
     if (state == TelephonyCallState::Disconnected) {
       call->UpdateDisconnectedReason(disconnectedReason);
       call->ChangeState(TelephonyCallState::Disconnected);

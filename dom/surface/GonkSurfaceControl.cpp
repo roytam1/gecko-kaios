@@ -95,7 +95,7 @@ nsGonkSurfaceControl::SetConfigurationInternal(const Configuration& aConfig)
   return NS_OK;
 }
 
-nsresult 
+nsresult
 nsGonkSurfaceControl::SetDataSourceSizeImpl(const ISurfaceControl::Size& aSize)
 {
   MOZ_ASSERT(NS_GetCurrentThread() == mSurfaceThread);
@@ -103,7 +103,7 @@ nsGonkSurfaceControl::SetDataSourceSizeImpl(const ISurfaceControl::Size& aSize)
   return SetDataSourceSizeInternal(aSize);
 }
 
-nsresult 
+nsresult
 nsGonkSurfaceControl::SetDataSourceSizeInternal(const ISurfaceControl::Size& aSize)
 {
   //Update display configuration.
