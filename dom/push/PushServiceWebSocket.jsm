@@ -1118,8 +1118,10 @@ this.PushServiceWebSocket = {
     // start the timer since we now have at least one request
     this._startRequestTimeoutTimer();
 
-    let data = {channelID: this._generateID(),
-                messageType: "register"};
+    let data = {
+      channelID: this._generateID(),
+      messageType: "register"
+    };
 
     if (record.appServerKey) {
       data.key = ChromeUtils.base64URLEncode(record.appServerKey, {
@@ -1134,6 +1136,7 @@ this.PushServiceWebSocket = {
         resolve: resolve,
         reject: reject,
         ctime: Date.now(),
+        key: data.key || null
       });
       this._queueRequest(data);
     }).then(record => {
@@ -1190,11 +1193,16 @@ this.PushServiceWebSocket = {
 
   _sendRegisterRequests() {
     this._enqueue(_ => {
-      for (let channelID of this._registerRequests.keys()) {
-        this._send({
+      for (let [channelID, request] of this._registerRequests) {
+        let data = {
           messageType: "register",
-          channelID: channelID,
-        });
+          channelID: channelID
+        };
+
+        if (request.key) {
+          data.key = request.key;
+        }
+        this._send(data);
       }
     });
   },
