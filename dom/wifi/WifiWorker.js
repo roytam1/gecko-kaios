@@ -27,7 +27,7 @@ const WIFIWORKER_WORKER     = "resource://gre/modules/wifi_worker.js";
 const kMozSettingsChangedObserverTopic   = "mozsettings-changed";
 const kScreenStateChangedTopic           = "screen-state-changed";
 
-const MAX_RETRIES_ON_AUTHENTICATION_FAILURE = 2;
+const MAX_RETRIES_ON_AUTHENTICATION_FAILURE = 1;
 const MAX_SUPPLICANT_LOOP_ITERATIONS = 4;
 const MAX_RETRIES_ON_DHCP_FAILURE = 2;
 const MAX_RETRIES_ON_ASSOCIATION_REJECT = 5;
@@ -810,10 +810,33 @@ var WifiManager = (function() {
 
         if (requestName.startsWith("PASSWORD")) {
           notify("networkdisable",
-            {reason: "DISABLED_AUTHENTICATION_FAILURE", eapMethod: "PEAP"});
+            {reason: "DISABLED_AUTHENTICATION_FAILURE"});
           return true;
         } else if (requestName.startsWith("IDENTITY")) {
-          simIdentityRequest(requestName);
+          let networkId = -2;
+          let match =
+            /IDENTITY-([0-9]+):Identity needed for SSID (.+)/.exec(requestName);
+          if (match) {
+            try {
+              networkId = parseInt(match[1]);
+            } catch (e) {
+              networkId = -1;
+            }
+          } else {
+            debug("didn't find SSID " + requestName);
+          }
+          wifiCommand.getNetworkVariable(networkId, "eap", function(eap) {
+            let eapMethod;
+            if (eap == "SIM") {
+              eapMethod = 1;
+            } else if ( eap == "AKA") {
+              eapMethod = 0;
+            } else {
+              debug("EAP type not sim or aka");
+              return;
+            }
+            simIdentityRequest(networkId, eapMethod);
+          });
           return true;
         } else if (requestName.startsWith("SIM")) {
           simAuthRequest(requestName);
@@ -1132,22 +1155,7 @@ var WifiManager = (function() {
     return hexs;
   }
 
-  function simIdentityRequest(requestName) {
-    let networkId = -2;
-    let match =
-      /IDENTITY-([0-9]+):Identity needed for SSID (.+)/.exec(requestName);
-    let eapMethod = 1;
-
-    if (match) {
-      try {
-        networkId = parseInt(match[1]);
-      } catch (e) {
-        networkId = -1;
-      }
-    } else {
-      debug("didn't find SSID " + requestName);
-    }
-
+  function simIdentityRequest(networkId, eapMethod) {
     // For SIM & AKA/AKA' EAP method Only, get identity from ICC
     let icc = gIccService.getIccByServiceId(manager.telephonyServiceId);
     if (!icc || !icc.imsi || !icc.iccInfo || !icc.iccInfo.mcc || 
@@ -1165,17 +1173,10 @@ var WifiManager = (function() {
       mnc = "0" + mnc;
     }
 
-    wifiCommand.getNetworkVariable(networkId, "eap", function(eap) {
-      if (eap == "SIM") {
-        eapMethod = 1;
-      } else if ( eap == "AKA") {
-        eapMethod = 0;
-      }
-      let identity = eapMethod +
-        imsi + "@wlan.mnc" + mnc + ".mcc" + mcc + ".3gppnetwork.org";
-      debug("identity = " + identity);
-      wifiCommand.simIdentityResponse(networkId, identity, function(){});
-    });
+    let identity = eapMethod +
+      imsi + "@wlan.mnc" + mnc + ".mcc" + mcc + ".3gppnetwork.org";
+    debug("identity = " + identity);
+    wifiCommand.simIdentityResponse(networkId, identity, function(){});
   }
 
   function simAuthRequest(requestName) {
@@ -2601,65 +2602,54 @@ function WifiWorker() {
     let configNetwork = self.currentNetwork;
     switch (this.reason) {
       case "DISABLED_DHCP_FAILURE":
-        WifiManager.dhcpFailuresCount++;
-        if (WifiManager.dhcpFailuresCount >= MAX_RETRIES_ON_DHCP_FAILURE) {
-          WifiManager.clearDisableReasonCounter(function(){});
-          WifiManager.isWepNetwork(configNetwork.netId, function(ok) {
-            self.handleNetworkConnectionFailure(configNetwork.netId, function() {
-              if (ok) {
-                self.handleWrongPassword(configNetwork.netId);
-                self._fireEvent("onauthenticationfailed",
-                  {network: netToDOM(configNetwork)});
-              } else {
-                self._fireEvent("ondhcpfailed",
-                  {network: netToDOM(configNetwork)});
-              }
-            });
-          });
-        } else {
-          WifiManager.disconnect(function() {
-            WifiManager.reassociate(function(){});
-          });
-        }
+        WifiManager.isWepNetwork(configNetwork.netId, function(ok) {
+          if (ok) {
+            self.handleWrongPassword(configNetwork.netId);
+            self._fireEvent("onauthenticationfailed",
+              {network: netToDOM(configNetwork)});
+          } else {
+            WifiManager.dhcpFailuresCount++;
+            if (WifiManager.dhcpFailuresCount >= MAX_RETRIES_ON_DHCP_FAILURE) {
+              WifiManager.clearDisableReasonCounter(function(){});
+              self.handleNetworkConnectionFailure(configNetwork.netId,
+                function(){});
+              self._fireEvent("ondhcpfailed",
+                {network: netToDOM(configNetwork)});
+            } else {
+              WifiManager.disconnect(function() {
+                WifiManager.reassociate(function(){});
+              });
+            }
+          }
+        });
         break;
       case "DISABLED_AUTHENTICATION_FAILURE":
         WifiManager.authenticationFailuresCount++;
         if (WifiManager.authenticationFailuresCount >= MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
           WifiManager.clearDisableReasonCounter(function(){});
-          self.handleNetworkConnectionFailure(configNetwork.netId, function() {
-            self.handleWrongPassword(configNetwork.netId);
-            self._fireEvent("onauthenticationfailed",
-              {network: netToDOM(configNetwork)});
-          });
-        // It takes long time to pop up dialog after PEAP password error,
-        // but CTRL-REQ-PASSWORD event actually represent the wrong PEAP
-        // password behaviour, trigger disconnect/re-associate request after
-        // receiving that to speed up the processing.
-        } else if (this.eapMethod && this.eapMethod == "PEAP") {
-          WifiManager.disconnect(function() {
-            WifiManager.reassociate(function(){});
-          });
+          self.handleWrongPassword(configNetwork.netId);
+          self._fireEvent("onauthenticationfailed",
+            {network: netToDOM(configNetwork)});
         }
         break;
       case "DISABLED_ASSOCIATION_REJECTION":
-        WifiManager.associationRejectCount++;
-        if (WifiManager.associationRejectCount >= MAX_RETRIES_ON_ASSOCIATION_REJECT) {
-          WifiManager.clearDisableReasonCounter(function(){});
-          self.bssidToNetwork(this.bssid, function(network) {
-            WifiManager.isWepNetwork(network.netId, function(ok) {
-              self.handleNetworkConnectionFailure(network.netId, function() {
-                if (ok) {
-                  self.handleWrongPassword(network.netId);
-                  self._fireEvent("onauthenticationfailed",
-                    {network: netToDOM(configNetwork)});
-                } else {
-                  self._fireEvent("onassociationreject",
-                    {network: netToDOM(configNetwork)});
-                }
-              });
-            });
+        self.bssidToNetwork(this.bssid, function(network) {
+          WifiManager.isWepNetwork(network.netId, function(ok) {
+            if (ok) {
+               self.handleWrongPassword(network.netId);
+               self._fireEvent("onauthenticationfailed",
+                 {network: netToDOM(configNetwork)});
+            } else {
+              WifiManager.associationRejectCount++;
+              if (WifiManager.associationRejectCount >= MAX_RETRIES_ON_ASSOCIATION_REJECT) {
+                WifiManager.clearDisableReasonCounter(function(){});
+                self.handleNetworkConnectionFailure(network.netId, function(){});
+                self._fireEvent("onassociationreject",
+                  {network: netToDOM(configNetwork)});
+              }
+            }
           });
-        }
+        });
         break;
     }
   };
