@@ -2329,9 +2329,19 @@ TabChild::RecvDeactivateSpatialNavigation()
 {
   RefPtr<SpatialNavigationServiceChild> service =
     SpatialNavigationServiceChild::GetOrCreate();
-  nsCOMPtr<nsPIDOMWindowOuter> window = do_GetInterface(WebNavigation());
 
   service->Deactivate();
+
+  return true;
+}
+
+bool
+TabChild::RecvUpdateSpatialNavigationTPSPanMode(const bool& aEnabled)
+{
+  RefPtr<SpatialNavigationServiceChild> service =
+    SpatialNavigationServiceChild::GetOrCreate();
+
+  service->RecvUpdateTPSPanMode(aEnabled);
 
   return true;
 }
