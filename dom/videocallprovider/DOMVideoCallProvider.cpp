@@ -726,12 +726,8 @@ DOMVideoCallProvider::OnChangeCameraCapabilities(nsIVideoCallCameraCapabilities 
     capabilities->GetWidth(&width);
     capabilities->GetHeight(&height);
     LOG("%s width: %u, height: %u", __FUNCTION__, width, height);
-    if (width == 240 && height == 320) {
-      width = 320;
-      height = 240;
-      LOG("%s to switch w/h, width: %u, height: %u", __FUNCTION__, width, height);
-    }
-    SetDataSourceSize(TYPE_PREVIEW, width, height);
+    // Bug-16836. To swap width/height as a temporary solution.
+    SetDataSourceSize(TYPE_PREVIEW, height, width);
   }
   return NS_OK;
 }
