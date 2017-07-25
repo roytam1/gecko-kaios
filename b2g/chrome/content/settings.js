@@ -89,24 +89,36 @@ var SettingsListener = {
     }));
 
     this._callbacks[name] = callback;
+  },
+
+  observe_fast: function(name, defaultValue, callback) {
+    var settings = window.navigator.mozSettings;
+
+    if (!callback || typeof callback !== 'function') {
+      throw new Error('Callback is not a function');
+    }
+
+    if (!settings) {
+      window.setTimeout(function() { callback(defaultValue); });
+      return;
+    }
+
+    var lock = settings.createLock();
+    var req = lock.get(name);
+    req.addEventListener('success', (function onsuccess() {
+      callback(typeof(req.result[name]) != 'undefined' ?
+        req.result[name] : defaultValue);
+      }));
+
+    this._callbacks[name] = callback;
+    lock.forceClose();
   }
 };
 
 SettingsListener.init();
 
-// =================== Console ======================
-
-SettingsListener.observe('debug.console.enabled', true, function(value) {
-  Services.prefs.setBoolPref('consoleservice.enabled', value);
-  Services.prefs.setBoolPref('layout.css.report_errors', value);
-});
-
-SettingsListener.observe('homescreen.manifestURL', 'Sentinel Value' , function(value) {
-  Services.prefs.setCharPref('dom.mozApps.homescreenURL', value);
-});
-
 // =================== Languages ====================
-SettingsListener.observe('language.current', 'en-US', function(value) {
+SettingsListener.observe_fast('language.current', 'en-US', function(value) {
   Services.prefs.setCharPref('general.useragent.locale', value);
 
   let prefName = 'intl.accept_languages';
@@ -132,8 +144,31 @@ SettingsListener.observe('language.current', 'en-US', function(value) {
 
   if (shell.hasStarted() == false) {
     shell.bootstrap();
+
+    // Delay the other settings listeners to when the main thread will be
+    // less busy.
+    // We use a long enough delay to let Gaia prioritize its own settings.
+    window.setTimeout(delayed_start, 40000);
   }
 });
+
+function delayed_start() {
+
+  if (AdbController) {
+    AdbController.init();
+  }
+  InitDebuggerSettings();
+
+// =================== Console ======================
+
+  SettingsListener.observe('debug.console.enabled', true, function(value) {
+    Services.prefs.setBoolPref('consoleservice.enabled', value);
+    Services.prefs.setBoolPref('layout.css.report_errors', value);
+  });
+
+  SettingsListener.observe('homescreen.manifestURL', 'Sentinel Value' , function(value) {
+    Services.prefs.setCharPref('dom.mozApps.homescreenURL', value);
+  });
 
 // =================== RIL ====================
 (function RILSettingsToPrefs() {
@@ -546,48 +581,6 @@ SettingsListener.observe("theme.selected",
   setPAC();
 })();
 
-// ======================= Dogfooders FOTA ==========================
-if (AppConstants.MOZ_B2G_RIL) {
-  XPCOMUtils.defineLazyModuleGetter(this, "AppsUtils",
-                                    "resource://gre/modules/AppsUtils.jsm");
-
-  SettingsListener.observe('debug.performance_data.dogfooding', false,
-    isDogfooder => {
-      if (!isDogfooder) {
-        dump('AUS:Settings: Not a dogfooder!\n');
-        return;
-      }
-
-      if (!('mozTelephony' in navigator)) {
-        dump('AUS:Settings: There is no mozTelephony!\n');
-        return;
-      }
-
-      if (!('mozMobileConnections' in navigator)) {
-        dump('AUS:Settings: There is no mozMobileConnections!\n');
-        return;
-      }
-
-      let conn = navigator.mozMobileConnections[0];
-      conn.addEventListener('radiostatechange', function onradiostatechange() {
-        if (conn.radioState !== 'enabled') {
-          return;
-        }
-
-        conn.removeEventListener('radiostatechange', onradiostatechange);
-        navigator.mozTelephony.dial('*#06#').then(call => {
-          return call.result.then(res => {
-            if (res.success && res.statusMessage
-                && (res.serviceCode === 'scImei')) {
-              Services.prefs.setCharPref("app.update.imei_hash",
-                                         AppsUtils.computeHash(res.statusMessage, "SHA512"));
-            }
-          });
-        });
-      });
-    });
-}
-
 // =================== Various simple mapping  ======================
 var settingsToObserve = {
   'accessibility.large_text': {
@@ -672,6 +665,7 @@ var settingsToObserve = {
   'layout.display-list.dump': false,
   'mms.debugging.enabled': false,
   'network.debugging.enabled': {
+    defaultValue: false,
     resetToPref: true
   },
   'privacy.donottrackheader.enabled': false,
@@ -727,11 +721,6 @@ var settingsToObserve = {
   'apps.serviceCenter.use_test_key': false,
   'apps.serviceCenter.manifest': 'https://kaioz-plus.kaiostech.com/update.webapp'
 };
-
-if (AppConstants.MOZ_GRAPHENE) {
-  // Restart required
-  settingsToObserve['layers.async-pan-zoom.enabled'] = false;
-}
 
 function settingObserver(setPref, prefName, setting) {
   return value => {
@@ -797,3 +786,5 @@ for (let key in settingsToObserve) {
   SettingsListener.observe(key, defaultValue,
                            settingObserver(setPref, prefName, setting));
 };
+
+}

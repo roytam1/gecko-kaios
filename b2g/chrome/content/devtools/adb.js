@@ -256,10 +256,13 @@ var AdbController = {
         this.stopDisableAdbTimer();
       }
     }
+  },
+
+  init: function() {
+    SettingsListener.observe("lockscreen.locked", false,
+                         AdbController.setLockscreenState.bind(AdbController));
+    SettingsListener.observe("lockscreen.enabled", false,
+                         AdbController.setLockscreenEnabled.bind(AdbController));
+
   }
 };
-
-SettingsListener.observe("lockscreen.locked", false,
-                         AdbController.setLockscreenState.bind(AdbController));
-SettingsListener.observe("lockscreen.enabled", false,
-                         AdbController.setLockscreenEnabled.bind(AdbController));

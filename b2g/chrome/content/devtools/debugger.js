@@ -329,29 +329,12 @@ var WiFiRemoteDebugger = {
 
 };
 
-(function() {
+function InitDebuggerSettings() {
   // Track these separately here so we can determine the correct value for the
   // pref "devtools.debugger.remote-enabled", which is true when either mode of
   // using DevTools is enabled.
   let devtoolsUSB = false;
   let devtoolsWiFi = false;
-
-  // Keep the old setting to not break people that won't have updated
-  // gaia and gecko.
-  SettingsListener.observe("devtools.debugger.remote-enabled", false,
-                           function(value) {
-    devtoolsUSB = value;
-    Services.prefs.setBoolPref("devtools.debugger.remote-enabled",
-                               devtoolsUSB || devtoolsWiFi);
-    // This preference is consulted during startup
-    Services.prefs.savePrefFile(null);
-    try {
-      value ? USBRemoteDebugger.start() : USBRemoteDebugger.stop();
-    } catch(e) {
-      dump("Error while initializing USB devtools: " +
-           e + "\n" + e.stack + "\n");
-    }
-  });
 
   SettingsListener.observe("debugger.remote-mode", "disabled", function(value) {
     if (["disabled", "adb-only", "adb-devtools"].indexOf(value) == -1) {
@@ -394,4 +377,4 @@ var WiFiRemoteDebugger = {
            e + "\n" + e.stack + "\n");
     }
   });
-})();
+}
