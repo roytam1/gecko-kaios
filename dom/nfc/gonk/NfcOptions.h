@@ -164,6 +164,8 @@ struct EventOptions
   nsTArray<uint8_t> mApduResponse;
 
   int32_t mMPOSReaderModeEvent;
+
+  bool mIsNtf;
 };
 
 } // namespace mozilla

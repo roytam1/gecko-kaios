@@ -24,6 +24,7 @@ class NfcMessageHandler
 public:
   bool Marshall(android::Parcel& aParcel, const CommandOptions& aOptions);
   bool Unmarshall(const android::Parcel& aParcel, EventOptions& aOptions);
+  bool RequestTimeoutResponse(EventOptions& aOptions);
 
 private:
   bool ProcessResponse(int32_t aType, const android::Parcel& aParcel, EventOptions& aOptions);
@@ -72,6 +73,7 @@ private:
   bool ReadNDEFMessage(const android::Parcel& aParcel, EventOptions& aOptions);
   bool WriteNDEFMessage(android::Parcel& aParcel, const CommandOptions& aOptions);
   bool ReadTransceiveResponse(const android::Parcel& aParcel, EventOptions& aOptions);
+
 private:
   nsTArray<nsString> mRequestIdQueue;
 };

@@ -88,6 +88,7 @@ NfcMessageHandler::Unmarshall(const Parcel& aParcel, EventOptions& aOptions)
   mozilla::Unused << htonl(aParcel.readInt32());  // parcel size
   int32_t type = aParcel.readInt32();
   bool isNtf = type >> 31;
+  aOptions.mIsNtf = isNtf;
   int32_t msgType = type & ~(1 << 31);
   NMH_LOG("Unmarshall type %d isNtf %d", type, isNtf);
   return isNtf ? ProcessNotification(msgType, aParcel, aOptions) :
@@ -191,6 +192,17 @@ NfcMessageHandler::GeneralResponse(const Parcel& aParcel, EventOptions& aOptions
 {
   aOptions.mErrorCode = aParcel.readInt32();
   aOptions.mSessionId = aParcel.readInt32();
+
+  NS_ENSURE_TRUE(!mRequestIdQueue.IsEmpty(), false);
+  aOptions.mRequestId = mRequestIdQueue[0];
+  mRequestIdQueue.RemoveElementAt(0);
+  return true;
+}
+
+bool
+NfcMessageHandler::RequestTimeoutResponse(EventOptions& aOptions)
+{
+  aOptions.mErrorCode = (int32_t)NfcErrorMessage::Timeout;
 
   NS_ENSURE_TRUE(!mRequestIdQueue.IsEmpty(), false);
   aOptions.mRequestId = mRequestIdQueue[0];

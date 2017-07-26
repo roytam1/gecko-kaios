@@ -776,6 +776,7 @@ Nfc.prototype = {
     return NFC.NFC_ERROR_MSG[errorCode];
   },
 
+  reStartTimer: null,
   /**
    * Process the incoming message from the NFC Service.
    */
@@ -797,6 +798,25 @@ Nfc.prototype = {
         break;
       case NfcNotificationType.UNINITIALIZED:
         Services.obs.notifyObservers(event, TOPIC_NFCD_UNINITIALIZED, null);
+        this.shutdownNfcService();
+
+        if (this.rfState == NFC.NFC_RF_STATE_IDLE) {
+          return;
+        }
+
+        if (!this.reStartTimer) {
+          this.reStartTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+        }
+        this.reStartTimer.initWithCallback((function(timer) {
+          let message = {
+            name: "NFC:ChangeRFState",
+            data: {
+              requestId: this._getRandomId(),
+              rfState: this.rfState
+            }
+          };
+          this.receiveMessage(message);
+          }).bind(this), 1000, Ci.nsITimer.TYPE_ONE_SHOT);
         break;
       case NfcNotificationType.TECH_DISCOVERED:
         // Update the upper layers with a session token (alias)
