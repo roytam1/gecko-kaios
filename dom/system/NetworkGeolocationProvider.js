@@ -22,12 +22,6 @@ const SETTINGS_WIFI_ENABLED = "wifi.enabled";
 const GEO_KAI_ACCESS_TOKEN = "geolocation.kaios.accessToken";
 const GEO_KAI_ACCESS_TOKEN_TIMESTAMP = "geolocation.kaios.accessTokenTimestamp";
 
-const PREF_SERVICE_DEVICE_TYPE = "services.kaiostech.device_type";
-const PREF_SERVICE_DEVICE_BRAND = "services.kaiostech.brand";
-const PREF_SERVICE_DEVICE_MODEL = "services.kaiostech.model";
-const PREF_B2G_OS_NAME = "b2g.osName";
-const PREF_B2G_VERSION = "b2g.version";
-
 const HTTP_CODE_OK = 200;
 const HTTP_CODE_CREATED = 201;
 const HTTP_CODE_BAD_REQUEST = 400;
