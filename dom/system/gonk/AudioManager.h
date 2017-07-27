@@ -24,6 +24,7 @@
 #include "nsIAudioManager.h"
 #include "nsIObserver.h"
 #include "android_audio/AudioSystem.h"
+#include "mozilla/dom/WakeLock.h"
 
 // {b2b51423-502d-4d77-89b3-7786b562b084}
 #define NS_AUDIOMANAGER_CID {0x94f6fd70, 0x7615, 0x4af9, \
@@ -125,6 +126,8 @@ protected:
   nsTArray<UniquePtr<VolumeStreamState> > mStreamStates;
   uint32_t mLastChannelVolume[AUDIO_STREAM_CNT];
 
+  RefPtr<mozilla::dom::WakeLock> mWakeLock;
+
   bool IsFmOutConnected();
 
   nsresult SetStreamVolumeForDevice(int32_t aStream,
@@ -169,6 +172,9 @@ private:
   void UpdateHeadsetConnectionState(hal::SwitchState aState);
   void UpdateDeviceConnectionState(bool aIsConnected, uint32_t aDevice, const nsCString& aDeviceName);
   void SetAllDeviceConnectionStates();
+
+  void CreateWakeLock();
+  void ReleaseWakeLock();
 
   AudioManager();
   ~AudioManager();

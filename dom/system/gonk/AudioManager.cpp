@@ -49,6 +49,7 @@
 #include "nsXULAppAPI.h"
 #include "mozilla/dom/BindingUtils.h"
 #include "mozilla/dom/SettingChangeNotificationBinding.h"
+#include "mozilla/dom/power/PowerManagerService.h"
 
 using namespace mozilla::dom;
 using namespace mozilla::dom::gonk;
@@ -694,15 +695,20 @@ AudioManager::HandleHeadphoneSwitchEvent(const hal::SwitchEvent& aEvent)
   NotifyHeadphonesStatus(aEvent.status());
   // When user pulled out the headset, a delay of routing here can avoid the leakage of audio from speaker.
   if (aEvent.status() == hal::SWITCH_STATE_OFF && mSwitchDone) {
+    // When system is in sleep mode and user unplugs the headphone, we need to
+    // hold the wakelock here, or the delayed task will not be executed.
+    CreateWakeLock();
 
     RefPtr<AudioManager> self = this;
     nsCOMPtr<nsIRunnable> runnable =
       NS_NewRunnableFunction([self]() {
         if (self->mSwitchDone) {
+          self->ReleaseWakeLock();
           return;
         }
         self->UpdateHeadsetConnectionState(hal::SWITCH_STATE_OFF);
         self->mSwitchDone = true;
+        self->ReleaseWakeLock();
     });
     MessageLoop::current()->PostDelayedTask(FROM_HERE, new RunnableCallTask(runnable), 1000);
     mSwitchDone = false;
@@ -720,6 +726,33 @@ AudioManager::HandleHeadphoneSwitchEvent(const hal::SwitchEvent& aEvent)
     SetForceForUse(AUDIO_POLICY_FORCE_FOR_MEDIA, AUDIO_POLICY_FORCE_NONE);
   }
 #endif
+}
+
+void
+AudioManager::CreateWakeLock()
+{
+  RefPtr<dom::power::PowerManagerService> pmService = dom::power::PowerManagerService::GetInstance();
+  NS_ENSURE_TRUE_VOID(pmService);
+
+  if (mWakeLock) {
+    NS_WARNING("mWakeLock is not null, someone creaetd but not unlocked !!");
+  }
+
+  ErrorResult rv;
+  mWakeLock = pmService->NewWakeLock(NS_LITERAL_STRING("cpu"), nullptr, rv);
+}
+
+void
+AudioManager::ReleaseWakeLock()
+{
+  if (!mWakeLock) {
+    NS_WARNING("%s mWakeLock is null", __func__);
+    return;
+  }
+
+  ErrorResult rv;
+  mWakeLock->Unlock(rv);
+  mWakeLock = nullptr;
 }
 
 AudioManager::AudioManager()
