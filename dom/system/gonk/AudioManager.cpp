@@ -746,7 +746,7 @@ void
 AudioManager::ReleaseWakeLock()
 {
   if (!mWakeLock) {
-    NS_WARNING("%s mWakeLock is null", __func__);
+    NS_WARNING("ReleaseWakeLock mWakeLock is null");
     return;
   }
 
