@@ -443,10 +443,16 @@ NetworkManager.prototype = {
           .then(() => this._removeDefaultRoute(extNetworkInfo))
           // Set DNS server as early as possible to prevent from
           // premature domain name lookup.
-          .then(() => this._setDNS(extNetworkInfo))
+          .then(() => {
+            if (extNetworkInfo.type == Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_IMS) {
+              return Promise.resolve();
+            }
+            return this._setDNS(extNetworkInfo);
+          })
           .then(() => {
             // Add host route for data calls
-            if (!this.isNetworkTypeMobile(extNetworkInfo.type)) {
+            if (!this.isNetworkTypeMobile(extNetworkInfo.type) ||
+              extNetworkInfo.type == Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_IMS) {
               return;
             }
 
