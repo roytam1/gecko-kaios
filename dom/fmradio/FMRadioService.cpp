@@ -850,11 +850,6 @@ FMRadioService::Notify(const hal::FMRadioOperationInformation& aInfo)
       // radio is enabled, we have to set the frequency first.
       hal::SetFMRadioFrequency(mPendingFrequencyInKHz);
 
-      // Bug 949855: enable audio after the FM radio HW is enabled, to make sure
-      // 'hw.fm.isAnalog' could be detected as |true| during first time launch.
-      // This case is for audio output on analog path, i.e. 'ro.moz.fm.noAnalog'
-      // is not |true|.
-      EnableAudio(true);
 
       // Update the current frequency without sending the`FrequencyChanged`
       // event, to make sure the FM app will get the right frequency when the
