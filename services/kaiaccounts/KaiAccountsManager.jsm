@@ -47,20 +47,20 @@ this.KaiAccountsManager = {
   _kaiAccounts: kaiAccounts,
 
   // We keep the session details here so consumers don't need to deal with
-  // session tokens and are only required to handle the email.
+  // session tokens and are only required to handle the accountId.
   _activeSession: null,
 
   // Are we refreshing our authentication?
   _refreshing: false,
 
-  // We only expose the email and the verified status so far.
+  // We expose the accountId, email, phoneNumber and the verified status so far.
   get _user() {
-    if (!this._activeSession || !this._activeSession.email) {
+    if (!this._activeSession || !this._activeSession.accountId) {
       return null;
     }
 
     return {
-      email: this._activeSession.email,
+      accountId: this._activeSession.accountId,
       verified: this._activeSession.verified
     }
   },
@@ -95,13 +95,13 @@ this.KaiAccountsManager = {
     return this._kaiAccounts.getAccountsClient();
   },
 
-  _signIn: function(aMethod, aEmail, aPassword) {
+  _signIn: function(aAccountId, aPassword) {
     if (Services.io.offline) {
       return this._error(ERROR_OFFLINE);
     }
 
-    if (!aEmail) {
-      return this._error(ERROR_INVALID_EMAIL);
+    if (!aAccountId) {
+      return this._error(ERROR_INVALID_ACCOUNTID);
     }
 
     if (!aPassword) {
@@ -111,28 +111,21 @@ this.KaiAccountsManager = {
     let client = this._getKaiAccountsClient();
     return this._kaiAccounts.getSignedInUser().then(
       user => {
-        return client[aMethod](aEmail, aPassword);
+        return client.signIn(aAccountId, aPassword);
       }
     ).then(
       user => {
         let error = this._getError(user);
-
-        if (!user || !user.kid || !user.refresh_token || error) {
-          return this._error(error ? error : ERROR_INTERNAL_INVALID_USER);
+        if (error) {
+          return this._error(error);
         }
-
-        // If the user object includes an email field, it may differ in
-        // capitalization from what we sent down.  This is the server's
-        // canonical capitalization and should be used instead.
-        user.email = user.email || aEmail;
 
         return this._kaiAccounts.setSignedInUser(user).then(
           () => {
             this._activeSession = user;
-            log.debug("User signed in: " + JSON.stringify(this._user) +
-                      " - Account created " + (aMethod == "signUp"));
+            log.debug("User signed in: " + JSON.stringify(this._user));
             return Promise.resolve({
-              accountCreated: aMethod === "signUp",
+              accountCreated: false,
               user: this._user
             });
           }
@@ -142,13 +135,13 @@ this.KaiAccountsManager = {
     );
   },
 
-  _signUp: function(aMethod, aEmail, aPassword) {
+  _signUp: function(aAccountId, aPassword) {
     if (Services.io.offline) {
       return this._error(ERROR_OFFLINE);
     }
 
-    if (!aEmail) {
-      return this._error(ERROR_INVALID_EMAIL);
+    if (!aAccountId) {
+      return this._error(ERROR_INVALID_ACCOUNTID);
     }
 
     if (!aPassword) {
@@ -158,25 +151,18 @@ this.KaiAccountsManager = {
     let client = this._getKaiAccountsClient();
     return this._kaiAccounts.getSignedInUser().then(
       user => {
-        return client[aMethod](aEmail, aPassword);
+        return client.signUp(aAccountId, aPassword);
       }
     ).then(
       user => {
         let error = this._getError(user);
-
-        if (!user || !user.id || !user.email || error) {
-          return this._error(error ? error : ERROR_INTERNAL_INVALID_USER);
+        if (error) {
+          return this._error(error);
         }
 
-        // If the user object includes an email field, it may differ in
-        // capitalization from what we sent down.  This is the server's
-        // canonical capitalization and should be used instead.
-        user.email = user.email || aEmail;
-
-        log.debug("User signed Up: " + JSON.stringify(this._user) +
-                      " - Account created " + (aMethod == "signUp"));
+        log.debug("User signed Up: " + JSON.stringify(this._user));
             return Promise.resolve({
-              accountCreated: aMethod === "signUp",
+              accountCreated: true,
               user: this._user
         });
       },
@@ -231,11 +217,11 @@ this.KaiAccountsManager = {
    *   2) The person typing can't prove knowledge of the password used
    *      to log in. Failure should do nothing.
    */
-  _refreshAuthentication: function(aAudience, aEmail, aPrincipal,
+  _refreshAuthentication: function(aAudience, aAccountId, aPrincipal,
                                    logoutOnFailure=false) {
     this._refreshing = true;
     return this._uiRequest(UI_REQUEST_REFRESH_AUTH,
-                           aAudience, aPrincipal, aEmail).then(
+                           aAudience, aPrincipal, aAccountId).then(
       (assertion) => {
         this._refreshing = false;
         return assertion;
@@ -337,12 +323,12 @@ this.KaiAccountsManager = {
 
   // -- API --
 
-  signIn: function(aEmail, aPassword) {
-    return this._signIn("signIn", aEmail, aPassword);
+  signIn: function(aAccountId, aPassword) {
+    return this._signIn(aAccountId, aPassword);
   },
 
-  signUp: function(aEmail, aPassword) {
-    return this._signUp("signUp", aEmail, aPassword);
+  signUp: function(aAccountId, aPassword) {
+    return this._signUp(aAccountId, aPassword);
   },
 
   signOut: function() {
@@ -384,7 +370,7 @@ this.KaiAccountsManager = {
     // If no cached information, we try to get it from the persistent storage.
     return this._kaiAccounts.getSignedInUser().then(
       user => {
-        if (!user || !user.email) {
+        if (!user || !user.accountId) {
           log.debug("No signed in account");
           return Promise.resolve(null);
         }
@@ -399,22 +385,22 @@ this.KaiAccountsManager = {
     );
   },
 
-  queryAccount: function(aEmail) {
-    log.debug("queryAccount " + aEmail);
+  queryAccount: function(aAccountId) {
+    log.debug("queryAccount " + aAccountId);
     if (Services.io.offline) {
       return this._error(ERROR_OFFLINE);
     }
 
     let deferred = Promise.defer();
 
-    if (!aEmail) {
-      return this._error(ERROR_INVALID_EMAIL);
+    if (!aAccountId) {
+      return this._error(ERROR_INVALID_ACCOUNTID);
     }
 
     let client = this._getKaiAccountsClient();
-    return client.accountExists(aEmail).then(
+    return client.accountExists(aAccountId).then(
       result => {
-        log.debug("Account " + result ? "" : "does not" + " exists");
+        log.debug("Account" + (result ? "" : " does not") + " exists");
         let error = this._getError(result);
         if (error) {
           return this._error(error);
@@ -483,7 +469,7 @@ this.KaiAccountsManager = {
               return this._error(ERROR_NO_SILENT_REFRESH_AUTH);
             }
 
-            return this._refreshAuthentication(aAudience, user.email,
+            return this._refreshAuthentication(aAudience, user.accountId,
                                                  principal,
                                                  false /* logoutOnFailure */);
           }
@@ -501,7 +487,7 @@ this.KaiAccountsManager = {
           );
           if (permission == Ci.nsIPermissionManager.PROMPT_ACTION &&
               !this._refreshing) {
-            return this._refreshAuthentication(aAudience, user.email,
+            return this._refreshAuthentication(aAudience, user.accountId,
                                                principal,
                                                false /* logoutOnFailure */);
           } else if (permission == Ci.nsIPermissionManager.DENY_ACTION &&

@@ -88,17 +88,20 @@ this.KaiAccountsMgmtService = {
       return;
     }
 
-    // Backwards compatibility: handle accountId coming from Gaia
-    if (data.accountId && typeof(data.email === "undefined")) {
-      data.email = data.accountId;
-      delete data.accountId;
+    // Backwards compatibility: handle accountId, email, phoneNumber coming from Gaia
+    if (data.email) {
+      data.accountId = data.email;
+      delete data.email;
+    } else if (data.phoneNumber) {
+      data.accountId = data.phoneNumber;
+      delete data.phoneNumber;
     }
 
     switch(data.method) {
       case "getAccounts":
         KaiAccountsManager.getAccount().then(
           account => {
-            // We only expose the email and verification status so far.
+            // We expose the accountId, email, phoneNumber and verification status so far.
             self._onFulfill(msg.id, account);
           },
           reason => {
@@ -117,7 +120,7 @@ this.KaiAccountsMgmtService = {
         ).then(null, Components.utils.reportError);
         break;
       case "queryAccount":
-        KaiAccountsManager.queryAccount(data.email).then(
+        KaiAccountsManager.queryAccount(data.accountId).then(
           result => {
             self._onFulfill(msg.id, result);
           },
@@ -139,7 +142,7 @@ this.KaiAccountsMgmtService = {
       case "signIn":
       case "signUp":
       case "refreshAuthentication":
-        KaiAccountsManager[data.method](data.email, data.password).then(
+        KaiAccountsManager[data.method](data.accountId, data.password).then(
           user => {
             self._onFulfill(msg.id, user);
           },

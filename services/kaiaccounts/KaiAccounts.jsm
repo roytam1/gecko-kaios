@@ -285,7 +285,7 @@ KaiAccountsInternal.prototype = {
    * @return Promise
    *        The promise resolves to the credentials object of the signed-in user:
    *        {
-   *          email: The user's email address
+   *          accountId: The user's account id
    *          token_type: Set to the fixed value "hawk".
    *          scope: Requested Access Scope.
    *          expires_in: Time to Live (in seconds) of the access authorization represented by
@@ -315,7 +315,7 @@ KaiAccountsInternal.prototype = {
    *        The credentials object obtained by logging in or creating
    *        an account on the KaiA server:
    *        {
-   *          email: The user's email address
+   *          accountId: The user's account id
    *          token_type: Set to the fixed value "hawk".
    *          scope: Requested Access Scope.
    *          expires_in: Time to Live (in seconds) of the access authorization represented by

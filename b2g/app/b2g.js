@@ -1081,11 +1081,11 @@ pref("layout.accessiblecaret.use_long_tap_injector", false);
 // Hide carets and text selection dialog during scrolling.
 pref("layout.accessiblecaret.always_show_when_scrolling", false);
 
-// Disable mozId (IdentityManager) API
-pref("dom.identity.enabled", false);
+// Enable mozId (IdentityManager) API
+pref("dom.identity.enabled", true);
 
-// Disable KaiOS Accounts.
-pref("identity.kaiaccounts.enabled", false);
+// Enable KaiOS Accounts.
+pref("identity.kaiaccounts.enabled", true);
 
 // Mobile Identity API.
 pref("services.mobileid.server.uri", "https://msisdn.services.mozilla.com");
