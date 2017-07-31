@@ -65,9 +65,9 @@ PushRecord.prototype = {
   },
 
   updateQuota(lastVisit) {
-    if (this.isExpired() || !this.quotaApplies()) {
-      // Ignore updates if the registration is already expired, or isn't
-      // subject to quota.
+    if (this.isExpired() || !this.quotaApplies() || this.isInstalledApp()) {
+      // Ignore updates if the registration is already expired,
+      // is installed App or isn't subject to quota.
       return;
     }
     if (lastVisit < 0) {
@@ -95,7 +95,7 @@ PushRecord.prototype = {
   },
 
   reduceQuota() {
-    if (!this.quotaApplies()) {
+    if (!this.quotaApplies() || this.isInstalledApp()) {
       return;
     }
     this.quota = Math.max(this.quota - 1, 0);
