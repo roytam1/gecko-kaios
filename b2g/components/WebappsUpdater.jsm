@@ -8,6 +8,7 @@ this.EXPORTED_SYMBOLS = ["WebappsUpdater"];
 
 const Cc = Components.classes;
 const Cu = Components.utils;
+const Ci = Components.interfaces;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
@@ -83,6 +84,10 @@ this.WebappsUpdater = {
       this.result.forEach(function updateApp(aApp) {
         let update = aApp.checkForUpdate();
         update.onsuccess = function() {
+          if (update.timer) {
+            update.timer.cancel();
+            update.timer = null;
+          }
           if (aApp.downloadAvailable) {
             appsToUpdate.push(aApp.manifestURL);
           }
@@ -93,11 +98,25 @@ this.WebappsUpdater = {
           }
         }
         update.onerror = function() {
+          if (update.timer) {
+            update.timer.cancel();
+            update.timer = null;
+          }
           appsChecked += 1;
           if (appsChecked == appsCount) {
             self._appsUpdated(appsToUpdate);
           }
         }
+        update.timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+        update.timer.initWithCallback(function(aTimer) {
+          if (aTimer == update.timer) {
+            update.timer = null;
+            appsChecked += 1;
+            if (appsChecked == appsCount) {
+              self._appsUpdated(appsToUpdate);
+            }
+          }
+        }, 3*60*1000, Ci.nsITimer.TYPE_ONE_SHOT);
       });
     }
 
