@@ -421,6 +421,8 @@ public:
 
   virtual bool RecvDeactivateSpatialNavigation() override;
 
+  virtual bool RecvUpdateSpatialNavigationTPSPanMode(const bool& aEnabled);
+
   virtual bool RecvSwappedWithOtherRemoteLoader() override;
 
   virtual PDocAccessibleChild*
