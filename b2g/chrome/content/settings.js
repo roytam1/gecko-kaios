@@ -719,7 +719,7 @@ var settingsToObserve = {
   'wap.UAProf.url': '',
   // Try to use setting from gaia build if it does exist.
   'apps.serviceCenter.use_test_key': false,
-  'apps.serviceCenter.manifest': 'https://kaioz-plus.kaiostech.com/update.webapp'
+  'apps.serviceCenter.manifest': 'https://kaios-plus.kaiostech.com/update.webapp'
 };
 
 function settingObserver(setPref, prefName, setting) {
