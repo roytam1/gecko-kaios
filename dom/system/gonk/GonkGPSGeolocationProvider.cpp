@@ -561,7 +561,8 @@ GonkGPSGeolocationProvider::AGPSRILRefLocCallback(uint32_t flags)
     }
   };
 
-  if (flags & AGPS_RIL_REQUEST_REFLOC_CELLID) {
+  // For fault tolerance, provide ref location even flags is set to 0
+  if ((flags & AGPS_RIL_REQUEST_REFLOC_CELLID) || flags == 0) {
     NS_DispatchToMainThread(new RequestRefLocEvent());
   }
 }
@@ -885,7 +886,7 @@ GonkGPSGeolocationProvider::SetReferenceLocation()
         location.u.cellID.cid = cid;
       }
     } else {
-      NS_WARNING("Cannot get mobile gell info.");
+      NS_WARNING("Cannot get mobile cell info.");
       location.u.cellID.lac = -1;
       location.u.cellID.cid = -1;
     }
