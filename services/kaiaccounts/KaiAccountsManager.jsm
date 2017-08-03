@@ -50,6 +50,8 @@ this.KaiAccountsManager = {
   // session tokens and are only required to handle the accountId.
   _activeSession: null,
 
+  _otpId: null,
+
   // Are we refreshing our authentication?
   _refreshing: false,
 
@@ -111,7 +113,11 @@ this.KaiAccountsManager = {
     let client = this._getKaiAccountsClient();
     return this._kaiAccounts.getSignedInUser().then(
       user => {
-        return client.signIn(aAccountId, aPassword);
+        if (!this._otpId) {
+          return client.signIn(aAccountId, aPassword);
+        } else {
+          return client.signInWithOtp(aAccountId, aPassword, this._otpId);
+        }
       }
     ).then(
       user => {
@@ -119,7 +125,7 @@ this.KaiAccountsManager = {
         if (error) {
           return this._error(error);
         }
-
+        this._otpId = null;
         return this._kaiAccounts.setSignedInUser(user).then(
           () => {
             this._activeSession = user;
@@ -354,6 +360,32 @@ this.KaiAccountsManager = {
       },
       (error) => {
         return this._error(ERROR_SERVER_ERROR);
+      }
+    );
+  },
+
+  requestVerificationOtp: function(aAccountId) {
+    if (Services.io.offline) {
+      return this._error(ERROR_OFFLINE);
+    }
+
+    if (!aAccountId) {
+      return this._error(ERROR_INVALID_ACCOUNTID);
+    }
+
+    let client = this._getKaiAccountsClient();
+    return client.requestVerificationOtp(aAccountId).then(
+      result => {
+        let error = this._getError(result);
+        if (error) {
+          return this._error(error, result);
+        }
+        // store the hidden id for the next signInWithOtp
+        this._otpId = result.id;
+        return Promise.resolve();
+      },
+      reason => {
+        return this._serverError(reason);
       }
     );
   },

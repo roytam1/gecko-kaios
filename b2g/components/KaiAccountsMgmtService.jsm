@@ -151,6 +151,16 @@ this.KaiAccountsMgmtService = {
           }
         ).then(null, Components.utils.reportError);
         break;
+      case "requestVerificationOtp":
+        KaiAccountsManager.requestVerificationOtp(data.accountId).then(
+          result => {
+            self._onFulfill(msg.id, result);
+          },
+          reason => {
+            self._onReject(msg.id, reason);
+          }
+        ).then(null, Components.utils.reportError);
+        break;
     }
   }
 };
