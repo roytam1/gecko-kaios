@@ -768,8 +768,11 @@ public:
     // this will run on IO thread
     NetlinkEvent *event = const_cast<NetlinkEvent*>(&aEvent);
     const char *subsystem = event->getSubsystem();
+    const char *devpath = event->findParam("DEVPATH");
     // e.g. DEVPATH=/devices/soc.0/78d9000.usb/power_supply/usb
-    if (strcmp(subsystem, "power_supply") == 0) {
+    if (strcmp(subsystem, "power_supply") == 0 &&
+        (strstr(devpath, "usb") ||
+         strstr(devpath, "ac"))) {
       // aEvent will be valid only in this method.
       NS_DispatchToMainThread(mUpdater);
     }
