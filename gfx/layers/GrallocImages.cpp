@@ -162,13 +162,25 @@ GrallocImage::AdoptData(TextureClient* aGraphicBuffer, const gfx::IntSize& aSize
  * stride values.
  * Needed because the Android ColorConverter class assumes that the Y and UV
  * channels have equal stride.
+ * Also allow the ouput RGB file have a different stride.
  */
 static void
 ConvertYVU420SPToRGB565(void *aYData, uint32_t aYStride,
                         void *aUData, void *aVData, uint32_t aUVStride,
                         void *aOut,
-                        uint32_t aWidth, uint32_t aHeight)
+                        uint32_t aWidth, uint32_t aHeight, uint32_t aOutStride = 0)
 {
+  if(aOutStride == 0){
+    aOutStride = aWidth;
+  } 
+  else{
+    aOutStride = aOutStride/gfx::BytesPerPixel(gfx::SurfaceFormat::R5G6B5_UINT16);
+    if (aOutStride < aWidth) {
+      NS_WARNING("wrong stride value");
+      return;
+    }
+  }
+
   uint8_t *y = (uint8_t*)aYData;
   bool isCbCr;
   int8_t *uv;
@@ -206,10 +218,11 @@ ConvertYVU420SPToRGB565(void *aYData, uint32_t aYStride,
       g = g > 0x3f ? 0x3f : g < 0 ? 0 : g;
       b = b > 0x1f ? 0x1f : b < 0 ? 0 : b;
 
-      *rgb++ = (uint16_t)(r << 11 | g << 5 | b);
+      rgb[j] = (uint16_t)(r << 11 | g << 5 | b);
     }
 
     y += aYStride;
+    rgb += aOutStride;
     if (i % 2) {
       uv += aUVStride;
     }
@@ -319,6 +332,22 @@ ConvertOmxYUVFormatToRGB565(android::sp<GraphicBuffer>& aBuffer,
                             uvStride,
                             aMappedSurface->mData,
                             width, height);
+    return OK;
+  }
+  
+  if(format == GrallocImage::HAL_PIXEL_FORMAT_YCbCr_420_SP){
+    // this is actually YUV420SP(NV12), only the order of UV data is different from YVU420SP(NV21)
+    // need to swith UV offset to use ConvertYVU420SPToRGB565
+    // the output RGB565 may have a different stride, 
+    // using a wrong stride will cause thumbnail creation error (photo will be twisted) 
+    int realHeight = aBuffer->getHeight();
+    uint32_t uvOffset = realHeight * stride;
+    ConvertYVU420SPToRGB565(buffer, stride,
+                            buffer + uvOffset,
+                            buffer + uvOffset+1,
+                            stride,
+                            aMappedSurface->mData,
+                            width, height, aMappedSurface->mStride);
     return OK;
   }
 
