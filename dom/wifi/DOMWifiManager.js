@@ -82,6 +82,7 @@ function DOMWifiManager() {
   this.defineEventHandlerGetterSetter("ondisabled");
   this.defineEventHandlerGetterSetter("onstationinfoupdate");
   this.defineEventHandlerGetterSetter("onopennetwork");
+  this.defineEventHandlerGetterSetter("onscanresult");
 }
 
 DOMWifiManager.prototype = {
@@ -100,6 +101,7 @@ DOMWifiManager.prototype = {
     this._connectionStatus = "disconnected";
     this._enabled = false;
     this._notification = false;
+    this._scanResult = null;
     this._lastConnectionInfo = null;
     this._capabilities = null;
     this._stationNumber = 0;
@@ -123,7 +125,8 @@ DOMWifiManager.prototype = {
                       "WifiManager:onwpsoverlap", "WifiManager:connectioninfoupdate",
                       "WifiManager:onauthenticating", "WifiManager:ondhcpfailed",
                       "WifiManager:onauthenticationfailed", "WifiManager:onassociationreject",
-                      "WifiManager:stationinfoupdate", "WifiManager:opennetwork"];
+                      "WifiManager:stationinfoupdate", "WifiManager:opennetwork",
+                      "WifiManager:scanresult"];
     this.initDOMRequestHelper(aWindow, messages);
     this._mm = Cc["@mozilla.org/childprocessmessagemanager;1"].getService(Ci.nsISyncMessageSender);
 
@@ -400,6 +403,11 @@ DOMWifiManager.prototype = {
         this._notification = msg.availability;
         this._fireOpenNetwork(msg);
         break;
+
+      case "WifiManager:scanresult":
+        this._scanResult = this._convertWifiNetworks(msg.scanResult);
+        this._fireScanResult(this._scanResult);
+        break;
     }
   },
 
@@ -438,6 +446,13 @@ DOMWifiManager.prototype = {
     var evt = new this._window.WifiOpenNetworkEvent("opennetwork",
                                                     { availability: this._notification }
                                                    );
+    this.__DOM_IMPL__.dispatchEvent(evt);
+  },
+
+  _fireScanResult: function onScanResult(scanResult) {
+    var evt = new this._window.WifiScanResultEvent("scanresult",
+                                                   { scanResult: scanResult }
+                                                  );
     this.__DOM_IMPL__.dispatchEvent(evt);
   },
 
@@ -535,6 +550,10 @@ DOMWifiManager.prototype = {
 
   get openNetworkNotify() {
     return this._notification;
+  },
+
+  get scanResult() {
+    return this._scanResult;
   },
 
   get connection() {

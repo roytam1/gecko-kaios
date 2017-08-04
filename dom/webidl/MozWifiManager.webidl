@@ -299,6 +299,11 @@ interface MozWifiManager : EventTarget {
   readonly attribute boolean openNetworkNotify;
 
   /**
+   * Returns the last wifi scan result.
+   */
+  readonly attribute any scanResult;
+
+  /**
    * Returns the MAC address of the wifi adapter.
    */
   readonly attribute DOMString macAddress;
@@ -369,4 +374,9 @@ interface MozWifiManager : EventTarget {
    * wifi network available.
    */
   attribute EventHandler onopennetwork;
+
+  /**
+   * An event listener that is called with wifi scan result.
+   */
+  attribute EventHandler onscanresult;
 };

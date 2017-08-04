@@ -3138,14 +3138,12 @@ function WifiWorker() {
       // Check any open network and notify to user.
       WifiNotificationController.checkAndSetNotification(r);
 
-      if (self.wantScanResults.length === 0) {
-        debug("Scan results available, but we don't need them");
-        return;
-      }
       // Failure.
       if (!r) {
-        self.wantScanResults.forEach(function(callback) { callback(null) });
-        self.wantScanResults = [];
+        if (self.wantScanResults.length !== 0) {
+          self.wantScanResults.forEach(function(callback) { callback(null) });
+          self.wantScanResults = [];
+        }
         return;
       }
 
@@ -3207,8 +3205,11 @@ function WifiWorker() {
         }
       }
 
-      self.wantScanResults.forEach(function(callback) { callback(self.networksArray) });
-      self.wantScanResults = [];
+      if (self.wantScanResults.length !== 0) {
+        self.wantScanResults.forEach(function(callback) { callback(self.networksArray) });
+        self.wantScanResults = [];
+      }
+      self._fireEvent("scanresult", { scanResult: self.networksArray });
     });
   };
 
