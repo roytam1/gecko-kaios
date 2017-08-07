@@ -515,6 +515,7 @@ NetworkManager.prototype = {
         break;
       case Ci.nsINetworkInfo.NETWORK_STATE_DISCONNECTED:
         Promise.resolve()
+          .then(() => this.updateClat(network))
           .then(() => {
             if (!this.isNetworkTypeMobile(extNetworkInfo.type)) {
               return;
@@ -540,7 +541,6 @@ NetworkManager.prototype = {
               return this._removeDefaultRoute(extNetworkInfo)
             }
           })
-          .then(() => this.updateClat(network))
           .then(() => {
             // Clear http proxy on active network.
             if (this.activeNetworkInfo &&
