@@ -29,7 +29,7 @@
 #include "mozilla/dom/RequestBinding.h"
 #include "mozilla/unused.h"
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
 #include "nsIPushErrorReporter.h"
 #include "mozilla/dom/PushEventBinding.h"
 #endif
@@ -577,7 +577,7 @@ ServiceWorkerPrivate::SendLifeCycleEvent(const nsAString& aEventType,
   return NS_OK;
 }
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
 namespace {
 
 class PushErrorReporter final : public PromiseNativeHandler
@@ -747,14 +747,14 @@ public:
 };
 
 } // anonymous namespace
-#endif // !MOZ_SIMPLEPUSH
+#endif // MOZ_WEBPUSH
 
 nsresult
 ServiceWorkerPrivate::SendPushEvent(const nsAString& aMessageId,
                                     const Maybe<nsTArray<uint8_t>>& aData,
                                     ServiceWorkerRegistrationInfo* aRegistration)
 {
-#ifdef MOZ_SIMPLEPUSH
+#ifndef MOZ_WEBPUSH
   return NS_ERROR_NOT_AVAILABLE;
 #else
   nsresult rv = SpawnWorkerIfNeeded(PushEvent, nullptr);
@@ -783,13 +783,13 @@ ServiceWorkerPrivate::SendPushEvent(const nsAString& aMessageId,
   }
 
   return NS_OK;
-#endif // MOZ_SIMPLEPUSH
+#endif // ! MOZ_WEBPUSH
 }
 
 nsresult
 ServiceWorkerPrivate::SendPushSubscriptionChangeEvent()
 {
-#ifdef MOZ_SIMPLEPUSH
+#ifndef MOZ_WEBPUSH
   return NS_ERROR_NOT_AVAILABLE;
 #else
   nsresult rv = SpawnWorkerIfNeeded(PushSubscriptionChangeEvent, nullptr);
@@ -803,7 +803,7 @@ ServiceWorkerPrivate::SendPushSubscriptionChangeEvent()
   }
 
   return NS_OK;
-#endif // MOZ_SIMPLEPUSH
+#endif // ! MOZ_WEBPUSH
 }
 
 namespace {

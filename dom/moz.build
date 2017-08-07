@@ -34,7 +34,7 @@ interfaces = [
     'gamepad',
 ]
 
-if not CONFIG['MOZ_SIMPLEPUSH']:
+if CONFIG['MOZ_WEBPUSH']:
     interfaces += ['push']
 
 DIRS += ['interfaces/' + i for i in interfaces]
@@ -150,9 +150,7 @@ if CONFIG['MOZ_GAMEPAD']:
 if CONFIG['MOZ_NFC']:
     DIRS += ['nfc']
 
-if CONFIG['MOZ_SIMPLEPUSH']:
-    DIRS += ['simplepush']
-else:
+if CONFIG['MOZ_WEBPUSH']:
     DIRS += ['push']
 
 if CONFIG['MOZ_SECUREELEMENT']:

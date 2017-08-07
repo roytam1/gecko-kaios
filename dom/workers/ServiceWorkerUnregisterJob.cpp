@@ -6,12 +6,15 @@
 
 #include "ServiceWorkerUnregisterJob.h"
 
+#ifdef MOZ_WEBPUSH
 #include "nsIPushService.h"
+#endif
 
 namespace mozilla {
 namespace dom {
 namespace workers {
 
+#ifdef MOZ_WEBPUSH
 class ServiceWorkerUnregisterJob::PushUnsubscribeCallback final :
         public nsIUnsubscribeResultCallback
 {
@@ -44,6 +47,7 @@ private:
 
 NS_IMPL_ISUPPORTS(ServiceWorkerUnregisterJob::PushUnsubscribeCallback,
                   nsIUnsubscribeResultCallback)
+#endif
 
 ServiceWorkerUnregisterJob::ServiceWorkerUnregisterJob(nsIPrincipal* aPrincipal,
                                                        const nsACString& aScope,
@@ -74,7 +78,7 @@ ServiceWorkerUnregisterJob::AsyncExecute()
     Finish(NS_ERROR_DOM_ABORT_ERR);
     return;
   }
-
+#ifdef MOZ_WEBPUSH
   // Push API, section 5: "When a service worker registration is unregistered,
   // any associated push subscription must be deactivated." To ensure the
   // service worker registration isn't cleared as we're unregistering, we
@@ -92,6 +96,10 @@ ServiceWorkerUnregisterJob::AsyncExecute()
   if (NS_WARN_IF(NS_FAILED(rv))) {
     Unregister();
   }
+#else
+  Unregister();
+  return;
+#endif
 }
 
 void

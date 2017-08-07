@@ -57,7 +57,7 @@
 #include "nsIDOMDesktopNotification.h"
 #endif
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
 #include "nsIPushService.h"
 #endif
 
@@ -1441,7 +1441,7 @@ NotificationObserver::Observe(nsISupports* aSubject, const char* aTopic,
 nsresult
 NotificationObserver::AdjustPushQuota(const char* aTopic)
 {
-#ifdef MOZ_SIMPLEPUSH
+#ifndef MOZ_WEBPUSH
   return NS_ERROR_NOT_IMPLEMENTED;
 #else
   nsCOMPtr<nsIPushQuotaManager> pushQuotaManager =

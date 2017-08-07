@@ -24,7 +24,9 @@ public:
   GetResult() const;
 
 private:
+#ifdef MOZ_WEBPUSH
   class PushUnsubscribeCallback;
+#endif
 
   virtual ~ServiceWorkerUnregisterJob();
 

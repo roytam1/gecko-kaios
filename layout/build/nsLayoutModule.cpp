@@ -129,7 +129,7 @@ using mozilla::dom::gonk::AudioManager;
 using mozilla::system::nsVolumeService;
 #endif
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
 #include "mozilla/dom/PushNotifier.h"
 using mozilla::dom::PushNotifier;
 #define PUSHNOTIFIER_CID \
@@ -441,7 +441,7 @@ NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(NotificationTelemetryService, Init)
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsISpatialNavigationService,
                                          SpatialNavigationService::GetOrCreate)
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
 NS_GENERIC_FACTORY_CONSTRUCTOR(PushNotifier)
 #endif
 //-----------------------------------------------------------------------------
@@ -804,7 +804,7 @@ NS_DEFINE_NAMED_CID(QUOTAMANAGER_SERVICE_CID);
 NS_DEFINE_NAMED_CID(SERVICEWORKERMANAGER_CID);
 NS_DEFINE_NAMED_CID(NOTIFICATIONTELEMETRYSERVICE_CID);
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
 NS_DEFINE_NAMED_CID(PUSHNOTIFIER_CID);
 #endif
 
@@ -1127,7 +1127,7 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
   { &kQUOTAMANAGER_SERVICE_CID, false, nullptr, QuotaManagerServiceConstructor },
   { &kSERVICEWORKERMANAGER_CID, false, nullptr, ServiceWorkerManagerConstructor },
   { &kNOTIFICATIONTELEMETRYSERVICE_CID, false, nullptr, NotificationTelemetryServiceConstructor },
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
   { &kPUSHNOTIFIER_CID, false, nullptr, PushNotifierConstructor },
 #endif
   { &kWORKERDEBUGGERMANAGER_CID, true, nullptr, WorkerDebuggerManagerConstructor },
@@ -1307,7 +1307,7 @@ static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
   { QUOTAMANAGER_SERVICE_CONTRACTID, &kQUOTAMANAGER_SERVICE_CID },
   { SERVICEWORKERMANAGER_CONTRACTID, &kSERVICEWORKERMANAGER_CID },
   { NOTIFICATIONTELEMETRYSERVICE_CONTRACTID, &kNOTIFICATIONTELEMETRYSERVICE_CID },
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
   { PUSHNOTIFIER_CONTRACTID, &kPUSHNOTIFIER_CID },
 #endif
   { WORKERDEBUGGERMANAGER_CONTRACTID, &kWORKERDEBUGGERMANAGER_CID },
@@ -1422,7 +1422,7 @@ static const mozilla::Module::CategoryEntry kLayoutCategories[] = {
   { "net-channel-event-sinks", "CSPService", CSPSERVICE_CONTRACTID },
   { "net-channel-event-sinks", NS_MIXEDCONTENTBLOCKER_CONTRACTID, NS_MIXEDCONTENTBLOCKER_CONTRACTID },
   { "app-startup", "Script Security Manager", "service," NS_SCRIPTSECURITYMANAGER_CONTRACTID },
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
   { "app-startup", "Push Notifier", "service," PUSHNOTIFIER_CONTRACTID },
 #endif
   { TOPIC_WEB_APP_CLEAR_DATA, "QuotaManagerService", "service," QUOTAMANAGER_SERVICE_CONTRACTID },

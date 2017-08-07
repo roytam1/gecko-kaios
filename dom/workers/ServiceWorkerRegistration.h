@@ -172,7 +172,7 @@ private:
   RefPtr<workers::ServiceWorker> mWaitingWorker;
   RefPtr<workers::ServiceWorker> mActiveWorker;
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
   RefPtr<PushManager> mPushManager;
 #endif
 };
@@ -246,7 +246,7 @@ private:
   workers::WorkerPrivate* mWorkerPrivate;
   RefPtr<WorkerListener> mListener;
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
   RefPtr<PushManager> mPushManager;
 #endif
 };

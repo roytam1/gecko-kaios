@@ -28,7 +28,7 @@ interface ServiceWorkerRegistration : EventTarget {
 };
 
 partial interface ServiceWorkerRegistration {
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
   [Throws, Exposed=(Window,Worker), Func="nsContentUtils::PushEnabled"]
   readonly attribute PushManager pushManager;
 #endif

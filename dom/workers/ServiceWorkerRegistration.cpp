@@ -28,7 +28,7 @@
 #include "Workers.h"
 #include "WorkerScope.h"
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
 #include "mozilla/dom/PushManagerBinding.h"
 #include "mozilla/dom/PushManager.h"
 #endif
@@ -90,7 +90,7 @@ NS_IMPL_RELEASE_INHERITED(ServiceWorkerRegistrationMainThread, ServiceWorkerRegi
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(ServiceWorkerRegistrationMainThread)
 NS_INTERFACE_MAP_END_INHERITING(ServiceWorkerRegistrationBase)
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
 NS_IMPL_CYCLE_COLLECTION_INHERITED(ServiceWorkerRegistrationMainThread, ServiceWorkerRegistrationBase,
                                    mPushManager,
                                    mInstallingWorker, mWaitingWorker, mActiveWorker);
@@ -757,7 +757,7 @@ ServiceWorkerRegistrationMainThread::GetPushManager(JSContext* aCx,
 {
   AssertIsOnMainThread();
 
-#ifdef MOZ_SIMPLEPUSH
+#ifndef MOZ_WEBPUSH
   return nullptr;
 #else
 
@@ -779,7 +779,7 @@ ServiceWorkerRegistrationMainThread::GetPushManager(JSContext* aCx,
   RefPtr<PushManager> ret = mPushManager;
   return ret.forget();
 
-#endif /* ! MOZ_SIMPLEPUSH */
+#endif /* ! MOZ_WEBPUSH */
 }
 
 ////////////////////////////////////////////////////
@@ -903,14 +903,14 @@ NS_IMPL_CYCLE_COLLECTION_CLASS(ServiceWorkerRegistrationWorkerThread)
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(ServiceWorkerRegistrationWorkerThread,
                                                   ServiceWorkerRegistrationBase)
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPushManager)
 #endif
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(ServiceWorkerRegistrationWorkerThread,
                                                 ServiceWorkerRegistrationBase)
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mPushManager)
 #endif
   tmp->ReleaseListener(RegistrationIsGoingAway);
@@ -1206,7 +1206,7 @@ ServiceWorkerRegistrationWorkerThread::GetNotifications(const GetNotificationOpt
 already_AddRefed<PushManager>
 ServiceWorkerRegistrationWorkerThread::GetPushManager(ErrorResult& aRv)
 {
-#ifdef MOZ_SIMPLEPUSH
+#ifndef MOZ_WEBPUSH
   return nullptr;
 #else
 
@@ -1217,7 +1217,7 @@ ServiceWorkerRegistrationWorkerThread::GetPushManager(ErrorResult& aRv)
   RefPtr<PushManager> ret = mPushManager;
   return ret.forget();
 
-#endif /* ! MOZ_SIMPLEPUSH */
+#endif /* ! MOZ_WEBPUSH */
 }
 
 } // dom namespace

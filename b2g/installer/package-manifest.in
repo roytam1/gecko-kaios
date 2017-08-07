@@ -639,9 +639,7 @@
 @RESPATH@/components/AppsService.manifest
 @RESPATH@/components/Push.js
 @RESPATH@/components/Push.manifest
-#ifdef MOZ_SIMPLEPUSH
-@RESPATH@/components/PushServiceLauncher.js
-#else
+#ifdef MOZ_WEBPUSH
 @RESPATH@/components/PushComponents.js
 #endif
 

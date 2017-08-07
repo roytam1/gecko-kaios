@@ -271,6 +271,7 @@ def old_configure_options(*options):
     '--enable-verify-mar',
     '--enable-warnings-as-errors',
     '--enable-webapp-runtime',
+    '--enable-webpush',
     '--enable-webrtc',
     '--enable-websms-backend',
     '--enable-webspeech',

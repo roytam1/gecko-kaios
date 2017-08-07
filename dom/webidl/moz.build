@@ -735,11 +735,7 @@ if CONFIG['MOZ_B2G_BT']:
         'BluetoothUUID.webidl',
     ]
 
-if CONFIG['MOZ_SIMPLEPUSH']:
-    WEBIDL_FILES += [
-        'SimplePushManager.webidl'
-    ]
-else:
+if CONFIG['MOZ_WEBPUSH']:
     WEBIDL_FILES += [
         'PushEvent.webidl',
         'PushManager.webidl',

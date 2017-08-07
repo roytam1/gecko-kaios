@@ -15,7 +15,7 @@
 #include "mozilla/dom/Response.h"
 #include "mozilla/dom/workers/bindings/ServiceWorker.h"
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
 #include "mozilla/dom/File.h"
 #endif
 
@@ -179,7 +179,7 @@ public:
   ReportCanceled();
 };
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
 
 class PushMessageData final : public nsISupports,
                               public nsWrapperCache
@@ -249,7 +249,7 @@ public:
     return mData;
   }
 };
-#endif /* ! MOZ_SIMPLEPUSH */
+#endif /* MOZ_WEBPUSH */
 
 class ExtendableMessageEvent final : public ExtendableEvent
 {

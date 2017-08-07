@@ -83,7 +83,7 @@
 #include "WorkerScope.h"
 #include "mozilla/AppProcessChecker.h"
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
 #include "mozilla/dom/TypedArray.h"
 #endif
 
@@ -1019,7 +1019,7 @@ ServiceWorkerManager::SendPushEvent(const nsACString& aOriginAttributes,
                                     const nsAString& aMessageId,
                                     const Maybe<nsTArray<uint8_t>>& aData)
 {
-#ifdef MOZ_SIMPLEPUSH
+#ifndef MOZ_WEBPUSH
   return NS_ERROR_NOT_AVAILABLE;
 #else
   PrincipalOriginAttributes attrs;
@@ -1037,14 +1037,14 @@ ServiceWorkerManager::SendPushEvent(const nsACString& aOriginAttributes,
 
   return serviceWorker->WorkerPrivate()->SendPushEvent(aMessageId, aData,
                                                        registration);
-#endif // MOZ_SIMPLEPUSH
+#endif // ! MOZ_WEBPUSH
 }
 
 NS_IMETHODIMP
 ServiceWorkerManager::SendPushSubscriptionChangeEvent(const nsACString& aOriginAttributes,
                                                       const nsACString& aScope)
 {
-#ifdef MOZ_SIMPLEPUSH
+#ifndef MOZ_WEBPUSH
   return NS_ERROR_NOT_AVAILABLE;
 #else
   PrincipalOriginAttributes attrs;

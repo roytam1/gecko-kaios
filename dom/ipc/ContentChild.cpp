@@ -167,7 +167,7 @@
 #include "mozilla/dom/GamepadService.h"
 #endif
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
 #include "mozilla/dom/PushNotifier.h"
 #endif
 
@@ -3322,7 +3322,7 @@ ContentChild::RecvPush(const nsCString& aScope,
                        const IPC::Principal& aPrincipal,
                        const nsString& aMessageId)
 {
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
   nsCOMPtr<nsIPushNotifier> pushNotifierIface =
       do_GetService("@mozilla.org/push/Notifier;1");
   if (NS_WARN_IF(!pushNotifierIface)) {
@@ -3343,7 +3343,7 @@ ContentChild::RecvPushWithData(const nsCString& aScope,
                                const nsString& aMessageId,
                                InfallibleTArray<uint8_t>&& aData)
 {
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
   nsCOMPtr<nsIPushNotifier> pushNotifierIface =
       do_GetService("@mozilla.org/push/Notifier;1");
   if (NS_WARN_IF(!pushNotifierIface)) {
@@ -3362,7 +3362,7 @@ bool
 ContentChild::RecvPushSubscriptionChange(const nsCString& aScope,
                                          const IPC::Principal& aPrincipal)
 {
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
   nsCOMPtr<nsIPushNotifier> pushNotifierIface =
       do_GetService("@mozilla.org/push/Notifier;1");
   if (NS_WARN_IF(!pushNotifierIface)) {
@@ -3381,7 +3381,7 @@ bool
 ContentChild::RecvPushError(const nsCString& aScope, const nsString& aMessage,
                             const uint32_t& aFlags, const IPC::Principal& aPrincipal)
 {
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
   nsCOMPtr<nsIPushNotifier> pushNotifierIface =
       do_GetService("@mozilla.org/push/Notifier;1");
   if (NS_WARN_IF(!pushNotifierIface)) {

@@ -36,7 +36,7 @@
 #include "mozilla/dom/WorkerScope.h"
 #include "mozilla/dom/workers/bindings/ServiceWorker.h"
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
 #include "mozilla/dom/PushEventBinding.h"
 #include "mozilla/dom/PushMessageDataBinding.h"
 
@@ -941,7 +941,7 @@ NS_INTERFACE_MAP_END_INHERITING(Event)
 
 NS_IMPL_CYCLE_COLLECTION_INHERITED(ExtendableEvent, Event, mPromises)
 
-#ifndef MOZ_SIMPLEPUSH
+#ifdef MOZ_WEBPUSH
 
 namespace {
 nsresult
@@ -1149,7 +1149,7 @@ PushEvent::WrapObjectInternal(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
   return mozilla::dom::PushEventBinding::Wrap(aCx, this, aGivenProto);
 }
 
-#endif /* ! MOZ_SIMPLEPUSH */
+#endif /* MOZ_WEBPUSH */
 
 ExtendableMessageEvent::ExtendableMessageEvent(EventTarget* aOwner)
   : ExtendableEvent(aOwner)
