@@ -58,22 +58,31 @@ namespace dom {
 static const int BUFFER_LEN_MAX     = 30;
 
 typedef struct {
-  unsigned char psBuffer[30];
-  int snBufferLen;
-  int snCursorPos;
-} demoEditorInfo;
+  nsCString psBuffer;
+  unsigned int snBufferLen;
+  unsigned int snCursorPos;
+  unsigned int pageCount;
+  unsigned int pageCursor;
+  unsigned int snWordCount;
+} demoEditorInfo;;
 
+void EditorInitEmptyWord();
+void ClearEditorInfo(demoEditorInfo* const pEditor);
+void UpdateTotalWord();
+void ClearAllSymbsShort(unsigned short* buffer,int size);
+void ClearAllWordString();
+void Clear_nsCString(nsCString& str);
+void Clear_nsString(nsString& str);
+void EditorMoveBackward(demoEditorInfo* const pEditor);
+void EditorMoveForward(demoEditorInfo* const pEditor);
+void UpdateCandidateWordMultitap(demoEditorInfo* const pEditor);
+void UpdateCharList(demoEditorInfo* const pEditor, char ch);
+void UpdateCandidateWord(demoEditorInfo* const pEditor);
+int Updatesymbol(demoEditorInfo* const pEditor,const unsigned char ch);
+int DeleteSymbols(demoEditorInfo* const pEditor);
+void CopyRUTF16toUTF16(nsString& mCandidateWord, nsAString& aResult);
+void CopynsString(nsString& source, nsString& dest, uint16_t length);
 
-void EditorInitEmptyWord(demoEditorInfo * const pEditor);
-void clearAllSymbsChar(unsigned char *psBuffer);
-void clearAllSymbsShort(unsigned short *buffer);
-void clearAllWordString();
-void EditorMoveBackward(demoEditorInfo * const pEditor);
-void EditorMoveForward(demoEditorInfo * const pEditor);
-void updateCandidateWord(demoEditorInfo * const pEditor);
-int updatesymbol(demoEditorInfo * const pEditor,const unsigned char ch);
-int DeleteSymbols(demoEditorInfo * const pEditor);
-void copyShorttoUTF16(unsigned short *mCandidateWord, nsAString& aResult);
 
 class IMEConnect final : public nsISupports, public nsWrapperCache
 {
@@ -92,44 +101,45 @@ public:
 
   bool InitEmptyWord() const
   {
-    RT9_LOGD("This is a dummy fun for InitEmptyWord");
+    RT9_LOGD("RT9::This is a dummy fun for InitEmptyWord");
     return (true);
   }
 
   void SetInitEmptyWord(const bool aResult)
   {
-    RT9_LOGD("This is a dummy fun for SetInitEmptyWord");
+    RT9_LOGD("RT9::This is a dummy fun for SetInitEmptyWord");
   }
 
   void GetWholeWord(nsAString& aResult)
   {
-    RT9_LOGD("This is a dummy fun for GetWholeWord");
+    RT9_LOGD("RT9::This is a dummy fun for GetWholeWord");
   }
 
   void SetWholeWord(const nsAString& aResult)
   {
-    RT9_LOGD("This is a dummy fun for SetWholeWord");
+    RT9_LOGD("RT9::This is a dummy fun for SetWholeWord");
   }
 
   void GetCandidateWord(nsAString& aResult)
   {
-    copyShorttoUTF16(mCandidateWord, aResult);
+    CopyRUTF16toUTF16(mCandidateWord, aResult);
   }
 
   uint16_t TotalWord() const
   {
+    UpdateTotalWord();
     return mTotalWord;
   }
 
   uint32_t CursorPosition() const
   {
-    RT9_LOGD("This is a dummy fun for CursorPosition");
+    RT9_LOGD("RT9::This is a dummy fun for CursorPosition");
     return 0;
   }
 
   void SetCursorPosition(const uint32_t aResult)
   {
-    RT9_LOGD("This is a dummy fun for SetCursorPosition");
+    RT9_LOGD("RT9::This is a dummy fun for SetCursorPosition");
   }
 
   uint32_t CurrentLID() const
@@ -160,10 +170,14 @@ public:
   static void SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLetter, ErrorResult& aRv);
   static uint32_t SetLanguage(const uint32_t lid);
 
-  static unsigned short mCandidateWord[200];
+  static nsString mCandidateWord;
   static uint16_t  mTotalWord;
   static uint16_t  lenCandidateWord;
+  static uint16_t  lenselectedWord;
+  static uint16_t  lenprevSelectedWord;
   static uint32_t mCurrentLID;
+  static nsString selectedWord;
+  static nsString prevSelectedWord;
 
 private:
   ~IMEConnect();
