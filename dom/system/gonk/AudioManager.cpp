@@ -303,7 +303,6 @@ public:
       NS_ConvertASCIItoUTF16 volumeType(gVolumeData[idx].mChannelName);
       if (StringBeginsWith(aName, volumeType)) {
         uint32_t device = GetDeviceFromSettingName(aName);
-        MOZ_ASSERT(device != AUDIO_DEVICE_NONE);
         if (aResult.isInt32()) {
           int32_t stream = gVolumeData[idx].mStreamType;
           uint32_t volIndex = aResult.toInt32();
@@ -312,7 +311,16 @@ public:
             mPromiseHolder.Reject("Error : invalid volume index.", __func__);
             return rv;
           }
-          audioManager->SetStreamVolumeForDevice(stream, volIndex, device);
+
+          // The key from FE in the first booting would be like "audio.volumes.content"
+          // (without device suffix). For such cases, we have to set the volumes of
+          // all devices with this value. If not, the following stages will set the
+          // volumes by Gecko's defaults that could conflict with the UX specifications.
+          if (device == AUDIO_DEVICE_NONE) {
+            audioManager->SetStreamVolumeIndex(stream, volIndex);
+          } else {
+            audioManager->SetStreamVolumeForDevice(stream, volIndex, device);
+          }
         }
 
         if (++mInitCounter == MOZ_ARRAY_LENGTH(kAudioDeviceInfos) * MOZ_ARRAY_LENGTH(gVolumeData)) {
@@ -1227,6 +1235,9 @@ AudioManager::InitVolumeFromDatabase()
                                &AudioManager::InitDeviceVolumeFailed);
 
   for (uint32_t idx = 0; idx < MOZ_ARRAY_LENGTH(gVolumeData); ++idx) {
+    // We also need to get the value with mChannelName. FE use mChannelName only
+    // for the key.
+    lock->Get(gVolumeData[idx].mChannelName, callback);
     for (uint32_t idx2 = 0; idx2 < MOZ_ARRAY_LENGTH(kAudioDeviceInfos); ++idx2) {
       lock->Get(AppendDeviceToVolumeSetting(gVolumeData[idx].mChannelName,
                                             kAudioDeviceInfos[idx2].value).get(),
