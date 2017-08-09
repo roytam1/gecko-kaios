@@ -19,13 +19,6 @@ class NfcEventOptions;
 
 class NfcConsumer;
 
-struct RequestTimer
-{
-  nsCOMPtr<nsITimer> mTimer;
-  nsString mRequestId;
-  NfcRequestType mType;
-};
-
 class NfcService final : public nsINfcService
 {
 public:

@@ -37,10 +37,6 @@ using namespace mozilla::hal;
 
 namespace mozilla {
 
-// Set the timer to 10 seconds.
-const unsigned long kRequestTimeoutMs = 30000;
-const unsigned long kLsRequestTimeoutMs = 120000;
-
 static StaticRefPtr<NfcService> gNfcService;
 
 NS_IMPL_ISUPPORTS(NfcService, nsINfcService)
@@ -66,8 +62,6 @@ public:
   nsresult Send(const CommandOptions& aCommandOptions);
   nsresult Receive(UnixSocketBuffer* aBuffer);
 
-  static void RequestTimerCallback(nsITimer *aTimer, void *aClosure);
-
   // Methods for |StreamSocketConsumer| and |ListenSocketConsumer|
   //
 
@@ -89,15 +83,12 @@ private:
 
   bool IsNfcServiceThread() const;
 
-  unsigned long GetRequestTimeout(NfcRequestType type);
-
   RefPtr<NfcService> mNfcService;
   nsCOMPtr<nsIThread> mThread;
   RefPtr<mozilla::ipc::ListenSocket> mListenSocket;
   RefPtr<mozilla::ipc::StreamSocket> mStreamSocket;
   UniquePtr<NfcMessageHandler> mHandler;
   nsCString mListenSocketName;
-  nsTArray<RequestTimer *> mRequestTimers;
 };
 
 NfcConsumer::NfcConsumer(NfcService* aNfcService)
@@ -389,71 +380,6 @@ ConvertToResponse(EventOptions& event, NfcRequestType reqquestType)
   return returnType;
 }
 
-//static
-void
-NfcConsumer::RequestTimerCallback(nsITimer *aTimer, void *aClosure)
-{
-  MOZ_ASSERT(aTimer);
-  MOZ_ASSERT(aClosure);
-
-  NfcConsumer *self = static_cast<NfcConsumer*>(aClosure);
-
-  if (!self) return;
-
-  EventOptions event;
-  // Format error response event and get current requestId.
-  self->mHandler->RequestTimeoutResponse(event);
-
-  PRUint32 length = self->mRequestTimers.Length();
-  for (PRUint32 i = 0; i < length; i++) {
-    if (event.mRequestId == self->mRequestTimers[i]->mRequestId) {
-      // Convert request to response type.
-      event.mRspType = ConvertToResponse(event, self->mRequestTimers[i]->mType);
-
-      // Send error response.
-      NS_DispatchToMainThread(new DispatchNfcEventRunnable(self->mNfcService, event));
-
-      //Clean up timer.
-      self->mRequestTimers[i]->mTimer = nullptr;
-      self->mRequestTimers.RemoveElementAt(i);
-      break;
-    }
-  }
-}
-
-unsigned long
-NfcConsumer::GetRequestTimeout(NfcRequestType type)
-{
-  unsigned long timeout = kRequestTimeoutMs;
-  switch (type) {
-    case NfcRequestType::ChangeRFState:
-    case NfcRequestType::ReadNDEF:
-    case NfcRequestType::WriteNDEF:
-    case NfcRequestType::MakeReadOnly:
-    case NfcRequestType::Format:
-    case NfcRequestType::Transceive:
-    case NfcRequestType::OpenConnection:
-    case NfcRequestType::Transmit:
-    case NfcRequestType::CloseConnection:
-    case NfcRequestType::ResetSecureElement:
-    case NfcRequestType::GetAtr:
-    case NfcRequestType::LsGetVersion:
-    case NfcRequestType::MPOSReaderMode:
-      timeout = kRequestTimeoutMs;
-      break;
-
-    case NfcRequestType::LsExecuteScript:
-      timeout = kLsRequestTimeoutMs;
-      break;
-
-    default:
-      timeout = kRequestTimeoutMs;
-      break;
-  };
-
-  return timeout;
-}
-
 nsresult
 NfcConsumer::Send(const CommandOptions& aOptions)
 {
@@ -476,20 +402,6 @@ NfcConsumer::Send(const CommandOptions& aOptions)
   parcel.setDataPosition(0);
   uint32_t sizeBE = htonl(parcel.dataSize() - sizeof(int));
   parcel.writeInt32(sizeBE);
-
-  RequestTimer *pTimer = new RequestTimer();
-  pTimer->mTimer = do_CreateInstance("@mozilla.org/timer;1");
-  pTimer->mRequestId = aOptions.mRequestId;
-  pTimer->mType = aOptions.mType;
-  nsIThread* currentThread = NS_GetCurrentThread();
-  pTimer->mTimer->SetTarget(currentThread);
-
-  unsigned long timeout = GetRequestTimeout(pTimer->mType);
-  pTimer->mTimer->InitWithFuncCallback(
-                  NfcConsumer::RequestTimerCallback,
-                  this, timeout,
-                  nsITimer::TYPE_ONE_SHOT);
-  mRequestTimers.AppendElement(pTimer);
 
   // TODO: Zero-copy buffer transfers
   mStreamSocket->SendSocketData(
@@ -518,18 +430,6 @@ NfcConsumer::Receive(UnixSocketBuffer* aBuffer)
 
     EventOptions event;
     mHandler->Unmarshall(parcel, event);
-
-    if (!event.mIsNtf) {
-      PRUint32 length = mRequestTimers.Length();
-      for (PRUint32 i = 0; i < length; i++) {
-        if (event.mRequestId == mRequestTimers[i]->mRequestId) {
-          mRequestTimers[i]->mTimer->Cancel();
-          mRequestTimers[i]->mTimer = nullptr;
-          mRequestTimers.RemoveElementAt(i);
-          break;
-        }
-      }
-    }
 
     NS_DispatchToMainThread(new DispatchNfcEventRunnable(mNfcService, event));
   }

@@ -24,7 +24,6 @@ class NfcMessageHandler
 public:
   bool Marshall(android::Parcel& aParcel, const CommandOptions& aOptions);
   bool Unmarshall(const android::Parcel& aParcel, EventOptions& aOptions);
-  bool RequestTimeoutResponse(EventOptions& aOptions);
 
 private:
   bool ProcessResponse(int32_t aType, const android::Parcel& aParcel, EventOptions& aOptions);

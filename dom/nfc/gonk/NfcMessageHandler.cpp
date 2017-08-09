@@ -200,17 +200,6 @@ NfcMessageHandler::GeneralResponse(const Parcel& aParcel, EventOptions& aOptions
 }
 
 bool
-NfcMessageHandler::RequestTimeoutResponse(EventOptions& aOptions)
-{
-  aOptions.mErrorCode = (int32_t)NfcErrorMessage::Timeout;
-
-  NS_ENSURE_TRUE(!mRequestIdQueue.IsEmpty(), false);
-  aOptions.mRequestId = mRequestIdQueue[0];
-  mRequestIdQueue.RemoveElementAt(0);
-  return true;
-}
-
-bool
 NfcMessageHandler::ChangeRFStateRequest(Parcel& aParcel, const CommandOptions& aOptions)
 {
   aParcel.writeInt32(static_cast<int32_t>(NfcRequestType::ChangeRFState));
