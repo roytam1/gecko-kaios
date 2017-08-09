@@ -34,6 +34,37 @@ function debug(msg) {
   //dump("BrowserElementChildPreload - " + msg + "\n");
 }
 
+var sLogLevel = 1;
+
+function log(msg) {
+  dump("[BrowserElement] " + msg + "\n");
+}
+
+function debugEvents(global, els) {
+  let handler = function(evt) {
+    let msg = "event type: " + evt.type;
+    if (evt.key) {
+      msg += ", key: " + evt.key;
+    }
+    msg += ", target: " + evt.target;
+    if (evt.target.src) {
+      msg += ", src: " + evt.target.src;
+    }
+    if (evt.target.id) {
+      msg += ", id: " + evt.target.id;
+    }
+    if (evt.target.className) {
+      msg += ", class: " + evt.target.className;
+    }
+    log(msg);
+  };
+
+  let events = ['keydown', 'keyup'];
+  for (let event of events) {
+    els.addSystemEventListener(global, event, handler, true);
+  }
+}
+
 function sendAsyncMsg(msg, data) {
   // Ensure that we don't send any messages before BrowserElementChild.js
   // finishes loading.
@@ -160,6 +191,9 @@ BrowserElementChild.prototype = {
 
   _init: function() {
     debug("Starting up.");
+    try {
+      sLogLevel = Services.prefs.getIntPref('dom.browserElement.loglevel');
+    } catch(e) {}
 
     BrowserElementPromptService.mapWindowToBrowserElementChild(content, this);
 
@@ -331,6 +365,8 @@ BrowserElementChild.prototype = {
     });
 
     this.forwarder.init();
+
+    if (sLogLevel >= 1) debugEvents(global, els);
   },
 
   _paintFrozenTimer: null,
@@ -376,6 +412,7 @@ BrowserElementChild.prototype = {
         // if pausePainting is called more than resumePainting, process stays
         // pausing on paint. See bug 9277.
         if (this._paintFrozenTimer === null) {
+          if (sLogLevel >= 1) log("Pause painting on " + docShell.appManifestURL);
           docShell.contentViewer.pausePainting();
         }
 
@@ -386,6 +423,7 @@ BrowserElementChild.prototype = {
   },
 
   notify: function(timer) {
+    if (sLogLevel >= 1) log("Resume painting on " + docShell.appManifestURL);
     docShell.contentViewer.resumePainting();
     this._paintFrozenTimer.cancel();
     this._paintFrozenTimer = null;

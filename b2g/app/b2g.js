@@ -1214,6 +1214,13 @@ pref("media.webspeech.service.default", "adaptor");
 // Force fullscreen video in landscape mode if its width larger than height.
 pref("media.video.fullscreen.force-landscape", false);
 
-
 pref('dom.enable_user_timing', true);
 pref('dom.performance.enable_user_timing_logging', true);
+
+#ifdef TARGET_VARIANT_USER
+pref('focusmanager.loglevel', 1);
+pref('dom.browserElement.loglevel', 1);
+#else
+pref('focusmanager.loglevel', 2);
+pref('dom.browserElement.loglevel', 1);
+#endif
