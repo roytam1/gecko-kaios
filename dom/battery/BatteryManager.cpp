@@ -34,6 +34,7 @@ BatteryManager::BatteryManager(nsPIDOMWindowInner* aWindow)
   , mLevel(kDefaultLevel)
   , mCharging(kDefaultCharging)
   , mRemainingTime(kDefaultRemainingTime)
+  , mHealth(kDefaultHealth)
 {
 }
 
@@ -135,6 +136,13 @@ BatteryManager::Temperature() const
   return hal::GetBatteryTemperature();
 }
 
+BatteryHealth
+BatteryManager::Health() const
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  return mHealth;
+}
+
 void
 BatteryManager::UpdateFromBatteryInfo(const hal::BatteryInformation& aBatteryInfo)
 {
@@ -149,6 +157,7 @@ BatteryManager::UpdateFromBatteryInfo(const hal::BatteryInformation& aBatteryInf
 
   mCharging = aBatteryInfo.charging();
   mRemainingTime = aBatteryInfo.remainingTime();
+  mHealth = aBatteryInfo.health();
 
   if (!nsContentUtils::IsChromeDoc(doc) &&
       status != nsIPrincipal::APP_STATUS_CERTIFIED)

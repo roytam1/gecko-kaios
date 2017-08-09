@@ -555,6 +555,34 @@ UnregisterBatteryObserverIOThread()
   sBatteryObserver = nullptr;
 }
 
+static BatteryHealth
+GetCurrentBatteryHealth()
+{
+  char health[16] = {0};
+  bool success;
+
+  // Get battery health and set to "Unknown" if read fails
+  success = ReadSysFile("/sys/class/power_supply/battery/health",
+                        health, sizeof(health));
+  if (success) {
+    if (!strcmp(health, "Good")) {
+      return BatteryHealth::Good;
+    } else if (!strcmp(health, "Overheat")) {
+      return BatteryHealth::Overheat;
+    } else if (!strcmp(health, "Cold")) {
+      return BatteryHealth::Cold;
+    } else if (!strcmp(health, "Warm")) {
+      return BatteryHealth::Warm;
+    } else if (!strcmp(health, "Cool")) {
+      return BatteryHealth::Cool;
+    } else {
+      return BatteryHealth::Unknown;
+    }
+  } else {
+    return dom::battery::kDefaultHealth;
+  }
+}
+
 void
 DisableBatteryNotifications()
 {
@@ -649,6 +677,8 @@ GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo)
   }
 
   aBatteryInfo->temperature() = GetBatteryTemperature();
+
+  aBatteryInfo->health() = GetCurrentBatteryHealth();
 
   int charging;
 

@@ -11,6 +11,7 @@
 #include "mozilla/DOMEventTargetHelper.h"
 #include "mozilla/Observer.h"
 #include "nsCycleCollectionParticipant.h"
+#include "mozilla/dom/BatteryManagerBinding.h"
 
 namespace mozilla {
 
@@ -54,6 +55,8 @@ public:
 
   double Temperature() const;
 
+  BatteryHealth Health() const;
+
   IMPL_EVENT_HANDLER(chargingchange)
   IMPL_EVENT_HANDLER(chargingtimechange)
   IMPL_EVENT_HANDLER(dischargingtimechange)
@@ -77,6 +80,9 @@ private:
    * current battery status (charging or not).
    */
   double mRemainingTime;
+
+  // Represents the battery health
+  BatteryHealth mHealth;
 };
 
 } // namespace battery

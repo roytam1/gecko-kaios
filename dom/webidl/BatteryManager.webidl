@@ -10,12 +10,22 @@
  * liability, trademark and document use rules apply.
  */
 
+enum BatteryHealth {
+  "Good",
+  "Overheat",
+  "Cold",
+  "Warm",
+  "Cool",
+  "Unknown",
+};
+
 interface BatteryManager : EventTarget {
     readonly attribute boolean             charging;
     readonly attribute unrestricted double chargingTime;
     readonly attribute unrestricted double dischargingTime;
     readonly attribute double              level;
     readonly attribute double              temperature;
+    readonly attribute BatteryHealth       health;
 
              attribute EventHandler        onchargingchange;
              attribute EventHandler        onchargingtimechange;
