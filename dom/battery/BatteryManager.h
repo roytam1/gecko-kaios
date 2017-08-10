@@ -61,6 +61,7 @@ public:
   IMPL_EVENT_HANDLER(chargingtimechange)
   IMPL_EVENT_HANDLER(dischargingtimechange)
   IMPL_EVENT_HANDLER(levelchange)
+  IMPL_EVENT_HANDLER(batteryhealthchange)
 
 private:
   /**

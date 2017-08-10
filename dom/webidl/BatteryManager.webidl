@@ -31,4 +31,5 @@ interface BatteryManager : EventTarget {
              attribute EventHandler        onchargingtimechange;
              attribute EventHandler        ondischargingtimechange;
              attribute EventHandler        onlevelchange;
+             attribute EventHandler        onbatteryhealthchange;
 };

@@ -24,6 +24,7 @@
 #define CHARGINGCHANGE_EVENT_NAME        NS_LITERAL_STRING("chargingchange")
 #define DISCHARGINGTIMECHANGE_EVENT_NAME NS_LITERAL_STRING("dischargingtimechange")
 #define CHARGINGTIMECHANGE_EVENT_NAME    NS_LITERAL_STRING("chargingtimechange")
+#define BATTERYHEALTHCHANGE_EVENT_NAME   NS_LITERAL_STRING("batteryhealthchange")
 
 namespace mozilla {
 namespace dom {
@@ -183,6 +184,7 @@ BatteryManager::Notify(const hal::BatteryInformation& aBatteryInfo)
   double previousLevel = mLevel;
   bool previousCharging = mCharging;
   double previousRemainingTime = mRemainingTime;
+  BatteryHealth previousHealth = mHealth;
 
   UpdateFromBatteryInfo(aBatteryInfo);
 
@@ -194,6 +196,9 @@ BatteryManager::Notify(const hal::BatteryInformation& aBatteryInfo)
     DispatchTrustedEvent(LEVELCHANGE_EVENT_NAME);
   }
 
+  if (previousHealth != mHealth) {
+    DispatchTrustedEvent(BATTERYHEALTHCHANGE_EVENT_NAME);
+  }
   /*
    * There are a few situations that could happen here:
    * 1. Charging state changed:
