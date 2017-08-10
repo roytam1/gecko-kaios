@@ -1010,6 +1010,10 @@ ContactDB.prototype = {
             store.put(contact);
           }
         }
+
+        // Return the upated record.
+        txn.result = contact;
+
         // Invalidate the entire cache. It will be incrementally regenerated on demand
         // See getCacheForQuery
         let getAllStore = txn.objectStore(SAVED_GETALL_STORE_NAME);

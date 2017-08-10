@@ -99,13 +99,15 @@ ContactManager.prototype = {
   },
 
   _convertContact: function(aContact) {
-    let properties = aContact.properties;
-    if (properties.photo && properties.photo.length) {
-      properties.photo = Cu.cloneInto(properties.photo, this._window);
+    if (aContact) {
+      let properties = aContact.properties;
+      if (properties.photo && properties.photo.length) {
+        properties.photo = Cu.cloneInto(properties.photo, this._window);
+      }
+      let newContact = new this._window.mozContact(aContact.properties);
+      newContact.setMetadata(aContact.id, aContact.published, aContact.updated);
+      return newContact;
     }
-    let newContact = new this._window.mozContact(aContact.properties);
-    newContact.setMetadata(aContact.id, aContact.published, aContact.updated);
-    return newContact;
   },
 
   _convertContacts: function(aContacts) {
@@ -237,7 +239,8 @@ ContactManager.prototype = {
         if (DEBUG) debug("Contacts:ContactChanged: " + msg.contactID + ", " + msg.reason);
         let event = new this._window.MozContactChangeEvent("contactchange", {
           contactID: msg.contactID,
-          reason: msg.reason
+          reason: msg.reason,
+          contact: this._convertContact(msg.contact)
         });
         this.dispatchEvent(event);
         break;

@@ -10,10 +10,12 @@ interface MozContactChangeEvent : Event
 {
   readonly attribute DOMString? contactID;
   readonly attribute DOMString? reason;
+  readonly attribute mozContact? contact;
 };
 
 dictionary MozContactChangeEventInit : EventInit
 {
   DOMString contactID = "";
   DOMString reason = "";
+  mozContact? contact = null;
 };

@@ -169,9 +169,11 @@ var ContactService = this.ContactService = {
         }
         this._db.saveContact(
           msg.options.contact,
-          function() {
+          function(result) {
             mm.sendAsyncMessage("Contact:Save:Return:OK", { requestID: msg.requestID, contactID: msg.options.contact.id });
-            this.broadcastMessage("Contact:Changed", { contactID: msg.options.contact.id, reason: msg.options.reason });
+            this.broadcastMessage("Contact:Changed", { contactID: msg.options.contact.id,
+                                                       reason: msg.options.reason,
+                                                       contact: result });
           }.bind(this),
           function(aErrorMsg) { mm.sendAsyncMessage("Contact:Save:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg }); }.bind(this)
         );
