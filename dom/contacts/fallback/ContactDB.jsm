@@ -1036,8 +1036,11 @@ ContactDB.prototype = {
   },
 
   clear: function clear(aSuccessCb, aErrorCb) {
-    this.newTxn("readwrite", STORE_NAME, function (txn, store) {
+    this.newTxn("readwrite", this.dbStoreNames, function (txn, stores) {
       if (DEBUG) debug("Going to clear all!");
+      let getAllStore = txn.objectStore(SAVED_GETALL_STORE_NAME);
+      getAllStore.clear();
+      let store = txn.objectStore(STORE_NAME);
       store.clear();
       this.incrementRevision(txn);
     }.bind(this), aSuccessCb, aErrorCb);
