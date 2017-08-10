@@ -15,6 +15,7 @@ interface BatteryManager : EventTarget {
     readonly attribute unrestricted double chargingTime;
     readonly attribute unrestricted double dischargingTime;
     readonly attribute double              level;
+    readonly attribute double              temperature;
 
              attribute EventHandler        onchargingchange;
              attribute EventHandler        onchargingtimechange;

@@ -52,6 +52,8 @@ public:
 
   double Level() const;
 
+  double Temperature() const;
+
   IMPL_EVENT_HANDLER(chargingchange)
   IMPL_EVENT_HANDLER(chargingtimechange)
   IMPL_EVENT_HANDLER(dischargingtimechange)

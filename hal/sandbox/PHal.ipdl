@@ -29,6 +29,7 @@ struct BatteryInformation {
   double level;
   bool   charging;
   double remainingTime;
+  double temperature;
 };
 
 struct PowerSupplyStatus {
@@ -185,6 +186,7 @@ parent:
       returns (SwitchState aState);
 
     async FactoryReset(nsString aReason);
+    sync GetBatteryTemperature() returns (double temperature);
 
 child:
     async NotifySensorChange(SensorData aSensorData);

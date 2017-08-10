@@ -85,6 +85,14 @@ GetCurrentBatteryInformation(BatteryInformation* aBatteryInfo)
   Hal()->SendGetCurrentBatteryInformation(aBatteryInfo);
 }
 
+double
+GetBatteryTemperature()
+{
+  double temperature = 0;
+  Hal()->SendGetBatteryTemperature(&temperature);
+  return temperature;
+}
+
 void
 EnablePowerSupplyNotifications()
 {
@@ -678,6 +686,13 @@ public:
   RecvGetCurrentBatteryInformation(BatteryInformation* aBatteryInfo) override {
     // We give all content battery-status permission.
     hal::GetCurrentBatteryInformation(aBatteryInfo);
+    return true;
+  }
+
+  virtual bool
+  RecvGetBatteryTemperature(double* aTemperature) override
+  {
+    *aTemperature = hal::GetBatteryTemperature();
     return true;
   }
 

@@ -623,6 +623,15 @@ GetCurrentBatteryCharging(int* aCharging)
   return false;
 }
 
+double
+GetBatteryTemperature()
+{
+  int temperature;
+  bool success = ReadSysFile("/sys/class/power_supply/battery/temp", &temperature);
+
+  return success ? (double) temperature / 10.0 : dom::battery::kDefaultTemperature;;
+}
+
 void
 GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo)
 {
@@ -638,6 +647,8 @@ GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo)
   } else {
     aBatteryInfo->level() = dom::battery::kDefaultLevel;
   }
+
+  aBatteryInfo->temperature() = GetBatteryTemperature();
 
   int charging;
 

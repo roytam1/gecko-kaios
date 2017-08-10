@@ -1397,5 +1397,11 @@ bool IsFlipOpened()
   RETURN_PROXY_IF_SANDBOXED(IsFlipOpened(), true);
 }
 
+double GetBatteryTemperature()
+{
+  AssertMainThread();
+  RETURN_PROXY_IF_SANDBOXED(GetBatteryTemperature(), 20.0);
+}
+
 } // namespace hal
 } // namespace mozilla

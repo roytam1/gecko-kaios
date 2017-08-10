@@ -128,6 +128,13 @@ BatteryManager::Level() const
   return mLevel;
 }
 
+double
+BatteryManager::Temperature() const
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  return hal::GetBatteryTemperature();
+}
+
 void
 BatteryManager::UpdateFromBatteryInfo(const hal::BatteryInformation& aBatteryInfo)
 {

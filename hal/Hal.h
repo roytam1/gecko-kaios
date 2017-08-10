@@ -758,6 +758,11 @@ bool SystemServiceIsStopped(const char* aSvcName);
  */
 bool IsFlipOpened();
 
+/**
+ * Get battery temperature of device
+ */
+double GetBatteryTemperature();
+
 } // namespace MOZ_HAL_NAMESPACE
 } // namespace mozilla
 

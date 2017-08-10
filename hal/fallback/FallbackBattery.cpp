@@ -24,6 +24,13 @@ GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo)
   aBatteryInfo->level() = dom::battery::kDefaultLevel;
   aBatteryInfo->charging() = dom::battery::kDefaultCharging;
   aBatteryInfo->remainingTime() = dom::battery::kDefaultRemainingTime;
+  aBatteryInfo->temperature() = dom::battery::kDefaultTemperature;
+}
+
+double
+GetTemperature()
+{
+  return dom::battery::kDefaultTemperature;
 }
 
 } // hal_impl

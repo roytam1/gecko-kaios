@@ -19,6 +19,7 @@ namespace battery {
   static const bool   kDefaultCharging      = true;
   static const double kDefaultRemainingTime = 0;
   static const double kUnknownRemainingTime = -1;
+  static const double kDefaultTemperature   = 20.0;
 
 } // namespace battery
 } // namespace dom
