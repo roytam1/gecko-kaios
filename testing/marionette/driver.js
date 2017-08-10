@@ -2249,6 +2249,10 @@ GeckoDriver.prototype.sessionTearDown = function(cmd, resp) {
     this.observing = null;
   }
   this.sandboxes.clear();
+
+  // Clean up after the socket connection is closed.
+  this.emulator = null;
+  this.listener = null;
 };
 
 /**

@@ -138,6 +138,7 @@ MarionetteServer.prototype.onSocketAccepted = function(
 
 MarionetteServer.prototype.onConnectionClosed = function(conn) {
   let id = conn.connId;
+  delete this.conns[id].conn;
   delete this.conns[id];
   logger.debug(`Closed connection ${id}`);
 };

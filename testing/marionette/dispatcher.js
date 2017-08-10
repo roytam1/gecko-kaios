@@ -63,6 +63,12 @@ Dispatcher.prototype.onClosed = function(reason) {
   if (this.onclose) {
     this.onclose(this);
   }
+
+  // Clean up after the socket connection is closed.
+  this.onclose = null;
+  this.emulator = null;
+  this.driver = null;
+  this.commands_ = null;
 };
 
 /**
