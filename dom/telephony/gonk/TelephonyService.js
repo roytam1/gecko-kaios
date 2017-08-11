@@ -2026,12 +2026,6 @@ TelephonyService.prototype = {
                 notifySuccess: () => {},
                 notifyError: () => {}
               };
-
-              if (heldCalls.length === 1) {
-                this.resumeCall(aClientId, heldCalls[0].callIndex, emptyCallback);
-              } else {
-                this.resumeConference(aClientId, emptyCallback);
-              }
             }
           });
         }
