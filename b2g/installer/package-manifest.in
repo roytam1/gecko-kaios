@@ -995,3 +995,7 @@ bin/libfreebl_32int64_3.so
 @RESPATH@/components/CustomizationInfoComponent.manifest
 @RESPATH@/components/customizationinfo.js
 @RESPATH@/components/customizationinfo.xpt
+
+@RESPATH@/components/SimContactService.manifest
+@RESPATH@/components/SimContactService.js
+@RESPATH@/components/simcontact.xpt

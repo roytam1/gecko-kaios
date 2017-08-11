@@ -25,6 +25,18 @@ XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
                                    "@mozilla.org/parentprocessmessagemanager;1",
                                    "nsIMessageListenerManager");
 
+XPCOMUtils.defineLazyServiceGetter(this, "gSimContactService",
+                                   "@kaiostech.com/simcontactservice;1",
+                                   "nsISimContactService");
+
+XPCOMUtils.defineLazyServiceGetter(this, "gIccService",
+                                   "@mozilla.org/icc/iccservice;1",
+                                   "nsIIccService");
+
+const CATEGORY_DEFAULT = ["DEVICE", "KAICONTACT"];
+const CATEGORY_DEVICE = "DEVICE";
+const CATEGORY_KAICONTACT = "KAICONTACT";
+const CATEGORY_SIM = "SIM";
 
 /* all exported symbols need to be bound to this on B2G - Bug 961777 */
 var ContactService = this.ContactService = {
@@ -158,6 +170,7 @@ var ContactService = this.ContactService = {
         this._db.sendNow(msg.cursorId);
         break;
       case "Contact:Save":
+      {
         if (msg.options.reason === "create") {
           if (!this.assertPermission(aMessage, "contacts-create")) {
             return null;
@@ -167,43 +180,145 @@ var ContactService = this.ContactService = {
             return null;
           }
         }
-        this._db.saveContact(
-          msg.options.contact,
-          function(result) {
-            mm.sendAsyncMessage("Contact:Save:Return:OK", { requestID: msg.requestID, contactID: msg.options.contact.id });
-            this.broadcastMessage("Contact:Changed", { contactID: msg.options.contact.id,
-                                                       reason: msg.options.reason,
-                                                       contact: result });
-          }.bind(this),
-          function(aErrorMsg) { mm.sendAsyncMessage("Contact:Save:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg }); }.bind(this)
-        );
-        break;
+
+        let contact = msg.options.contact;
+        this._makeCategory(contact);
+        let simContact = this._isSimContact(contact);
+        let newSimContact = simContact &&
+                            msg.options.reason && msg.options.reason === "create";
+
+        let successCb = (result) => {
+          mm.sendAsyncMessage("Contact:Save:Return:OK", { requestID: msg.requestID, contactID: msg.options.contact.id });
+          this.broadcastMessage("Contact:Changed", { contactID: msg.options.contact.id,
+                                                     reason: msg.options.reason,
+                                                     contact: result });
+        }
+
+        let failureCb = (aErrorMsg) => {
+          mm.sendAsyncMessage("Contact:Save:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg });
+        }
+        let saveContact = function(msg) {
+          this._db.saveContact(
+            contact,
+            successCb.bind(this),
+            failureCb.bind(this)
+          );
+        }.bind(this);
+
+        if (!simContact) {
+          saveContact(msg);
+          return;
+        }
+
+        if (newSimContact) {
+          contact.id = undefined;
+        }
+
+        let callback = {
+          QueryInterface: XPCOMUtils.generateQI([Ci.nsISimContactCallback]),
+
+          notifyIccContactUpdated: function(aContact) {
+            msg.options.contact.id = aContact.id;
+            if (DEBUG) debug('notifyIccContactUpdated id: ' + msg.options.contact.id);
+            saveContact(msg);
+          },
+
+          notifyError: function(aErrorMsg) {
+            if (DEBUG) debug('notifyError: ' + aErrorMsg);
+            mm.sendAsyncMessage("Contact:Save:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg });
+          },
+        };
+
+        let updateContact = this._convertToIccContact(
+              contact.id,
+              contact.properties.name && contact.properties.name[0],
+              contact.properties.tel && contact.properties.tel[0] && contact.properties.tel[0].value,
+              contact.properties.email && contact.properties.email[0] && contact.properties.email[0].value);
+        gSimContactService.updateSimContact(updateContact, callback);
+      }
+      break;
       case "Contact:Remove":
+      {
         if (!this.assertPermission(aMessage, "contacts-write")) {
           return null;
         }
-        this._db.removeContact(
-          msg.options.id,
-          function() {
-            mm.sendAsyncMessage("Contact:Remove:Return:OK", { requestID: msg.requestID, contactID: msg.options.id });
-            this.broadcastMessage("Contact:Changed", { contactID: msg.options.id, reason: "remove" });
-          }.bind(this),
-          function(aErrorMsg) { mm.sendAsyncMessage("Contact:Remove:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg }); }.bind(this)
-        );
-        break;
+
+        let successCb = () => {
+          mm.sendAsyncMessage("Contact:Remove:Return:OK", { requestID: msg.requestID, contactID: msg.options.id });
+          this.broadcastMessage("Contact:Changed", { contactID: msg.options.id, reason: "remove" });
+        };
+
+        let failureCb = (aErrorMsg) => {
+            mm.sendAsyncMessage("Contact:Remove:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg });
+        };
+
+        let removeContact = function(msg) {
+          this._db.removeContact(
+            msg.options.id,
+            successCb.bind(this),
+            failureCb.bind(this)
+          );
+        }.bind(this);
+
+        let simContact = this._isSimContactById(msg.options.id);
+        if (!simContact) {
+          removeContact(msg)
+          return;
+        }
+
+        let contactToRemove = this._convertToIccContact(msg.options.id);
+        let deleteCallback = {
+          QueryInterface: XPCOMUtils.generateQI([Ci.nsISimContactCallback]),
+
+          notifyIccContactUpdated: function(aContact) {
+            removeContact(msg);
+          },
+
+          notifyError: function(aErrorMsg) {
+            if (DEBUG) debug('notifyError: ' + aErrorMsg);
+            failureCb(aErrorMsg);
+          },
+        };
+
+        gSimContactService.removeSimContact(contactToRemove, deleteCallback);
+      }
+      break;
       case "Contacts:Clear":
         if (!this.assertPermission(aMessage, "contacts-write")) {
           return null;
         }
-        this._db.clear(
-          function() {
-            mm.sendAsyncMessage("Contacts:Clear:Return:OK", { requestID: msg.requestID });
-            this.broadcastMessage("Contact:Changed", { reason: "remove" });
-          }.bind(this),
-          function(aErrorMsg) {
-            mm.sendAsyncMessage("Contacts:Clear:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg });
-          }.bind(this)
-        );
+
+        let successCb = () => {
+          mm.sendAsyncMessage("Contacts:Clear:Return:OK", { requestID: msg.requestID });
+          this.broadcastMessage("Contact:Changed", { reason: "remove" });
+        }
+
+        let failureCb = (aErrorMsg) => {
+          mm.sendAsyncMessage("Contacts:Clear:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg });
+        }
+
+        let clearContact = function(msg) {
+          this._db.clear(
+            successCb.bind(this),
+            failureCb.bind(this)
+          );
+        }.bind(this);
+
+        let deleteCallback = {
+          QueryInterface: XPCOMUtils.generateQI([Ci.nsISimContactCallback]),
+
+          notifySuccess: function() {
+            clearContact(msg);
+          },
+
+          notifyError: function(aErrorMsg) {
+            if (DEBUG) debug('notifyError: ' + aErrorMsg);
+            failureCb(aErrorMsg);
+          },
+        };
+
+        gSimContactService.clearSimContacts(deleteCallback);
+
         break;
       case "Contacts:GetRevision":
         if (!this.assertPermission(aMessage, "contacts-read")) {
@@ -312,6 +427,115 @@ var ContactService = this.ContactService = {
         break;
       default:
         if (DEBUG) debug("WRONG MESSAGE NAME: " + aMessage.name);
+    }
+  },
+
+  _convertToIccContact: function (aId, aName, aNumber, aEmail) {
+    let iccContact = {
+      QueryInterface: XPCOMUtils.generateQI([Ci.nsIIccContact]),
+      id: aId,
+      _names: aName ? [aName] : [],
+      _numbers: aNumber ? [aNumber] : [],
+      _emails: aEmail ? [aEmail] : [],
+
+      getNames: function(aCount) {
+        if (!this._names) {
+          if (aCount) {
+            aCount.value = 0;
+          }
+          return [];
+        }
+
+        if (aCount) {
+          aCount.value = this._names.length;
+        }
+
+        return this._names.slice();
+      },
+
+      getNumbers: function(aCount) {
+        if (!this._numbers) {
+          if (aCount) {
+            aCount.value = 0;
+          }
+          return [];
+        }
+
+        if (aCount) {
+          aCount.value = this._numbers.length;
+        }
+
+        return this._numbers.slice();
+      },
+
+      getEmails: function(aCount) {
+        if (!this._emails) {
+          if (aCount) {
+            aCount.value = 0;
+          }
+          return [];
+        }
+
+        if (aCount) {
+          aCount.value = this._emails.length;
+        }
+
+        return this._emails.slice();
+      }
+    }
+
+    return iccContact;
+  },
+
+  _isSimContact: function (aContactOrId) {
+    if (typeof aContactOrId === "string") {
+      return this._isSimContactById(aContactOrId);
+    } else {
+      return this._isSimContactByStruct(aContactOrId);
+    }
+  },
+
+  _isSimContactByStruct: function (aContact) {
+    return aContact && aContact.properties && aContact.properties.category &&
+           aContact.properties.category.includes("SIM");
+  },
+
+  _isSimContactById: function (aId) {
+    if (!aId) {
+      return false;
+    }
+
+    let icc = gIccService.getIccByServiceId(0);
+    if (!icc) {
+      return false;
+    }
+
+    if (aId.startsWith(icc.iccInfo.iccid)) {
+      return true;
+    }
+
+    return false;
+  },
+
+  _makeCategory: function(aContact) {
+    if (!aContact || !aContact.properties) {
+      return;
+    }
+
+    if (!aContact.properties.category) {
+      aContact.properties.category = CATEGORY_DEFAULT;
+      return;
+    }
+
+    let category = aContact.properties.category;
+
+    if (category.indexOf(CATEGORY_KAICONTACT) < 0) {
+      category.push(CATEGORY_KAICONTACT);
+    }
+
+    if (category.indexOf(CATEGORY_DEVICE) < 0 &&
+        category.indexOf(CATEGORY_SIM) < 0) {
+      category.push(CATEGORY_DEVICE);
     }
   }
 }

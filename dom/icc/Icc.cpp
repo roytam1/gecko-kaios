@@ -437,6 +437,11 @@ Icc::UpdateContact(IccContactType aContactType, mozContact& aContact,
     return nullptr;
   }
 
+  if (IccContactType::Adn == aContactType) {
+    aRv.Throw(NS_ERROR_ILLEGAL_VALUE);
+    return nullptr;
+  }
+
   RefPtr<DOMRequest> request = new DOMRequest(GetOwner());
   RefPtr<IccCallback> requestCallback =
     new IccCallback(GetOwner(), request);

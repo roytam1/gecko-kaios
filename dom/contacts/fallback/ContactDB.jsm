@@ -24,13 +24,18 @@ Cu.importGlobalProperties(["indexedDB"]);
 
 /* all exported symbols need to be bound to this on B2G - Bug 961777 */
 this.DB_NAME = "contacts";
-this.DB_VERSION = 21;
+this.DB_VERSION = 22;
 this.STORE_NAME = "contacts";
 this.SAVED_GETALL_STORE_NAME = "getallcache";
 this.SPEED_DIALS_STORE_NAME = "speeddials";
 const CHUNK_SIZE = 20;
 this.REVISION_STORE = "revision";
 const REVISION_KEY = "revision";
+
+const CATEGORY_DEFAULT = ["DEVICE", "KAICONTACT"];
+const CATEGORY_DEVICE = "DEVICE";
+const CATEGORY_KAICONTACT = "KAICONTACT";
+const CATEGORY_SIM = "SIM";
 
 function exportContact(aRecord) {
   if (aRecord) {
@@ -732,6 +737,39 @@ ContactDB.prototype = {
         if (DEBUG) debug("Adding object store for speed dials");
         db.createObjectStore(SPEED_DIALS_STORE_NAME, { keyPath: "speedDial" });
         next();
+      },
+      function upgrade21to22() {
+        if (DEBUG) debug("Adding default category");
+        if (!objectStore) {
+          objectStore = aTransaction.objectStore(STORE_NAME);
+        }
+        objectStore.openCursor().onsuccess = function(event) {
+          let cursor = event.target.result;
+          if (cursor) {
+            if (cursor.value.properties.category) {
+              let changed = false;
+              let category = cursor.value.properties.category;
+              if (category.indexOf(CATEGORY_KAICONTACT) < 0) {
+                category.push(CATEGORY_KAICONTACT);
+                changed = true;
+              }
+              if (category.indexOf(CATEGORY_DEVICE) < 0 &&
+                  category.indexOf(CATEGORY_SIM) < 0) {
+                category.push(CATEGORY_DEVICE);
+                changed = true;
+              }
+              if (changed) {
+                cursor.update(cursor.value);
+              }
+            } else {
+              cursor.value.properties.category = CATEGORY_DEFAULT;
+              cursor.update(cursor.value);
+            }
+            cursor.continue();
+          } else {
+            next();
+          }
+        };
       },
     ];
 

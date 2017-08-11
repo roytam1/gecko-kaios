@@ -324,6 +324,8 @@ interface MozIcc : EventTarget
    *
    * @param contactType
    *        Identifies the contact type.
+   *        IccContactType::adn is no longer supported.
+   *        Regarding ADN, please use Contacts.save and Contacts.remove instead.
    * @param contact
    *        The contact will be updated in ICC.
    * @param pin2 [optional]
