@@ -2707,16 +2707,6 @@ TabParent::RecvUpdateSpatialNavigationCursorPosition(
   return true;
 }
 
-bool
-TabParent::RecvTriggerSpatialNavigationCursorClick()
-{
-  RefPtr<SpatialNavigationService> service =
-    SpatialNavigationService::GetOrCreate();
-  service->RecvTriggerCursorClick();
-
-  return true;
-}
-
 already_AddRefed<nsILoadContext>
 TabParent::GetLoadContext()
 {

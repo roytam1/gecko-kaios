@@ -520,7 +520,6 @@ parent:
     async SoftkeyRegister(Softkey[] keys);
     async SoftkeyVisibleChange(bool visible);
     async UpdateSpatialNavigationCursorPosition(LayoutDeviceIntPoint aPoint);
-    async TriggerSpatialNavigationCursorClick();
 
     async RequestVolumeChange(bool up);
     async RequestVolumeShow();
@@ -765,7 +764,6 @@ child:
 
     async ActivateSpatialNavigation();
     async DeactivateSpatialNavigation();
-    async UpdateSpatialNavigationTPSPanMode(bool aEnabled);
 
 /*
  * FIXME: write protocol!

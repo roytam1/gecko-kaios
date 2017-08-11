@@ -318,8 +318,6 @@ public:
 
   virtual bool RecvUpdateSpatialNavigationCursorPosition(const LayoutDeviceIntPoint& aPoint) override;
 
-  virtual bool RecvTriggerSpatialNavigationCursorClick() override;
-
   virtual bool
   RecvDispatchWheelEvent(const mozilla::WidgetWheelEvent& aEvent) override;
 
