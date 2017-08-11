@@ -127,6 +127,10 @@ XPCOMUtils.defineLazyServiceGetter(this, "gIccService",
                                    "@mozilla.org/icc/iccservice;1",
                                    "nsIIccService");
 
+XPCOMUtils.defineLazyServiceGetter(this, "gPowerManagerService",
+                                   "@mozilla.org/power/powermanagerservice;1",
+                                   "nsIPowerManagerService");
+
 // A note about errors and error handling in this file:
 // The libraries that we use in this file are intended for C code. For
 // C code, it is natural to return -1 for errors and 0 for success.
@@ -302,6 +306,7 @@ var WifiManager = (function() {
 
   var screenOn = true;
   function handleScreenStateChanged(enabled) {
+    notify("enableAllNetworks");
     screenOn = enabled;
     if (screenOn) {
       setSuspendOptimizationsMode(POWER_MODE_SCREEN_STATE, false,
@@ -322,10 +327,6 @@ var WifiManager = (function() {
    * It will only work in wlan FW without waking system up.
    * If wlan FW scan match ssid, it will report to supplicant and wakeup system to reconnect the network.*/
   function enableBackgroundScan(enable, callback) {
-    if (enable) {
-      notify("enableAllNetworks");
-    }
-
     wifiCommand.setBackgroundScan(enable, function(success) {
       if (callback) {
         callback(success);
@@ -662,10 +663,7 @@ var WifiManager = (function() {
           return;
       }
 
-      // Disable power saving mode when doing dhcp
-      setSuspendOptimizationsMode(POWER_MODE_DHCP, false, function(ok) {});
-      manager.setPowerMode("ACTIVE", function(ok) {});
-
+      preDhcpSetup();
       gNetworkService.configureInterface( { ifname: manager.ifname,
                                             ipaddr: 0,
                                             mask: 0,
@@ -673,10 +671,7 @@ var WifiManager = (function() {
                                             dns1: 0,
                                             dns2: 0 }, function (data) {
         netUtil.runDhcp(manager.ifname, dhcpRequestGen++, function(data, gen) {
-          // Re-enable power saving mode after dhcp is done
-          setSuspendOptimizationsMode(POWER_MODE_DHCP, true, function(ok) {});
-          manager.setPowerMode("AUTO", function(ok) {});
-
+          postDhcpSetup();
           dhcpInfo = data.info;
           debug("dhcpRequestGen: " + dhcpRequestGen + ", gen: " + gen);
           // Only handle dhcp response in COMPLETED state.
@@ -697,6 +692,51 @@ var WifiManager = (function() {
         });
       });
     });
+  }
+
+  function preDhcpSetup() {
+    // Hold wakelock during doing DHCP
+    acquireWifiWakeLock();
+    // Disable power saving mode when doing dhcp
+    setSuspendOptimizationsMode(POWER_MODE_DHCP, false, function(ok) {});
+    manager.setPowerMode("ACTIVE", function(ok) {});
+  }
+
+  function postDhcpSetup() {
+    // Re-enable power saving mode after dhcp is done
+    setSuspendOptimizationsMode(POWER_MODE_DHCP, true, function(ok) {});
+    manager.setPowerMode("AUTO", function(ok) {});
+    // Release wakelock during doing DHCP
+    releaseWifiWakeLock();
+  }
+
+  var wifiWakeLock = null;
+  var wifiWakeLockTimer = null;
+  function acquireWifiWakeLock() {
+    if (!wifiWakeLock) {
+      debug("Acquiring Wifi Wakelock");
+      wifiWakeLock = gPowerManagerService.newWakeLock("cpu");
+    }
+    if (!wifiWakeLockTimer) {
+      debug("Creating Wifi WakeLock Timer");
+      wifiWakeLockTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+    }
+    function onTimeout() {
+      releaseWifiWakeLock();
+    }
+    debug("Setting Wifi WakeLock Timer");
+    wifiWakeLockTimer.initWithCallback(onTimeout, 60000, Ci.nsITimer.ONE_SHOT);
+  }
+
+  function releaseWifiWakeLock() {
+    debug("Releasing Wifi WakeLock");
+    if (wifiWakeLockTimer) {
+      wifiWakeLockTimer.cancel();
+    }
+    if (wifiWakeLock) {
+      wifiWakeLock.unlock();
+      wifiWakeLock = null;
+    }
   }
 
   var supplicantStatesMap = (sdkVersion >= 15) ?
@@ -952,6 +992,8 @@ var WifiManager = (function() {
       manager.connectionInfo.bssid = null;
       manager.connectionInfo.ssid = null;
       manager.connectionInfo.id = -1;
+      // Restore power save and suspend optimizations
+      postDhcpSetup();
       return true;
     }
     if (eventData.indexOf("CTRL-EVENT-CONNECTED") === 0) {
@@ -2851,12 +2893,6 @@ function WifiWorker() {
   }
 
   WifiManager.onscanresultsavailable = function() {
-    WifiManager.getNetworksDisabled(function(result){
-      if (result) {
-        self._enableAllNetworks(function(){debug("All network is disable, try to enable them");});
-      }
-    });
-
     WifiManager.getScanResults(function(r) {
       // Check any open network and notify to user.
       WifiNotificationController.checkAndSetNotification(r);
