@@ -101,6 +101,8 @@ private:
 
   static GonkGPSGeolocationProvider* sSingleton;
 
+  // Whether the GPS HAL has been initialized
+  bool mInitialized;
   bool mStarted;
 
   bool mSupportsScheduling;

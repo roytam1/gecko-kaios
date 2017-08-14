@@ -569,7 +569,8 @@ GonkGPSGeolocationProvider::AGPSRILRefLocCallback(uint32_t flags)
 #endif // MOZ_B2G_RIL
 
 GonkGPSGeolocationProvider::GonkGPSGeolocationProvider()
-  : mStarted(false)
+  : mInitialized(false)
+  , mStarted(false)
   , mSupportsScheduling(false)
 #ifdef MOZ_B2G_RIL
   , mSupportsMSB(false)
@@ -589,6 +590,9 @@ GonkGPSGeolocationProvider::~GonkGPSGeolocationProvider()
 {
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(!mStarted, "Must call Shutdown before destruction");
+  if (mGpsInterface) {
+    mGpsInterface->cleanup();
+  }
 
   sSingleton = nullptr;
 }
@@ -979,7 +983,12 @@ GonkGPSGeolocationProvider::Init()
   }
 #endif
 
-  NS_DispatchToMainThread(NS_NewRunnableMethod(this, &GonkGPSGeolocationProvider::StartGPS));
+  mInitialized = true;
+
+  // If there is an ongoing location request, starts GPS navigating
+  if (mStarted) {
+    NS_DispatchToMainThread(NS_NewRunnableMethod(this, &GonkGPSGeolocationProvider::StartGPS));
+  }
 }
 
 void
@@ -1162,14 +1171,6 @@ GonkGPSGeolocationProvider::Startup()
     }
   }
 
-  if (!mInitThread) {
-    nsresult rv = NS_NewThread(getter_AddRefs(mInitThread));
-    NS_ENSURE_SUCCESS(rv, rv);
-  }
-
-  mInitThread->Dispatch(NS_NewRunnableMethod(this, &GonkGPSGeolocationProvider::Init),
-                        NS_DISPATCH_NORMAL);
-
   mNetworkLocationProvider = do_CreateInstance("@mozilla.org/geolocation/mls-provider;1");
   if (mNetworkLocationProvider) {
     nsresult rv = mNetworkLocationProvider->Startup();
@@ -1177,6 +1178,19 @@ GonkGPSGeolocationProvider::Startup()
       RefPtr<NetworkLocationUpdate> update = new NetworkLocationUpdate();
       mNetworkLocationProvider->Watch(update);
     }
+  }
+
+  if (mInitialized) {
+    NS_DispatchToMainThread(NS_NewRunnableMethod(this, &GonkGPSGeolocationProvider::StartGPS));
+  } else {
+    // Initialize GPS HAL first and it would start GPS after then.
+    if (!mInitThread) {
+      nsresult rv = NS_NewThread(getter_AddRefs(mInitThread));
+      NS_ENSURE_SUCCESS(rv, rv);
+    }
+
+    mInitThread->Dispatch(NS_NewRunnableMethod(this, &GonkGPSGeolocationProvider::Init),
+                          NS_DISPATCH_NORMAL);
   }
 
   mStarted = true;
@@ -1242,7 +1256,6 @@ GonkGPSGeolocationProvider::ShutdownGPS()
 
   if (mGpsInterface) {
     mGpsInterface->stop();
-    mGpsInterface->cleanup();
   }
 }
 
