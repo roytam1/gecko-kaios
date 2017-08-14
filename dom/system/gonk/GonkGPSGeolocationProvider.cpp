@@ -82,6 +82,10 @@ static const char* kMozSettingsChangedTopic = "mozsettings-changed";
 static const char* kPrefRilNumRadioInterfaces = "ril.numRadioInterfaces";
 static const char* kSettingRilDefaultServiceId = "ril.data.defaultServiceId";
 #endif
+
+// The geolocation enabled setting
+static const char* kSettingGeolocationEnabled = "geolocation.enabled";
+
 // Both of these settings can be toggled in the Gaia Developer settings screen.
 static const char* kSettingDebugEnabled = "geolocation.debugging.enabled";
 static const char* kSettingDebugGpsIgnored = "geolocation.debugging.gps-locations-ignored";
@@ -592,6 +596,19 @@ GonkGPSGeolocationProvider::~GonkGPSGeolocationProvider()
   MOZ_ASSERT(!mStarted, "Must call Shutdown before destruction");
   if (mGpsInterface) {
     mGpsInterface->cleanup();
+  }
+
+  if (mObservingSettingsChange) {
+    nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
+    if (obs) {
+      nsresult rv;
+      rv = obs->RemoveObserver(this, kMozSettingsChangedTopic);
+      if (NS_FAILED(rv)) {
+        NS_WARNING("geo: Gonk GPS mozsettings RemoveObserver failed");
+      } else {
+        mObservingSettingsChange = false;
+      }
+    }
   }
 
   sSingleton = nullptr;
@@ -1235,12 +1252,6 @@ GonkGPSGeolocationProvider::Shutdown()
       mObservingNetworkConnStateChange = false;
     }
 #endif
-    rv = obs->RemoveObserver(this, kMozSettingsChangedTopic);
-    if (NS_FAILED(rv)) {
-      NS_WARNING("geo: Gonk GPS mozsettings RemoveObserver failed");
-    } else {
-      mObservingSettingsChange = false;
-    }
   }
 
   mInitThread->Dispatch(NS_NewRunnableMethod(this, &GonkGPSGeolocationProvider::ShutdownGPS),
@@ -1367,6 +1378,31 @@ GonkGPSGeolocationProvider::Observe(nsISupports* aSubject,
       LOG("received mozsettings-changed: logging\n");
       gDebug_isLoggingEnabled =
         setting.mValue.isBoolean() ? setting.mValue.toBoolean() : false;
+      return NS_OK;
+    } else if (setting.mKey.EqualsASCII(kSettingGeolocationEnabled)) {
+      LOG("received mozsettings-changed: geolocation-enabled\n");
+      bool isGeolocationEnabled =
+        setting.mValue.isBoolean() ? setting.mValue.toBoolean() : false;
+
+      // Cleanup GPS HAL when Geolocation setting is turned off
+      if (!isGeolocationEnabled) {
+        if (mInitialized && mGpsInterface) {
+          mGpsInterface->cleanup();
+          mInitialized = false;
+        }
+
+        nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
+        if (obs) {
+          nsresult rv;
+          rv = obs->RemoveObserver(this, kMozSettingsChangedTopic);
+          if (NS_FAILED(rv)) {
+            NS_WARNING("geo: Gonk GPS mozsettings RemoveObserver failed");
+          } else {
+            mObservingSettingsChange = false;
+          }
+        }
+      }
+
       return NS_OK;
     } else if (setting.mKey.EqualsASCII(kSettingSuplVerificationChoice)) {
       nsContentUtils::LogMessageToConsole(nsPrintfCString(
