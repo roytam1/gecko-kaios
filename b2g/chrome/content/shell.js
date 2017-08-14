@@ -793,6 +793,9 @@ var shell = {
     Cu.import('resource://gre/modules/RequestSyncService.jsm');
     Cu.import('resource://gre/modules/SystemUpdateService.jsm');
     Cu.import('resource://gre/modules/PresentationDeviceInfoManager.jsm');
+    // Customization files.
+    Cu.import('resource://gre/modules/CustomizationService.jsm');
+    Cu.import('resource://gre/modules/CustomizationConfigManager.jsm');
     if (isGonk) {
       Cu.import('resource://gre/modules/MultiscreenHandler.jsm');
     }

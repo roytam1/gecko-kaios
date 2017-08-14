@@ -682,6 +682,9 @@
 @RESPATH@/components/EngineeringModeAPI.js
 @RESPATH@/components/EngineeringModeService.js
 
+@RESPATH@/components/Customization.manifest
+@RESPATH@/components/CustomizationAPI.js
+
 @RESPATH@/components/SystemUpdate.manifest
 @RESPATH@/components/SystemUpdateManager.js
 

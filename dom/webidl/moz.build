@@ -110,6 +110,7 @@ WEBIDL_FILES = [
     'CSSTransition.webidl',
     'CSSValue.webidl',
     'CSSValueList.webidl',
+    'CustomizationConfigManager.webidl',
     'DataCallManager.webidl',
     'DataContainerEvent.webidl',
     'DataStore.webidl',
