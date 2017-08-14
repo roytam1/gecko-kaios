@@ -29,6 +29,8 @@ const MOBILECELLINFO_CID =
   Components.ID("{0635d9ab-997e-4cdf-84e7-c1883752dff3}");
 const MOBILECALLFORWARDINGOPTIONS_CID =
   Components.ID("{e0cf4463-ee63-4b05-ab2e-d94bf764836c}");
+const MOBILESIGNALSTRENGTH_CID =
+  Components.ID("{0ef33667-389b-4864-930c-0622d2d1833c}");
 const NEIGHBORINGCELLINFO_CID =
   Components.ID("{6078cbf1-f34c-44fa-96f8-11a88d4bfdd3}");
 const GSMCELLINFO_CID =
@@ -49,6 +51,16 @@ const NS_DATA_CALL_ERROR_TOPIC_ID        = "data-call-error";
 const kPrefRilDebuggingEnabled = "ril.debugging.enabled";
 
 const UNKNOWN_VALUE = Ci.nsICellInfo.UNKNOWN_VALUE;
+const SIGNAL_UNKNOWN_VALUE = Ci.nsIMobileSignalStrength.SIGNAL_UNKNOWN_VALUE;
+
+const SIGNAL_STRENGTH_NONE_OR_UNKNOWN = 0;
+const SIGNAL_STRENGTH_POOR = 1;
+const SIGNAL_STRENGTH_MODERATE = 2;
+const SIGNAL_STRENGTH_GOOD = 3;
+const SIGNAL_STRENGTH_GREAT = 4;
+
+// TODO: Customization for rsrp/rssnr range.
+const rsrp_thresh = [-140, -128, -118, -108, -98, -44];
 
 XPCOMUtils.defineLazyServiceGetter(this, "gMobileConnectionMessenger",
                                    "@mozilla.org/ril/system-messenger-helper;1",
@@ -100,6 +112,309 @@ MobileNetworkInfo.prototype = {
   })
 };
 
+function MobileSignalStrength(aClientId) {
+  this._clientId = aClientId;
+}
+MobileSignalStrength.prototype = {
+  QueryInterface: XPCOMUtils.generateQI([Ci.nsIMobileSignalStrength]),
+  classID:        MOBILESIGNALSTRENGTH_CID,
+  classInfo:      XPCOMUtils.generateCI({
+    classID:          MOBILESIGNALSTRENGTH_CID,
+    classDescription: "MobileSignalStrength",
+    interfaces:       [Ci.nsIMobileSignalStrength]
+  }),
+
+  /**
+   * A utility function to dump debug message.
+   */
+  _debug: function(aMessage) {
+    dump("MobileSignalStrength[" + this._clientId + "]: " + aMessage + "\n");
+  },
+
+  // nsIMobileSignalStrength
+  level: 0,
+
+  gsmSignalStrength: 99,
+  gsmBitErrorRate: 99,
+
+  cdmaDbm: -1,
+  cdmaEcio: -1,
+  cdmaEvdoDbm: -1,
+  cdmaEvdoEcio: -1,
+  cdmaEvdoSNR: -1,
+
+  lteSignalStrength: 99,
+  lteRsrp: SIGNAL_UNKNOWN_VALUE,
+  lteRsrq: SIGNAL_UNKNOWN_VALUE,
+  lteRssnr: SIGNAL_UNKNOWN_VALUE,
+  lteCqi: SIGNAL_UNKNOWN_VALUE,
+  lteTimingAdvance: SIGNAL_UNKNOWN_VALUE,
+
+  tdscdmaRscp: SIGNAL_UNKNOWN_VALUE,
+
+  _validateInfo: function(aSignalStrength) {
+    let ss = aSignalStrength;
+
+    ss.gsmSignalStrength = ss.gsmSignalStrength > 0 ?
+      ss.gsmSignalStrength : 99;
+
+    ss.cdmaDbm = ss.cdmaDbm > 0 ? -ss.cdmaDbm : -120;
+    ss.cdmaEcio = ss.cdmaEcio > 0 ? -ss.cdmaEcio : -160;
+    ss.cdmaEvdoDbm = ss.cdmaEvdoDbm > 0 ? -ss.cdmaEvdoDbm : -120;
+    ss.cdmaEvdoEcio = ss.cdmaEvdoEcio >= 0 ? -ss.cdmaEvdoEcio : -1;
+    ss.cdmaEvdoSNR = ((ss.cdmaEvdoSNR > 0) && (ss.cdmaEvdoSNR <=8)) ?
+                       ss.cdmaEvdoSNR : -1;
+
+    ss.lteSignalStrength = ss.lteSignalStrength >= 0 ?
+      ss.lteSignalStrength : 99;
+    ss.lteRsrp = ((ss.lteRsrp >= 44) && (ss.lteRsrp <= 140)) ?
+      -ss.lteRsrp : SIGNAL_UNKNOWN_VALUE;
+    ss.lteRsrq = ((ss.lteRsrq >= 3) && (ss.lteRsrq <= 20)) ?
+      -ss.lteRsrq : SIGNAL_UNKNOWN_VALUE;
+    ss.lteRssnr = ((ss.lteRssnr >= -200) && (ss.lteRssnr <= 300)) ?
+      -ss.lteRssnr : SIGNAL_UNKNOWN_VALUE;
+
+    ss.tdscdmaRscp = ((ss.tdscdmaRscp >= 25) && (ss.tdscdmaRscp <= 120)) ?
+      -ss.tdscdmaRscp : SIGNAL_UNKNOWN_VALUE;
+
+    return ss;
+  },
+
+  _updateLevel: function(aRadioTech) {
+    return new Promise((aResolve, aReject) => {
+      let isGsm = true;
+      if (aRadioTech == RIL.NETWORK_CREG_TECH_IS95A ||
+        aRadioTech == RIL.NETWORK_CREG_TECH_IS95B ||
+        aRadioTech == RIL.NETWORK_CREG_TECH_1XRTT ||
+        aRadioTech == RIL.NETWORK_CREG_TECH_EVDO0 ||
+        aRadioTech == RIL.NETWORK_CREG_TECH_EVDOA ||
+        aRadioTech == RIL.NETWORK_CREG_TECH_EVDOB ||
+        aRadioTech == RIL.NETWORK_CREG_TECH_EHRPD) {
+        isGsm = false;
+      }
+
+      let level;
+      if (isGsm) {
+        level = this._getLteLevel();
+          if (level == SIGNAL_STRENGTH_NONE_OR_UNKNOWN) {
+            level = this._getTdscdmaLevel();
+              if (level == SIGNAL_STRENGTH_NONE_OR_UNKNOWN) {
+                level = this._getGsmLevel();
+              }
+          }
+      } else {
+        let cdmaLevel = this._getCdmaLevel();
+        let evdoLevel = this._getCdmaEvdoLevel();
+        if (evdoLevel == SIGNAL_STRENGTH_NONE_OR_UNKNOWN) {
+          level = cdmaLevel;
+        } else if (cdmaLevel == SIGNAL_STRENGTH_NONE_OR_UNKNOWN) {
+          level = evdoLevel;
+        } else {
+          level = cdmaLevel < evdoLevel ? cdmaLevel : evdoLevel;
+        }
+      }
+
+      this.level = level;
+
+      aResolve();
+    });
+  },
+
+  _getLteLevel: function() {
+    let levelRsrp = -1;
+    let levelRssnr = -1;
+    let levelRssi = SIGNAL_STRENGTH_NONE_OR_UNKNOWN;
+
+    if (this.lteRsrp > rsrp_thresh[5]) {
+      levelRsrp = -1;
+    } else if (this.lteRsrp > rsrp_thresh[4]) {
+      levelRsrp = SIGNAL_STRENGTH_GREAT;
+    } else if (this.lteRsrp > rsrp_thresh[3]) {
+      levelRsrp = SIGNAL_STRENGTH_GOOD;
+    } else if (this.lteRsrp > rsrp_thresh[2]) {
+      levelRsrp = SIGNAL_STRENGTH_MODERATE;
+    } else if (this.lteRsrp > rsrp_thresh[1]) {
+      levelRsrp = SIGNAL_STRENGTH_POOR;
+    } else if (this.lteRsrp > rsrp_thresh[0]) {
+      levelRsrp = SIGNAL_STRENGTH_NONE_OR_UNKNOWN;
+    }
+
+    if (this.lteRssnr > 300) {
+      levelRssnr = -1;
+    } else if (this.lteRssnr >= 130) {
+      levelRssnr = SIGNAL_STRENGTH_GREAT;
+    } else if (this.lteRssnr >= 45) {
+      levelRssnr = SIGNAL_STRENGTH_GOOD;
+    } else if (this.lteRssnr >= 10) {
+      levelRssnr = SIGNAL_STRENGTH_MODERATE;
+    } else if (this.lteRssnr >= -30) {
+      levelRssnr = SIGNAL_STRENGTH_POOR;
+    } else if (this.lteRssnr >= -200) {
+      levelRssnr = SIGNAL_STRENGTH_NONE_OR_UNKNOWN;
+    }
+
+    if (DEBUG) {
+      this._debug("getLteLevel - lteRsrp  : " + this.lteRsrp  +
+        ". lteRssnr : " + this.lteRssnr + ". levelRsrp : " + levelRsrp +
+        ". levelRssnr : " + levelRssnr);
+    }
+
+    if (levelRsrp != -1 && levelRssnr != -1) {
+      return (levelRsrp < levelRssnr) ? levelRssnr : levelRsrp;
+    }
+
+    if (levelRssnr != -1) {
+      return levelRssnr;
+    }
+
+    if (levelRsrp != -1) {
+      return levelRsrp;
+    }
+
+    if (this.lteSignalStrength > 63 ) {
+      levelRssi = SIGNAL_STRENGTH_NONE_OR_UNKNOWN;
+    } else if (this.lteSignalStrength >= 12) {
+      levelRssi = SIGNAL_STRENGTH_GREAT;
+    } else if (this.lteSignalStrength >= 8) {
+      levelRssi = SIGNAL_STRENGTH_GOOD;
+    } else if (this.lteSignalStrength >= 5) {
+      levelRssi = SIGNAL_STRENGTH_MODERATE;
+    } else if (this.lteSignalStrength >= 0) {
+      levelRssi = SIGNAL_STRENGTH_POOR;
+    }
+
+    if (DEBUG) {
+      this._debug("getLteLevel - rssi : " + this.lteSignalStrength +
+        ". levelRssi :" + levelRssi);
+    }
+    return levelRssi;
+  },
+
+  _getGsmLevel: function() {
+    let level = SIGNAL_STRENGTH_NONE_OR_UNKNOWN;
+
+    if (this.gsmSignalStrength <= 2 || this.gsmSignalStrength == 99) {
+      level = SIGNAL_STRENGTH_NONE_OR_UNKNOWN;
+    } else if (this.gsmSignalStrength >= 12) {
+      level = SIGNAL_STRENGTH_GREAT;
+    } else if (this.gsmSignalStrength >= 8) {
+      level = SIGNAL_STRENGTH_GOOD;
+    } else if (this.gsmSignalStrength >= 5) {
+      level = SIGNAL_STRENGTH_MODERATE;
+    } else {
+      level = SIGNAL_STRENGTH_POOR;
+    }
+
+    if (DEBUG) {
+      this._debug("getGsmLevel = " + level);
+    }
+    return level;
+  },
+
+  _getCdmaLevel: function() {
+    let level = SIGNAL_STRENGTH_NONE_OR_UNKNOWN;
+    let levelDbm;
+    let levelEcio;
+
+    if (this.cdmaDbm >= -75) {
+      levelDbm = SIGNAL_STRENGTH_GREAT;
+    } else if (this.cdmaDbm >= -85) {
+      levelDbm = SIGNAL_STRENGTH_GOOD;
+    } else if (this.cdmaDbm >= -95) {
+      levelDbm = SIGNAL_STRENGTH_MODERATE;
+    } else if (this.cdmaDbm >= -100) {
+      levelDbm = SIGNAL_STRENGTH_POOR;
+    } else {
+      levelDbm = SIGNAL_STRENGTH_NONE_OR_UNKNOWN;
+    }
+
+    if (this.cdmaEcio >= -90) {
+      levelEcio = SIGNAL_STRENGTH_GREAT;
+    } else if (this.cdmaEcio >= -110) {
+      levelEcio = SIGNAL_STRENGTH_GOOD;
+    } else if (this.cdmaEcio >= -130) {
+      levelEcio = SIGNAL_STRENGTH_MODERATE;
+    } else if (this.cdmaEcio >= -150) {
+      levelEcio = SIGNAL_STRENGTH_POOR;
+    } else {
+      levelEcio = SIGNAL_STRENGTH_NONE_OR_UNKNOWN;
+    }
+
+    if (levelDbm > levelEcio) {
+      level = levelEcio;
+    } else {
+      level = levelDbm;
+    }
+
+    if (DEBUG) {
+      this._debug("getCdmaLevel = " + level);
+    }
+    return level;
+  },
+
+  _getCdmaEvdoLevel: function() {
+    let level = SIGNAL_STRENGTH_NONE_OR_UNKNOWN;
+    let levelEvdoDbm;
+    let levelEvdoSnr;
+
+    if (this.cdmaEvdoDbm >= -65) {
+      levelEvdoDbm = SIGNAL_STRENGTH_GREAT;
+    } else if (this.cdmaEvdoDbm >= -75) {
+      levelEvdoDbm = SIGNAL_STRENGTH_GOOD;
+    } else if (this.cdmaEvdoDbm >= -90) {
+      levelEvdoDbm = SIGNAL_STRENGTH_MODERATE;
+    } else if (this.cdmaEvdoDbm >= -105) {
+      levelEvdoDbm = SIGNAL_STRENGTH_POOR;
+    } else {
+      levelEvdoDbm = SIGNAL_STRENGTH_NONE_OR_UNKNOWN;
+    }
+
+    if (this.cdmaEvdoSNR >= 7) {
+      levelEvdoSnr = SIGNAL_STRENGTH_GREAT;
+    } else if (this.cdmaEvdoSNR >= 5) {
+      levelEvdoSnr = SIGNAL_STRENGTH_GOOD;
+    } else if (this.cdmaEvdoSNR >= 3) {
+      levelEvdoSnr = SIGNAL_STRENGTH_MODERATE;
+    } else if (this.cdmaEvdoSNR >= 1) {
+      levelEvdoSnr = SIGNAL_STRENGTH_POOR;
+    } else {
+      levelEvdoSnr = SIGNAL_STRENGTH_NONE_OR_UNKNOWN;
+    }
+
+    if (levelEvdoDbm > levelEvdoSnr) {
+      level = levelEvdoSnr;
+    } else {
+      level = levelEvdoDbm;
+    }
+
+    if (DEBUG) {
+      this._debug("getCdmaEvdoLevel = " + level);
+    }
+    return level;
+  },
+
+  _getTdscdmaLevel: function() {
+    let level = SIGNAL_STRENGTH_NONE_OR_UNKNOWN;
+    if (this.tdscdmaRscp > -25 ||
+      this.tdscdmaRscp == SIGNAL_UNKNOWN_VALUE) {
+      level = SIGNAL_STRENGTH_NONE_OR_UNKNOWN;
+    } else if (this.tdscdmaRscp >= -49) {
+      level = SIGNAL_STRENGTH_GREAT;
+    } else if (this.tdscdmaRscp >= -73) {
+      level = SIGNAL_STRENGTH_GOOD;
+    } else if (this.tdscdmaRscp >= -97) {
+      level = SIGNAL_STRENGTH_MODERATE;
+    } else if (this.tdscdmaRscp >= -110) {
+      level = SIGNAL_STRENGTH_POOR;
+    }
+
+    if (DEBUG) {
+      this._debug("getTdscdmaLevel = " + level);
+    }
+    return level;
+  }
+};
+
 function MobileCellInfo() {
   this.gsmLocationAreaCode = -1;
   this.gsmCellId = -1;
@@ -138,9 +453,7 @@ MobileConnectionInfo.prototype = {
   roaming: false,
   network: null,
   cell: null,
-  type: null,
-  signalStrength: null,
-  relSignalStrength: null
+  type: null
 };
 
 function MobileDeviceIdentities() {
@@ -153,7 +466,7 @@ MobileDeviceIdentities.prototype = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIMobileDeviceIdentities]),
   classID:        MOBILEDEVICEIDENTITIES_CID,
   classInfo:      XPCOMUtils.generateCI({
-    classID:          MOBILENETWORKINFO_CID,
+    classID:          MOBILEDEVICEIDENTITIES_CID,
     classDescription: "MobileDeviceIdentities",
     interfaces:       [Ci.nsIMobileDeviceIdentities]
   })
@@ -509,6 +822,7 @@ function MobileConnectionProvider(aClientId, aRadioInterface) {
   this.supportedNetworkTypes = this._getSupportedNetworkTypes();
   this.voice = new MobileConnectionInfo();
   this.data = new MobileConnectionInfo();
+  this.signalStrength = new MobileSignalStrength(this._clientId);
 }
 MobileConnectionProvider.prototype = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIMobileConnection]),
@@ -540,6 +854,7 @@ MobileConnectionProvider.prototype = {
   supportedNetworkTypes: null,
   deviceIdentities: null,
   isInEmergencyCbMode: false,
+  signalStrength: null,
 
   /**
    * Device indetities:
@@ -680,8 +995,6 @@ MobileConnectionProvider.prototype = {
     if (aDestInfo.state !== RIL.GECKO_MOBILE_CONNECTION_STATE_REGISTERED) {
       aDestInfo.cell = null;
       aDestInfo.network = null;
-      aDestInfo.signalStrength = null;
-      aDestInfo.relSignalStrength = null;
     } else {
       aDestInfo.network = this._operatorInfo;
 
@@ -919,19 +1232,23 @@ MobileConnectionProvider.prototype = {
     }
   },
 
-  updateSignalInfo: function(aNewInfo, aBatch = false) {
-    // If the voice is not registered, no need to update signal information.
-    if (this.voice.state === RIL.GECKO_MOBILE_CONNECTION_STATE_REGISTERED) {
-      if (this._updateInfo(this.voice, aNewInfo.voice) && !aBatch) {
-        this.deliverListenerEvent("notifyVoiceChanged");
+  updateSignalInfo: function(aNewSignalInfo) {
+    let newSignalInfo = this.signalStrength._validateInfo(aNewSignalInfo);
+    if (this._updateInfo(this.signalStrength, newSignalInfo)) {
+      if (DEBUG) {
+        this._debug("updateSignalInfo : " + JSON.stringify(aNewSignalInfo));
       }
-    }
+      let radioTech = RIL.NETWORK_CREG_TECH_UNKNOWN;
+      if (this.data.state == RIL.GECKO_MOBILE_CONNECTION_STATE_REGISTERED) {
+        radioTech = this.data.radioTech;
+      } else if (this.voice.state == RIL.GECKO_MOBILE_CONNECTION_STATE_REGISTERED) {
+        radioTech = this.voice.radioTech;
+      }
 
-    // If the data is not registered, no need to update signal information.
-    if (this.data.state === RIL.GECKO_MOBILE_CONNECTION_STATE_REGISTERED) {
-      if (this._updateInfo(this.data, aNewInfo.data) && !aBatch) {
-        this.deliverListenerEvent("notifyDataChanged");
-      }
+      this.signalStrength._updateLevel(radioTech)
+        .then(() => {
+          this.deliverListenerEvent("notifySignalStrengthChanged");
+        });
     }
   },
 
@@ -1646,19 +1963,15 @@ MobileConnectionService.prototype = {
       provider.updateDataInfo(dataMessage, true);
     }
 
-    if (signalMessage) {
-      provider.updateSignalInfo(signalMessage, true);
-    }
-
     if (selectionMessage) {
       this.notifyNetworkSelectModeChanged(aClientId, selectionMessage.mode);
     }
 
-    if (voiceMessage || operatorMessage || signalMessage) {
+    if (voiceMessage || operatorMessage) {
       provider.deliverListenerEvent("notifyVoiceChanged");
     }
 
-    if (dataMessage || operatorMessage || signalMessage) {
+    if (dataMessage || operatorMessage) {
       provider.deliverListenerEvent("notifyDataChanged");
     }
   },

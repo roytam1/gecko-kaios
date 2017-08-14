@@ -760,7 +760,7 @@ RadioInterface.prototype = {
         break;
       case "signalstrengthchange":
         gMobileConnectionService.notifySignalStrengthChanged(this.clientId,
-                                                             message);
+                                                             message.signalStrength);
         break;
       case "operatorchange":
         gMobileConnectionService.notifyOperatorChanged(this.clientId, message);

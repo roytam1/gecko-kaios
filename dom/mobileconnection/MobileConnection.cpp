@@ -406,6 +406,57 @@ MobileConnection::GetDeviceIdentities(ErrorResult& aRv)
   return request.forget();
 }
 
+already_AddRefed<MobileSignalStrength>
+MobileConnection::SignalStrength() const
+{
+  if (!mMobileConnection) {
+    return nullptr;
+  }
+
+  int16_t level;
+  int16_t gsmSignalStrength;
+  int16_t gsmSignalBitErrorRate;
+  int16_t cdmaDbm;
+  int16_t cdmaEcio;
+  int16_t cdmaEvdoDbm;
+  int16_t cdmaEvdoEcio;
+  int16_t cdmaEvdoSNR;
+  int16_t lteSignalStrength;
+  int32_t lteRsrp;
+  int32_t lteRsrq;
+  int32_t lteRssnr;
+  int32_t lteCqi;
+  int32_t lteTimingAdvance;
+  int32_t tdscdmaRscp;
+
+  nsCOMPtr<nsIMobileSignalStrength> ss;
+  mMobileConnection->GetSignalStrength(getter_AddRefs(ss));
+
+  ss->GetLevel(&level);
+  ss->GetGsmSignalStrength(&gsmSignalStrength);
+  ss->GetGsmBitErrorRate(&gsmSignalBitErrorRate);
+  ss->GetCdmaDbm(&cdmaDbm);
+  ss->GetCdmaEcio(&cdmaEcio);
+  ss->GetCdmaEvdoDbm(&cdmaEvdoDbm);
+  ss->GetCdmaEvdoEcio(&cdmaEvdoEcio);
+  ss->GetCdmaEvdoSNR(&cdmaEvdoSNR);
+  ss->GetLteSignalStrength(&lteSignalStrength);
+  ss->GetLteRsrp(&lteRsrp);
+  ss->GetLteRsrq(&lteRsrq);
+  ss->GetLteRssnr(&lteRssnr);
+  ss->GetLteCqi(&lteCqi);
+  ss->GetLteTimingAdvance(&lteTimingAdvance);
+  ss->GetTdscdmaRscp(&tdscdmaRscp);
+
+  RefPtr<MobileSignalStrength> signalStrength =
+    new MobileSignalStrength(GetOwner(), level, gsmSignalStrength,
+                        gsmSignalBitErrorRate, cdmaDbm, cdmaEcio, cdmaEvdoDbm,
+                        cdmaEvdoEcio, cdmaEvdoSNR, lteSignalStrength, lteRsrp,
+                        lteRsrq, lteRssnr, lteCqi, lteTimingAdvance, tdscdmaRscp);
+
+  return signalStrength.forget();
+}
+
 void
 MobileConnection::GetIccId(nsString& aRetVal) const
 {
@@ -1214,6 +1265,16 @@ MobileConnection::NotifyDeviceIdentitiesChanged()
 {
   // To be supported when bug 1222870 is required in m-c.
   return NS_OK;
+}
+
+NS_IMETHODIMP
+MobileConnection::NotifySignalStrengthChanged()
+{
+  if (!CheckPermission("mobileconnection")) {
+    return NS_OK;
+  }
+
+  return DispatchTrustedEvent(NS_LITERAL_STRING("signalstrengthchange"));
 }
 
 // nsIIccListener

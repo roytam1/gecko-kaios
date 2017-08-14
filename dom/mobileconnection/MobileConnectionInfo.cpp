@@ -66,14 +66,10 @@ MobileConnectionInfo::MobileConnectionInfo(const nsAString& aState,
                                            bool aRoaming,
                                            nsIMobileNetworkInfo* aNetworkInfo,
                                            const nsAString& aType,
-                                           const Nullable<int32_t>& aSignalStrength,
-                                           const Nullable<uint16_t>& aRelSignalStrength,
                                            nsIMobileCellInfo* aCellInfo)
   : mConnected(aConnected)
   , mEmergencyCallsOnly(aEmergencyCallsOnly)
   , mRoaming(aRoaming)
-  , mSignalStrength(aSignalStrength)
-  , mRelSignalStrength(aRelSignalStrength)
 {
   // The instance created by this way is only used for IPC stuff. It won't be
   // exposed to JS directly, we will clone this instance to the one that is
@@ -116,25 +112,6 @@ MobileConnectionInfo::Update(nsIMobileConnectionInfo* aInfo)
   nsAutoString type;
   aInfo->GetType(type);
   CONVERT_STRING_TO_NULLABLE_ENUM(type, MobileConnectionType, mType);
-
-  // Update mSignalStrength
-  AutoJSContext cx;
-  JS::Rooted<JS::Value> signalStrength(cx, JS::UndefinedValue());
-  aInfo->GetSignalStrength(&signalStrength);
-  if (signalStrength.isNumber()) {
-    mSignalStrength.SetValue(signalStrength.toNumber());
-  } else {
-    mSignalStrength.SetNull();
-  }
-
-  // Update mRelSignalStrength
-  JS::Rooted<JS::Value> relSignalStrength(cx, JS::UndefinedValue());
-  aInfo->GetRelSignalStrength(&relSignalStrength);
-  if (relSignalStrength.isNumber()) {
-    mRelSignalStrength.SetValue(relSignalStrength.toNumber());
-  } else {
-    mRelSignalStrength.SetNull();
-  }
 
   // Update mNetworkInfo
   nsCOMPtr<nsIMobileNetworkInfo> networkInfo;
@@ -208,28 +185,6 @@ NS_IMETHODIMP
 MobileConnectionInfo::GetType(nsAString& aType)
 {
   CONVERT_NULLABLE_ENUM_TO_STRING(MobileConnectionType, mType, aType);
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-MobileConnectionInfo::GetSignalStrength(JS::MutableHandle<JS::Value> aSignal)
-{
-  if (mSignalStrength.IsNull()) {
-    aSignal.setNull();
-  } else {
-    aSignal.setInt32(mSignalStrength.Value());
-  }
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-MobileConnectionInfo::GetRelSignalStrength(JS::MutableHandle<JS::Value> aSignal)
-{
-  if (mRelSignalStrength.IsNull()) {
-    aSignal.setNull();
-  } else {
-    aSignal.setNumber(uint32_t(mRelSignalStrength.Value()));
-  }
   return NS_OK;
 }
 

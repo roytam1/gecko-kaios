@@ -177,6 +177,16 @@ MobileConnectionListener::NotifyDeviceIdentitiesChanged()
   return NS_OK;
 }
 
+NS_IMETHODIMP
+MobileConnectionListener::NotifySignalStrengthChanged()
+{
+  BluetoothHfpManager* hfp = BluetoothHfpManager::Get();
+  NS_ENSURE_TRUE(hfp, NS_OK);
+
+  hfp->HandleVoiceConnectionChanged(mClientId);
+  return NS_OK;
+}
+
 bool
 MobileConnectionListener::Listen(bool aStart)
 {

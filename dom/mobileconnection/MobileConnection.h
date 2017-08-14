@@ -11,6 +11,7 @@
 #include "mozilla/dom/DOMRequest.h"
 #include "mozilla/dom/MobileConnectionInfo.h"
 #include "mozilla/dom/MobileNetworkInfo.h"
+#include "mozilla/dom/MobileSignalStrength.h"
 #include "mozilla/dom/MozMobileConnectionBinding.h"
 #include "nsCycleCollectionParticipant.h"
 #include "nsIIccService.h"
@@ -90,6 +91,9 @@ public:
   Nullable<MobileRadioState>
   GetRadioState() const;
 
+  already_AddRefed<MobileSignalStrength>
+  SignalStrength() const;
+
   void
   GetSupportedNetworkTypes(nsTArray<MobileNetworkType>& aTypes) const;
 
@@ -167,6 +171,7 @@ public:
   IMPL_EVENT_HANDLER(iccchange)
   IMPL_EVENT_HANDLER(radiostatechange)
   IMPL_EVENT_HANDLER(clirmodechange)
+  IMPL_EVENT_HANDLER(signalstrengthchange)
 
 private:
   ~MobileConnection();

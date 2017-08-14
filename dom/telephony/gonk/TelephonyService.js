@@ -367,7 +367,8 @@ MobileConnectionListener.prototype = {
   notifyLastKnownNetworkChanged: function() {},
   notifyLastKnownHomeNetworkChanged: function() {},
   notifyNetworkSelectionModeChanged: function() {},
-  notifyDeviceIdentitiesChanged: function() {}
+  notifyDeviceIdentitiesChanged: function() {},
+  notifySignalStrengthChanged: function() {}
 };
 
 function TelephonyService() {

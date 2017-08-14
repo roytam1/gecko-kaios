@@ -13,6 +13,7 @@
 #include "nsIInterfaceRequestorUtils.h"
 #include "nsIMobileConnectionInfo.h"
 #include "nsIMobileConnectionService.h"
+#include "nsIMobileSignalStrength.h"
 #include "nsIMobileCellInfo.h"
 #include "nsIMobileNetworkInfo.h"
 #include "nsINetworkInterface.h"
@@ -400,13 +401,9 @@ StumblerInfo::MobileCellInfoToString(nsACString& aCellDesc)
           }
         }
 
-        AutoJSContext cx;
-        //JS::Rooted<JS::Value> signalStrength(cx, JSVAL_VOID);
-        JS::Rooted<JS::Value> signalStrength(cx);
-        voice->GetSignalStrength(&signalStrength);
-        if (signalStrength.isNumber()) {
-          info.Put(TEXT_STRENGTH_DBM, static_cast<int32_t>(signalStrength.toNumber()));
-        }
+        int16_t ss;
+        nsCOMPtr<nsIMobileSignalStrength> signalStrength;
+        connection->GetSignalStrength(getter_AddRefs(signalStrength));
 
         const char* radioType = 0; // One of "gsm", "wcdma", "cdma" or "lte"
         nsAutoString type;
@@ -415,16 +412,27 @@ StumblerInfo::MobileCellInfoToString(nsACString& aCellDesc)
         if (type.EqualsLiteral("umts") || type.EqualsLiteral("hsdpa") ||
             type.EqualsLiteral("hsupa") || type.EqualsLiteral("hspa") ||
             type.EqualsLiteral("hspa+") || type.EqualsLiteral("scdma")) {
+          signalStrength->GetGsmSignalStrength(&ss);
+          ss = -113 + 2 * ss;
+          info.Put(TEXT_STRENGTH_DBM, static_cast<int32_t>(ss));
           radioType = "wcdma";
         } else if (type.EqualsLiteral("lte")) {
+          signalStrength->GetLteSignalStrength(&ss);
+          ss = -113 + 2 * ss;
+          info.Put(TEXT_STRENGTH_DBM, static_cast<int32_t>(ss));
           radioType = "lte";
         } else if (type.EqualsLiteral("gsm") || type.EqualsLiteral("gprs") ||
           type.EqualsLiteral("edge")) {
+          signalStrength->GetGsmSignalStrength(&ss);
+          ss = -113 + 2 * ss;
+          info.Put(TEXT_STRENGTH_DBM, static_cast<int32_t>(ss));
           radioType = "gsm";
         } else if (type.EqualsLiteral("is95a") || type.EqualsLiteral("is95b") ||
             type.EqualsLiteral("1xrtt") || type.EqualsLiteral("evdo0") ||
             type.EqualsLiteral("evdoa+") || type.EqualsLiteral("evdob") ||
             type.EqualsLiteral("ehrpd")) {
+          signalStrength->GetCdmaDbm(&ss);
+          info.Put(TEXT_STRENGTH_DBM, static_cast<int32_t>(ss));
           radioType = "cdma";
         } else { // unknown type
           ++numberOfInvalidInfo;

@@ -205,6 +205,7 @@ private:
   BluetoothHandsfreeCallState
     ConvertToBluetoothHandsfreeCallState(int aCallState) const;
 
+  int16_t NormalizeSignalStrength(int16_t aSignal, int16_t aMin, int16_t aMax);
   void UpdatePhoneCIND(uint32_t aCallIndex);
   void UpdateDeviceCIND();
   void SendCLCC(Call& aCall, int aIndex);

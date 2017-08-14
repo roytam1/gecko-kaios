@@ -327,6 +327,7 @@ WEBIDL_FILES = [
     'MmsMessage.webidl',
     'MobileConnectionDeviceIds.webidl',
     'MobileMessageThread.webidl',
+    'MobileSignalStrength.webidl',
     'MouseEvent.webidl',
     'MouseScrollEvent.webidl',
     'MozActivity.webidl',

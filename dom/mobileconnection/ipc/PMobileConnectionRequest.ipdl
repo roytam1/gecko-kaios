@@ -78,6 +78,11 @@ struct MobileConnectionReplySuccessDeviceIdentities
   nsMobileDeviceIdentities result;
 };
 
+struct MobileConnectionReplySuccessSignalStrength
+{
+  nsMobileSignalStrength result;
+};
+
 // Error
 struct MobileConnectionReplyError
 {
@@ -97,6 +102,7 @@ union MobileConnectionReply
   MobileConnectionReplySuccessPreferredNetworkType;
   MobileConnectionReplySuccessRoamingPreference;
   MobileConnectionReplySuccessDeviceIdentities;
+  MobileConnectionReplySuccessSignalStrength;
   // Error
   MobileConnectionReplyError;
 };

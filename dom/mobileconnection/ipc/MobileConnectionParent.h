@@ -12,6 +12,7 @@
 #include "nsIMobileConnectionInfo.h"
 #include "nsIMobileConnectionService.h"
 #include "nsServiceManagerUtils.h"
+#include "nsIMobileSignalStrength.h"
 
 namespace mozilla {
 namespace dom {
@@ -54,7 +55,8 @@ protected:
   RecvInit(nsMobileConnectionInfo* aVoice, nsMobileConnectionInfo* aData,
            nsString* aLastKnownNetwork, nsString* aLastKnownHomeNetwork,
            int32_t* aNetworkSelectionMode, int32_t* aRadioState,
-           nsTArray<int32_t>* aSupportedNetworkTypes, bool* aEmergencyCbMode) override;
+           nsTArray<int32_t>* aSupportedNetworkTypes, bool* aEmergencyCbMode,
+           nsMobileSignalStrength* aSingalStrength) override;
 
 private:
   nsCOMPtr<nsIMobileConnection> mMobileConnection;

@@ -128,6 +128,12 @@ interface MozMobileConnection : EventTarget
   DOMRequest getDeviceIdentities();
 
   /**
+   * Signal strength information.
+   */
+  [CheckAnyPermissions="mobileconnection"]
+  readonly attribute MobileSignalStrength signalStrength;
+
+  /**
    * IMS registration handler.
    *
    * Only available if supported.
@@ -544,6 +550,12 @@ interface MozMobileConnection : EventTarget
    * line id restriction (CLIR) changes.
    */
   attribute EventHandler onclirmodechange;
+
+  /**
+   * The 'onsignalstrengthchange' event is notified whenever the signal strength
+   * value changes.
+   */
+  attribute EventHandler onsignalstrengthchange;
 };
 
 dictionary MozCallForwardingOptions

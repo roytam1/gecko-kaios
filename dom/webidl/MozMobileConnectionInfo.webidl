@@ -49,17 +49,6 @@ interface MozMobileConnectionInfo
   readonly attribute MobileConnectionType? type;
 
   /**
-   * Signal strength in dBm, or null if no service is available.
-   */
-  readonly attribute long? signalStrength;
-
-  /**
-   * Signal strength, represented linearly as a number between 0 (weakest
-   * signal) and 100 (full signal).
-   */
-  readonly attribute unsigned short? relSignalStrength;
-
-  /**
    * Cell location information.
    */
   readonly attribute MozMobileCellInfo? cell;

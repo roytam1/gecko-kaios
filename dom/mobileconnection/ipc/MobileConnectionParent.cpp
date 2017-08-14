@@ -131,7 +131,8 @@ MobileConnectionParent::RecvInit(nsMobileConnectionInfo* aVoice,
                                  int32_t* aNetworkSelectionMode,
                                  int32_t* aRadioState,
                                  nsTArray<int32_t>* aSupportedNetworkTypes,
-                                 bool* aEmergencyCbMode)
+                                 bool* aEmergencyCbMode,
+                                 nsMobileSignalStrength* aSignalStrength)
 {
   NS_ENSURE_TRUE(mMobileConnection, false);
 
@@ -142,6 +143,7 @@ MobileConnectionParent::RecvInit(nsMobileConnectionInfo* aVoice,
   NS_ENSURE_SUCCESS(mMobileConnection->GetNetworkSelectionMode(aNetworkSelectionMode), false);
   NS_ENSURE_SUCCESS(mMobileConnection->GetRadioState(aRadioState), false);
   NS_ENSURE_SUCCESS(mMobileConnection->GetIsInEmergencyCbMode(aEmergencyCbMode), false);
+  NS_ENSURE_SUCCESS(mMobileConnection->GetSignalStrength(aSignalStrength), false);
 
   int32_t* types = nullptr;
   uint32_t length = 0;
@@ -297,6 +299,20 @@ MobileConnectionParent::NotifyDeviceIdentitiesChanged()
 {
   // To be supported when bug 1222870 is required in m-c.
   return NS_OK;
+}
+
+NS_IMETHODIMP
+MobileConnectionParent::NotifySignalStrengthChanged() {
+  NS_ENSURE_TRUE(mLive, NS_ERROR_FAILURE);
+
+  nsresult rv;
+  nsCOMPtr<nsIMobileSignalStrength> singalStrength;
+  rv = mMobileConnection->GetSignalStrength(getter_AddRefs(singalStrength));
+
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  return SendNotifySignalStrengthChanged(singalStrength.forget().take()) ?
+    NS_OK : NS_ERROR_FAILURE;
 }
 
 /******************************************************************************

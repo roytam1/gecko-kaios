@@ -101,6 +101,9 @@ protected:
   virtual bool
   RecvNotifyNetworkSelectionModeChanged(const int32_t& aMode) override;
 
+  virtual bool
+  RecvNotifySignalStrengthChanged(nsIMobileSignalStrength* const& aSignalStrength) override;
+
 private:
   uint32_t mServiceId;
   bool mLive;
@@ -113,6 +116,7 @@ private:
   int32_t mNetworkSelectionMode;
   nsTArray<int32_t> mSupportedNetworkTypes;
   bool mEmergencyCbMode;
+  RefPtr<MobileSignalStrength> mSingalStrength;
 };
 
 /******************************************************************************

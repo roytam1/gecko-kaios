@@ -7,7 +7,7 @@
 interface nsIMobileCellInfo;
 interface nsIMobileNetworkInfo;
 
-[scriptable, uuid(d5208e13-42dc-4dce-9427-2572fa252751)]
+[scriptable, uuid(eba9ec63-db23-45db-bc8f-aaf2f46081c5)]
 interface nsIMobileConnectionInfo : nsISupports
 {
   /**
@@ -54,17 +54,6 @@ interface nsIMobileConnectionInfo : nsISupports
    *                  'evdob', 'ehrpd', 'lte' or null (unknown).
    */
   readonly attribute DOMString type;
-
-  /**
-   * Signal strength in dBm, or null if no service is available.
-   */
-  readonly attribute jsval signalStrength;
-
-  /**
-   * Signal strength, represented linearly as a number between 0 (weakest
-   * signal) and 100 (full signal).
-   */
-  readonly attribute jsval relSignalStrength;
 
   /**
    * Cell location information.

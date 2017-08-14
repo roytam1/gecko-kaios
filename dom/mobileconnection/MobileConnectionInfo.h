@@ -31,8 +31,6 @@ public:
                        bool aEmergencyCallsOnly, bool aRoaming,
                        nsIMobileNetworkInfo* aNetworkInfo,
                        const nsAString& aType,
-                       const Nullable<int32_t>& aSignalStrength,
-                       const Nullable<uint16_t>& aRelSignalStrength,
                        nsIMobileCellInfo* aCellInfo);
 
   void
@@ -84,18 +82,6 @@ public:
     return mNetworkInfo;
   }
 
-  Nullable<int32_t>
-  GetSignalStrength() const
-  {
-    return mSignalStrength;
-  }
-
-  Nullable<uint16_t>
-  GetRelSignalStrength() const
-  {
-    return mRelSignalStrength;
-  }
-
   MobileCellInfo*
   GetCell() const
   {
@@ -114,8 +100,6 @@ private:
   RefPtr<MobileCellInfo> mCellInfo;
   Nullable<MobileConnectionState> mState;
   Nullable<MobileConnectionType> mType;
-  Nullable<int32_t> mSignalStrength;
-  Nullable<uint16_t> mRelSignalStrength;
 };
 
 } // namespace dom

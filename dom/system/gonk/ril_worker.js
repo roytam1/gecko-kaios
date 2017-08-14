@@ -2778,138 +2778,6 @@ RilObject.prototype = {
    *       GSM/CDMA/LTE to expose details, such as rsrp and rsnnr,
    *       individually.
    */
-  _processLteSignal: function(signal) {
-    let info = {
-      voice: {
-        signalStrength:    null,
-        relSignalStrength: null
-      },
-      data: {
-        signalStrength:    null,
-        relSignalStrength: null
-      }
-    };
-
-    // Referring to AOSP, use lteRSRP for signalStrength in dBm.
-    let signalStrength = (signal.lteRSRP === undefined || signal.lteRSRP === 0x7FFFFFFF) ?
-                         null : signal.lteRSRP;
-    info.voice.signalStrength = info.data.signalStrength = signalStrength;
-
-    // Referring to AOSP, first determine signalLevel based on RSRP and RSSNR,
-    // then on lteSignalStrength if RSRP and RSSNR are invalid.
-    let rsrpLevel = -1;
-    let rssnrLevel = -1;
-    if (signal.lteRSRP !== undefined &&
-        signal.lteRSRP !== 0x7FFFFFFF &&
-        signal.lteRSRP >= 44 &&
-        signal.lteRSRP <= 140) {
-      rsrpLevel = this._processSignalLevel(signal.lteRSRP * -1, -115, -85);
-    }
-
-    if (signal.lteRSSNR !== undefined &&
-        signal.lteRSSNR !== 0x7FFFFFFF &&
-        signal.lteRSSNR >= -200 &&
-        signal.lteRSSNR <= 300) {
-      rssnrLevel = this._processSignalLevel(signal.lteRSSNR, -30, 130);
-    }
-
-    if (rsrpLevel !== -1 && rssnrLevel !== -1) {
-      info.voice.relSignalStrength = info.data.relSignalStrength =
-        Math.min(rsrpLevel, rssnrLevel);
-      return info;
-    }
-
-    let level = Math.max(rsrpLevel, rssnrLevel);
-    if (level !== -1) {
-      info.voice.relSignalStrength = info.data.relSignalStrength = level;
-      return info;
-    }
-
-    // Valid values are 0-63 as defined in TS 27.007 clause 8.69.
-    if (signal.lteSignalStrength !== undefined &&
-        signal.lteSignalStrength >= 0 &&
-        signal.lteSignalStrength <= 63) {
-      level = this._processSignalLevel(signal.lteSignalStrength, 0, 12);
-      info.voice.relSignalStrength = info.data.relSignalStrength = level;
-      return info;
-    }
-
-    return null;
-  },
-
-  _processSignalStrength: function(signal) {
-    let info = {
-      voice: {
-        signalStrength:    null,
-        relSignalStrength: null
-      },
-      data: {
-        signalStrength:    null,
-        relSignalStrength: null
-      }
-    };
-
-    // During startup, |radioTech| is not yet defined, so we need to
-    // check it separately.
-    if (("radioTech" in this.voiceRegistrationState) &&
-        !this._isGsmTechGroup(this.voiceRegistrationState.radioTech)) {
-      // CDMA RSSI.
-      // Valid values are positive integers. This value is the actual RSSI value
-      // multiplied by -1. Example: If the actual RSSI is -75, then this
-      // response value will be 75.
-      if (signal.cdmaDBM && signal.cdmaDBM > 0) {
-        let signalStrength = -1 * signal.cdmaDBM;
-        info.voice.signalStrength = signalStrength;
-
-        // -105 and -70 are referred to AOSP's implementation. These values are
-        // not constants and can be customized based on different requirement.
-        let signalLevel = this._processSignalLevel(signalStrength, -105, -70);
-        info.voice.relSignalStrength = signalLevel;
-      }
-
-      // EVDO RSSI.
-      // Valid values are positive integers. This value is the actual RSSI value
-      // multiplied by -1. Example: If the actual RSSI is -75, then this
-      // response value will be 75.
-      if (signal.evdoDBM && signal.evdoDBM > 0) {
-        let signalStrength = -1 * signal.evdoDBM;
-        info.data.signalStrength = signalStrength;
-
-        // -105 and -70 are referred to AOSP's implementation. These values are
-        // not constants and can be customized based on different requirement.
-        let signalLevel = this._processSignalLevel(signalStrength, -105, -70);
-        info.data.relSignalStrength = signalLevel;
-      }
-    } else {
-      // Check LTE level first, and check GSM/UMTS level next if LTE one is not
-      // valid.
-      let lteInfo = this._processLteSignal(signal);
-      if (lteInfo) {
-        info = lteInfo;
-      } else {
-        // GSM signal strength.
-        // Valid values are 0-31 as defined in TS 27.007 8.5.
-        // 0     : -113 dBm or less
-        // 1     : -111 dBm
-        // 2...30: -109...-53 dBm
-        // 31    : -51 dBm
-        if (signal.gsmSignalStrength &&
-            signal.gsmSignalStrength >= 0 &&
-            signal.gsmSignalStrength <= 31) {
-          let signalStrength = -113 + 2 * signal.gsmSignalStrength;
-          info.voice.signalStrength = info.data.signalStrength = signalStrength;
-
-          // -115 and -85 are referred to AOSP's implementation. These values are
-          // not constants and can be customized based on different requirement.
-          let signalLevel = this._processSignalLevel(signalStrength, -110, -85);
-          info.voice.relSignalStrength = info.data.relSignalStrength = signalLevel;
-        }
-      }
-    }
-
-    info.rilMessageType = "signalstrengthchange";
-    this._sendNetworkInfoMessage(NETWORK_INFO_SIGNAL, info);
-  },
 
   /**
    * Process the network registration flags.
@@ -4256,8 +4124,6 @@ RilObject.prototype[REQUEST_LAST_CALL_FAIL_CAUSE] = function REQUEST_LAST_CALL_F
   this.sendChromeMessage(options);
 };
 RilObject.prototype[REQUEST_SIGNAL_STRENGTH] = function REQUEST_SIGNAL_STRENGTH(length, options) {
-  this._receivedNetworkInfo(NETWORK_INFO_SIGNAL);
-
   if (options.errorMsg) {
     return;
   }
@@ -4270,21 +4136,30 @@ RilObject.prototype[REQUEST_SIGNAL_STRENGTH] = function REQUEST_SIGNAL_STRENGTH(
   if (RILQUIRKS_SIGNAL_EXTRA_INT32) {
     Buf.readInt32();
   }
-  signal.cdmaDBM = Buf.readInt32();
-  signal.cdmaECIO = Buf.readInt32();
-  signal.evdoDBM = Buf.readInt32();
-  signal.evdoECIO = Buf.readInt32();
-  signal.evdoSNR = Buf.readInt32();
+  signal.cdmaDbm = Buf.readInt32();
+  signal.cdmaEcio = Buf.readInt32();
+  signal.cdmaEvdoDbm = Buf.readInt32();
+  signal.cdmaEvdoEcio = Buf.readInt32();
+  signal.cdmaEvdoSNR = Buf.readInt32();
 
   signal.lteSignalStrength = Buf.readInt32();
-  signal.lteRSRP =           Buf.readInt32();
-  signal.lteRSRQ =           Buf.readInt32();
-  signal.lteRSSNR =          Buf.readInt32();
-  signal.lteCQI =            Buf.readInt32();
+  signal.lteRsrp =           Buf.readInt32();
+  signal.lteRsrq =           Buf.readInt32();
+  signal.lteRssnr =          Buf.readInt32();
+  signal.lteCqi =            Buf.readInt32();
+  // It looks like most of rild does not fill up timingAdvance properly.
+  // Leave it to default value for now.
+  signal.lteTimingAdvance =  0x7FFFFFFF;
+
+  signal.tdscdmaRscp =       Buf.readInt32();
 
   if (DEBUG) this.context.debug("signal strength: " + JSON.stringify(signal));
 
-  this._processSignalStrength(signal);
+  if (!options.rilMessageType) {
+    options.rilMessageType = "signalstrengthchange";
+  }
+  options.signalStrength = signal;
+  this.sendChromeMessage(options);
 };
 RilObject.prototype[REQUEST_VOICE_REGISTRATION_STATE] = function REQUEST_VOICE_REGISTRATION_STATE(length, options) {
   this._receivedNetworkInfo(NETWORK_INFO_VOICE_REGISTRATION_STATE);
@@ -11674,9 +11549,12 @@ ICCIOHelperObject.prototype = {
     // 2 bytes File id. data[4], data[5]
     let fileId = (GsmPDUHelper.readHexOctet() << 8) |
                   GsmPDUHelper.readHexOctet();
+
     if (fileId != options.fileId) {
-      throw new Error("Expected file ID " + options.fileId.toString(16) +
-                      " but read " + fileId.toString(16));
+      if (DEBUG) {
+        this.context.debug("Expected file ID " + options.fileId.toString(16) +
+                           " but read " + fileId.toString(16));
+      }
     }
 
     // Type of file, data[6]

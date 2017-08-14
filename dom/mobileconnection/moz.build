@@ -15,6 +15,7 @@ EXPORTS.mozilla.dom += [
     'MobileConnectionInfo.h',
     'MobileDeviceIdentities.h',
     'MobileNetworkInfo.h',
+    'MobileSignalStrength.h',
 ]
 
 EXPORTS.mozilla.dom.mobileconnection += [
@@ -35,6 +36,7 @@ XPIDL_SOURCES += [
     'interfaces/nsIMobileConnectionService.idl',
     'interfaces/nsIMobileDeviceIdentities.idl',
     'interfaces/nsIMobileNetworkInfo.idl',
+    'interfaces/nsIMobileSignalStrength.idl',
     'interfaces/nsINeighboringCellInfo.idl',
 ]
 
@@ -56,6 +58,7 @@ UNIFIED_SOURCES += [
     'MobileConnectionInfo.cpp',
     'MobileDeviceIdentities.cpp',
     'MobileNetworkInfo.cpp',
+    'MobileSignalStrength.cpp',
 ]
 
 SOURCES += [

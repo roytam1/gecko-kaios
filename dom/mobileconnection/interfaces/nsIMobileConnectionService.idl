@@ -10,10 +10,11 @@ interface nsIMobileConnection;
 interface nsIMobileConnectionInfo;
 interface nsIMobileDeviceIdentities;
 interface nsIMobileNetworkInfo;
+interface nsIMobileSignalStrength;
 interface nsINeighboringCellIdsCallback;
 interface nsIVariant;
 
-[scriptable, uuid(8884b326-891c-11e5-a434-67def07c4a41)]
+[scriptable, uuid(24a5e714-82e1-4991-8d6d-7f0dd3bd1c56)]
 interface nsIMobileConnectionListener : nsISupports
 {
   /**
@@ -108,6 +109,11 @@ interface nsIMobileConnectionListener : nsISupports
    * Notify when device identities are changed.
    */
   void notifyDeviceIdentitiesChanged();
+
+  /**
+   * Notify when signal strength is changed.
+   */
+  void notifySignalStrengthChanged();
 };
 
 %{C++
@@ -173,7 +179,7 @@ already_AddRefed<nsIMobileConnectionService>
 NS_CreateMobileConnectionService();
 %}
 
-[scriptable, uuid(b9845f09-7cbb-46d0-b713-773d82249e0d)]
+[scriptable, uuid(fd401d55-7341-468f-9d56-00207c6c9bf5)]
 interface nsIMobileConnection : nsISupports
 {
   /*
@@ -337,6 +343,11 @@ interface nsIMobileConnection : nsISupports
    * Device Identities, including IMEI, IMEISV, ESN and MEID.
    */
   readonly attribute nsIMobileDeviceIdentities deviceIdentities;
+
+  /**
+   * Latest signal strength.
+   */
+  readonly attribute nsIMobileSignalStrength signalStrength;
 
   /**
    * The network types supported by this radio.

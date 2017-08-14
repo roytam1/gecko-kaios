@@ -21,6 +21,7 @@
 #include "nsIMobileConnectionInfo.h"
 #include "nsIMobileConnectionService.h"
 #include "nsIMobileNetworkInfo.h"
+#include "nsIMobileSignalStrength.h"
 #include "nsIObserverService.h"
 #include "nsISettingsService.h"
 #include "nsITelephonyService.h"
@@ -750,12 +751,44 @@ BluetoothHfpManager::HandleVoiceConnectionChanged(uint32_t aClientId)
   mService = service;
 
   // Signal
-  JS::Rooted<JS::Value> value(nsContentUtils::RootingCxForThread());
-  voiceInfo->GetRelSignalStrength(&value);
-  if (value.isNumber()) {
-    mSignal = (int)ceil(value.toNumber() / 20.0);
-  }
+  // HFP Signal Strength indicator
+  // signal:  where: <value>= ranges from 0 to 5
+  int16_t ss;
+  nsCOMPtr<nsIMobileSignalStrength> signalStrength;
+  connection->GetSignalStrength(getter_AddRefs(signalStrength));
+  // mSignal = (int)ceil(ss / 5);
 
+  if (type.EqualsLiteral("umts") || type.EqualsLiteral("hsdpa") ||
+      type.EqualsLiteral("hsupa") || type.EqualsLiteral("hspa") ||
+      type.EqualsLiteral("hspa+") || type.EqualsLiteral("scdma")) {
+    signalStrength->GetGsmSignalStrength(&ss);
+    if (ss >= 0 && ss <= 31) {
+      ss = -113 + 2 * ss;
+      mSignal = (int)ceil(NormalizeSignalStrength(ss, -110, -85) / 20);
+    }
+  } else if (type.EqualsLiteral("lte")) {
+    signalStrength->GetLteSignalStrength(&ss);
+    if (ss >= 0 && ss <= 31) {
+      ss = -113 + 2 * ss;
+      mSignal = (int)ceil(NormalizeSignalStrength(ss, -110, -85) / 20);
+    }
+  } else if (type.EqualsLiteral("gsm") || type.EqualsLiteral("gprs") ||
+             type.EqualsLiteral("edge")) {
+    signalStrength->GetGsmSignalStrength(&ss);
+    if (ss >= 0 && ss <= 31) {
+      ss = -113 + 2 * ss;
+      mSignal = (int)ceil(NormalizeSignalStrength(ss, -110, -85) / 20);
+    }
+  } else if (type.EqualsLiteral("is95a") || type.EqualsLiteral("is95b") ||
+             type.EqualsLiteral("1xrtt") || type.EqualsLiteral("evdo0") ||
+             type.EqualsLiteral("evdoa+") || type.EqualsLiteral("evdob") ||
+             type.EqualsLiteral("ehrpd")) {
+    // TODO: -105 and -70 are referred to AOSP's implementation. These values
+    // are not constants and can be customized based on different requirement.
+    mSignal = (int)ceil(NormalizeSignalStrength(ss, -105, -70) / 20);
+  } else {
+    mSignal = 0;
+  }
   UpdateDeviceCIND();
 
   // Operator name
@@ -779,6 +812,20 @@ BluetoothHfpManager::HandleVoiceConnectionChanged(uint32_t aClientId)
     BT_WARNING("The operator name was longer than 16 characters. We cut it.");
     mOperatorName.Left(mOperatorName, 16);
   }
+}
+
+int16_t
+BluetoothHfpManager::NormalizeSignalStrength(int16_t aSignal, int16_t aMin,
+  int16_t aMax) {
+  if (aSignal <= aMin) {
+    return 0;
+  }
+
+  if (aSignal >= aMax) {
+    return 100;
+  }
+
+  return floor(((aSignal - aMin) * 100 / (aMax - aMin)));
 }
 
 void

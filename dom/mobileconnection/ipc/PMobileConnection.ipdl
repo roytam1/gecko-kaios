@@ -30,6 +30,7 @@ child:
   async NotifyLastNetworkChanged(nsString aNetwork);
   async NotifyLastHomeNetworkChanged(nsString aNetwork);
   async NotifyNetworkSelectionModeChanged(int32_t aMode);
+  async NotifySignalStrengthChanged(nsMobileSignalStrength aSignalStrength);
 
 parent:
   /**
@@ -49,7 +50,8 @@ parent:
     returns (nsMobileConnectionInfo aVoice, nsMobileConnectionInfo aData,
              nsString aLastKnownNetwork, nsString aLastKnownHomeNetwork,
              int32_t aNetworkSelectionMode, int32_t aRadioState,
-             int32_t[] aSupportedNetworkTypes, bool aEmergencyCbMode);
+             int32_t[] aSupportedNetworkTypes, bool aEmergencyCbMode,
+             nsMobileSignalStrength aSignalStrength);
 };
 
 /**
@@ -162,6 +164,10 @@ struct GetDeviceIdentitiesRequest
 {
 };
 
+struct GetSignalStrengthRequest
+{
+};
+
 union MobileConnectionRequest
 {
   GetNetworksRequest;
@@ -185,6 +191,7 @@ union MobileConnectionRequest
   ExitEmergencyCbModeRequest;
   SetRadioEnabledRequest;
   GetDeviceIdentitiesRequest;
+  GetSignalStrengthRequest;
 };
 
 } // namespace mobileconnection

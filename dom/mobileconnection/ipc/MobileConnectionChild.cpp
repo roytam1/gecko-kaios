@@ -30,10 +30,11 @@ MobileConnectionChild::Init()
 {
   nsIMobileConnectionInfo* rawVoice;
   nsIMobileConnectionInfo* rawData;
+  nsIMobileSignalStrength* rawSignalStrength;
 
   SendInit(&rawVoice, &rawData, &mLastNetwork, &mLastHomeNetwork,
            &mNetworkSelectionMode, &mRadioState, &mSupportedNetworkTypes,
-           &mEmergencyCbMode);
+           &mEmergencyCbMode, &rawSignalStrength);
 
   // Use dont_AddRef here because this instances is already AddRef-ed in
   // MobileConnectionIPCSerializer.h
@@ -46,6 +47,10 @@ MobileConnectionChild::Init()
   nsCOMPtr<nsIMobileConnectionInfo> data = dont_AddRef(rawData);
   mData = new MobileConnectionInfo(nullptr);
   mData->Update(data);
+
+  nsCOMPtr<nsIMobileSignalStrength> signalStrength = dont_AddRef(rawSignalStrength);
+  mSingalStrength = new MobileSignalStrength(nullptr);
+  mSingalStrength->Update(signalStrength);
 }
 
 void
@@ -115,6 +120,14 @@ NS_IMETHODIMP
 MobileConnectionChild::GetDeviceIdentities(nsIMobileDeviceIdentities** aIdentities)
 {
   return NS_ERROR_NOT_IMPLEMENTED;
+}
+
+NS_IMETHODIMP
+MobileConnectionChild::GetSignalStrength(nsIMobileSignalStrength** aSignalStrength)
+{
+  RefPtr<nsIMobileSignalStrength> signalStrength(mSingalStrength);
+  signalStrength.forget(aSignalStrength);
+  return NS_OK;
 }
 
 NS_IMETHODIMP
@@ -511,6 +524,21 @@ bool
 MobileConnectionChild::RecvNotifyNetworkSelectionModeChanged(const int32_t& aMode)
 {
   mNetworkSelectionMode = aMode;
+
+  return true;
+}
+
+bool
+MobileConnectionChild::RecvNotifySignalStrengthChanged(nsIMobileSignalStrength* const& aSignalStrength)
+{
+  // Use dont_AddRef here because this instances is already AddRef-ed in
+  // MobileConnectionIPCSerializer.h
+  nsCOMPtr<nsIMobileSignalStrength> signalStrength = dont_AddRef(aSignalStrength);
+  mSingalStrength->Update(signalStrength);
+
+  for (int32_t i = 0; i < mListeners.Count(); i++) {
+    mListeners[i]->NotifySignalStrengthChanged();
+  }
 
   return true;
 }

@@ -3289,6 +3289,24 @@ WifiWorker.prototype = {
   },
 
   // nsIMobileConnectionListener
+  notifyVoiceChanged: function() {},
+
+  notifyDataChanged: function () {},
+
+  notifyDataError: function (aMessage) {},
+
+  notifyCFStateChanged: function(aAction, aReason, aNumber, aTimeSeconds, aServiceClass) {},
+
+  notifyEmergencyCbModeChanged: function(aActive, aTimeoutMs) {},
+
+  notifyOtaStatusChanged: function(aStatus) {},
+
+  notifyRadioStateChanged: function() {},
+
+  notifyClirModeChanged: function(aMode) {},
+
+  notifyLastKnownNetworkChanged: function() {},
+
   notifyLastKnownNetworkChanged: function() {
     let countryCode = PhoneNumberUtils.getCountryName().toUpperCase();
     if (countryCode != "" &&
@@ -3301,6 +3319,12 @@ WifiWorker.prototype = {
       }
     }
   },
+
+  notifyNetworkSelectionModeChanged: function() {},
+
+  notifyDeviceIdentitiesChanged: function() {},
+
+  notifySignalStrengthChanged: function() {},
 
   isAirplaneMode: function isAirplaneMode() {
     let airplaneMode = false;

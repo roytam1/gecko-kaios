@@ -13,6 +13,7 @@
 #include "mozilla/dom/MobileDeviceIdentities.h"
 #include "mozilla/dom/MobileConnectionInfo.h"
 #include "mozilla/dom/MobileNetworkInfo.h"
+#include "mozilla/dom/MobileSignalStrength.h"
 #include "mozilla/dom/MozMobileConnectionBinding.h"
 
 using mozilla::AutoJSContext;
@@ -21,12 +22,14 @@ using mozilla::dom::MobileNetworkInfo;
 using mozilla::dom::MobileCellInfo;
 using mozilla::dom::MobileConnectionInfo;
 using mozilla::dom::MobileDeviceIdentities;
+using mozilla::dom::MobileSignalStrength;
 
 typedef nsIMobileCellInfo* nsMobileCellInfo;
 typedef nsIMobileConnectionInfo* nsMobileConnectionInfo;
 typedef nsIMobileNetworkInfo* nsMobileNetworkInfo;
 typedef nsIMobileCallForwardingOptions* nsMobileCallForwardingOptions;
 typedef nsIMobileDeviceIdentities* nsMobileDeviceIdentities;
+typedef nsIMobileSignalStrength* nsMobileSignalStrength;
 
 namespace IPC {
 
@@ -350,7 +353,6 @@ struct ParamTraits<nsIMobileConnectionInfo*>
     nsCOMPtr<nsIMobileNetworkInfo> pNetworkInfo;
     nsCOMPtr<nsIMobileCellInfo> pCellInfo;
     JS::Rooted<JS::Value> pJsval(cx);
-    int32_t pInt32;
 
     aParam->GetState(pString);
     WriteParam(aMsg, pString);
@@ -374,26 +376,6 @@ struct ParamTraits<nsIMobileConnectionInfo*>
     aParam->GetCell(getter_AddRefs(pCellInfo));
     // Release ref when WriteParam is finished.
     WriteParam(aMsg, pCellInfo.forget().take());
-
-    // Serialize jsval signalStrength
-    aParam->GetSignalStrength(&pJsval);
-    isNull = !pJsval.isInt32();
-    WriteParam(aMsg, isNull);
-
-    if (!isNull) {
-      pInt32 = pJsval.toInt32();
-      WriteParam(aMsg, pInt32);
-    }
-
-    // Serialize jsval relSignalStrength
-    aParam->GetRelSignalStrength(&pJsval);
-    isNull = !pJsval.isInt32();
-    WriteParam(aMsg, isNull);
-
-    if (!isNull) {
-      pInt32 = pJsval.toInt32();
-      WriteParam(aMsg, pInt32);
-    }
 
     // We release the ref here given that ipdl won't handle reference counting.
     aParam->Release();
@@ -421,8 +403,6 @@ struct ParamTraits<nsIMobileConnectionInfo*>
     nsString type;
     nsIMobileNetworkInfo* networkInfo = nullptr;
     nsIMobileCellInfo* cellInfo = nullptr;
-    Nullable<int32_t> signalStrength;
-    Nullable<uint16_t> relSignalStrength;
 
     // It's not important to us where it fails, but rather if it fails
     if (!(ReadParam(aMsg, aIter, &state) &&
@@ -435,44 +415,12 @@ struct ParamTraits<nsIMobileConnectionInfo*>
       return false;
     }
 
-    // De-serialize jsval signalStrength
-    if (!ReadParam(aMsg, aIter, &isNull)) {
-      return false;
-    }
-
-    if (!isNull) {
-      int32_t value;
-
-      if (!ReadParam(aMsg, aIter, &value)) {
-        return false;
-      }
-
-      signalStrength.SetValue(value);
-    }
-
-    // De-serialize jsval relSignalStrength
-    if (!ReadParam(aMsg, aIter, &isNull)) {
-      return false;
-    }
-
-    if (!isNull) {
-      int32_t value;
-
-      if (!ReadParam(aMsg, aIter, &value)) {
-        return false;
-      }
-
-      relSignalStrength.SetValue(uint16_t(value));
-    }
-
     *aResult = new MobileConnectionInfo(state,
                                         connected,
                                         emergencyOnly,
                                         roaming,
                                         networkInfo,
                                         type,
-                                        signalStrength,
-                                        relSignalStrength,
                                         cellInfo);
     // We release this ref after receiver finishes processing.
     NS_ADDREF(*aResult);
@@ -735,6 +683,135 @@ struct ParamTraits<nsIMobileDeviceIdentities*>
     }
 
     *aResult = new MobileDeviceIdentities(imei, imeisv, esn, meid);
+
+    // We release this ref after receiver finishes processing.
+    NS_ADDREF(*aResult);
+
+    return true;
+  }
+};
+
+/**
+ * nsIMobileSignalStrength Serialize/De-serialize.
+ */
+template <>
+struct ParamTraits<nsIMobileSignalStrength*>
+{
+  typedef nsIMobileSignalStrength* paramType;
+
+  // Function to serialize a nsIMobileSignalStrength.
+  static void Write(Message *aMsg, const paramType& aParam)
+  {
+    bool isNull = !aParam;
+    WriteParam(aMsg, isNull);
+    // If it is a null object, then we are done.
+    if (isNull) {
+      return;
+    }
+
+    int16_t pShort;
+    int32_t pLong;
+
+    aParam->GetLevel(&pShort);
+    WriteParam(aMsg, pShort);
+
+    aParam->GetGsmSignalStrength(&pShort);
+    WriteParam(aMsg, pShort);
+    aParam->GetGsmBitErrorRate(&pShort);
+    WriteParam(aMsg, pShort);
+
+    aParam->GetCdmaDbm(&pShort);
+    WriteParam(aMsg, pShort);
+    aParam->GetCdmaEcio(&pShort);
+    WriteParam(aMsg, pShort);
+    aParam->GetCdmaEvdoDbm(&pShort);
+    WriteParam(aMsg, pShort);
+    aParam->GetCdmaEvdoEcio(&pShort);
+    WriteParam(aMsg, pShort);
+    aParam->GetCdmaEvdoSNR(&pShort);
+    WriteParam(aMsg, pShort);
+
+    aParam->GetLteSignalStrength(&pShort);
+    WriteParam(aMsg, pShort);
+    aParam->GetLteRsrp(&pLong);
+    WriteParam(aMsg, pLong);
+    aParam->GetLteRsrq(&pLong);
+    WriteParam(aMsg, pLong);
+    aParam->GetLteRssnr(&pLong);
+    WriteParam(aMsg, pLong);
+    aParam->GetLteCqi(&pLong);
+    WriteParam(aMsg, pLong);
+    aParam->GetLteTimingAdvance(&pLong);
+    WriteParam(aMsg, pLong);
+
+    aParam->GetTdscdmaRscp(&pLong);
+    WriteParam(aMsg, pLong);
+  }
+
+  // Function to de-serialize a MobileDeviceIdentities.
+  static bool Read(const Message* aMsg, void **aIter, paramType* aResult)
+  {
+    // Check if is the null pointer we have transfered.
+    bool isNull;
+    if (!ReadParam(aMsg, aIter, &isNull)) {
+      return false;
+    }
+
+    if (isNull) {
+      *aResult = nullptr;
+      return true;
+    }
+
+    int16_t level;
+    int16_t gsmSignalStrength;
+    int16_t gsmBitErrorRate;
+    int16_t cdmaDbm;
+    int16_t cdmaEcio;
+    int16_t cdmaEvdoDbm;
+    int16_t cdmaEvdoEcio;
+    int16_t cdmaEvdoSNR;
+    int16_t lteSignalStrength;
+    int32_t lteRsrp;
+    int32_t lteRsrq;
+    int32_t lteRssnr;
+    int32_t lteCqi;
+    int32_t lteTimingAdvance;
+    int32_t tdscdmaRscp;
+
+    // It's not important to us where it fails, but rather if it fails
+    if (!(ReadParam(aMsg, aIter, &level) &&
+          ReadParam(aMsg, aIter, &gsmSignalStrength) &&
+          ReadParam(aMsg, aIter, &gsmBitErrorRate) &&
+          ReadParam(aMsg, aIter, &cdmaDbm) &&
+          ReadParam(aMsg, aIter, &cdmaEcio) &&
+          ReadParam(aMsg, aIter, &cdmaEvdoDbm) &&
+          ReadParam(aMsg, aIter, &cdmaEvdoEcio) &&
+          ReadParam(aMsg, aIter, &cdmaEvdoSNR) &&
+          ReadParam(aMsg, aIter, &lteSignalStrength) &&
+          ReadParam(aMsg, aIter, &lteRsrp) &&
+          ReadParam(aMsg, aIter, &lteRsrq) &&
+          ReadParam(aMsg, aIter, &lteRssnr) &&
+          ReadParam(aMsg, aIter, &lteCqi) &&
+          ReadParam(aMsg, aIter, &lteTimingAdvance) &&
+          ReadParam(aMsg, aIter, &tdscdmaRscp))) {
+      return false;
+    }
+
+    *aResult = new MobileSignalStrength(level,
+                                        gsmSignalStrength,
+                                        gsmBitErrorRate,
+                                        cdmaDbm,
+                                        cdmaEcio,
+                                        cdmaEvdoDbm,
+                                        cdmaEvdoEcio,
+                                        cdmaEvdoSNR,
+                                        lteSignalStrength,
+                                        lteRsrp,
+                                        lteRsrq,
+                                        lteRssnr,
+                                        lteCqi,
+                                        lteTimingAdvance,
+                                        tdscdmaRscp);
 
     // We release this ref after receiver finishes processing.
     NS_ADDREF(*aResult);
