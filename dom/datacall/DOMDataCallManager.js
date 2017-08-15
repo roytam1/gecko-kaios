@@ -53,13 +53,13 @@ XPCOMUtils.defineLazyGetter(this, "gDataCallHelper", function() {
     // Should match with enum DataCallState in DataCallManager webidl.
     convertToDataCallState: function(aState, aReason) {
       switch (aState) {
-        case Ci.nsINetworkInfo.NETWORK_STATE_CONNECTING_CONNECTING:
+        case Ci.nsINetworkInfo.NETWORK_STATE_CONNECTING:
           return "connecting";
-        case Ci.nsINetworkInfo.NETWORK_STATE_CONNECTING_CONNECTED:
+        case Ci.nsINetworkInfo.NETWORK_STATE_CONNECTED:
           return "connected";
-        case Ci.nsINetworkInfo.NETWORK_STATE_CONNECTING_DISCONNECTING:
+        case Ci.nsINetworkInfo.NETWORK_STATE_DISCONNECTING:
           return "disconnecting";
-        case Ci.nsINetworkInfo.NETWORK_STATE_CONNECTING_DISCONNECTED:
+        case Ci.nsINetworkInfo.NETWORK_STATE_DISCONNECTED:
           // If state is DISCONNECTED and reason is other than REASON_NONE,
           // implies the mobile network is no longer available. We'll set state
           // as 'unavailable' and block all subsequent requests to the DataCall.
