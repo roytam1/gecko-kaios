@@ -978,6 +978,18 @@ this.PushServiceWebSocket = {
     }
   },
 
+  _queueUpdateStart: Promise.resolve(),
+  _queueUpdate: null,
+  _enqueueUpdate: function(op) {
+    console.debug("enqueueUpdate()");
+    if (!this._queueUpdate) {
+      this._queueUpdate = this._queueUpdateStart;
+    }
+    this._queueUpdate = this._queueUpdate
+                          .then(op)
+                          .catch(_ => {});
+  },
+
   _handleDataUpdate: function(update) {
     let promise;
     if (typeof update.channelID != "string") {
@@ -1011,7 +1023,7 @@ this.PushServiceWebSocket = {
         promise = Promise.reject(new Error("Invalid crypto headers"));
       }
     }
-    promise.then(status => {
+    return promise.then(status => {
       this._sendAck(update.channelID, update.version, status);
     }, err => {
       console.error("handleDataUpdate: Error delivering message", update, err);
@@ -1029,7 +1041,7 @@ this.PushServiceWebSocket = {
   _handleNotificationReply: function(reply) {
     console.debug("handleNotificationReply()");
     if (this._dataEnabled) {
-      this._handleDataUpdate(reply);
+      this._enqueueUpdate(_ => this._handleDataUpdate(reply));
       return;
     }
 
