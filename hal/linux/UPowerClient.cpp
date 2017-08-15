@@ -47,6 +47,8 @@ public:
   double GetLevel();
   bool   IsCharging();
   double GetRemainingTime();
+  double GetBatteryTemperature();
+  BatteryHealth GetHealth();
 
   ~UPowerClient();
 
@@ -113,6 +115,8 @@ private:
   double mLevel;
   bool mCharging;
   double mRemainingTime;
+  double mTemperature;
+  BatteryHealth mHealth;
 
   static UPowerClient* sInstance;
 
@@ -146,6 +150,15 @@ GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo)
   aBatteryInfo->level() = upowerClient->GetLevel();
   aBatteryInfo->charging() = upowerClient->IsCharging();
   aBatteryInfo->remainingTime() = upowerClient->GetRemainingTime();
+  aBatteryInfo->temperature() = upowerClient->GetBatteryTemperature();
+  aBatteryInfo->health() = upowerClient->GetHealth();
+}
+
+double
+GetBatteryTemperature()
+{
+  UPowerClient* upowerClient = UPowerClient::GetInstance();
+  return upowerClient->GetBatteryTemperature();
 }
 
 /*
@@ -257,6 +270,8 @@ UPowerClient::StopListening()
   mLevel = kDefaultLevel;
   mCharging = kDefaultCharging;
   mRemainingTime = kDefaultRemainingTime;
+  mTemperature = kDefaultTemperature;
+  mHealth = kDefaultHealth;
 }
 
 void
@@ -377,7 +392,9 @@ UPowerClient::GetDevicePropertiesCallback(DBusGProxy* aProxy,
     sInstance->UpdateSavedInfo(hashTable);
     hal::NotifyBatteryChange(hal::BatteryInformation(sInstance->mLevel,
                                                      sInstance->mCharging,
-                                                     sInstance->mRemainingTime));
+                                                     sInstance->mRemainingTime,
+                                                     sInstance->mTemperature,
+                                                     sInstance->mHealth));
     g_hash_table_unref(hashTable);
   }
 }
@@ -451,6 +468,8 @@ UPowerClient::UpdateSavedInfo(GHashTable* aHashTable)
       mRemainingTime = kUnknownRemainingTime;
     }
   }
+
+  // TODO to complete temperature and health.
 }
 
 double
@@ -469,6 +488,18 @@ double
 UPowerClient::GetRemainingTime()
 {
   return mRemainingTime;
+}
+
+double
+UPowerClient::GetBatteryTemperature()
+{
+  return mTemperature;
+}
+
+BatteryHealth
+UPowerClient::GetHealth()
+{
+  return mHealth;
 }
 
 } // namespace hal_impl
