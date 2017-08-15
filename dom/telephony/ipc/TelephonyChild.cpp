@@ -7,7 +7,9 @@
 #include "TelephonyChild.h"
 
 #include "mozilla/dom/telephony/TelephonyDialCallback.h"
+#ifndef FXOS_SIMULATOR
 #include "mozilla/dom/videocallprovider/VideoCallProviderChild.h"
+#endif
 #include "mozilla/UniquePtr.h"
 #include "TelephonyIPCService.h"
 
@@ -50,6 +52,7 @@ TelephonyChild::DeallocPTelephonyRequestChild(PTelephonyRequestChild* aActor)
   return true;
 }
 
+#ifndef FXOS_SIMULATOR
 PVideoCallProviderChild*
 TelephonyChild::AllocPVideoCallProviderChild(const uint32_t& clientId, const uint32_t& callIndex)
 {
@@ -64,6 +67,7 @@ TelephonyChild::DeallocPVideoCallProviderChild(PVideoCallProviderChild* aActor)
   delete aActor;
   return true;
 }
+#endif
 
 bool
 TelephonyChild::RecvNotifyCallStateChanged(nsTArray<nsITelephonyCallInfo*>&& aAllInfo)

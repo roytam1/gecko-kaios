@@ -8,7 +8,9 @@
 #define mozilla_dom_telephony_TelephonyIPCService_h
 
 #include "mozilla/dom/telephony/TelephonyCommon.h"
+#ifndef FXOS_SIMULATOR
 #include "mozilla/dom/videocallprovider/VideoCallProviderChild.h"
+#endif
 #include "mozilla/Attributes.h"
 #include "nsIObserver.h"
 #include "nsITelephonyService.h"
@@ -45,6 +47,7 @@ private:
                        nsITelephonyCallback *aCallback,
                        const IPCTelephonyRequest& aRequest);
 
+#ifndef FXOS_SIMULATOR
   nsresult GetLoopbackProvider(nsIVideoCallProvider **aProvider);
   void RemoveVideoCallProvider(nsITelephonyCallInfo *aInfo);
   void RemoveVideoCallProvider(uint32_t aClientId, uint32_t aCallIndex);
@@ -52,6 +55,7 @@ private:
   void CleanupLoopbackProvider();
 
   RefPtr<VideoCallProviderChild> mLoopbackProvider;
+#endif
 };
 
 END_TELEPHONY_NAMESPACE

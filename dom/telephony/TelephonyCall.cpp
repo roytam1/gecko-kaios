@@ -9,7 +9,9 @@
 #include "mozilla/dom/telephony/TelephonyCallback.h"
 
 #include "mozilla/dom/DOMError.h"
+#ifndef FXOS_SIMULATOR
 #include "mozilla/dom/DOMVideoCallProvider.h"
+#endif
 #include "nsPrintfCString.h"
 
 #include "Telephony.h"
@@ -41,9 +43,15 @@
 #define TELEPHONY_CALL_STATE(_state) \
   (TelephonyCallStateValues::strings[static_cast<int32_t>(_state)].value)
 
+#ifndef FXOS_SIMULATOR
 #include <android/log.h>
 #undef LOG
 #define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "TelephonyCall" , ## args)
+#else
+#undef LOG
+#define LOG(args...)
+#endif
+
 
 using namespace mozilla::dom;
 using namespace mozilla::dom::telephony;
@@ -347,8 +355,11 @@ NS_IMPL_CYCLE_COLLECTION_INHERITED(TelephonyCall,
                                    mGroup,
                                    mId,
                                    mSecondId,
-                                   mCapabilities,
-                                   mVideoCallProvider);
+                                   mCapabilities
+#ifndef FXOS_SIMULATOR
+                                   ,mVideoCallProvider
+#endif
+                                   );
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(TelephonyCall)
 NS_INTERFACE_MAP_END_INHERITING(DOMEventTargetHelper)
@@ -552,6 +563,7 @@ TelephonyCall::Resume(nsITelephonyCallback* aCallback)
   return NS_OK;
 }
 
+#ifndef FXOS_SIMULATOR
 already_AddRefed<DOMVideoCallProvider>
 TelephonyCall::GetVideoCallProvider(ErrorResult& aRv)
 {
@@ -576,3 +588,4 @@ TelephonyCall::GetVideoCallProvider(ErrorResult& aRv)
     return provider.forget();
   }
 }
+#endif

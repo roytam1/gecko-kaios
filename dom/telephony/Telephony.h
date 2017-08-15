@@ -31,7 +31,9 @@ class TelephonyDialCallback;
 } // namespace telephony
 
 class OwningTelephonyCallOrTelephonyCallGroup;
+#ifndef FXOS_SIMULATOR
 class DOMVideoCallProvider;
+#endif
 
 enum class TtyMode: uint32_t;
 
@@ -59,7 +61,9 @@ class Telephony final : public DOMEventTargetHelper,
   RefPtr<CallsList> mCallsList;
 
   RefPtr<TelephonyCallGroup> mGroup;
+#ifndef FXOS_SIMULATOR
   mutable RefPtr<DOMVideoCallProvider> mLoopbackProvider;
+#endif
 
   RefPtr<Promise> mReadyPromise;
 
@@ -161,8 +165,10 @@ public:
   already_AddRefed<Promise>
   HangUpAllCalls(const Optional<uint32_t>& aServiceId, ErrorResult& aRv);
 
+#ifndef FXOS_SIMULATOR
   already_AddRefed<DOMVideoCallProvider>
   GetLoopbackProvider() const;
+#endif
 
   IMPL_EVENT_HANDLER(incoming)
   IMPL_EVENT_HANDLER(callschanged)

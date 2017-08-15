@@ -6,7 +6,9 @@
 
 #include "mozilla/dom/telephony/TelephonyParent.h"
 #include "nsServiceManagerUtils.h"
+#ifndef FXOS_SIMULATOR
 #include "mozilla/dom/videocallprovider/VideoCallProviderParent.h"
+#endif
 
 USING_TELEPHONY_NAMESPACE
 USING_VIDEOCALLPROVIDER_NAMESPACE
@@ -177,6 +179,7 @@ TelephonyParent::DeallocPTelephonyRequestParent(PTelephonyRequestParent* aActor)
   return true;
 }
 
+#ifndef FXOS_SIMULATOR
 PVideoCallProviderParent*
 TelephonyParent::AllocPVideoCallProviderParent(const uint32_t& aClientId,
                                                const uint32_t& aCallindex)
@@ -195,6 +198,7 @@ TelephonyParent::DeallocPVideoCallProviderParent(PVideoCallProviderParent* aActo
   static_cast<VideoCallProviderParent*>(aActor)->Release();
   return true;
 }
+#endif
 
 bool
 TelephonyParent::Recv__delete__()

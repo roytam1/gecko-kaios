@@ -78,9 +78,11 @@ interface CameraManager
   [Throws]
   sequence<DOMString> getListOfCameras();
 
+#ifndef FXOS_SIMULATOR
   [Throws]
   Promise<SurfaceControl> getPreviewStream(optional SurfaceConfiguration initialConfiguration);
 
   [Throws]
   Promise<SurfaceControl> getDisplayStream(optional SurfaceConfiguration initialConfiguration);
+#endif
 };

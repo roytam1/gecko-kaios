@@ -6,7 +6,6 @@
 
 XPIDL_SOURCES += [
     'nsITelephonyCallInfo.idl',
-    'nsITelephonyService.idl',
 ]
 
 XPIDL_MODULE = 'dom_telephony'
@@ -51,10 +50,27 @@ UNIFIED_SOURCES += [
     'USSDSession.cpp',
 ]
 
+if CONFIG['FXOS_SIMULATOR']:
+    XPIDL_SOURCES += [
+        'fallback/nsITelephonyService.idl',
+    ]
+
+    IPDL_SOURCES += [
+        'fallback/ipc/PTelephony.ipdl',
+    ]
+
+if not CONFIG['FXOS_SIMULATOR']:
+    XPIDL_SOURCES += [
+        'nsITelephonyService.idl',
+    ]
+
+    IPDL_SOURCES += [
+        'ipc/PTelephony.ipdl',
+    ]
+
 IPDL_SOURCES += [
-    'ipc/PTelephony.ipdl',
     'ipc/PTelephonyRequest.ipdl',
-    'ipc/TelephonyTypes.ipdlh'
+    'ipc/TelephonyTypes.ipdlh',
 ]
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk' and CONFIG['MOZ_B2G_RIL']:

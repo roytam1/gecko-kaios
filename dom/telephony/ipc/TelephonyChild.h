@@ -34,12 +34,14 @@ protected:
   virtual bool
   DeallocPTelephonyRequestChild(PTelephonyRequestChild* aActor) override;
 
+#ifndef FXOS_SIMULATOR
   virtual PVideoCallProviderChild*
   AllocPVideoCallProviderChild(const uint32_t& clientId,
                                const uint32_t& callIndex) override;
 
   virtual bool
   DeallocPVideoCallProviderChild(PVideoCallProviderChild* aActor) override;
+#endif
 
   virtual bool
   RecvNotifyCallStateChanged(nsTArray<nsITelephonyCallInfo*>&& aAllInfo) override;

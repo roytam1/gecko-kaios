@@ -9,11 +9,14 @@ GENERATED_WEBIDL_FILES = [
 ]
 
 PREPROCESSED_WEBIDL_FILES = [
+    'CameraManager.webidl',
     'HTMLMediaElement.webidl',
     'Navigator.webidl',
     'Promise.webidl',
     'PromiseDebugging.webidl',
     'ServiceWorkerRegistration.webidl',
+    'Telephony.webidl',
+    'TelephonyCall.webidl',
     'Window.webidl',
 ]
 
@@ -68,7 +71,6 @@ WEBIDL_FILES = [
     'CallsList.webidl',
     'CameraCapabilities.webidl',
     'CameraControl.webidl',
-    'CameraManager.webidl',
     'CameraUtil.webidl',
     'CanvasCaptureMediaStream.webidl',
     'CanvasRenderingContext2D.webidl',
@@ -439,7 +441,6 @@ WEBIDL_FILES = [
     'StyleSheet.webidl',
     'StyleSheetList.webidl',
     'SubtleCrypto.webidl',
-    'SurfaceControl.webidl',
     'SVGAElement.webidl',
     'SVGAltGlyphElement.webidl',
     'SVGAngle.webidl',
@@ -554,8 +555,6 @@ WEBIDL_FILES = [
     'TCPSocket.webidl',
     'TCPSocketErrorEvent.webidl',
     'TCPSocketEvent.webidl',
-    'Telephony.webidl',
-    'TelephonyCall.webidl',
     'TelephonyCallCapabilities.webidl',
     'TelephonyCallGroup.webidl',
     'TelephonyCallId.webidl',
@@ -591,7 +590,6 @@ WEBIDL_FILES = [
     'URLSearchParams.webidl',
     'USSDSession.webidl',
     'ValidityState.webidl',
-    'VideoCallProvider.webidl',
     'VideoPlaybackQuality.webidl',
     'VideoStreamTrack.webidl',
     'VideoTrack.webidl',
@@ -629,6 +627,12 @@ WEBIDL_FILES = [
     'XULDocument.webidl',
     'XULElement.webidl',
 ]
+
+if not CONFIG['FXOS_SIMULATOR']:
+    WEBIDL_FILES += [
+        'SurfaceControl.webidl',
+        'VideoCallProvider.webidl',
+    ]
 
 if CONFIG['MOZ_AUDIO_CHANNEL_MANAGER']:
     WEBIDL_FILES += [
@@ -855,13 +859,17 @@ GENERATED_EVENTS_WEBIDL_FILES = [
     'UDPMessageEvent.webidl',
     'UserProximityEvent.webidl',
     'USSDReceivedEvent.webidl',
-    'VideoCallCameraCapabilitiesChangeEvent.webidl',
-    'VideoCallPeerDimensionsEvent.webidl',
-    'VideoCallQualityEvent.webidl',
-    'VideoCallSessionChangeEvent.webidl',
-    'VideoCallSessionModifyRequestEvent.webidl',
-    'VideoCallSessionModifyResponseEvent.webidl',
 ]
+
+if not CONFIG['FXOS_SIMULATOR']:
+    GENERATED_EVENTS_WEBIDL_FILES += [
+        'VideoCallCameraCapabilitiesChangeEvent.webidl',
+        'VideoCallPeerDimensionsEvent.webidl',
+        'VideoCallQualityEvent.webidl',
+        'VideoCallSessionChangeEvent.webidl',
+        'VideoCallSessionModifyRequestEvent.webidl',
+        'VideoCallSessionModifyResponseEvent.webidl',
+    ]
 
 if CONFIG['MOZ_WEBRTC']:
     GENERATED_EVENTS_WEBIDL_FILES += [

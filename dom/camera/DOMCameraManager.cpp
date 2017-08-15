@@ -14,8 +14,12 @@
 #include "nsIPermissionManager.h"
 #include "nsIScriptObjectPrincipal.h"
 #include "DOMCameraControl.h"
+#ifndef FXOS_SIMULATOR
+#ifdef FEED_TEST_DATA_TO_PRODUCER
 #include "DOMSurfaceControl.h"
 #include "IDOMSurfaceControlCallback.h"
+#endif
+#endif
 #include "nsDOMClassInfo.h"
 #include "CameraCommon.h"
 #include "CameraPreferences.h"
@@ -27,9 +31,11 @@ using namespace mozilla;
 using namespace mozilla::dom;
 using namespace android;
 
+#ifndef FXOS_SIMULATOR
 #ifdef FEED_TEST_DATA_TO_PRODUCER
 #include <cutils/properties.h>
 #include "TestDataSourceCamera.h"
+#endif
 #endif
 
 NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(nsDOMCameraManager, mWindow)
@@ -59,12 +65,13 @@ GetCameraLog()
 
 ::WindowTable* nsDOMCameraManager::sActiveWindows = nullptr;
 
+#ifndef FXOS_SIMULATOR
 #ifdef FEED_TEST_DATA_TO_PRODUCER
 
 class DOMSurfaceControlCallback : public IDOMSurfaceControlCallback
 {
 public:
-  DOMSurfaceControlCallback(nsDOMCameraManager* aCameraManager) : 
+  DOMSurfaceControlCallback(nsDOMCameraManager* aCameraManager) :
     mDOMCameraManager(aCameraManager) {
   }
 
@@ -87,12 +94,12 @@ void DOMSurfaceControlCallback::OnProducerCreated(android::sp<android::IGraphicB
       if(mDOMCameraManager) {
 
         if (mDOMCameraManager->IsPreviewSurfaceNow()) {
-          mDOMCameraManager->mTestDataSource->SetPreviewSurface(aProducer, 
-                                                                mDOMCameraManager->mPreviewControl->GetConfiguration()->mPreviewSize.mWidth, 
+          mDOMCameraManager->mTestDataSource->SetPreviewSurface(aProducer,
+                                                                mDOMCameraManager->mPreviewControl->GetConfiguration()->mPreviewSize.mWidth,
                                                                 mDOMCameraManager->mPreviewControl->GetConfiguration()->mPreviewSize.mHeight);
         } else {
-          mDOMCameraManager->mTestDataSource->SetDisplaySurface(aProducer, 
-                                                                mDOMCameraManager->mDisplayControl->GetConfiguration()->mPreviewSize.mWidth, 
+          mDOMCameraManager->mTestDataSource->SetDisplaySurface(aProducer,
+                                                                mDOMCameraManager->mDisplayControl->GetConfiguration()->mPreviewSize.mWidth,
                                                                 mDOMCameraManager->mDisplayControl->GetConfiguration()->mPreviewSize.mHeight);
         }
 
@@ -100,6 +107,7 @@ void DOMSurfaceControlCallback::OnProducerCreated(android::sp<android::IGraphicB
       }
     }
   }
+#endif
 #endif
 }
 
@@ -139,7 +147,7 @@ public:
   {
      if (mDisplaySurfaceControl) {
       mDisplaySurfaceControl->SetDataSourceSize(aResultWidth, aResultHeight);
-    }   
+    }
   }
 
 protected:
@@ -170,6 +178,7 @@ nsDOMCameraManager::nsDOMCameraManager(nsPIDOMWindowInner* aWindow)
 
 nsDOMCameraManager::~nsDOMCameraManager()
 {
+#ifndef FXOS_SIMULATOR
   if (mDOMSurfaceControlCallback) {
     delete mDOMSurfaceControlCallback;
   }
@@ -183,6 +192,8 @@ nsDOMCameraManager::~nsDOMCameraManager()
     delete mResolutionResultListener;
   }
 #endif
+#endif
+
   /* destructor code */
   MOZ_COUNT_DTOR(nsDOMCameraManager);
   DOM_CAMERA_LOGT("%s:%d : this=%p\n", __func__, __LINE__, this);
@@ -228,7 +239,7 @@ nsDOMCameraManager::CreateInstance(nsPIDOMWindowInner* aWindow)
   if (!sActiveWindows) {
     sActiveWindows = new ::WindowTable();
   }
-  
+
   RefPtr<nsDOMCameraManager> cameraManager =
     new nsDOMCameraManager(aWindow);
 
@@ -466,6 +477,7 @@ nsDOMCameraManager::GetPreviewStream(const SurfaceConfiguration& aInitialConfig,
     return nullptr;
   }
 
+#ifndef FXOS_SIMULATOR
   // Creating this object will trigger the aOnSuccess callback
   //  (or the aOnError one, if it fails).
   mDOMSurfaceControlCallback = new DOMSurfaceControlCallback(this);
@@ -486,10 +498,11 @@ nsDOMCameraManager::GetPreviewStream(const SurfaceConfiguration& aInitialConfig,
   mResolutionResultListener->SetPreviewSurfaceControl(mPreviewControl);
 
 #endif
+#endif
   return promise.forget();
 }
 
-already_AddRefed<Promise> 
+already_AddRefed<Promise>
 nsDOMCameraManager::GetDisplayStream(const SurfaceConfiguration& aInitialConfig, mozilla::ErrorResult& aRv)
 {
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(mWindow);
@@ -509,6 +522,7 @@ nsDOMCameraManager::GetDisplayStream(const SurfaceConfiguration& aInitialConfig,
     return nullptr;
   }
 
+#ifndef FXOS_SIMULATOR
   // Creating this object will trigger the aOnSuccess callback
   //  (or the aOnError one, if it fails).
   mDOMSurfaceControlCallback = new DOMSurfaceControlCallback(this);
@@ -528,6 +542,7 @@ nsDOMCameraManager::GetDisplayStream(const SurfaceConfiguration& aInitialConfig,
   mDisplayControl = surfaceControl;
   mResolutionResultListener->SetDisplaySurfaceControl(mDisplayControl);
 
+#endif
 #endif
   return promise.forget();
 }

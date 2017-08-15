@@ -118,9 +118,13 @@ DIRS += [
     'u2f',
     'datacall',
     'powersupply',
-    'surface',
-    'videocallprovider',
 ]
+
+if not CONFIG['FXOS_SIMULATOR']:
+    DIRS += [
+        'surface',
+        'videocallprovider',
+    ]
 
 if CONFIG['OS_ARCH'] == 'WINNT':
     DIRS += ['plugins/ipc/hangui']

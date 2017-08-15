@@ -38,11 +38,13 @@ protected:
   virtual bool
   DeallocPTelephonyRequestParent(PTelephonyRequestParent* aActor) override;
 
+#ifndef FXOS_SIMULATOR
   virtual PVideoCallProviderParent*
   AllocPVideoCallProviderParent(const uint32_t& clientId, const uint32_t& callIndex) override;
 
   virtual bool
   DeallocPVideoCallProviderParent(PVideoCallProviderParent* aActor) override;
+#endif
 
   virtual bool
   Recv__delete__() override;

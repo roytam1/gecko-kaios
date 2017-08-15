@@ -21,7 +21,9 @@ class nsPIDOMWindowInner;
 namespace mozilla {
 namespace dom {
 
+#ifndef FXOS_SIMULATOR
 class DOMVideoCallProvider;
+#endif
 
 class TelephonyCall final : public DOMEventTargetHelper
 {
@@ -47,7 +49,9 @@ class TelephonyCall final : public DOMEventTargetHelper
   TelephonyVideoCallState mVideoCallState;
   RefPtr<TelephonyCallCapabilities> mCapabilities;
   TelephonyCallRadioTech mRadioTech;
+#ifndef FXOS_SIMULATOR
   mutable RefPtr<DOMVideoCallProvider> mVideoCallProvider;
+#endif
 
   bool mIsConferenceParent;
 
@@ -155,8 +159,10 @@ public:
   already_AddRefed<Promise>
   Resume(ErrorResult& aRv);
 
+#ifndef FXOS_SIMULATOR
   already_AddRefed<DOMVideoCallProvider>
   GetVideoCallProvider(ErrorResult& aRv);
+#endif
 
   IMPL_EVENT_HANDLER(statechange)
   IMPL_EVENT_HANDLER(dialing)

@@ -24,8 +24,12 @@
 #define USING_TELEPHONY_NAMESPACE \
   using namespace mozilla::dom::telephony;
 
+#ifdef FXOS_SIMULATOR
+#define USING_VIDEOCALLPROVIDER_NAMESPACE
+#else
 #define USING_VIDEOCALLPROVIDER_NAMESPACE \
   using namespace mozilla::dom::videocallprovider;
+#endif
 
 namespace mozilla {
 namespace dom {

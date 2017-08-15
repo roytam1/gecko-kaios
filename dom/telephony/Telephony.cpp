@@ -14,7 +14,6 @@
 #include "mozilla/dom/RingbackToneEvent.h"
 #include "mozilla/dom/TtyModeReceivedEvent.h"
 #include "mozilla/dom/TelephonyCoverageLosingEvent.h"
-#include "mozilla/dom/DOMVideoCallProvider.h"
 #include "mozilla/unused.h"
 
 #include "nsCharSeparatedTokenizer.h"
@@ -38,6 +37,10 @@
 #endif
 #include "nsXULAppAPI.h" // For XRE_GetProcessType()
 
+// === SIMULATOR START ===
+#ifndef FXOS_SIMULATOR
+#include "mozilla/dom/DOMVideoCallProvider.h"
+
 #define FEED_TEST_DATA_TO_PRODUCER
 #ifdef FEED_TEST_DATA_TO_PRODUCER
 #include <cutils/properties.h>
@@ -47,6 +50,12 @@
 #include <android/log.h>
 #undef LOG
 #define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "Telephony" , ## args)
+#else
+#undef LOG
+#define LOG(args...)
+
+#endif
+// SIMULATOR END ===
 
 using namespace mozilla::dom;
 using namespace mozilla::dom::telephony;
@@ -688,6 +697,7 @@ Telephony::HandleAudioAgentState()
   return NS_OK;
 }
 
+#ifndef FXOS_SIMULATOR
 already_AddRefed<DOMVideoCallProvider>
 Telephony::GetLoopbackProvider() const
 {
@@ -718,6 +728,7 @@ Telephony::GetLoopbackProvider() const
     return provider.forget();
   }
 }
+#endif
 
 bool
 Telephony::GetHacMode(ErrorResult& aRv) const

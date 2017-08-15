@@ -74,8 +74,10 @@ interface TelephonyCall : EventTarget {
   /**
    * To acquire the video call handler which helps app to operate video call related function.
    */
+#ifndef FXOS_SIMULATOR
   [Throws]
   readonly attribute VideoCallProvider? videoCallProvider;
+#endif
 
   attribute EventHandler onstatechange;
   attribute EventHandler ondialing;
