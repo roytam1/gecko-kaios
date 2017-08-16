@@ -172,6 +172,13 @@ AssertActivityIsLegal()
       NS_RUNTIMEABORT(kStaticCtorDtorWarning);
     } else {
       NS_WARNING(kStaticCtorDtorWarning);
+      // This will be called in the booting stage of the process and it
+      // happens prior to Nuwa initializations. In NS_WARNING, it calls
+      // __android_log_print which will occupy some FDs needed by Nuwa. Close
+      // these FDs first for making Nuwa can work correctly.
+#if defined(ANDROID) && defined(MOZ_NUWA_PROCESS)
+      __android_log_close();
+#endif
     }
   }
 }
