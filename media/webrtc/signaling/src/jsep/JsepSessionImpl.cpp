@@ -2094,7 +2094,7 @@ JsepSessionImpl::SetupDefaultCodecs()
       "109",
       "opus",
       48000,
-      2,
+      1,
       960,
 #ifdef WEBRTC_GONK
       // TODO Move this elsewhere to be adaptive to rate - Bug 1207925
