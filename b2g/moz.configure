@@ -39,4 +39,17 @@ def remote_control_service(value):
 set_config('MOZ_B2G_REMOTECONTROLSERVICE', remote_control_service)
 set_define('MOZ_B2G_REMOTECONTROLSERVICE', remote_control_service)
 
+option('--target-build-variant', nargs=1, help='Target build variant type')
+@depends_if('--target-build-variant')
+def get_variant(value):
+  if value[0] == 'user':
+    return 'TARGET_VARIANT_USER'
+  elif value[0] == 'userdebug':
+    return 'TARGET_VARIANT_USERDEBUG'
+  else:
+    return 'TARGET_VARIANT_ENG'
+
+set_config(get_variant, True)
+set_define(get_variant, True)
+
 include('common.configure')
