@@ -42,6 +42,37 @@ namespace dom {
 class SourceMediaStream;
 #endif // USE_FAKE_MEDIA_STREAMS
 
+// An observer that monitors the task queues of VideoFrameConverter thread and STS thread.
+// It tracks the total size of both queues and is updated when any task is pushed into or
+// popped from either queue. There are four threads that update the total size in the
+// observer:
+// 1. AudioTrack thread / QueueVideoChunk():
+//    pushes video frames to be converted, size++
+// 2. VideoFrameConverter thread / ProcessVideoFrame():
+//    pops frames and converts them, size--
+// 3. [PacedSender] ProcessThread / SendRtpPacket():
+//    pushes video RTP packets to be sent, size++
+// 4. STS thread / SendRtpRtcpPacket_s():
+//    pops RTP packets and send them, size--
+//
+// VideoFrameConverter object continuously checks the total size in the observer when
+// receiving a new frame, and drop it when the size exceeds certain throttling limit.
+class PipelineQueueObserver
+{
+public:
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(PipelineQueueObserver)
+
+  PipelineQueueObserver() : mSize(0) {}
+  void Increase() { ++mSize; }
+  void Decrease() { --mSize; MOZ_ASSERT(mSize >= 0); }
+  int TotalSize() { return mSize; }
+
+private:
+  ~PipelineQueueObserver() {}
+
+  Atomic<int> mSize;
+};
+
 // A class that represents the pipeline of audio and video
 // The dataflow looks like:
 //
@@ -158,8 +189,10 @@ class MediaPipeline : public sigslot::has_slots<> {
   class PipelineTransport : public TransportInterface {
    public:
     // Implement the TransportInterface functions
-    explicit PipelineTransport(MediaPipeline *pipeline)
+    explicit PipelineTransport(MediaPipeline *pipeline,
+                               RefPtr<PipelineQueueObserver> queue_observer)
         : pipeline_(pipeline),
+          queue_observer_(queue_observer),
           sts_thread_(pipeline->sts_thread_) {}
 
     void Detach() { pipeline_ = nullptr; }
@@ -173,6 +206,7 @@ class MediaPipeline : public sigslot::has_slots<> {
                                  bool is_rtp);
 
     MediaPipeline *pipeline_;  // Raw pointer to avoid cycles
+    RefPtr<PipelineQueueObserver> queue_observer_;
     nsCOMPtr<nsIEventTarget> sts_thread_;
   };
   friend class PipelineTransport;
@@ -252,6 +286,8 @@ class MediaPipeline : public sigslot::has_slots<> {
   // Created on Init. Referenced by the conduit and eventually
   // destroyed on the STS thread.
   RefPtr<PipelineTransport> transport_;
+
+  RefPtr<PipelineQueueObserver> queue_observer_;
 
   // Only safe to access from STS thread.
   // Build into TransportInfo?

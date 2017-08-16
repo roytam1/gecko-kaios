@@ -109,7 +109,7 @@ class VideoFrameConverter
 public:
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(VideoFrameConverter)
 
-  VideoFrameConverter()
+  VideoFrameConverter(RefPtr<PipelineQueueObserver> queueObserver)
     : mLength(0)
     , last_img_(-1) // -1 is not a guaranteed invalid serial. See bug 1262134.
     , disabled_frame_sent_(false)
@@ -118,6 +118,7 @@ public:
     , mThrottleRecord(0)
 #endif
     , mMutex("VideoFrameConverter")
+    , mQueueObserver(queueObserver)
   {
     MOZ_COUNT_CTOR(VideoFrameConverter);
 
@@ -140,11 +141,15 @@ public:
     }
     last_img_ = serial;
 
-    // A throttling limit of 1 allows us to convert 2 frames concurrently.
-    // It's short enough to not build up too significant a delay, while
-    // giving us a margin to not cause some machines to drop every other frame.
+    // A throttling limit of 1 allows at most 2 frames to stay in the task queue
+    // of VideoFrameConverter thread or STS thread. When the queue size gets
+    // larger, it means the CPU is too busy to encode all captured frames. Drop
+    // frames here to avoid increasing latency and draining CPU resource from
+    // other threads (to prevent audio break). Currently we can only monitor these
+    // two queues which reside in gecko, not the buffers in the WebRTC video engine.
     const int32_t queueThrottlingLimit = 1;
-    if (mLength > queueThrottlingLimit) {
+    if (mQueueObserver != nullptr &&
+        mQueueObserver->TotalSize() > queueThrottlingLimit) {
       MOZ_MTLOG(ML_DEBUG, "VideoFrameConverter " << this << " queue is full." <<
                           " Throttling by throwing away a frame.");
 #ifdef DEBUG
@@ -189,7 +194,9 @@ public:
       disabled_frame_sent_ = false;
     }
 
-    ++mLength; // Atomic
+    if (mQueueObserver != nullptr) {
+      mQueueObserver->Increase();
+    }
 
     nsCOMPtr<nsIRunnable> runnable =
       NS_NewRunnableMethodWithArgs<StorensRefPtrPassByPtr<Image>, bool>(
@@ -248,8 +255,9 @@ protected:
 
   void ProcessVideoFrame(Image* aImage, bool aForceBlack)
   {
-    --mLength; // Atomic
-    MOZ_ASSERT(mLength >= 0);
+    if (mQueueObserver != nullptr) {
+      mQueueObserver->Decrease();
+    }
 
     if (aForceBlack) {
       IntSize size = aImage->GetSize();
@@ -472,6 +480,7 @@ protected:
   // mMutex guards the below variables.
   Mutex mMutex;
   nsTArray<RefPtr<VideoConverterListener>> mListeners;
+  RefPtr<PipelineQueueObserver> mQueueObserver;
 };
 #endif
 
@@ -511,8 +520,10 @@ MediaPipeline::MediaPipeline(const std::string& pc,
   // both rtp and rtcp.
   MOZ_ASSERT(rtp_transport != rtcp_transport);
 
+  queue_observer_ = MakeAndAddRef<PipelineQueueObserver>();
+
   // PipelineTransport() will access this->sts_thread_; moved here for safety
-  transport_ = new PipelineTransport(this);
+  transport_ = new PipelineTransport(this, queue_observer_);
 }
 
 MediaPipeline::~MediaPipeline() {
@@ -1289,7 +1300,7 @@ MediaPipelineTransmit::MediaPipelineTransmit(
 
     feeder_ = MakeAndAddRef<VideoFrameFeeder>(listener_);
 
-    converter_ = MakeAndAddRef<VideoFrameConverter>();
+    converter_ = MakeAndAddRef<VideoFrameConverter>(queue_observer_);
     converter_->AddListener(feeder_);
 
     listener_->SetVideoFrameConverter(converter_);
@@ -1481,6 +1492,10 @@ nsresult MediaPipeline::PipelineTransport::SendRtpPacket(
     nsAutoPtr<DataBuffer> buf(new DataBuffer(static_cast<const uint8_t *>(data),
                                              len, len + SRTP_MAX_EXPANSION));
 
+    if (queue_observer_ != nullptr) {
+      queue_observer_->Increase();
+    }
+
     RUN_ON_THREAD(sts_thread_,
                   WrapRunnable(
                       RefPtr<MediaPipeline::PipelineTransport>(this),
@@ -1500,6 +1515,10 @@ nsresult MediaPipeline::PipelineTransport::SendRtpRtcpPacket_s(
     return NS_OK;  // Detached
   }
   TransportInfo& transport = is_rtp ? pipeline_->rtp_ : pipeline_->rtcp_;
+
+  if (is_rtp && queue_observer_ != nullptr) {
+    queue_observer_->Decrease();
+  }
 
   if (!transport.send_srtp_) {
     MOZ_MTLOG(ML_DEBUG, "Couldn't write RTP/RTCP packet; SRTP not set up yet");
