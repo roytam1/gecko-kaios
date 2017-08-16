@@ -25,7 +25,7 @@ const int kMaxBitrateBps = 512000;
 #if defined(WEBRTC_ANDROID) || defined(WEBRTC_IOS) || defined(WEBRTC_ARCH_ARM)
 // If we are on Android, iOS and/or ARM, use a lower complexity setting as
 // default, to save encoder complexity.
-const int kDefaultComplexity = 5;
+const int kDefaultComplexity = 0;
 #else
 const int kDefaultComplexity = 9;
 #endif
