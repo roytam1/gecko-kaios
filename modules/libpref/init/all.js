@@ -380,7 +380,7 @@ pref("media.navigator.video.default_width", 320);
 pref("media.navigator.video.default_height", 240);
 pref("media.peerconnection.enabled", true);
 pref("media.peerconnection.video.enabled", true);
-pref("media.navigator.video.max_fs", 1200); // 640x480 == 1200mb
+pref("media.navigator.video.max_fs", 300); // 320x240 == 300mb
 pref("media.navigator.video.max_fr", 10);
 pref("media.navigator.video.h264.level", 12); // 0x42E00C - level 1.2
 pref("media.navigator.video.h264.max_br", 700); // 8x10
