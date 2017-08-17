@@ -165,7 +165,9 @@
 #define MALLOC_STATS
 
 /* Memory filling (junk/poison/zero). */
+#ifndef TARGET_VARIANT_USER
 #define MALLOC_FILL
+#endif
 
 #ifndef MALLOC_PRODUCTION
    /*
