@@ -235,26 +235,8 @@ KaiAccountsService.prototype = {
    *
    */
   logout: function logout(aRpCallerId) {
-    // XXX Bug 945363 - Resolve the SSO story for FXA and implement
-    // logout accordingly.
-    //
-    // For now, it makes no sense to logout from a specific RP in
-    // Firefox Accounts, so just directly call the logout callback.
-    if (!this._rpFlows.has(aRpCallerId)) {
-      log.error("logout() called before watch()");
-      return;
-    }
-
-    // Call logout() on the next tick
-    let runnable = {
-      run: () => {
-        this.kaiAccountsManager.signOut().then(() => {
-          this.doLogout(aRpCallerId);
-        });
-      }
-    };
-    Services.tm.currentThread.dispatch(runnable,
-                                       Ci.nsIThread.DISPATCH_NORMAL);
+    log.error("logout() is not supported in KaiosAccounts");
+    return;
   },
 
   childProcessShutdown: function childProcessShutdown(messageManager) {
