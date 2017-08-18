@@ -145,7 +145,7 @@ MediaSystemResourceManager::OnIpcClosed()
 bool
 MediaSystemResourceManager::IsIpcClosed()
 {
-  return mChild ? true : false;
+  return !mChild ? true : false;
 }
 
 void
