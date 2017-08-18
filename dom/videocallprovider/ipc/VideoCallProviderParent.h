@@ -30,7 +30,7 @@ protected:
   virtual
   ~VideoCallProviderParent()
   {
-    MOZ_COUNT_DTOR(ImsRegistrationParent);
+    MOZ_COUNT_DTOR(VideoCallProviderParent);
   }
 
   virtual void
