@@ -955,7 +955,7 @@ Nfc.prototype = {
     // queue while initialization is being performed.
     if (!this.nfcService) {
       if ((message.name == "NFC:ChangeRFState") &&
-          (message.data.rfState != "idle") &&
+          (message.data.rfState == NFC.NFC_RF_STATE_DISCOVERY) &&
           !this.pendingNfcService) {
         this.startNfcService(); // error handled in next branch
       }
