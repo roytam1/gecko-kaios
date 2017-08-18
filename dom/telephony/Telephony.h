@@ -255,7 +255,8 @@ private:
              bool aConference = false,
              bool aSwitchable = true,
              bool aMergeable = true,
-             bool aConferenceParent = false);
+             bool aConferenceParent = false,
+             TelephonyVowifiQuality aVowifiCallQuality = TelephonyVowifiQuality::None);
 
   nsresult
   NotifyEvent(const nsAString& aType);

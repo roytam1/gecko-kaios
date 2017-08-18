@@ -133,6 +133,25 @@ TelephonyCall::ConvertToTelephonyCallRadioTech(uint32_t aRadioTech)
 }
 
 // static
+TelephonyVowifiQuality
+TelephonyCall::ConvertToTelephonyVowifiQuality(uint32_t aVowifiQuality)
+{
+  switch (aVowifiQuality) {
+    case nsITelephonyCallInfo::VOWIFI_QUALITY_NONE:
+      return TelephonyVowifiQuality::None;
+    case nsITelephonyCallInfo::VOWIFI_QUALITY_EXCELLENT:
+      return TelephonyVowifiQuality::Excellent;
+    case nsITelephonyCallInfo::VOWIFI_QUALITY_FAIR:
+      return TelephonyVowifiQuality::Fair;
+    case nsITelephonyCallInfo::VOWIFI_QUALITY_BAD:
+      return TelephonyVowifiQuality::Bad;
+  }
+
+  NS_NOTREACHED("Unknown vowifi quality!");
+  return TelephonyVowifiQuality::None;
+}
+
+// static
 already_AddRefed<TelephonyCall>
 TelephonyCall::Create(Telephony* aTelephony,
                       TelephonyCallId* aId,
@@ -147,7 +166,8 @@ TelephonyCall::Create(Telephony* aTelephony,
                       bool aConferenceParent,
                       uint32_t aCapabilities,
                       TelephonyVideoCallState aVideoCallState,
-                      TelephonyCallRadioTech aRadioTech)
+                      TelephonyCallRadioTech aRadioTech,
+                      TelephonyVowifiQuality aVowifiQuality)
 {
   NS_ASSERTION(aTelephony, "Null aTelephony pointer!");
   NS_ASSERTION(aId, "Null aId pointer!");
@@ -171,6 +191,7 @@ TelephonyCall::Create(Telephony* aTelephony,
   call->mCapabilities =
       new TelephonyCallCapabilities(aTelephony->GetOwner(), aCapabilities);
   call->mRadioTech = aRadioTech;
+  call->mVowifiQuality = aVowifiQuality;
 
   call->ChangeStateInternal(aState, false);
   return call.forget();

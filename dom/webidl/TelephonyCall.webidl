@@ -54,6 +54,11 @@ interface TelephonyCall : EventTarget {
    */
   readonly attribute TelephonyCallRadioTech radioTech;
 
+  /**
+   * To indicate current voice over wifi call quality.
+   */
+  readonly attribute TelephonyVowifiQuality vowifiQuality;
+
   [NewObject]
   Promise<void> answer();
   /**
@@ -196,4 +201,26 @@ enum TelephonyCallRadioTech {
   "ps",
   // It is over wifi.
   "wifi"
+};
+
+/**
+ * Current voice over wifi call quality.
+ */
+enum TelephonyVowifiQuality {
+  /**
+   * Quality: None
+   */
+  "none",
+  /**
+   * Quality: Excellent
+   */
+  "excellent",
+  /**
+   * Quality: Fair
+   */
+  "fair",
+  /**
+   * Quality: Bad
+   */
+  "bad"
 };

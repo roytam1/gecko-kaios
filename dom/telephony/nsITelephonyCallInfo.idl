@@ -4,7 +4,7 @@
 
 #include "nsISupports.idl"
 
-[scriptable, uuid(132cf2f3-cbdb-4bda-8807-4b31c5f187f1)]
+[scriptable, uuid(399f7098-f9d6-4b1e-8481-5fa98d779c62)]
 interface nsITelephonyCallInfo : nsISupports
 {
   /**
@@ -176,4 +176,30 @@ interface nsITelephonyCallInfo : nsISupports
    * One of RADIO_TECH_* values.
    */
   readonly attribute unsigned long radioTech;
+
+  /**
+   * Quality: None
+   */
+  const unsigned long VOWIFI_QUALITY_NONE = 0;
+
+  /**
+   * Quality: Excellent
+   */
+  const unsigned long VOWIFI_QUALITY_EXCELLENT = 1;
+
+  /**
+   * Quality: Fair
+   */
+  const unsigned long VOWIFI_QUALITY_FAIR = 2;
+
+  /**
+   * Quality: BAD
+   */
+  const unsigned long VOWIFI_QUALITY_BAD = 4;
+
+  /**
+   * To indicate current voice over wifi call quality.
+   * One of VOWIF_QUALITY_* values.
+   */
+  readonly attribute unsigned long vowifiCallQuality;
 };

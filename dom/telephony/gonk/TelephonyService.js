@@ -285,7 +285,7 @@ function TelephonyCallInfo(aCall) {
   this.clientId = aCall.clientId;
   this.callIndex = aCall.callIndex;
   this.callState = aCall.state;
-  this.voiceQuality = nsITelephonyService.CALL_VOICE_QUALITY_NORMAL;
+  this.voiceQuality = aCall.voiceQuality || nsITelephonyService.CALL_VOICE_QUALITY_NORMAL;
   this.disconnectedReason = aCall.disconnectedReason || "";
 
   this.number = aCall.number;
@@ -298,7 +298,9 @@ function TelephonyCallInfo(aCall) {
   this.isConference = aCall.isConference;
   this.isSwitchable = aCall.isSwitchable;
   this.isMergeable = aCall.isMergeable;
-  this.isConferenceParent = false;
+  this.isConferenceParent = aCall.isConferenceParent || false;
+
+  this.vowifiCallQuality = aCall.vowifiCallQuality || nsITelephonyCallInfo.VOWIFI_QUALITY_NONE;
 }
 TelephonyCallInfo.prototype = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsITelephonyCallInfo]),
@@ -326,7 +328,9 @@ TelephonyCallInfo.prototype = {
   isEmergency: false,
   isConference: false,
   isSwitchable: true,
-  isMergeable: true
+  isMergeable: true,
+
+  vowifiCallQuality: nsITelephonyCallInfo.VOWIFI_QUALITY_NONE
 };
 
 function Call(aClientId, aCallIndex) {
@@ -347,7 +351,10 @@ Call.prototype = {
   isSwitchable: true,
   isMergeable: true,
   started: null,
-  isConferenceParent: false
+  isConferenceParent: false,
+
+  voiceQuality: nsITelephonyService.CALL_VOICE_QUALITY_NORMAL,
+  vowifiCallQuality: nsITelephonyCallInfo.VOWIFI_QUALITY_NONE
 };
 
 function MobileConnectionListener() {}

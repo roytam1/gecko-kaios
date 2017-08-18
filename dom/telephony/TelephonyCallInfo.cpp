@@ -29,7 +29,8 @@ TelephonyCallInfo::TelephonyCallInfo(uint32_t aClientId,
                                      bool aIsConference,
                                      bool aIsSwitchable,
                                      bool aIsMergeable,
-                                     bool aIsConferenceParent)
+                                     bool aIsConferenceParent,
+                                     uint32_t aVowifiQuality)
   : mClientId(aClientId),
     mCallIndex(aCallIndex),
     mCallState(aCallState),
@@ -48,7 +49,8 @@ TelephonyCallInfo::TelephonyCallInfo(uint32_t aClientId,
     mIsConference(aIsConference),
     mIsSwitchable(aIsSwitchable),
     mIsMergeable(aIsMergeable),
-    mIsConferenceParent(aIsConferenceParent)
+    mIsConferenceParent(aIsConferenceParent),
+    mVowifiQuality(aVowifiQuality)
 {
 }
 
@@ -172,6 +174,12 @@ TelephonyCallInfo::GetVideoCallState(uint16_t *aVideoCallState) {
 NS_IMETHODIMP
 TelephonyCallInfo::GetRadioTech(uint32_t *aRadioTech) {
   *aRadioTech = mRadioTech;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TelephonyCallInfo::GetVowifiCallQuality(uint32_t *aVowifiQuality) {
+  *aVowifiQuality = mVowifiQuality;
   return NS_OK;
 }
 

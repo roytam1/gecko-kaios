@@ -39,7 +39,8 @@ public:
                     bool aIsConference,
                     bool aIsSwitchable,
                     bool aIsMergeable,
-                    bool aIsConferenceParent);
+                    bool aIsConferenceParent,
+                    uint32_t aVowifiQuality);
 
 private:
   // Don't try to use the default constructor.
@@ -67,6 +68,8 @@ private:
   bool mIsSwitchable;
   bool mIsMergeable;
   bool mIsConferenceParent;
+
+  uint32_t mVowifiQuality;
 };
 
 } // namespace telephony

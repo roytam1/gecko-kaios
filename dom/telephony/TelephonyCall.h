@@ -49,6 +49,7 @@ class TelephonyCall final : public DOMEventTargetHelper
   TelephonyVideoCallState mVideoCallState;
   RefPtr<TelephonyCallCapabilities> mCapabilities;
   TelephonyCallRadioTech mRadioTech;
+  TelephonyVowifiQuality mVowifiQuality;
 #ifndef FXOS_SIMULATOR
   mutable RefPtr<DOMVideoCallProvider> mVideoCallProvider;
 #endif
@@ -124,6 +125,12 @@ public:
     return mRadioTech;
   }
 
+  TelephonyVowifiQuality
+  VowifiQuality() const
+  {
+    return mVowifiQuality;
+  }
+
   bool
   IsActive() const
   {
@@ -185,6 +192,9 @@ public:
   static TelephonyCallRadioTech
   ConvertToTelephonyCallRadioTech(uint32_t aRadioTech);
 
+  static TelephonyVowifiQuality
+  ConvertToTelephonyVowifiQuality(uint32_t aVowifiQuality);
+
   static already_AddRefed<TelephonyCall>
   Create(Telephony* aTelephony,
          TelephonyCallId* aId,
@@ -199,7 +209,8 @@ public:
          bool aConferenceParent = false,
          uint32_t aCapabilities = 0,
          TelephonyVideoCallState aVideoCallState =  TelephonyVideoCallState::Voice,
-         TelephonyCallRadioTech aRadioTech = TelephonyCallRadioTech::Cs
+         TelephonyCallRadioTech aRadioTech = TelephonyCallRadioTech::Cs,
+         TelephonyVowifiQuality aVowifiQuality = TelephonyVowifiQuality::None
          );
 
   void
@@ -262,6 +273,11 @@ public:
   void
   UpdateRadioTech(TelephonyCallRadioTech aRadioTech) {
     mRadioTech = aRadioTech;
+  }
+
+  void
+  UpdateVowifiQuality(TelephonyVowifiQuality aVowifiQuality) {
+    mVowifiQuality = aVowifiQuality;
   }
 
   void

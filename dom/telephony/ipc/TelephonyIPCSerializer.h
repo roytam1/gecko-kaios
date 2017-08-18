@@ -47,6 +47,7 @@ struct ParamTraits<nsITelephonyCallInfo*>
     nsString name;
     uint16_t namePresentation;
     uint32_t radioTech;
+    uint32_t vowifiQuality;
 
     bool isOutgoing;
     bool isEmergency;
@@ -76,6 +77,8 @@ struct ParamTraits<nsITelephonyCallInfo*>
     aParam->GetIsMergeable(&isMergeable);
     aParam->GetIsConferenceParent(&isConferenceParent);
 
+    aParam->GetVowifiCallQuality(&vowifiQuality);
+
     WriteParam(aMsg, clientId);
     WriteParam(aMsg, callIndex);
     WriteParam(aMsg, callState);
@@ -96,6 +99,8 @@ struct ParamTraits<nsITelephonyCallInfo*>
     WriteParam(aMsg, isSwitchable);
     WriteParam(aMsg, isMergeable);
     WriteParam(aMsg, isConferenceParent);
+
+    WriteParam(aMsg, vowifiQuality);
   }
 
   static bool Read(const Message* aMsg, void** aIter, paramType* aResult)
@@ -132,6 +137,8 @@ struct ParamTraits<nsITelephonyCallInfo*>
     bool isMergeable;
     bool isConferenceParent;
 
+    uint32_t vowifiQuality;
+
     // It's not important to us where it fails, but rather if it fails
     if (!(ReadParam(aMsg, aIter, &clientId) &&
           ReadParam(aMsg, aIter, &callIndex) &&
@@ -152,7 +159,8 @@ struct ParamTraits<nsITelephonyCallInfo*>
           ReadParam(aMsg, aIter, &isConference) &&
           ReadParam(aMsg, aIter, &isSwitchable) &&
           ReadParam(aMsg, aIter, &isMergeable) &&
-          ReadParam(aMsg, aIter, &isConferenceParent))) {
+          ReadParam(aMsg, aIter, &isConferenceParent) &&
+          ReadParam(aMsg, aIter, &vowifiQuality))) {
       return false;
     }
 
@@ -175,7 +183,9 @@ struct ParamTraits<nsITelephonyCallInfo*>
                               isConference,
                               isSwitchable,
                               isMergeable,
-                              isConferenceParent);
+                              isConferenceParent,
+
+                              vowifiQuality);
 
     info.forget(aResult);
 
