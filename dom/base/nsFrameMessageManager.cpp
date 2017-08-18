@@ -410,6 +410,20 @@ nsFrameMessageManager::RemoveMessageListener(const nsAString& aMessage,
     return NS_OK;
   }
 
+#if ENABLE_MARIONETTE
+  // Workaround for the message of "Marionette:asyncReply:{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}"
+  // Remove the first element in listeners array if aMessage starts with "Marrionette:asyncReply"
+  // which concates with an UUID.
+  // [TODO] Remove this workaround once the root cause of aListener with 0x0 can be identified and fixed.
+  nsAString::const_iterator start, end;
+  aMessage.BeginReading(start);
+  aMessage.EndReading(end);
+  if (FindInReadable(NS_LITERAL_STRING("Marionette:asyncReply:"), start, end) && (aListener == 0x0)) {
+    listeners->RemoveElementAt(0);
+    return NS_OK;
+  }
+#endif
+
   uint32_t len = listeners->Length();
   for (uint32_t i = 0; i < len; ++i) {
     if (listeners->ElementAt(i).mStrongListener == aListener) {
