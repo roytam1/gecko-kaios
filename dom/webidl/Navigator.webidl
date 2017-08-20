@@ -518,7 +518,7 @@ partial interface Navigator {
 
 #ifdef HAS_KOOST_MODULES
 partial interface Navigator {
-  [Throws, CheckAnyPermissions="volumemanager", AvailableIn=CertifiedApps]
+  [Throws]
   readonly attribute VolumeManager volumeManager;
 };
 #endif

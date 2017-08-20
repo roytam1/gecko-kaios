@@ -1287,6 +1287,9 @@
                         case KeyEvent.DOM_VK_END:
                             keystroke += "end";
                             break;
+                        case KeyEvent.DOM_VK_RETURN:
+                            keystroke += "return";
+                            break;
                     }
 
                     if (String.fromCharCode(event.charCode) == ' ')
@@ -1298,17 +1301,32 @@
                     try {
                         switch (keystroke) {
                             case "space": /* Play */
+                            case "return":
                                 this.togglePause();
+                                if (!this.videocontrols.TouchUtils.visible) {
+                                  this.videocontrols.TouchUtils.showControls();
+                                } else {
+                                  this.videocontrols.TouchUtils.delayHideControls(
+                                    this.videocontrols.TouchUtils.controlsTimeout);
+                                }
                                 break;
                             case "downArrow": /* Volume decrease */
-                                oldval = this.video.volume;
-                                this.video.volume = (oldval < 0.1 ? 0 : oldval - 0.1);
-                                this.video.muted = false;
+                                if (navigator.volumeManager) {
+                                  navigator.volumeManager.requestDown();
+                                } else {
+                                  oldval = this.video.volume;
+                                  this.video.volume = (oldval < 0.1 ? 0 : oldval - 0.1);
+                                  this.video.muted = false;
+                                }
                                 break;
                             case "upArrow": /* Volume increase */
-                                oldval = this.video.volume;
-                                this.video.volume = (oldval > 0.9 ? 1 : oldval + 0.1);
-                                this.video.muted = false;
+                                if (navigator.volumeManager) {
+                                  navigator.volumeManager.requestUp();
+                                } else {
+                                  oldval = this.video.volume;
+                                  this.video.volume = (oldval > 0.9 ? 1 : oldval + 0.1);
+                                  this.video.muted = false;
+                                }
                                 break;
                             case "accel-downArrow": /* Mute */
                                 this.video.muted = true;
@@ -1316,24 +1334,36 @@
                             case "accel-upArrow": /* Unmute */
                                 this.video.muted = false;
                                 break;
-                            case "leftArrow": /* Seek back 15 seconds */
+                            case "leftArrow": /* Seek back 10 seconds */
                             case "accel-leftArrow": /* Seek back 10% */
                                 oldval = this.video.currentTime;
                                 if (keystroke == "leftArrow")
-                                    newval = oldval - 15;
+                                    newval = oldval - 10;
                                 else
                                     newval = oldval - (this.video.duration || this.maxCurrentTimeSeen / 1000) / 10;
                                 this.video.currentTime = (newval >= 0 ? newval : 0);
+                                if (!this.videocontrols.TouchUtils.visible) {
+                                  this.videocontrols.TouchUtils.showControls();
+                                } else {
+                                  this.videocontrols.TouchUtils.delayHideControls(
+                                    this.videocontrols.TouchUtils.controlsTimeout);
+                                }
                                 break;
-                            case "rightArrow": /* Seek forward 15 seconds */
+                            case "rightArrow": /* Seek forward 10 seconds */
                             case "accel-rightArrow": /* Seek forward 10% */
                                 oldval = this.video.currentTime;
                                 var maxtime = (this.video.duration || this.maxCurrentTimeSeen / 1000);
                                 if (keystroke == "rightArrow")
-                                    newval = oldval + 15;
+                                    newval = oldval + 10;
                                 else
                                     newval = oldval + maxtime / 10;
                                 this.video.currentTime = (newval <= maxtime ? newval : maxtime);
+                                if (!this.videocontrols.TouchUtils.visible) {
+                                  this.videocontrols.TouchUtils.showControls();
+                                } else {
+                                  this.videocontrols.TouchUtils.delayHideControls(
+                                    this.videocontrols.TouchUtils.controlsTimeout);
+                                }
                                 break;
                             case "home": /* Seek to beginning */
                                 this.video.currentTime = 0;

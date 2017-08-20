@@ -1212,7 +1212,7 @@ pref("toolkit.telemetry.enabled", false);
 pref("media.webspeech.service.default", "adaptor");
 
 // Force fullscreen video in landscape mode if its width larger than height.
-pref("media.video.fullscreen.force-landscape", false);
+pref("media.video.fullscreen.force-landscape", true);
 
 pref('dom.enable_user_timing', true);
 pref('dom.performance.enable_user_timing_logging', true);

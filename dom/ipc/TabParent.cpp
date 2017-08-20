@@ -2717,6 +2717,26 @@ TabParent::RecvTriggerSpatialNavigationCursorClick()
   return true;
 }
 
+bool
+TabParent::RecvTriggerSpatialNavigationCursorOut()
+{
+  RefPtr<SpatialNavigationService> service =
+    SpatialNavigationService::GetOrCreate();
+  service->CursorOut();
+
+  return true;
+}
+
+bool
+TabParent::RecvTriggerSpatialNavigationCursorMove()
+{
+  RefPtr<SpatialNavigationService> service =
+    SpatialNavigationService::GetOrCreate();
+  service->CursorMove();
+
+  return true;
+}
+
 already_AddRefed<nsILoadContext>
 TabParent::GetLoadContext()
 {

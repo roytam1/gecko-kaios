@@ -521,6 +521,8 @@ parent:
     async SoftkeyVisibleChange(bool visible);
     async UpdateSpatialNavigationCursorPosition(LayoutDeviceIntPoint aPoint);
     async TriggerSpatialNavigationCursorClick();
+    async TriggerSpatialNavigationCursorOut();
+    async TriggerSpatialNavigationCursorMove();
 
     async RequestVolumeChange(bool up);
     async RequestVolumeShow();
