@@ -440,7 +440,12 @@ NetworkManager.prototype = {
         this._createNetwork(extNetworkInfo.name, extNetworkInfo.type)
           // Remove pre-created default route and let setAndConfigureActive()
           // to set default route only on preferred network
-          .then(() => this._removeDefaultRoute(extNetworkInfo))
+          .then(() => {
+            if (extNetworkInfo.type == Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_IMS) {
+              return Promise.resolve();
+            }
+            return this._removeDefaultRoute(extNetworkInfo);
+          })
           // Set DNS server as early as possible to prevent from
           // premature domain name lookup.
           .then(() => {
