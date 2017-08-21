@@ -28,7 +28,7 @@ GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo)
 }
 
 double
-GetTemperature()
+GetBatteryTemperature()
 {
   return dom::battery::kDefaultTemperature;
 }
