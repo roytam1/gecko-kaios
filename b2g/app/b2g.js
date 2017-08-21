@@ -1224,3 +1224,6 @@ pref('dom.browserElement.loglevel', 1);
 pref('focusmanager.loglevel', 2);
 pref('dom.browserElement.loglevel', 1);
 #endif
+
+// Turn off update of dummy thermal status
+pref('dom.battery.test.dummy_thermal_status', false);

@@ -134,6 +134,10 @@ double
 BatteryManager::Temperature() const
 {
   MOZ_ASSERT(NS_IsMainThread());
+  if (Preferences::GetBool("dom.battery.test.dummy_thermal_status", false)) {
+    return kDefaultTemperature;
+  }
+
   return hal::GetBatteryTemperature();
 }
 
@@ -141,6 +145,10 @@ BatteryHealth
 BatteryManager::Health() const
 {
   MOZ_ASSERT(NS_IsMainThread());
+  if (Preferences::GetBool("dom.battery.test.dummy_thermal_status", false)) {
+    return BatteryHealth::Good;
+  }
+
   return mHealth;
 }
 
@@ -196,7 +204,12 @@ BatteryManager::Notify(const hal::BatteryInformation& aBatteryInfo)
     DispatchTrustedEvent(LEVELCHANGE_EVENT_NAME);
   }
 
-  if (previousHealth != mHealth) {
+  /*
+   * Don't fire batteryhealthchange event if
+   * dom.battery.test.dummy_thermal_status is true.
+   */
+  if (!Preferences::GetBool("dom.battery.test.dummy_thermal_status", false) &&
+      previousHealth != mHealth) {
     DispatchTrustedEvent(BATTERYHEALTHCHANGE_EVENT_NAME);
   }
   /*
