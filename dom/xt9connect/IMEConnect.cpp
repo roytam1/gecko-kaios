@@ -87,7 +87,7 @@ EditorInsertWord(demoIMEInfo * const pIME,
   ET9U16 snStringLen;
   ET9SYMB *psString;
 
-  MOZ_ASSERT(pEditor->snBufferLen <= BUFFER_LEN_MAX);
+  MOZ_ASSERT((ET9U32)pEditor->snBufferLen <= BUFFER_LEN_MAX);
   MOZ_ASSERT(pEditor->snCursorPos <= pEditor->snBufferLen);
 
   if (pWord->wSubstitutionLen && !bSupressSubstitutions) {
