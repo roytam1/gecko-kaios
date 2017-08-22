@@ -330,7 +330,12 @@ TelephonyListener::Listen(bool aStart)
  *  BluetoothRilListener
  */
 BluetoothRilListener::BluetoothRilListener()
+  : mClientId(0)
 {
+  mTelephonyListener = new TelephonyListener();
+  mIccListener = new IccListener();
+  mIccListener->SetOwner(this);
+
   nsCOMPtr<nsIMobileConnectionService> service =
     do_GetService(NS_MOBILE_CONNECTION_SERVICE_CONTRACTID);
   NS_ENSURE_TRUE_VOID(service);
@@ -343,10 +348,6 @@ BluetoothRilListener::BluetoothRilListener()
       mMobileConnListeners.AppendElement(new MobileConnectionListener(i));
     }
   }
-
-  mTelephonyListener = new TelephonyListener();
-  mIccListener = new IccListener();
-  mIccListener->SetOwner(this);
 
   // Probe for available client
   SelectClient();
