@@ -1227,3 +1227,6 @@ pref('dom.browserElement.loglevel', 1);
 
 // Turn off update of dummy thermal status
 pref('dom.battery.test.dummy_thermal_status', false);
+
+// Turn off update of dummy battery level
+pref('dom.battery.test.dummy_battery_level', false);

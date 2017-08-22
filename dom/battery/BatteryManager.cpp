@@ -125,6 +125,8 @@ BatteryManager::Level() const
   // For testing, unable to report the battery status information
   if (Preferences::GetBool("dom.battery.test.default")) {
     return 1.0;
+  } else if (Preferences::GetBool("dom.battery.test.dummy_battery_level", false)) {
+    return 0.7;
   }
 
   return mLevel;
@@ -200,7 +202,12 @@ BatteryManager::Notify(const hal::BatteryInformation& aBatteryInfo)
     DispatchTrustedEvent(CHARGINGCHANGE_EVENT_NAME);
   }
 
-  if (previousLevel != mLevel) {
+  /*
+   * Don't fire levelchange event if dom.battery.test.dummy_battery_level is
+   * true.
+   */
+  if (!Preferences::GetBool("dom.battery.test.dummy_battery_level", false) &&
+      previousLevel != mLevel) {
     DispatchTrustedEvent(LEVELCHANGE_EVENT_NAME);
   }
 
@@ -220,8 +227,11 @@ BatteryManager::Notify(const hal::BatteryInformation& aBatteryInfo)
    *   b. New remaining time isn't unkwonw, we have to fire an event for it.
    * 2. Charging state didn't change but remainingTime did, we have to fire
    *    the event that correspond to the current charging state.
+   * 3. If dom.battery.test.dummy_battery_level is true, won't dispatch event
+   *    regarding estimated charging/discharging time.
    */
-  if (mCharging != previousCharging) {
+  if (!Preferences::GetBool("dom.battery.test.dummy_battery_level", false) &&
+      mCharging != previousCharging) {
     if (previousRemainingTime != kUnknownRemainingTime) {
       DispatchTrustedEvent(previousCharging ? CHARGINGTIMECHANGE_EVENT_NAME
                                             : DISCHARGINGTIMECHANGE_EVENT_NAME);
