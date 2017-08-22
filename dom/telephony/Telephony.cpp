@@ -542,7 +542,7 @@ already_AddRefed<Promise>
 Telephony::Dial(const nsAString& aNumber, const Optional<uint32_t>& aServiceId,
                 ErrorResult& aRv)
 {
-  uint32_t serviceId = GetServiceId(aServiceId);
+  uint32_t serviceId = GetServiceId(aServiceId, GetNumServices() != 1);
   RefPtr<Promise> promise = DialInternal(serviceId, aNumber, false, aRv);
   return promise.forget();
 }
