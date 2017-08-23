@@ -672,11 +672,20 @@ nsStandardURL::BuildNormalizedSpec(const char *spec)
     if (mPath.mLen <= 0) {
         LOG(("setting path=/"));
         mDirectory.mPos = mFilepath.mPos = mPath.mPos = i;
-        mDirectory.mLen = mFilepath.mLen = mPath.mLen = 1;
+        mDirectory.mLen = mFilepath.mLen = mPath.mLen = -1;
         // basename must exist, even if empty (bug 113508)
         mBasename.mPos = i+1;
         mBasename.mLen = 0;
-        buf[i++] = '/';
+
+        if (Substring(mSpec, mScheme.mPos, mScheme.mLen).
+            Equals(NS_LITERAL_CSTRING("http"), nsCaseInsensitiveCStringComparator())) {
+            // Some carriers do not accept http://xxxx/ as valid mms URI, we
+            // intend to ignore this '/' for http/https request, However, this
+            // postfix '/'is necessary for app scheme (ex: app://xxxx.gaiamobile.org/).
+            buf[i++] = '\0';
+        } else {
+            buf[i++] = '/';
+        }
     }
     else {
         uint32_t leadingSlash = 0;
