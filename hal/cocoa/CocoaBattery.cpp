@@ -16,6 +16,7 @@
 #include <nsIObserver.h>
 
 #include <dlfcn.h>
+#include "mozilla/dom/BatteryManagerBinding.h"
 
 #define IOKIT_FRAMEWORK_PATH "/System/Library/Frameworks/IOKit.framework/IOKit"
 
@@ -56,6 +57,8 @@ private:
   double mLevel;
   bool mCharging;
   double mRemainingTime;
+  double mTemperature;
+  BatteryHealth mHealth;
   bool mShouldNotify;
 
   friend void GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo);
@@ -100,6 +103,14 @@ GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo)
   aBatteryInfo->level() = powerService->mLevel;
   aBatteryInfo->charging() = powerService->mCharging;
   aBatteryInfo->remainingTime() = powerService->mRemainingTime;
+  aBatteryInfo->temperature() = powerService->mTemperature;
+  aBatteryInfo->health() = powerService->mHealth;
+}
+
+double
+GetBatteryTemperature()
+{
+  return kDefaultTemperature;
 }
 
 bool MacPowerInformationService::sShuttingDown = false;
@@ -167,6 +178,8 @@ MacPowerInformationService::MacPowerInformationService()
   , mLevel(kDefaultLevel)
   , mCharging(kDefaultCharging)
   , mRemainingTime(kDefaultRemainingTime)
+  , mTemperature(kDefaultTemperature)
+  , mHealth(kDefaultHealth)
   , mShouldNotify(false)
 {
   // IOPSGetTimeRemainingEstimate (and the related constants) are only available
@@ -309,12 +322,16 @@ MacPowerInformationService::HandleChange(void* aContext) {
   power->mRemainingTime = remainingTime;
   power->mCharging = charging;
   power->mLevel = level;
+  power->mTemperature = kDefaultTemperature;
+  power->mHealth = kDefaultHealth;
 
   // Notify the observers if stuff changed.
   if (power->mShouldNotify && isNewData) {
     hal::NotifyBatteryChange(hal::BatteryInformation(power->mLevel,
                                                      power->mCharging,
-                                                     power->mRemainingTime));
+                                                     power->mRemainingTime,
+                                                     power->mTemperature,
+                                                     power->mHealth));
   }
 
   ::CFRelease(data);
