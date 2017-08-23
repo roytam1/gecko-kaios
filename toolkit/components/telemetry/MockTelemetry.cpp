@@ -8,6 +8,7 @@
 #include "TelemetryCommon.h"
 #include "WebrtcTelemetry.h"
 #include "mozilla/ProcessedStack.h"
+#include "mozilla/ThreadHangStats.h"
 
 namespace mozilla {
 namespace Telemetry {
@@ -215,6 +216,42 @@ size_t ProcessedStack::GetStackSize() const
 const ProcessedStack::Frame &ProcessedStack::GetFrame(unsigned aIndex) const
 {
   return dummyFrame;
+}
+
+void
+TimeHistogram::Add(PRIntervalTime aTime)
+{
+  return;
+}
+
+const char*
+HangStack::InfallibleAppendViaBuffer(const char* aText, size_t aLength)
+{
+  return nullptr;
+}
+
+const char*
+HangStack::AppendViaBuffer(const char* aText, size_t aLength)
+{
+  return nullptr;
+}
+
+uint32_t
+HangHistogram::GetHash(const HangStack& aStack)
+{
+  return 0;
+}
+
+bool
+HangHistogram::operator==(const HangHistogram& aOther) const
+{
+  if (mHash != aOther.mHash) {
+    return false;
+  }
+  if (mStack.length() != aOther.mStack.length()) {
+    return false;
+  }
+  return mStack == aOther.mStack;
 }
 
 } // namespace Telemetry
