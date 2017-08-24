@@ -51,8 +51,11 @@ ChromeNotifications.prototype = {
       let behavior;
       try {
         behavior = JSON.parse(notification.mozbehavior);
+        behavior.resend = true;
       } catch(e) {
-        behavior = undefined;
+        behavior = {
+          resend: true
+        };
       }
 
       if (behavior && behavior.showOnlyOnce === true) {
