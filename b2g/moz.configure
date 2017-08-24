@@ -52,4 +52,18 @@ def get_variant(value):
 set_config(get_variant, True)
 set_define(get_variant, True)
 
+# Presentation Support
+# ==============================================================
+option('--enable-presentation',
+       help='Enable Presentation Service (default disable)')
+
+@depends('--disable-presentation', target)
+def presentation(value, target):
+    enabled = bool(value)
+    if enabled:
+        return True
+
+set_config('MOZ_PRESENTATION', presentation)
+set_define('MOZ_PRESENTATION', presentation)
+
 include('common.configure')

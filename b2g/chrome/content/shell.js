@@ -792,7 +792,11 @@ var shell = {
     Cu.import('resource://gre/modules/DownloadsAPI.jsm');
     Cu.import('resource://gre/modules/RequestSyncService.jsm');
     Cu.import('resource://gre/modules/SystemUpdateService.jsm');
-    Cu.import('resource://gre/modules/PresentationDeviceInfoManager.jsm');
+    try {
+      if (Services.prefs.getBoolPref('dom.presentation.enabled')) {
+        Cu.import('resource://gre/modules/PresentationDeviceInfoManager.jsm');
+      }
+    } catch(e) { }
     // Customization files.
     Cu.import('resource://gre/modules/CustomizationService.jsm');
     Cu.import('resource://gre/modules/CustomizationConfigManager.jsm');

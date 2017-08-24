@@ -114,6 +114,7 @@ category command-line-handler m-b2gbootstrap @mozilla.org/commandlinehandler/gen
 component {83dbe26a-81f3-4a75-9541-3d0b7ca496b5} MobileIdentityUIGlue.js
 contract @mozilla.org/services/mobileid-ui-glue;1 {83dbe26a-81f3-4a75-9541-3d0b7ca496b5}
 
+#ifdef MOZ_PRESENTATION
 # B2GPresentationDevicePrompt.js
 component {4a300c26-e99b-4018-ab9b-c48cf9bc4de1} B2GPresentationDevicePrompt.js
 contract @mozilla.org/presentation-device/prompt;1 {4a300c26-e99b-4018-ab9b-c48cf9bc4de1}
@@ -121,6 +122,7 @@ contract @mozilla.org/presentation-device/prompt;1 {4a300c26-e99b-4018-ab9b-c48c
 # PresentationRequestUIGlue.js
 component {ccc8a839-0b64-422b-8a60-fb2af0e376d0} PresentationRequestUIGlue.js
 contract @mozilla.org/presentation/requestuiglue;1 {ccc8a839-0b64-422b-8a60-fb2af0e376d0}
+#endif
 
 # KillSwitch.js
 component {b6eae5c6-971c-4772-89e5-5df626bf3f09} KillSwitch.js

@@ -219,7 +219,9 @@
 @RESPATH@/components/dom_xul.xpt
 @RESPATH@/components/dom_time.xpt
 @RESPATH@/components/dom_engineeringmode.xpt
+#ifdef MOZ_PRESENTATION
 @RESPATH@/components/dom_presentation.xpt
+#endif
 @RESPATH@/components/downloads.xpt
 @RESPATH@/components/editor.xpt
 @RESPATH@/components/embed_base.xpt
@@ -419,12 +421,14 @@
 @RESPATH@/components/nsAsyncShutdown.js
 @RESPATH@/components/htmlMenuBuilder.js
 @RESPATH@/components/htmlMenuBuilder.manifest
+#ifdef MOZ_PRESENTATION
 @RESPATH@/components/PresentationDeviceInfoManager.manifest
 @RESPATH@/components/PresentationDeviceInfoManager.js
 @RESPATH@/components/BuiltinProviders.manifest
 @RESPATH@/components/PresentationControlService.js
 @RESPATH@/components/PresentationDataChannelSessionTransport.js
 @RESPATH@/components/PresentationDataChannelSessionTransport.manifest
+#endif
 
 #ifdef MOZ_SECUREELEMENT
 @RESPATH@/components/ACEService.js
@@ -936,8 +940,10 @@ bin/libfreebl_32int64_3.so
 @RESPATH@/components/DownloadsUI.js
 @RESPATH@/components/InterAppCommUIGlue.js
 @RESPATH@/components/SystemMessageGlue.js
+#ifdef MOZ_PRESENTATION
 @RESPATH@/components/B2GPresentationDevicePrompt.js
 @RESPATH@/components/PresentationRequestUIGlue.js
+#endif
 @RESPATH@/components/KillSwitch.js
 
 #ifndef MOZ_WIDGET_GONK
