@@ -129,7 +129,7 @@ public:
 #endif
 };
 
-IMPLEMENT_META_INTERFACE(KeystoreService, "android.security.keystore");
+IMPLEMENT_META_INTERFACE(KeystoreService, "android.security.IKeystoreService");
 
 // Here comes binder requests.
 status_t BnKeystoreService::onTransact(uint32_t code, const Parcel& data, Parcel* reply, uint32_t flags)
