@@ -29,6 +29,7 @@
 #include "nsIInterfaceRequestorUtils.h"
 #include "nsINetworkInterface.h"
 #include "nsIObserverService.h"
+#include "nsIURLFormatter.h"
 #include "nsJSUtils.h"
 #include "nsPrintfCString.h"
 #include "nsServiceManagerUtils.h"
@@ -1188,12 +1189,22 @@ GonkGPSGeolocationProvider::Startup()
     }
   }
 
-  mNetworkLocationProvider = do_CreateInstance("@mozilla.org/geolocation/mls-provider;1");
-  if (mNetworkLocationProvider) {
-    nsresult rv = mNetworkLocationProvider->Startup();
-    if (NS_SUCCEEDED(rv)) {
-      RefPtr<NetworkLocationUpdate> update = new NetworkLocationUpdate();
-      mNetworkLocationProvider->Watch(update);
+  // Setup NetworkLocationProvider if the API key is available
+  nsresult rv;
+  nsCOMPtr<nsIURLFormatter> formatter =
+    do_CreateInstance("@mozilla.org/toolkit/URLFormatterService;1", &rv);
+  if (NS_SUCCEEDED(rv)) {
+    nsString key;
+    rv = formatter->FormatURLPref(NS_LITERAL_STRING("geo.authorization.key"), key);
+    if (NS_SUCCEEDED(rv) && !key.IsEmpty()) {
+      mNetworkLocationProvider = do_CreateInstance("@mozilla.org/geolocation/mls-provider;1");
+      if (mNetworkLocationProvider) {
+        rv = mNetworkLocationProvider->Startup();
+        if (NS_SUCCEEDED(rv)) {
+          RefPtr<NetworkLocationUpdate> update = new NetworkLocationUpdate();
+          mNetworkLocationProvider->Watch(update);
+        }
+      }
     }
   }
 
