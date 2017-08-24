@@ -8,6 +8,7 @@
 
 #include "mozilla/dom/PositionBinding.h"
 #include "mozilla/dom/CoordinatesBinding.h"
+#include "prtime.h"
 
 ////////////////////////////////////////////////////
 // nsGeoPositionCoords
@@ -97,10 +98,11 @@ nsGeoPosition::nsGeoPosition(double aLat, double aLong,
                              double aSpeed, long long aTimestamp) :
     mTimestamp(aTimestamp)
 {
-    mCoords = new nsGeoPositionCoords(aLat, aLong,
-                                      aAlt, aHError,
-                                      aVError, aHeading,
-                                      aSpeed);
+  CorrectTimestamp(mTimestamp);
+  mCoords = new nsGeoPositionCoords(aLat, aLong,
+                                    aAlt, aHError,
+                                    aVError, aHeading,
+                                    aSpeed);
 }
 
 nsGeoPosition::nsGeoPosition(nsIDOMGeoPositionCoords *aCoords,
@@ -108,6 +110,7 @@ nsGeoPosition::nsGeoPosition(nsIDOMGeoPositionCoords *aCoords,
     mTimestamp(aTimestamp),
     mCoords(aCoords)
 {
+  CorrectTimestamp(mTimestamp);
 }
 
 nsGeoPosition::nsGeoPosition(nsIDOMGeoPositionCoords *aCoords,
@@ -115,10 +118,21 @@ nsGeoPosition::nsGeoPosition(nsIDOMGeoPositionCoords *aCoords,
   mTimestamp(aTimestamp),
   mCoords(aCoords)
 {
+  CorrectTimestamp(mTimestamp);
 }
 
 nsGeoPosition::~nsGeoPosition()
 {
+}
+
+void
+nsGeoPosition::CorrectTimestamp(long long aTimestamp)
+{
+  // Sanity check of the given timestamp
+  const int64_t diff_ms = (PR_Now() / PR_USEC_PER_MSEC) - aTimestamp;
+  if (diff_ms > 3600000) { // 3600000 ms equals to 1 hour
+    mTimestamp = (PR_Now() / PR_USEC_PER_MSEC);
+  }
 }
 
 NS_INTERFACE_MAP_BEGIN(nsGeoPosition)
