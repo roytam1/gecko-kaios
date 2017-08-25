@@ -1145,11 +1145,13 @@ BluetoothHfpManager::GetPhoneType(const nsAString& aType)
   if (aType.EqualsLiteral("gsm") || aType.EqualsLiteral("gprs") ||
       aType.EqualsLiteral("edge") || aType.EqualsLiteral("umts") ||
       aType.EqualsLiteral("hspa") || aType.EqualsLiteral("hsdpa") ||
-      aType.EqualsLiteral("hsupa") || aType.EqualsLiteral("hspa+")) {
+      aType.EqualsLiteral("hsupa") || aType.EqualsLiteral("hspa+") ||
+      aType.EqualsLiteral("lte")) {
     return PhoneType::GSM;
   } else if (aType.EqualsLiteral("is95a") || aType.EqualsLiteral("is95b") ||
              aType.EqualsLiteral("1xrtt") || aType.EqualsLiteral("evdo0") ||
-             aType.EqualsLiteral("evdoa") || aType.EqualsLiteral("evdob")) {
+             aType.EqualsLiteral("evdoa") || aType.EqualsLiteral("evdob") ||
+             aType.EqualsLiteral("ehrpd")) {
     return PhoneType::CDMA;
   }
 
