@@ -454,7 +454,15 @@ NetworkService.prototype = {
     let options = {
       cmd: "setDNS",
       ifname: aInterfaceName,
-      domain: "mozilla." + aInterfaceName + ".domain",
+      /*
+        ** Set null for this domain value. It can't get the correct host ip even add this domain value for DNS query.
+        ** example: Query DNS: "www.abcd"
+        ** If DNS server did not response the host ip for the "www.abcd" domain name.
+        ** Device will try to query again the domain name with "www.abcd.mozilla.aInterfaceName.domain"
+        ** And expect, server will response the correct host ip address.
+      */
+      // domain: "mozilla." + aInterfaceName + ".domain",
+      domain: null,
       dnses: aDnses,
       gateways: aGateways
     };
