@@ -339,6 +339,9 @@ DataCallManager.prototype = {
         }
         this._handleDataClientIdChange(aResult);
         break;
+      // We only get operatorvariant.iccId once when the device starts up now.
+      // After QCOM/SPRD give us the hot swap event, we will get operatorvariant.iccId
+      // as old iccid and decide whether to get apn or not.
       case "operatorvariant.iccId":
         if (this.hasGetIccid === true) {
           break;
@@ -1023,17 +1026,28 @@ DataCallHandler.prototype = {
     }
   },
 
-notifyIccInfoChanged: function () {
-  let lock = gSettingsService.createLock();
-  let icc = gIccService.getIccByServiceId(this.clientId);
-  let iccInfo = icc && icc.iccInfo;
-  this.newIccid = iccInfo && iccInfo.iccid;
-  if ((this.newIccid != null) && (this.oldIccid != null) && (this.newIccid === this.oldIccid))
-  {
-    lock.get("ril.data.apnSettings", this);
-  }
-  icc.unregisterListener(this);
-},
+  /**
+   * nsIIccListener interface methods.
+   */
+  notifyStkCommand: function() {},
+
+  notifyStkSessionEnd: function() {},
+
+  notifyIsimInfoChanged: function() {},
+
+  notifyCardStateChanged: function() {},
+
+  notifyIccInfoChanged: function () {
+    let lock = gSettingsService.createLock();
+    let icc = gIccService.getIccByServiceId(this.clientId);
+    let iccInfo = icc && icc.iccInfo;
+    this.newIccid = iccInfo && iccInfo.iccid;
+    if ((this.newIccid != null) && (this.oldIccid != null) && (this.newIccid === this.oldIccid))
+    {
+      lock.get("ril.data.apnSettings", this);
+    }
+    icc.unregisterListener(this);
+  },
 
   // nsIMobileConnectionListener
 
