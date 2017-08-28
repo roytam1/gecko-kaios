@@ -1078,8 +1078,11 @@ var WifiManager = (function() {
       parseInt(libcutils.property_get("ro.moz.wifi.scan_interval", "15"), 10),
       function(ok) {});
     manager.setPowerMode("AUTO", function(ok) {});
-    manager.setSuspendOptimizations(requestOptimizationMode === 0,
-      function(ok) {});
+    let window = Services.wm.getMostRecentWindow("navigator:browser");
+    if (window !== null) {
+      setSuspendOptimizationsMode(POWER_MODE_SCREEN_STATE,
+        !window.navigator.mozPower.screenEnabled, function(ok) {});
+    }
     manager.setCountryCode(pickWifiCountryCode(), function(ok) {});
 
     if (p2pSupported) {
