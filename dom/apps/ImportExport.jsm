@@ -414,7 +414,7 @@ this.ImportExport = {
         // TODO: stop accessing internal methods of other objects.
         let [reader, isSigned] =
           yield DOMApplicationRegistry._openPackage(appFile, meta, false);
-        let maxStatus = isSigned ? Ci.nsIPrincipal.APP_STATUS_PRIVILEGED
+        let maxStatus = isSigned ? Ci.nsIPrincipal.APP_STATUS_CERTIFIED
                                  : Ci.nsIPrincipal.APP_STATUS_INSTALLED;
         // Anything is possible in developer mode.
         if (devMode) {

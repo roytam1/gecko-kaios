@@ -3824,17 +3824,12 @@ this.DOMApplicationRegistry = {
 
     // Local file installs can be privileged even without the signature.
     let maxStatus = aIsSigned || aIsLocalFileInstall
-                    ? Ci.nsIPrincipal.APP_STATUS_PRIVILEGED
+                    ? Ci.nsIPrincipal.APP_STATUS_CERTIFIED
                     : Ci.nsIPrincipal.APP_STATUS_INSTALLED;
 
     try {
       // Anything is possible in developer mode.
       if (Services.prefs.getBoolPref("dom.apps.developer_mode")) {
-        maxStatus = Ci.nsIPrincipal.APP_STATUS_CERTIFIED;
-      }
-      // service center (kaios-plus) is certified app and we need to update it.
-      let manifest = Services.prefs.getCharPref("apps.serviceCenter.manifest");
-      if (aOldApp.manifestURL == manifest) {
         maxStatus = Ci.nsIPrincipal.APP_STATUS_CERTIFIED;
       }
     } catch(e) {}
