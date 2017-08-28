@@ -5,6 +5,7 @@
 #ifndef NetIdManager_h
 #define NetIdManager_h
 
+#include <unordered_set>
 #include "nsString.h"
 #include "nsDataHashtable.h"
 
@@ -15,6 +16,7 @@
 // network-interface mapping.
 
 class NetIdManager {
+  typedef unsigned int NetType;
 public:
   // keep in sync with system/netd/NetworkController.cpp
   enum {
@@ -26,18 +28,19 @@ public:
   // application like data and mms may use the same interface.
   struct NetIdInfo {
     int mNetId;
-    int mRefCnt;
+    NetType mTypes;
   };
 
 public:
   NetIdManager();
 
   bool lookup(const nsString& aInterfaceName, NetIdInfo* aNetIdInfo);
-  void acquire(const nsString& aInterfaceName, NetIdInfo* aNetIdInfo);
-  bool release(const nsString& aInterfaceName, NetIdInfo* aNetIdInfo);
-
+  void acquire(const nsString& aInterfaceName, NetIdInfo* aNetIdInfo, int aType);
+  bool release(const nsString& aInterfaceName, NetIdInfo* aNetIdInfo, int aType);
 private:
   int getNextNetId();
+  void add_type(NetType& aTypes, int type);
+  void remove_type(NetType& aTypes, int type);
   int mNextNetId;
   nsDataHashtable<nsStringHashKey, NetIdInfo> mInterfaceToNetIdHash;
 };

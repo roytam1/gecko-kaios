@@ -2947,10 +2947,11 @@ CommandResult NetworkUtils::createNetwork(NetworkParams& aOptions)
   if (mNetIdManager.lookup(aOptions.mIfname, &netIdInfo)) {
     NU_DBG("Interface %s (%d) has been created.", GET_CHAR(mIfname),
                                                   netIdInfo.mNetId);
+    mNetIdManager.acquire(GET_FIELD(mIfname), &netIdInfo, GET_FIELD(mNetworkType));
     return SUCCESS;
   }
 
-  mNetIdManager.acquire(GET_FIELD(mIfname), &netIdInfo);
+  mNetIdManager.acquire(GET_FIELD(mIfname), &netIdInfo, GET_FIELD(mNetworkType));
   NU_DBG("Request netd to create a network with netid %d", netIdInfo.mNetId);
   // Newly created netid. Ask netd to create network.
   aOptions.mNetId = netIdInfo.mNetId;
@@ -2975,12 +2976,12 @@ CommandResult NetworkUtils::destroyNetwork(NetworkParams& aOptions)
   };
 
   NetIdManager::NetIdInfo netIdInfo;
-  if (!mNetIdManager.release(GET_FIELD(mIfname), &netIdInfo)) {
+  if (!mNetIdManager.release(GET_FIELD(mIfname), &netIdInfo, GET_FIELD(mNetworkType)) {
     ERROR("No existing netid for %s", GET_CHAR(mIfname));
     return -1;
   }
 
-  if (netIdInfo.mRefCnt > 0) {
+  if (netIdInfo.mTypes != 0) {
     // Still be referenced. Just return.
     NU_DBG("Someone is still using this interface.");
     return SUCCESS;
