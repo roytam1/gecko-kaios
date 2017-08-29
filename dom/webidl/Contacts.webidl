@@ -115,6 +115,13 @@ dictionary ContactFindSortOptions {
 
 dictionary ContactFindOptions : ContactFindSortOptions {
   DOMString      filterValue;  // e.g. "Tom"
+  /**
+   * Possible values: equals, contains, match, startsWith, fuzzyMatch.
+   * contains, match and fuzzyMatch only supported by filterValue 'tel'.
+   * contains: *<filterValue>*.
+   * match: exact match in international, national formats.
+   * fuzzyMatch: *<filterValue>, right to left digit comparison.
+   */
   DOMString      filterOp;     // e.g. "startsWith"
   any            filterBy;     // e.g. ["givenName", "nickname"]
   unsigned long  filterLimit = 0;

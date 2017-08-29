@@ -24,7 +24,7 @@ Cu.importGlobalProperties(["indexedDB"]);
 
 /* all exported symbols need to be bound to this on B2G - Bug 961777 */
 this.DB_NAME = "contacts";
-this.DB_VERSION = 22;
+this.DB_VERSION = 23;
 this.STORE_NAME = "contacts";
 this.SAVED_GETALL_STORE_NAME = "getallcache";
 this.SPEED_DIALS_STORE_NAME = "speeddials";
@@ -36,6 +36,8 @@ const CATEGORY_DEFAULT = ["DEVICE", "KAICONTACT"];
 const CATEGORY_DEVICE = "DEVICE";
 const CATEGORY_KAICONTACT = "KAICONTACT";
 const CATEGORY_SIM = "SIM";
+
+const MIN_MATCH_DIGITS = 7;
 
 function exportContact(aRecord) {
   if (aRecord) {
@@ -185,6 +187,7 @@ ContactDB.prototype = {
       objectStore.createIndex("phoneticFamilyNameLowerCase", "search.phoneticFamilyName", { multiEntry: true });
       objectStore.createIndex("phoneticGivenNameLowerCase",  "search.phoneticGivenName",  { multiEntry: true });
       objectStore.createIndex("speedDial", "properties.speedDial", { unique: true });
+      objectStore.createIndex("telFuzzy",  "search.telFuzzy",  { multiEntry: true });
       aDb.createObjectStore(SAVED_GETALL_STORE_NAME);
       aDb.createObjectStore(SPEED_DIALS_STORE_NAME, {keyPath: "speedDial"});
       aDb.createObjectStore(REVISION_STORE).put(0, REVISION_KEY);
@@ -770,6 +773,33 @@ ContactDB.prototype = {
             next();
           }
         };
+
+        next();
+      },
+      function upgrade22to23() {
+        if (DEBUG) debug("Adding the telFuzzy index");
+        if (!objectStore) {
+          objectStore = aTransaction.objectStore(STORE_NAME);
+        }
+        objectStore.createIndex("telFuzzy",  "search.telFuzzy",  { multiEntry: true });
+
+        scheduleValueUpgrade(function upgradeValue22to23(value) {
+          value.search.telFuzzy = value.search.telFuzzy || [];
+          if (value.properties.tel) {
+            value.properties.tel.forEach(function addTelFuzzyIndex(tel) {
+              let number = tel.value && tel.value.toString();
+              if (number) {
+                let reversedNum = number.split("").reverse().join("");
+                if (value.search.telFuzzy.indexOf(reversedNum) === -1) {
+                  value.search.telFuzzy.push(reversedNum);
+                }
+              }
+            });
+          }
+          return true;
+        });
+
+        next();
       },
     ];
 
@@ -890,6 +920,7 @@ ContactDB.prototype = {
       tel:             [],
       exactTel:        [],
       parsedTel:       [],
+      telFuzzy:        [],
       phoneticFamilyName:   [],
       phoneticGivenName:    [],
     };
@@ -954,6 +985,7 @@ ContactDB.prototype = {
                   contact.search.parsedTel.push(num);
                 }
               }
+              contact.search.telFuzzy.push(number.split("").reverse().join(""));
             } else if ((field == "impp" || field == "email") && aContact.properties[field][i].value) {
               let value = aContact.properties[field][i].value;
               if (value && typeof value == "string") {
@@ -1278,7 +1310,7 @@ ContactDB.prototype = {
     if (DEBUG) debug("ContactDB:find val:" + aOptions.filterValue + " by: " + aOptions.filterBy + " op: " + aOptions.filterOp);
     let self = this;
     this.newTxn("readonly", STORE_NAME, function (txn, store) {
-      let filterOps = ["equals", "contains", "match", "startsWith"];
+      let filterOps = ["equals", "contains", "match", "startsWith", "fuzzyMatch"];
       if (aOptions && (filterOps.indexOf(aOptions.filterOp) >= 0)) {
         self._findWithIndex(txn, store, aOptions);
       } else {
@@ -1379,7 +1411,24 @@ ContactDB.prototype = {
         }
 
         request = index.mozGetAll(normalized, limit);
-      } else {
+      } else if (options.filterOp == 'fuzzyMatch') {
+        if (DEBUG) debug("fuzzyMatch");
+        if (key != "tel") {
+          dump("ContactDB: 'fuzzyMatch' filterOp only works on tel\n");
+          return txn.abort();
+        }
+
+        let index = store.index("telFuzzy");
+        let filterValue = options.filterValue.toString();
+        let substringDigits = this._getMinMatchDigits();
+        if (filterValue.length >= substringDigits) {
+          filterValue = filterValue.slice(-substringDigits);
+          filterValue = filterValue.split("").reverse().join("")
+          request = index.mozGetAll(IDBKeyRange.bound(filterValue, filterValue + "\uFFFF"), limit);
+        } else {
+          request = index.mozGetAll(filterValue.split("").reverse().join(""), limit);
+        }
+       } else {
         // XXX: "contains" should be handled separately, this is "startsWith"
         if (options.filterOp === 'contains' && key !== 'tel') {
           dump("ContactDB: 'contains' only works for 'tel'. Falling back " +
@@ -1510,6 +1559,15 @@ ContactDB.prototype = {
   disableSubstringMatching: function disableSubstringMatching() {
     if (DEBUG) debug("MCC disabling substring matching");
     delete this.substringMatching;
+  },
+
+  _getMinMatchDigits: function _getMinMatchDigits() {
+    if (Services.prefs.getPrefType("dom.phonenumber.substringmatching") == Ci.nsIPrefBranch.PREF_INT) {
+      return Services.prefs.getIntPref("dom.phonenumber.substringmatching");
+    }
+
+    // TODO To customize MIN_MATCH_DIGITS by MCC/MNC
+    return MIN_MATCH_DIGITS;
   },
 
   init: function init() {
