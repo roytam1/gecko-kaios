@@ -29,6 +29,8 @@ public:
 
   void DispatchNfcEvent(const mozilla::dom::NfcEventOptions& aOptions);
 
+  static void TimerCallback(nsITimer *aTimer, void *aClosure);
+
 private:
   class CleanupRunnable;
   class SendRunnable;
@@ -41,6 +43,7 @@ private:
   nsCOMPtr<nsIThread> mThread;
   nsCOMPtr<nsINfcGonkEventListener> mListener;
   UniquePtr<NfcConsumer> mNfcConsumer;
+  nsCOMPtr<nsITimer> mTimer;
 };
 
 } // namespace mozilla

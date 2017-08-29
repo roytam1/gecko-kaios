@@ -596,6 +596,17 @@ NfcService::Start(nsINfcGonkEventListener* aListener)
   return NS_OK;
 }
 
+// static
+void
+NfcService::TimerCallback(nsITimer* aTimer, void* aClosure)
+{
+  RefPtr<nsIThread> nfcThread = static_cast<nsIThread*>(aClosure);
+  nfcThread->Shutdown();
+  nfcThread = nullptr;
+  gNfcService->mTimer->Cancel();
+  gNfcService->mTimer = nullptr;
+}
+
 /**
  * |CleanupRunnable| deletes instances of the NFC consumer and
  * thread on the main thread. This has to be down after shutting
@@ -619,9 +630,12 @@ public:
 
     mNfcConsumer = nullptr; // deletes NFC consumer
 
-    mThread->Shutdown();
-    mThread = nullptr; // deletes NFC worker thread
-
+    if (!gNfcService->mTimer) {
+      gNfcService->mTimer = do_CreateInstance("@mozilla.org/timer;1");
+      gNfcService->mTimer->InitWithFuncCallback(TimerCallback, mThread,
+                                   500,
+                                   nsITimer::TYPE_ONE_SHOT);
+    }
     return NS_OK;
   }
 
