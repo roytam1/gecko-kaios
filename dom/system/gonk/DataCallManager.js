@@ -340,7 +340,7 @@ DataCallManager.prototype = {
         this._handleDataClientIdChange(aResult);
         break;
       // We only get operatorvariant.iccId once when the device starts up now.
-      // After QCOM/SPRD give us the hot swap event, we will get operatorvariant.iccId
+      // After modem gives us the hot swap event, we will get operatorvariant.iccId
       // as old iccid and decide whether to get apn or not.
       case "operatorvariant.iccId":
         if (this.hasGetIccid === true) {
@@ -352,7 +352,7 @@ DataCallManager.prototype = {
         let connectionHandler = this._connectionHandlers[this._dataDefaultClientId];
         let newIccid = connectionHandler.newIccid;
         connectionHandler.oldIccid = oldIccid;
-        if ((oldIccid != null) && (newIccid != null) && (oldIccid === newIccid))
+        if (!oldIccid && !newIccid && (oldIccid === newIccid))
         {
           lock.get("ril.data.apnSettings", this);
         }
@@ -1042,7 +1042,7 @@ DataCallHandler.prototype = {
     let icc = gIccService.getIccByServiceId(this.clientId);
     let iccInfo = icc && icc.iccInfo;
     this.newIccid = iccInfo && iccInfo.iccid;
-    if ((this.newIccid != null) && (this.oldIccid != null) && (this.newIccid === this.oldIccid))
+    if (!this.newIccid && !this.oldIccid && (this.newIccid === this.oldIccid))
     {
       lock.get("ril.data.apnSettings", this);
     }
