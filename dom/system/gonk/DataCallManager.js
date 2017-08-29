@@ -1429,6 +1429,8 @@ DataCall.prototype = {
   reset: function() {
     this.resetLinkInfo();
 
+    //Reset the retry counter.
+    this.apnRetryCounter = 0;
     this.state = NETWORK_STATE_UNKNOWN;
   },
 
