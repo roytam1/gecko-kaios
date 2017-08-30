@@ -36,7 +36,12 @@ this.DeviceUtils = {
       let sysLibs = {};
       Cu.import("resource://gre/modules/systemlibs.js", sysLibs);
       cuRefStr = sysLibs.libcutils.property_get("ro.fota.cu_ref");
-    } catch(e) {}
+      if (!cuRefStr) {
+        cuRefStr = Services.prefs.getCharPref("device.cuRef.default");
+      }
+    } catch(e) {
+      dump("DeviceUtils.getRefNumber error=" + e);
+    }
     return cuRefStr;
   },
 
