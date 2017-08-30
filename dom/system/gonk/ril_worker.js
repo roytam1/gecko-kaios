@@ -4616,7 +4616,11 @@ RilObject.prototype[REQUEST_GET_NEIGHBORING_CELL_IDS] = function REQUEST_GET_NEI
     this.sendChromeMessage(options);
     return;
   }
-  if (!this._isGsmTechGroup(radioTech) || radioTech == NETWORK_CREG_TECH_LTE) {
+
+  // Reference :
+  // http://androidxref.com/7.1.1_r6/xref/frameworks/base/telephony/java/android/telephony/NeighboringCellInfo.java#113
+  if (!this._isGsmTechGroup(radioTech) || radioTech === NETWORK_CREG_TECH_GSM ||
+      radioTech === NETWORK_CREG_TECH_LTE) {
     options.errorMsg = "UnsupportedRadioTech";
     this.sendChromeMessage(options);
     return;
@@ -4646,7 +4650,6 @@ RilObject.prototype[REQUEST_GET_NEIGHBORING_CELL_IDS] = function REQUEST_GET_NEI
     switch (radioTech) {
       case NETWORK_CREG_TECH_GPRS:
       case NETWORK_CREG_TECH_EDGE:
-      case NETWORK_CREG_TECH_GSM:
         cellId.gsmCellId = this.parseInt(cid.substring(4), -1, 16);
         cellId.gsmLocationAreaCode = this.parseInt(cid.substring(0, 4), -1, 16);
         break;

@@ -27,7 +27,7 @@ interface nsINeighboringCellInfo: nsISupports
   /**
    * Type of radio technology.
    *
-   * Possible values: 'gsm', 'gprs', 'edge', 'umts', 'hsdpa', 'hsupa', 'hspa',
+   * Possible values: 'gprs', 'edge', 'umts', 'hsdpa', 'hsupa', 'hspa',
    *                  'hspa+' or null (unknown).
    */
   readonly attribute DOMString networkType;
