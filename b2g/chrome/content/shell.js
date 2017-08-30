@@ -979,7 +979,10 @@ var WebappsHelper = {
             url: manifest.fullLaunchPath(json.startPoint),
             manifestURL: json.manifestURL
           };
-          shell.sendCustomEvent("webapps-launch", payload);
+          // This event is not tied to system messages so it can be dispatched to Gaia
+          // before we receive the `system-message-listener-ready` event, hence we set
+          // noPending to true.
+          SystemAppProxy._sendCustomEvent("webapps-launch", payload, /* noPending */ true);
         });
         break;
       case "webapps-ask-install":
