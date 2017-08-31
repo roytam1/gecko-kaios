@@ -443,12 +443,14 @@ void TraceImpl::AddImpl(const TraceLevel level,
   message_ptr += len;
   int32_t ack_len = len;
 
+#ifndef WEBRTC_GONK
   len = AddTime(message_ptr, level);
   if (len == -1)
     return;
 
   message_ptr += len;
   ack_len += len;
+#endif
 
   len = AddModuleAndId(message_ptr, module, id);
   if (len == -1)
@@ -457,12 +459,14 @@ void TraceImpl::AddImpl(const TraceLevel level,
   message_ptr += len;
   ack_len += len;
 
+#ifndef WEBRTC_GONK
   len = AddThreadId(message_ptr);
   if (len < 0)
     return;
 
   message_ptr += len;
   ack_len += len;
+#endif
 
   len = AddMessage(message_ptr, msg, static_cast<uint16_t>(ack_len));
   if (len == -1)
