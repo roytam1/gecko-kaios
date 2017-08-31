@@ -664,32 +664,25 @@ var WifiManager = (function() {
       }
 
       preDhcpSetup();
-      gNetworkService.configureInterface( { ifname: manager.ifname,
-                                            ipaddr: 0,
-                                            mask: 0,
-                                            gateway: 0,
-                                            dns1: 0,
-                                            dns2: 0 }, function (data) {
-        netUtil.runDhcp(manager.ifname, dhcpRequestGen++, function(data, gen) {
-          postDhcpSetup();
-          dhcpInfo = data.info;
-          debug("dhcpRequestGen: " + dhcpRequestGen + ", gen: " + gen);
-          // Only handle dhcp response in COMPLETED state.
-          if (manager.state !== "COMPLETED") {
+      netUtil.runDhcp(manager.ifname, dhcpRequestGen++, function(data, gen) {
+        postDhcpSetup();
+        dhcpInfo = data.info;
+        debug("dhcpRequestGen: " + dhcpRequestGen + ", gen: " + gen);
+        // Only handle dhcp response in COMPLETED state.
+        if (manager.state !== "COMPLETED") {
+          return;
+        }
+
+        if (!dhcpInfo) {
+          if (gen + 1 < dhcpRequestGen) {
+            debug("Do not bother younger DHCP request.");
             return;
           }
-
-          if (!dhcpInfo) {
-            if (gen + 1 < dhcpRequestGen) {
-              debug("Do not bother younger DHCP request.");
-              return;
-            }
-            notify("networkdisable", {reason: "DISABLED_DHCP_FAILURE"});
-          } else {
-            manager.dhcpFailuresCount = 0;
-            notify("networkconnected", data);
-          }
-        });
+          notify("networkdisable", {reason: "DISABLED_DHCP_FAILURE"});
+        } else {
+          manager.dhcpFailuresCount = 0;
+          notify("networkconnected", data);
+        }
       });
     });
   }
@@ -2844,7 +2837,13 @@ function WifiWorker() {
     }
 
     if (WifiNetworkInterface.info.ips.length !== 0 &&
-      WifiNetworkInterface.info.ips !== this.info.ipaddr_str) {
+      WifiNetworkInterface.info.ips[0] !== this.info.ipaddr_str) {
+      gNetworkService.configureInterface( { ifname: WifiManager.ifname,
+                                            ipaddr: 0,
+                                            mask: 0,
+                                            gateway: 0,
+                                            dns1: 0,
+                                            dns2: 0 }, function (data) {});
       self.deliverListenerEvent("notifyIpChanged", [this.info.ipaddr_str]);
     }
 
