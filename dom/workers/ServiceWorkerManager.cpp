@@ -1061,20 +1061,21 @@ ServiceWorkerManager::SendPushSubscriptionChangeEvent(const nsACString& aOriginA
 }
 
 NS_IMETHODIMP
-ServiceWorkerManager::SendNotificationClickEvent(const nsACString& aOriginSuffix,
-                                                 const nsACString& aScope,
-                                                 const nsAString& aID,
-                                                 const nsAString& aTitle,
-                                                 const nsAString& aDir,
-                                                 const nsAString& aLang,
-                                                 const nsAString& aBody,
-                                                 const nsAString& aTag,
-                                                 const nsAString& aIcon,
-                                                 const nsAString& aData,
-                                                 const nsAString& aBehavior,
-                                                 bool aRequireInteraction,
-                                                 const nsAString& aActions,
-                                                 const nsAString& aUserAction)
+ServiceWorkerManager::SendNotificationEvent(const nsAString& aEventName,
+                                            const nsACString& aOriginSuffix,
+                                            const nsACString& aScope,
+                                            const nsAString& aID,
+                                            const nsAString& aTitle,
+                                            const nsAString& aDir,
+                                            const nsAString& aLang,
+                                            const nsAString& aBody,
+                                            const nsAString& aTag,
+                                            const nsAString& aIcon,
+                                            const nsAString& aData,
+                                            const nsAString& aBehavior,
+                                            bool aRequireInteraction,
+                                            const nsAString& aActions,
+                                            const nsAString& aUserAction)
 {
   PrincipalOriginAttributes attrs;
   if (!attrs.PopulateFromSuffix(aOriginSuffix)) {
@@ -1091,7 +1092,8 @@ ServiceWorkerManager::SendNotificationClickEvent(const nsACString& aOriginSuffix
       const nsString nAppManifestURL = contentActors[i]->AppManifestURL();
 
       if (CheckAppPrincipalOriginAttributes(contentActors[i], attrs)) {
-        ok &= contentActors[i]->SendNotificationClickEvent(
+        ok &= contentActors[i]->SendNotificationEvent(
+                PromiseFlatString(aEventName),
                 PromiseFlatCString(aOriginSuffix),
                 PromiseFlatCString(aScope),
                 PromiseFlatString(aID),
@@ -1117,12 +1119,12 @@ ServiceWorkerManager::SendNotificationClickEvent(const nsACString& aOriginSuffix
   }
 
   ServiceWorkerPrivate* workerPrivate = info->WorkerPrivate();
-  return workerPrivate->SendNotificationClickEvent(aID, aTitle, aDir,
-                                                   aLang, aBody, aTag,
-                                                   aIcon, aData, aBehavior,
-                                                   aRequireInteraction, aActions,
-                                                   NS_ConvertUTF8toUTF16(aScope),
-                                                   aUserAction);
+  return workerPrivate->SendNotificationEvent(aEventName, aID, aTitle, aDir,
+                                              aLang, aBody, aTag,
+                                              aIcon, aData, aBehavior,
+                                              aRequireInteraction, aActions,
+                                              NS_ConvertUTF8toUTF16(aScope),
+                                              aUserAction);
 }
 
 NS_IMETHODIMP

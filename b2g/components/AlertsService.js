@@ -168,12 +168,22 @@ AlertsService.prototype = {
       // The non-empty serviceWorkerRegistrationID means the notification
       // is issued by service worker, so deal with this listener
       // via serviceWorkerManager
-      if (listener.serviceWorkerRegistrationID.length) {
-        if (topic == kTopicAlertClickCallback) {
-          let appId = appsService.getAppLocalIdByManifestURL(listener.manifestURL);
-          let originSuffix = "^appId=" + appId;
+      if (listener.serviceWorkerRegistrationID.length &&
+          topic !== kTopicAlertShow) {
+        let appId = appsService.getAppLocalIdByManifestURL(listener.manifestURL);
+        let originSuffix = "^appId=" + appId;
+        let eventName;
 
-          serviceWorkerManager.sendNotificationClickEvent(
+        if (topic == kTopicAlertClickCallback) {
+          eventName = "notificationclick";
+        } else if (topic === kTopicAlertFinished) {
+          eventName = "notificationclose";
+          userAction = "";
+        }
+
+        if (eventName) {
+          serviceWorkerManager.sendNotificationEvent(
+            eventName,
             originSuffix,
             listener.serviceWorkerRegistrationID,
             listener.id,

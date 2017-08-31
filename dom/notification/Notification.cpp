@@ -1689,35 +1689,38 @@ ServiceWorkerNotificationObserver::Observe(nsISupports* aSubject,
 {
   AssertIsOnMainThread();
 
+  nsAutoCString originSuffix;
+  nsresult rv = mPrincipal->GetOriginSuffix(originSuffix);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+
+  const char16_t* defaultAction = MOZ_UTF16("");
+  nsDependentString userAction(aData ? aData : defaultAction);
+
+  nsCOMPtr<nsIServiceWorkerManager> swm =
+    mozilla::services::GetServiceWorkerManager();
+  if (NS_WARN_IF(!swm)) {
+    return NS_ERROR_FAILURE;
+  }
+
   if (!strcmp("alertclickcallback", aTopic)) {
-    nsAutoCString originSuffix;
-    nsresult rv = mPrincipal->GetOriginSuffix(originSuffix);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return rv;
-    }
-
-    const char16_t* defaultAction = MOZ_UTF16("");
-    nsDependentString userAction(aData ? aData : defaultAction);
-
-    nsCOMPtr<nsIServiceWorkerManager> swm =
-      mozilla::services::GetServiceWorkerManager();
-
-    if (swm) {
-      swm->SendNotificationClickEvent(originSuffix,
-                                      NS_ConvertUTF16toUTF8(mScope),
-                                      mID,
-                                      mTitle,
-                                      mDir,
-                                      mLang,
-                                      mBody,
-                                      mTag,
-                                      mIcon,
-                                      mData,
-                                      mBehavior,
-                                      mRequireInteraction,
-                                      mActions,
-                                      userAction);
-    }
+    rv = swm->SendNotificationEvent(NS_LITERAL_STRING("notificationclick"),
+                                    originSuffix,
+                                    NS_ConvertUTF16toUTF8(mScope),
+                                    mID,
+                                    mTitle,
+                                    mDir,
+                                    mLang,
+                                    mBody,
+                                    mTag,
+                                    mIcon,
+                                    mData,
+                                    mBehavior,
+                                    mRequireInteraction,
+                                    mActions,
+                                    userAction);
+    Unused << NS_WARN_IF(NS_FAILED(rv));
     return NS_OK;
   }
 
@@ -1734,6 +1737,24 @@ ServiceWorkerNotificationObserver::Observe(nsISupports* aSubject,
     if (notificationStorage) {
       notificationStorage->Delete(origin, mID);
     }
+
+    rv = swm->SendNotificationEvent(NS_LITERAL_STRING("notificationclose"),
+                                    originSuffix,
+                                    NS_ConvertUTF16toUTF8(mScope),
+                                    mID,
+                                    mTitle,
+                                    mDir,
+                                    mLang,
+                                    mBody,
+                                    mTag,
+                                    mIcon,
+                                    mData,
+                                    mBehavior,
+                                    mRequireInteraction,
+                                    mActions,
+                                    NS_LITERAL_STRING(""));
+    Unused << NS_WARN_IF(NS_FAILED(rv));
+    return NS_OK;
   }
 
   return NS_OK;

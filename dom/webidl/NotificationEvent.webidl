@@ -25,4 +25,5 @@ dictionary NotificationEventInit : ExtendableEventInit {
 
 partial interface ServiceWorkerGlobalScope {
   attribute EventHandler onnotificationclick;
+  attribute EventHandler onnotificationclose;
 };

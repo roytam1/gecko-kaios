@@ -147,16 +147,25 @@ var AlertsHelper = {
         // The non-empty serviceWorkerRegistrationID means the notification
         // is issued by service worker, so deal with this listener
         // via serviceWorkerManager
-        if (listener.serviceWorkerRegistrationID.length) {
-          if (topic == kTopicAlertClickCallback) {
-            let appId = appsService.getAppLocalIdByManifestURL(listener.manifestURL);
-            let originSuffix = "^appId=" + appId;
-            let userAction = "";
+        if (listener.serviceWorkerRegistrationID.length &&
+            detail.type !== kDesktopNotificationShow) {
+          let appId = appsService.getAppLocalIdByManifestURL(listener.manifestURL);
+          let originSuffix = "^appId=" + appId;
+          let eventName;
+          let userAction = "";
+
+          if (detail.type === kDesktopNotificationClick) {
+            eventName = "notificationclick";
             if (detail.action && typeof detail.action === 'string') {
               userAction = detail.action;
             }
+          } else if (detail.type === kDesktopNotificationClose) {
+            eventName = "notificationclose";
+          }
 
-            serviceWorkerManager.sendNotificationClickEvent(
+          if (eventName) {
+            serviceWorkerManager.sendNotificationEvent(
+              eventName,
               originSuffix,
               listener.serviceWorkerRegistrationID,
               listener.id,

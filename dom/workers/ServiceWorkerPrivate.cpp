@@ -968,8 +968,9 @@ ClearWindowAllowedRunnable::WorkerRun(JSContext* aCx, WorkerPrivate* aWorkerPriv
   return true;
 }
 
-class SendNotificationClickEventRunnable final : public ExtendableEventWorkerRunnable
+class SendNotificationEventRunnable final : public ExtendableEventWorkerRunnable
 {
+  const nsString mEventName;
   const nsString mID;
   const nsString mTitle;
   const nsString mDir;
@@ -985,22 +986,24 @@ class SendNotificationClickEventRunnable final : public ExtendableEventWorkerRun
   const nsString mUserAction;
 
 public:
-  SendNotificationClickEventRunnable(WorkerPrivate* aWorkerPrivate,
-                                     KeepAliveToken* aKeepAliveToken,
-                                     const nsAString& aID,
-                                     const nsAString& aTitle,
-                                     const nsAString& aDir,
-                                     const nsAString& aLang,
-                                     const nsAString& aBody,
-                                     const nsAString& aTag,
-                                     const nsAString& aIcon,
-                                     const nsAString& aData,
-                                     const nsAString& aBehavior,
-                                     const bool& aRequireInteraction,
-                                     const nsAString& aActions,
-                                     const nsAString& aScope,
-                                     const nsAString& aUserAction)
+  SendNotificationEventRunnable(WorkerPrivate* aWorkerPrivate,
+                                KeepAliveToken* aKeepAliveToken,
+                                const nsAString& aEventName,
+                                const nsAString& aID,
+                                const nsAString& aTitle,
+                                const nsAString& aDir,
+                                const nsAString& aLang,
+                                const nsAString& aBody,
+                                const nsAString& aTag,
+                                const nsAString& aIcon,
+                                const nsAString& aData,
+                                const nsAString& aBehavior,
+                                const bool& aRequireInteraction,
+                                const nsAString& aActions,
+                                const nsAString& aScope,
+                                const nsAString& aUserAction)
       : ExtendableEventWorkerRunnable(aWorkerPrivate, aKeepAliveToken)
+      , mEventName(aEventName)
       , mID(aID)
       , mTitle(aTitle)
       , mDir(aDir)
@@ -1044,8 +1047,7 @@ public:
     nei.mCancelable = false;
 
     RefPtr<NotificationEvent> event =
-      NotificationEvent::Constructor(target,
-                                     NS_LITERAL_STRING("notificationclick"),
+      NotificationEvent::Constructor(target, mEventName,
                                      nei, result);
     if (NS_WARN_IF(result.Failed())) {
       return false;
@@ -1069,32 +1071,43 @@ public:
 
 } // namespace anonymous
 
+// SendNotificationEvent method supports click and close events only.
 nsresult
-ServiceWorkerPrivate::SendNotificationClickEvent(const nsAString& aID,
-                                                 const nsAString& aTitle,
-                                                 const nsAString& aDir,
-                                                 const nsAString& aLang,
-                                                 const nsAString& aBody,
-                                                 const nsAString& aTag,
-                                                 const nsAString& aIcon,
-                                                 const nsAString& aData,
-                                                 const nsAString& aBehavior,
-                                                 const bool& aRequireInteraction,
-                                                 const nsAString& aActions,
-                                                 const nsAString& aScope,
-                                                 const nsAString& aUserAction)
+ServiceWorkerPrivate::SendNotificationEvent(const nsAString& aEventName,
+                                            const nsAString& aID,
+                                            const nsAString& aTitle,
+                                            const nsAString& aDir,
+                                            const nsAString& aLang,
+                                            const nsAString& aBody,
+                                            const nsAString& aTag,
+                                            const nsAString& aIcon,
+                                            const nsAString& aData,
+                                            const nsAString& aBehavior,
+                                            const bool& aRequireInteraction,
+                                            const nsAString& aActions,
+                                            const nsAString& aScope,
+                                            const nsAString& aUserAction)
 {
-  nsresult rv = SpawnWorkerIfNeeded(NotificationClickEvent, nullptr);
+  WakeUpReason why;
+  if (aEventName.EqualsLiteral(NOTIFICATION_CLICK_EVENT_NAME)) {
+    why = NotificationClickEvent;
+    gDOMDisableOpenClickDelay = Preferences::GetInt("dom.disable_open_click_delay");
+  } else if (aEventName.EqualsLiteral(NOTIFICATION_CLOSE_EVENT_NAME)) {
+    why = NotificationCloseEvent;
+  } else {
+    MOZ_ASSERT_UNREACHABLE("Invalid notification event name");
+    return NS_ERROR_FAILURE;
+  }
+
+  nsresult rv = SpawnWorkerIfNeeded(why, nullptr);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  gDOMDisableOpenClickDelay = Preferences::GetInt("dom.disable_open_click_delay");
-
   RefPtr<WorkerRunnable> r =
-    new SendNotificationClickEventRunnable(mWorkerPrivate, mKeepAliveToken,
-                                           aID, aTitle, aDir, aLang,
-                                           aBody, aTag, aIcon, aData,
-                                           aBehavior, aRequireInteraction,
-                                           aActions, aScope, aUserAction);
+    new SendNotificationEventRunnable(mWorkerPrivate, mKeepAliveToken,
+                                      aEventName, aID, aTitle, aDir, aLang,
+                                      aBody, aTag, aIcon, aData,
+                                      aBehavior, aRequireInteraction,
+                                      aActions, aScope, aUserAction);
   if (NS_WARN_IF(!r->Dispatch())) {
     return NS_ERROR_FAILURE;
   }

@@ -77,7 +77,7 @@ interface nsIServiceWorkerManagerListener : nsISupports
   void onUnregister(in nsIServiceWorkerRegistrationInfo aInfo);
 };
 
-[scriptable, builtinclass, uuid(6fc2086a-032d-47f9-85c7-747bee0290b1)]
+[scriptable, builtinclass, uuid(cbef947d-e43f-484c-949a-61b9b79af226)]
 interface nsIServiceWorkerManager : nsISupports
 {
   /**
@@ -174,20 +174,21 @@ interface nsIServiceWorkerManager : nsISupports
                            in nsIServiceWorkerUnregisterCallback aCallback,
                            in DOMString aScope);
 
-  void sendNotificationClickEvent(in ACString aOriginSuffix,
-                                  in ACString scope,
-                                  in AString aID,
-                                  in AString aTitle,
-                                  in AString aDir,
-                                  in AString aLang,
-                                  in AString aBody,
-                                  in AString aTag,
-                                  in AString aIcon,
-                                  in AString aData,
-                                  in AString aBehavior,
-                                  in boolean aRequireInteraction,
-                                  in AString aActions,
-                                  in AString aUserAction);
+ void sendNotificationEvent(in AString aEventName,
+                            in ACString aOriginSuffix,
+                            in ACString aScope,
+                            in AString aID,
+                            in AString aTitle,
+                            in AString aDir,
+                            in AString aLang,
+                            in AString aBody,
+                            in AString aTag,
+                            in AString aIcon,
+                            in AString aData,
+                            in AString aBehavior,
+                            in boolean aRequireInteraction,
+                            in AString aActions,
+                            in AString aUserAction);
 
   [optional_argc] void sendPushEvent(in ACString aOriginAttributes,
                                      in ACString aScope,

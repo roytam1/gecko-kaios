@@ -3395,40 +3395,42 @@ ContentChild::RecvPushError(const nsCString& aScope, const nsString& aMessage,
 }
 
 bool
-ContentChild::RecvNotificationClickEvent(const nsCString& aOriginSuffix,
-                                         const nsCString& aScope,
-                                         const nsString& aID,
-                                         const nsString& aTitle,
-                                         const nsString& aDir,
-                                         const nsString& aLang,
-                                         const nsString& aBody,
-                                         const nsString& aTag,
-                                         const nsString& aIcon,
-                                         const nsString& aData,
-                                         const nsString& aBehavior,
-                                         const bool& aRequireInteraction,
-                                         const nsString& aActions,
-                                         const nsString& aUserAction)
+ContentChild::RecvNotificationEvent(const nsString& aEventName,
+                                    const nsCString& aOriginSuffix,
+                                    const nsCString& aScope,
+                                    const nsString& aID,
+                                    const nsString& aTitle,
+                                    const nsString& aDir,
+                                    const nsString& aLang,
+                                    const nsString& aBody,
+                                    const nsString& aTag,
+                                    const nsString& aIcon,
+                                    const nsString& aData,
+                                    const nsString& aBehavior,
+                                    const bool& aRequireInteraction,
+                                    const nsString& aActions,
+                                    const nsString& aUserAction)
 {
   nsCOMPtr<nsIServiceWorkerManager> swm =
     do_GetService("@mozilla.org/serviceworkers/manager;1");
   if (NS_WARN_IF(!swm)) {
     return true;
   }
-  nsresult rv = swm->SendNotificationClickEvent(aOriginSuffix,
-                                                aScope,
-                                                aID,
-                                                aTitle,
-                                                aDir,
-                                                aLang,
-                                                aBody,
-                                                aTag,
-                                                aIcon,
-                                                aData,
-                                                aBehavior,
-                                                aRequireInteraction,
-                                                aActions,
-                                                aUserAction);
+  nsresult rv = swm->SendNotificationEvent(aEventName,
+                                           aOriginSuffix,
+                                           aScope,
+                                           aID,
+                                           aTitle,
+                                           aDir,
+                                           aLang,
+                                           aBody,
+                                           aTag,
+                                           aIcon,
+                                           aData,
+                                           aBehavior,
+                                           aRequireInteraction,
+                                           aActions,
+                                           aUserAction);
   Unused << NS_WARN_IF(NS_FAILED(rv));
   return true;
 }
