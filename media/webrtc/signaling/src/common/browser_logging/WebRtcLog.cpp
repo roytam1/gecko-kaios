@@ -33,22 +33,87 @@ static const char *default_log_name = "nspr";
 NS_NAMED_LITERAL_CSTRING(default_log_name, "WebRTC.log");
 #endif
 
-static PRLogModuleInfo* GetWebRtcTraceLog()
+static mozilla::LogModule* GetWebRtcTraceLog()
 {
-  static PRLogModuleInfo *sLog;
-  if (!sLog) {
-    sLog = PR_NewLogModule("webrtc_trace");
-  }
+  static mozilla::LazyLogModule sLog("webrtc_trace");
   return sLog;
 }
 
-static PRLogModuleInfo* GetWebRtcAECLog()
+static mozilla::LogModule* GetWebRtcAECLog()
 {
-  static PRLogModuleInfo *sLog;
-  if (!sLog) {
-    sLog = PR_NewLogModule("AEC");
-  }
+  static mozilla::LazyLogModule sLog("AEC");
   return sLog;
+}
+
+static LogLevel ToMozLogLevel(webrtc::TraceLevel aLevel)
+{
+  switch (aLevel) {
+    case webrtc::TraceLevel::kTraceNone:
+      return LogLevel::Disabled;
+
+    case webrtc::TraceLevel::kTraceCritical:
+    case webrtc::TraceLevel::kTraceError:
+      return LogLevel::Error;
+
+    case webrtc::TraceLevel::kTraceWarning:
+      return LogLevel::Warning;
+
+    case webrtc::TraceLevel::kTraceTerseInfo:
+      return LogLevel::Info;
+
+    case webrtc::TraceLevel::kTraceStateInfo:
+    case webrtc::TraceLevel::kTraceDebug:
+    case webrtc::TraceLevel::kTraceInfo:
+      return LogLevel::Debug;
+
+    // The following levels are handled by default case:
+    // kTraceApiCall
+    // kTraceModuleCall
+    // kTraceMemory
+    // kTraceTimer
+    // kTraceStream
+    default:
+      return LogLevel::Verbose;
+  }
+}
+
+// The following conversion must match the reverse mapping in ToMozLogLevel()
+static webrtc::TraceLevel ToWebRtcTraceFilter(LogLevel aLevel)
+{
+  static const uint32_t errorFilter = webrtc::TraceLevel::kTraceCritical |
+                                      webrtc::TraceLevel::kTraceError;
+
+  static const uint32_t warningFilter = errorFilter |
+                                        webrtc::TraceLevel::kTraceWarning;
+
+  static const uint32_t infoFilter = warningFilter |
+                                     webrtc::TraceLevel::kTraceTerseInfo;
+
+  static const uint32_t debugFilter = infoFilter |
+                                      webrtc::TraceLevel::kTraceStateInfo |
+                                      webrtc::TraceLevel::kTraceDebug |
+                                      webrtc::TraceLevel::kTraceInfo;
+
+  switch (aLevel) {
+    case LogLevel::Disabled:
+      return webrtc::TraceLevel::kTraceNone;
+
+    case LogLevel::Error:
+      return static_cast<webrtc::TraceLevel>(errorFilter);
+
+    case LogLevel::Warning:
+      return static_cast<webrtc::TraceLevel>(warningFilter);
+
+    case LogLevel::Info:
+      return static_cast<webrtc::TraceLevel>(infoFilter);
+
+    case LogLevel::Debug:
+      return static_cast<webrtc::TraceLevel>(debugFilter);
+
+    // default handling for Verbose level
+    default:
+      return webrtc::TraceLevel::kTraceAll;
+  }
 }
 
 class WebRtcTraceCallback: public webrtc::TraceCallback
@@ -56,8 +121,7 @@ class WebRtcTraceCallback: public webrtc::TraceCallback
 public:
   void Print(webrtc::TraceLevel level, const char* message, int length)
   {
-    PRLogModuleInfo *log = GetWebRtcTraceLog();
-    MOZ_LOG(log, LogLevel::Debug, ("%s", message));
+    MOZ_LOG(GetWebRtcTraceLog(), ToMozLogLevel(level), ("%s", message));
   }
 };
 
@@ -82,19 +146,19 @@ void CheckOverrides(uint32_t *aTraceMask, nsACString *aLogFile, bool *aMultiLog)
 
   // Override or fill in attributes from the environment if possible.
 
-  PRLogModuleInfo *log_info = GetWebRtcTraceLog();
+  mozilla::LogModule *logModule = GetWebRtcTraceLog();
   /* When webrtc_trace:x is not part of the NSPR_LOG_MODULES var the structure returned from
      the GetWebRTCLogInfo call will be non-null and show a level of 0. This cannot
      be reliably used to turn off the trace and override a log level from about:config as
      there is no way to differentiate between NSPR_LOG_MODULES=webrtc_trace:0 and the complete
      absense of the webrtc_trace in the environment string at all.
   */
-  if (log_info && (log_info->level != 0)) {
-    *aTraceMask = log_info->level;
+  if (logModule && (logModule->Level() != LogLevel::Disabled)) {
+    *aTraceMask = ToWebRtcTraceFilter(logModule->Level());
   }
 
-  log_info = GetWebRtcAECLog();
-  if (log_info && (log_info->level != 0)) {
+  logModule = GetWebRtcAECLog();
+  if (logModule && (logModule->Level() != LogLevel::Disabled)) {
     webrtc::Trace::set_aec_debug(true);
   }
 
@@ -113,7 +177,7 @@ void ConfigWebRtcLog(uint32_t trace_mask, nsCString &aLogFile, nsCString &aAECLo
 #if defined(ANDROID)
   // Special case: use callback to pipe to NSPR logging.
   aLogFile.Assign(default_log_name);
-#else
+#endif
 
   webrtc::Trace::set_level_filter(trace_mask);
 
@@ -125,6 +189,7 @@ void ConfigWebRtcLog(uint32_t trace_mask, nsCString &aLogFile, nsCString &aAECLo
     }
   }
 
+#if !defined(ANDROID)
   if (aLogFile.IsEmpty()) {
     nsCOMPtr<nsIFile> tempDir;
     nsresult rv = NS_GetSpecialDirectory(NS_OS_TEMP_DIR, getter_AddRefs(tempDir));
