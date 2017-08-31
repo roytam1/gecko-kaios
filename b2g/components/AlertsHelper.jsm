@@ -199,9 +199,9 @@ var AlertsHelper = {
             );
           }
         }
-      }
-      if (detail.type === kDesktopNotificationClose && listener.dbId) {
-        notificationStorage.delete(listener.manifestURL, listener.dbId);
+        if (detail.type === kDesktopNotificationClose && listener.dbId) {
+          notificationStorage.delete(listener.manifestURL, listener.dbId);
+        }
       }
     }
 
