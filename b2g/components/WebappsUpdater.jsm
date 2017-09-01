@@ -20,9 +20,14 @@ XPCOMUtils.defineLazyServiceGetter(this, "settings",
 XPCOMUtils.defineLazyModuleGetter(this, "SystemAppProxy",
                                   "resource://gre/modules/SystemAppProxy.jsm");
 
-function debug(aStr) {
-  //dump("--*-- WebappsUpdater: " + aStr);
+var debug;
+function debugPrefObserver() {
+  debug = Services.prefs.getBoolPref("dom.mozApps.debug")
+            ? (aMsg) => dump("--*-- WebappsUpdater: " + aMsg)
+            : (aMsg) => {};
 }
+debugPrefObserver();
+Services.prefs.addObserver("dom.mozApps.debug", debugPrefObserver, false);
 
 this.WebappsUpdater = {
   _checkingApps: false,

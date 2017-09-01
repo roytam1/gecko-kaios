@@ -114,6 +114,7 @@ function supportSystemMessages() {
 
 // Minimum delay between two progress events while downloading, in ms.
 const MIN_PROGRESS_EVENT_DELAY = 1500;
+const XHR_REQUEST_TIMEOUT = 60000;
 
 const chromeWindowType = "navigator:browser";
 
@@ -2292,6 +2293,11 @@ this.DOMApplicationRegistry = {
         sendError("NETWORK_ERROR");
       }).bind(this), false);
 
+      xhr.timeout = XHR_REQUEST_TIMEOUT;
+      xhr.addEventListener("timeout", (function() {
+        sendError("NETWORK_TIMEOUT");
+      }).bind(this), false);
+
       debug("Checking manifest at " + aData.manifestURL);
       xhr.send(null);
     }
@@ -2737,6 +2743,11 @@ this.DOMApplicationRegistry = {
 
     xhr.addEventListener("error", (function() {
       sendError("NETWORK_ERROR");
+    }).bind(this), false);
+
+    xhr.timeout = XHR_REQUEST_TIMEOUT;
+    xhr.addEventListener("timeout", (function() {
+      sendError("NETWORK_TIMEOUT");
     }).bind(this), false);
 
     xhr.send(null);
