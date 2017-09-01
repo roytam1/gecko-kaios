@@ -5,7 +5,6 @@
 #ifndef NetIdManager_h
 #define NetIdManager_h
 
-#include <unordered_set>
 #include "nsString.h"
 #include "nsDataHashtable.h"
 
@@ -39,8 +38,8 @@ public:
   bool release(const nsString& aInterfaceName, NetIdInfo* aNetIdInfo, int aType);
 private:
   int getNextNetId();
-  void add_type(NetType& aTypes, int type);
-  void remove_type(NetType& aTypes, int type);
+  void addType(NetType& aTypes, int aType);
+  void removeType(NetType& aTypes, int aType);
   int mNextNetId;
   nsDataHashtable<nsStringHashKey, NetIdInfo> mInterfaceToNetIdHash;
 };

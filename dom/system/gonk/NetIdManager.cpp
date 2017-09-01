@@ -5,10 +5,12 @@
 #include "NetIdManager.h"
 
 #define DEBUG 0
+
+#undef LOG
 #if DEBUG
-#define NT_DBG(args...)  __android_log_print(ANDROID_LOG_DEBUG, "NetIdManager" , ## args)
+#define LOG(args...)  __android_log_print(ANDROID_LOG_DEBUG, "NetIdManager" , ## args)
 #else
-#define NT_DBG(args...)
+#define LOG(args...)
 #endif
 
 #define GET_STR(param) NS_ConvertUTF16toUTF8(param).get()
@@ -41,8 +43,8 @@ void NetIdManager::acquire(const nsString& aInterfaceName,
     aNetIdInfo->mTypes = 0;
   }
 
-  NT_DBG("acquire: (%s/%d)",GET_STR(aInterfaceName),aType);
-  add_type(aNetIdInfo->mTypes, aType);
+  LOG("acquire: (%s/%d)", GET_STR(aInterfaceName), aType);
+  addType(aNetIdInfo->mTypes, aType);
 
   // Update hash and return.
   mInterfaceToNetIdHash.Put(aInterfaceName, *aNetIdInfo);
@@ -63,8 +65,8 @@ bool NetIdManager::release(const nsString& aInterfaceName,
     return false; // No such key.
   }
 
-  NT_DBG("release: (%s/%d)",GET_STR(aInterfaceName),aType);
-  remove_type(aNetIdInfo->mTypes, aType);
+  LOG("release: (%s/%d)", GET_STR(aInterfaceName), aType);
+  removeType(aNetIdInfo->mTypes, aType);
 
   // Update the hash if still be referenced.
   if (aNetIdInfo->mTypes != 0){
@@ -79,35 +81,39 @@ bool NetIdManager::release(const nsString& aInterfaceName,
 }
 
 /**
- * using for adding the network type in bitmask
+ * Using for adding the network type in bitmask.
  *
- * Refer to nsINetworkInfo interface
- *  NETWORK_TYPE_MOBILE(1) => 10
- *  NETWORK_TYPE_MOBILE_MMS(2) => 100
- *  NETWORK_TYPE_MOBILE_SUPL(3) => 1000
+ * Refer to nsINetworkInfo interface.
+ *  NETWORK_TYPE_MOBILE(1) => 0x02
+ *  NETWORK_TYPE_MOBILE_MMS(2) => 0x04
+ *  NETWORK_TYPE_MOBILE_SUPL(3) => 0x08
  *
- *  @param aTypes : current total network types
- *         type : the network type need to acquire
+ *  @param aTypes
+ *         current network types.
+ *         type
+ *         network type need to add.
 **/
-void NetIdManager::add_type(NetType& aTypes, int type)
+void NetIdManager::addType(NetType& aTypes, int type)
 {
   aTypes = aTypes | (0x01 << type);
-  NT_DBG("%s: %d",__FUNCTION__,aTypes);
+  LOG("%s: %d",__FUNCTION__,aTypes);
 }
 
 /**
- * using for removing the network type in bitmask
+ * Using for adding the network type in bitmask.
  *
- * Refer to nsINetworkInfo interface
- *  NETWORK_TYPE_MOBILE(1) => 10
- *  NETWORK_TYPE_MOBILE_MMS(2) => 100
- *  NETWORK_TYPE_MOBILE_SUPL(3) => 1000
+ * Refer to nsINetworkInfo interface.
+ *  NETWORK_TYPE_MOBILE(1) => 0x02
+ *  NETWORK_TYPE_MOBILE_MMS(2) => 0x04
+ *  NETWORK_TYPE_MOBILE_SUPL(3) => 0x08
  *
- *  @param aTypes : current total network types
- *         type : the network type need to release
+ *  @param aTypes
+ *         current network types.
+ *         type
+ *         network type need to add.
 **/
-void NetIdManager::remove_type(NetType& aTypes, int type)
+void NetIdManager::removeType(NetType& aTypes, int type)
 {
-  aTypes = aTypes ^ (0x01 << type);
-  NT_DBG("%s: %d",__FUNCTION__,aTypes);
+  aTypes = aTypes & ~(0x01 << type);
+  LOG("%s: %d",__FUNCTION__,aTypes);
 }
