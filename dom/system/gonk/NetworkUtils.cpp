@@ -2976,7 +2976,7 @@ CommandResult NetworkUtils::destroyNetwork(NetworkParams& aOptions)
   };
 
   NetIdManager::NetIdInfo netIdInfo;
-  if (!mNetIdManager.release(GET_FIELD(mIfname), &netIdInfo, GET_FIELD(mNetworkType)) {
+  if (!mNetIdManager.release(GET_FIELD(mIfname), &netIdInfo, GET_FIELD(mNetworkType))) {
     ERROR("No existing netid for %s", GET_CHAR(mIfname));
     return -1;
   }
