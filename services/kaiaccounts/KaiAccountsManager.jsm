@@ -304,11 +304,14 @@ this.KaiAccountsManager = {
       result => {
         // Even if we get a successful result from the UI, the account will
         // most likely be unverified, so we cannot get an assertion.
-        if (result && result.verified) {
-          return this._getAssertion(aAudience, aPrincipal);
-        }
-
-        return this._error(ERROR_UNVERIFIED_ACCOUNT);
+        return this.getAccount().then(
+          user => {
+            if (user && user.verified) {
+              return this._getAssertion(aAudience, aPrincipal);
+            }
+            return this._error(ERROR_UNVERIFIED_ACCOUNT);
+          }
+        );
       },
       error => {
         return this._error(ERROR_UI_ERROR);
