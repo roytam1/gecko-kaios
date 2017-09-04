@@ -352,7 +352,7 @@ DataCallManager.prototype = {
         let connectionHandler = this._connectionHandlers[this._dataDefaultClientId];
         let newIccid = connectionHandler.newIccid;
         connectionHandler.oldIccid = oldIccid;
-        if (!oldIccid && !newIccid && (oldIccid === newIccid)) {
+        if (oldIccid && newIccid && (oldIccid === newIccid)) {
           lock.get("ril.data.apnSettings", this);
         }
         this.hasGetIccid = true;
@@ -1089,10 +1089,13 @@ DataCallHandler.prototype = {
     let icc = gIccService.getIccByServiceId(this.clientId);
     let iccInfo = icc && icc.iccInfo;
     this.newIccid = iccInfo && iccInfo.iccid;
-    if (!this.newIccid && !this.oldIccid && (this.newIccid === this.oldIccid)) {
+    if (this.newIccid && this.oldIccid && (this.newIccid === this.oldIccid)) {
       lock.get("ril.data.apnSettings", this);
     }
-    icc.unregisterListener(this);
+
+    if (this.newIccid) {
+      icc.unregisterListener(this);
+    }
   },
 
   // nsIMobileConnectionListener
