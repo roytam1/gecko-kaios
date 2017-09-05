@@ -736,11 +736,11 @@ var WifiManager = (function() {
 
       preDhcpSetup();
       netUtil.runDhcp(manager.ifname, dhcpRequestGen++, function(data, gen) {
-        postDhcpSetup();
         dhcpInfo = data.info;
         debug("dhcpRequestGen: " + dhcpRequestGen + ", gen: " + gen);
         // Only handle dhcp response in COMPLETED state.
         if (manager.state !== "COMPLETED") {
+          postDhcpSetup(function(ok){});
           return;
         }
 
@@ -761,6 +761,7 @@ var WifiManager = (function() {
   }
 
   function preDhcpSetup() {
+    manager.inObtainingIpState = true;
     // Hold wakelock during doing DHCP
     acquireWifiWakeLock();
     // Disable power saving mode when doing dhcp
@@ -768,12 +769,15 @@ var WifiManager = (function() {
     manager.setPowerMode("ACTIVE", function(ok) {});
   }
 
-  function postDhcpSetup() {
-    // Re-enable power saving mode after dhcp is done
-    setSuspendOptimizationsMode(POWER_MODE_DHCP, true, function(ok) {});
-    manager.setPowerMode("AUTO", function(ok) {});
-    // Release wakelock during doing DHCP
-    releaseWifiWakeLock();
+  function postDhcpSetup(callback) {
+    setSuspendOptimizationsMode(POWER_MODE_DHCP, true, function(ok) {
+      manager.setPowerMode("AUTO", function(ok) {
+        // Release wakelock during doing DHCP
+        releaseWifiWakeLock();
+        manager.inObtainingIpState = false;
+        callback(true);
+      });
+    });
   }
 
   var wifiWakeLock = null;
@@ -1059,8 +1063,6 @@ var WifiManager = (function() {
       var token = event.split(" ")[1];
       var bssid = token.split("=")[1];
       wifiInfo.reset();
-      // Restore power save and suspend optimizations
-      postDhcpSetup();
       return true;
     }
     if (eventData.indexOf("CTRL-EVENT-CONNECTED") === 0) {
@@ -1234,6 +1236,7 @@ var WifiManager = (function() {
   manager.lastKnownCountryCode = null;
   manager.clearDisableReasonCounter(function(){});
   manager.telephonyServiceId = 0;
+  manager.inObtainingIpState = false;
 
   manager.__defineGetter__("enabled", function() {
     switch (manager.state) {
@@ -1585,10 +1588,20 @@ var WifiManager = (function() {
         // command blocking in control thread until socket timeout.
         notify("stopconnectioninfotimer");
 
-        wifiCommand.terminateSupplicant(function (ok) {
-          manager.connectionDropped(function () {
+        let terminalSupplicant = (function() {
+          wifiCommand.terminateSupplicant(function() {
+            manager.connectionDropped(function() {
+            });
           });
         });
+
+        if (manager.inObtainingIpState) {
+          postDhcpSetup(function() {
+            terminalSupplicant();
+          });
+        } else {
+          terminalSupplicant();
+        }
       }
 
       if (p2pSupported) {
@@ -1909,6 +1922,7 @@ var WifiManager = (function() {
   manager.autoScanMode = wifiCommand.autoScanMode;
   manager.handleScreenStateChanged = handleScreenStateChanged;
   manager.setCountryCode = wifiCommand.setCountryCode;
+  manager.postDhcpSetup = postDhcpSetup;
 
   manager.ensureSupplicantDetached = aCallback => {
     if (!manager.enabled) {
@@ -3006,6 +3020,7 @@ function WifiWorker() {
     if (!self.currentNetwork.isDriverRoaming) {
       self._fireEvent("onconnect", { network: netToDOM(self.currentNetwork) });
     }
+    WifiManager.postDhcpSetup(function(){});
   };
 
   WifiManager.onenableAllNetworks = function() {
@@ -4212,6 +4227,7 @@ WifiWorker.prototype = {
     netFromDOM(privnet, configured);
 
     privnet.priority = ++this._highestPriority;
+    debug("Device associate with ap info: " + uneval(privnet));
     if (configured) {
       privnet.netId = configured.netId;
       // Sync priority back to configured so if priority reaches MAX_PRIORITY,
@@ -4258,6 +4274,7 @@ WifiWorker.prototype = {
   forget: function(msg) {
     const message = "WifiManager:forget:Return";
     let network = msg.data;
+    debug("Device forget with ap info: " + uneval(network));
     if (!WifiManager.enabled) {
       this._sendMessage(message, false, "Wifi is disabled", msg);
       return;
