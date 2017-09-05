@@ -16,11 +16,12 @@ Cu.import("resource://gre/modules/NetUtil.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Log.jsm");
 Cu.import("resource://services-common/utils.js");
+Cu.import("resource://services-common/logmanager.js");
 
 XPCOMUtils.defineLazyModuleGetter(this, "CryptoUtils",
                                   "resource://services-crypto/utils.js");
 
-const Prefs = new Preferences("services.common.");
+const Prefs = new Preferences("services.common.rest.");
 
 /**
  * Single use HTTP requests to RESTish resources.
@@ -90,7 +91,7 @@ this.RESTRequest = function RESTRequest(uri) {
   this._headers = {};
   this._log = Log.repository.getLogger(this._logName);
   this._log.level =
-    Log.Level[Prefs.get("log.logger.rest.request")];
+    Log.Level[Prefs.get("log.logger")];
 }
 RESTRequest.prototype = {
 
@@ -481,7 +482,7 @@ RESTRequest.prototype = {
     if (!statusSuccess) {
       let message = Components.Exception("", statusCode).name;
       let error = Components.Exception(message, statusCode);
-      this._log.debug(this.method + " " + uri + " failed: " + statusCode + " - " + message);
+      this._log.warn(this.method + " " + uri + " failed: " + statusCode + " - " + message);
       this.onComplete(error);
       this.onComplete = this.onProgress = null;
       return;
@@ -639,7 +640,7 @@ RESTRequest.prototype = {
 this.RESTResponse = function RESTResponse() {
   this._log = Log.repository.getLogger(this._logName);
   this._log.level =
-    Log.Level[Prefs.get("log.logger.rest.response")];
+    Log.Level[Prefs.get("log.logger")];
 }
 RESTResponse.prototype = {
 
@@ -758,3 +759,9 @@ TokenAuthenticatedRESTRequest.prototype = {
     );
   },
 };
+
+this.initLogs = function initLogs() {
+  let logs = ["Services.Common.RESTRequest", "Services.Common.RESTResponse"];
+  new LogManager(Prefs, logs, "rest");
+};
+this.initLogs();

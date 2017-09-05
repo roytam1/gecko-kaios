@@ -131,7 +131,7 @@ FlushableStorageAppender.prototype = {
 }
 
 // The public LogManager object.
-function LogManager(prefRoot, logNames, logFilePrefix) {
+this.LogManager = function LogManager(prefRoot, logNames, logFilePrefix) {
   this.init(prefRoot, logNames, logFilePrefix);
 }
 
