@@ -178,7 +178,9 @@ const NfcNotificationType = {
   RF_FIELD_DEACTIVATED_EVENT: "rfFieldDeActivateEvent",
   LISTEN_MODE_ACTIVATED_EVENT: "listenModeActivateEvent",
   LISTEN_MODE_DEACTIVATED_EVENT: "listenModeDeActivateEvent",
-  UNINITIALIZED: "unInitialized"
+  UNINITIALIZED: "unInitialized",
+  ENABLETIMEOUT: "enableTimeout",
+  DISABLETIMEOUT: "disableTimeout"
 };
 
 XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
@@ -777,6 +779,27 @@ Nfc.prototype = {
   },
 
   reStartTimer: null,
+
+  createRestartTimer: function (rfState, timeout) {
+    // Clean up previous timer.
+    if (this.reStartTimer) {
+      this.reStartTimer.cancel();
+      this.reStartTimer = null;
+    }
+
+    this.reStartTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+    this.reStartTimer.initWithCallback((function(timer) {
+      let message = {
+        name: "NFC:ChangeRFState",
+        data: {
+          requestId: this._getRandomId(),
+          rfState: rfState
+        }
+      };
+      this.receiveMessage(message);
+      }).bind(this), timeout, Ci.nsITimer.TYPE_ONE_SHOT);
+  },
+
   /**
    * Process the incoming message from the NFC Service.
    */
@@ -804,19 +827,24 @@ Nfc.prototype = {
           return;
         }
 
-        if (!this.reStartTimer) {
-          this.reStartTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
-        }
-        this.reStartTimer.initWithCallback((function(timer) {
-          let message = {
-            name: "NFC:ChangeRFState",
-            data: {
-              requestId: this._getRandomId(),
-              rfState: this.rfState
-            }
-          };
-          this.receiveMessage(message);
-          }).bind(this), 1000, Ci.nsITimer.TYPE_ONE_SHOT);
+        this.createRestartTimer(this.rfState, 1000);
+        break;
+      case NfcNotificationType.ENABLETIMEOUT:
+        Services.obs.notifyObservers(event, TOPIC_NFCD_UNINITIALIZED, null);
+        // Restart NFC service.
+        this.shutdownNfcService();
+        this.createRestartTimer(NFC.NFC_RF_STATE_DISCOVERY, 1000);
+        break;
+      case NfcNotificationType.DISABLETIMEOUT:
+        // Notify application RF state.
+        message.type = NfcResponseType.CHANGE_RF_STATE_RSP;
+        message.rfState = NFC.NFC_RF_STATE_IDLE;
+        this.sendNfcResponse(message);
+        gMessageManager.onRFStateChanged(NFC.NFC_RF_STATE_IDLE);
+
+        Services.obs.notifyObservers(null, TOPIC_CHANGE_RF_STATE, NFC.NFC_RF_STATE_IDLE);
+
+        this.shutdownNfcService();
         break;
       case NfcNotificationType.TECH_DISCOVERED:
         // Update the upper layers with a session token (alias)

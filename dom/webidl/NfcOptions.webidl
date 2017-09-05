@@ -62,7 +62,9 @@ enum NfcNotificationType {
   "rfFieldDeActivateEvent",
   "listenModeActivateEvent",
   "listenModeDeActivateEvent",
-  "unInitialized"
+  "unInitialized",
+  "enableTimeout",
+  "disableTimeout"
 };
 
 /**

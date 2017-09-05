@@ -178,6 +178,16 @@ NfcMessageHandler::ProcessNotification(int32_t aType, const Parcel& aParcel, Eve
       result = true;
       break;
 
+    case NfcNotificationType::UnInitialized:
+    case NfcNotificationType::EnableTimeout:
+    case NfcNotificationType::DisableTimeout:
+      if (!mRequestIdQueue.IsEmpty()) {
+        aOptions.mRequestId = mRequestIdQueue[0];
+        mRequestIdQueue.RemoveElementAt(0);
+        result = true;
+      }
+      break;
+
     default:
     NMH_LOG("ProcessNotification %d", aType);
       result = false;
