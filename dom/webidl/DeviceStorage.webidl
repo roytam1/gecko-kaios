@@ -67,6 +67,10 @@ interface DeviceStorage : EventTarget {
   // include any path information.
   readonly attribute DOMString storageName;
 
+  // Return the mounted name of volume device (like sdcard).
+  // Default value of storagePath is "unknown" for others storage type.
+  readonly attribute DOMString storagePath;
+
   // Indicates if the storage area denoted by storageName is capable of
   // being mounted and unmounted.
   readonly attribute boolean canBeMounted;

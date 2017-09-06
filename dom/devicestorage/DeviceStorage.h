@@ -260,6 +260,8 @@ public:
   bool Default();
   void GetStorageName(nsAString& aStorageName);
 
+  void GetStoragePath(nsAString& aStoragePath);
+
   already_AddRefed<Promise>
   GetRoot(ErrorResult& aRv);
 
