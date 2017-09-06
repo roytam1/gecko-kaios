@@ -1395,9 +1395,15 @@ BluetoothServiceBluedroid::SspReplyInternal(
 
   ENSURE_BLUETOOTH_IS_ENABLED_VOID(aRunnable);
 
-  sBtCoreInterface->SspReply(aDeviceAddress, aVariant, aAccept,
-                             0 /* passkey */,
-                             new SspReplyResultHandler(aRunnable));
+  if (aAccept) {
+    sBtCoreInterface->SspReply(aDeviceAddress, aVariant, aAccept,
+                               0 /* passkey */,
+                               new SspReplyResultHandler(aRunnable));
+  } else {
+    // Call CancelBond to trigger BondStateChangedNotification
+    sBtCoreInterface->CancelBond(aDeviceAddress,
+                                 new CancelBondResultHandler(aRunnable));
+  }
 }
 
 void
