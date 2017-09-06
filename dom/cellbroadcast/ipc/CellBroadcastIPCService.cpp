@@ -58,6 +58,19 @@ CellBroadcastIPCService::UnregisterListener(nsICellBroadcastListener* aListener)
   return NS_OK;
 }
 
+NS_IMETHODIMP
+CellBroadcastIPCService::SetCBSearchList(uint32_t aClientId, uint32_t aGsmCount, uint16_t *aGsms,
+                                         uint32_t aCdmaCount, uint16_t *aCdmas)
+{
+  return NS_ERROR_NOT_IMPLEMENTED;
+}
+
+NS_IMETHODIMP
+CellBroadcastIPCService::SetCBDisabled(uint32_t aClientId, bool aDisabled)
+{
+  return NS_ERROR_NOT_IMPLEMENTED;
+}
+
 /*
  * Implementation of PCellBroadcastChild.
  */

@@ -19,6 +19,7 @@ XPCOMUtils.defineLazyGetter(this, "RIL", function () {
 const kMozSettingsChangedObserverTopic   = "mozsettings-changed";
 const kSettingsCellBroadcastDisabled = "ril.cellbroadcast.disabled";
 const kSettingsCellBroadcastSearchList = "ril.cellbroadcast.searchlist";
+const kPrefAppCBConfigurationEnabled = "dom.app_cb_configuration";
 
 XPCOMUtils.defineLazyServiceGetter(this, "gCellbroadcastMessenger",
                                    "@mozilla.org/ril/system-messenger-helper;1",
@@ -27,6 +28,10 @@ XPCOMUtils.defineLazyServiceGetter(this, "gCellbroadcastMessenger",
 XPCOMUtils.defineLazyServiceGetter(this, "gSettingsService",
                                    "@mozilla.org/settingsService;1",
                                    "nsISettingsService");
+
+XPCOMUtils.defineLazyServiceGetter(this, "gGonkCellBroadcastConfigService",
+                                   "@kaios.com/cellbroadcast/gonkconfigservice;1",
+                                   "nsIGonkCellBroadcastConfigService");
 
 XPCOMUtils.defineLazyGetter(this, "gRadioInterfaceLayer", function() {
   let ril = { numRadioInterfaces: 0 };
@@ -52,41 +57,51 @@ function debug(s) {
   dump("CellBroadcastService: " + s);
 }
 
+var CB_SEARCH_LIST_GECKO_CONFIG = false;
+
 function CellBroadcastService() {
   this._listeners = [];
 
   this._updateDebugFlag();
 
-  let lock = gSettingsService.createLock();
-
-  /**
-  * Read the settings of the toggle of Cellbroadcast Service:
-  *
-  * Simple Format: Boolean
-  *   true if CBS is disabled. The value is applied to all RadioInterfaces.
-  * Enhanced Format: Array of Boolean
-  *   Each element represents the toggle of CBS per RadioInterface.
-  */
-  lock.get(kSettingsCellBroadcastDisabled, this);
-
-  /**
-   * Read the Cell Broadcast Search List setting to set listening channels:
-   *
-   * Simple Format:
-   *   String of integers or integer ranges separated by comma.
-   *   For example, "1, 2, 4-6"
-   * Enhanced Format:
-   *   Array of Objects with search lists specified in gsm/cdma network.
-   *   For example, [{'gsm' : "1, 2, 4-6", 'cdma' : "1, 50, 99"},
-   *                 {'cdma' : "3, 6, 8-9"}]
-   *   This provides the possibility to
-   *   1. set gsm/cdma search list individually for CDMA+LTE device.
-   *   2. set search list per RadioInterface.
-   */
-  lock.get(kSettingsCellBroadcastSearchList, this);
-
   Services.obs.addObserver(this, NS_XPCOM_SHUTDOWN_OBSERVER_ID, false);
-  Services.obs.addObserver(this, kMozSettingsChangedObserverTopic, false);
+
+  try {
+    CB_SEARCH_LIST_GECKO_CONFIG =
+        Services.prefs.getBoolPref(kPrefAppCBConfigurationEnabled) || false,
+  } catch (e) {}
+
+  if (CB_SEARCH_LIST_GECKO_CONFIG) {
+    let lock = gSettingsService.createLock();
+
+    /**
+    * Read the settings of the toggle of Cellbroadcast Service:
+    *
+    * Simple Format: Boolean
+    *   true if CBS is disabled. The value is applied to all RadioInterfaces.
+    * Enhanced Format: Array of Boolean
+    *   Each element represents the toggle of CBS per RadioInterface.
+    */
+    lock.get(kSettingsCellBroadcastDisabled, this);
+
+    /**
+     * Read the Cell Broadcast Search List setting to set listening channels:
+     *
+     * Simple Format:
+     *   String of integers or integer ranges separated by comma.
+     *   For example, "1, 2, 4-6"
+     * Enhanced Format:
+     *   Array of Objects with search lists specified in gsm/cdma network.
+     *   For example, [{'gsm' : "1, 2, 4-6", 'cdma' : "1, 50, 99"},
+     *                 {'cdma' : "3, 6, 8-9"}]
+     *   This provides the possibility to
+     *   1. set gsm/cdma search list individually for CDMA+LTE device.
+     *   2. set search list per RadioInterface.
+     */
+    lock.get(kSettingsCellBroadcastSearchList, this);
+
+    Services.obs.addObserver(this, kMozSettingsChangedObserverTopic, false);
+  }
 }
 CellBroadcastService.prototype = {
   classID: GONK_CELLBROADCAST_SERVICE_CID,
@@ -124,6 +139,10 @@ CellBroadcastService.prototype = {
    * Helper function to set CellBroadcastDisabled to each RadioInterface.
    */
   setCellBroadcastDisabled: function(aSettings) {
+    if (!RIL.CB_SEARCH_LIST_GECKO_CONFIG) {
+      return;
+    }
+
     let numOfRilClients = gRadioInterfaceLayer.numRadioInterfaces;
     let responses = [];
     for (let clientId = 0; clientId < numOfRilClients; clientId++) {
@@ -138,6 +157,10 @@ CellBroadcastService.prototype = {
    * Helper function to set CellBroadcastSearchList to each RadioInterface.
    */
   setCellBroadcastSearchList: function(aSettings) {
+    if (!RIL.CB_SEARCH_LIST_GECKO_CONFIG) {
+      return;
+    }
+
     let numOfRilClients = gRadioInterfaceLayer.numRadioInterfaces;
     let responses = [];
     for (let clientId = 0; clientId < numOfRilClients; clientId++) {
@@ -203,6 +226,48 @@ CellBroadcastService.prototype = {
     }
 
     this._listeners.splice(index, 1);
+  },
+
+  setCBSearchList: function(aClientId, aGsmCount, aGsms, aCdmaCount, aCdmas) {
+    if (DEBUG) debug("setCellBroadcastSearchList: " + aClientId + ", " + JSON.stringify(options));
+
+    let radioInterface = this._getRadioInterface(aClientId);
+    let options = {
+      gsm: aGsms.toString(),
+      cdma: aCdmas.toString()
+    }
+
+    radioInterface.sendWorkerMessage("setCellBroadcastSearchList",
+      { searchList: options},
+      (function callback(aResponse) {
+        if (DEBUG) {
+          debug("Set cell broadcast search list to client id: " + this._clientId +
+                ", with errorMsg: " + aResponse.errorMsg);
+        }
+      }).bind(this));
+  },
+
+  setCBDisabled: function(aClientId, aDisabled) {
+      if (DEBUG) debug("to disable cb: " + aClientId);
+      let radioInterface = this._getRadioInterface(aClientId);
+      radioInterface.sendWorkerMessage("setCellBroadcastDisabled",
+                                       {diesabled: true});
+  },
+
+  _getRadioInterface: function(aClientId) {
+    let numOfRilClients = gRadioInterfaceLayer.numRadioInterfaces;
+    if (aClientId < 0 || aClientId >= numOfRilClients) {
+      if (DEBUG) debug("unexpedted client: " + aClientId);
+      throw Cr.NS_ERROR_NOT_AVAILABLE;
+    }
+
+    let radioInterface = gRadioInterfaceLayer.getRadioInterface(aClientId);
+    if (!radioInterface) {
+      if (DEBUG) debug("cannot retrieve radiointerface for client: " + aClientId);
+      throw Cr.NS_ERROR_NOT_AVAILABLE;
+    }
+
+    return radioInterface;
   },
 
   /**

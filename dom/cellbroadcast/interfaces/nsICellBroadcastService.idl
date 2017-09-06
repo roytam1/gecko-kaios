@@ -36,7 +36,7 @@ interface nsICellBroadcastListener : nsISupports
 /**
  * XPCOM component that provides the cell broadcast information.
  */
-[scriptable, uuid(906cda5a-6b18-11e4-973b-5ff3fc075b6b)]
+[scriptable, uuid(5369cc19-0625-4dad-a2c7-db68cb43aeb4)]
 interface nsICellBroadcastService : nsISupports
 {
   /**
@@ -87,6 +87,38 @@ interface nsICellBroadcastService : nsISupports
    */
   void registerListener(in nsICellBroadcastListener listener);
   void unregisterListener(in nsICellBroadcastListener listener);
+
+  /**
+   * To configure Cell Broadcast channel list.
+   * @param aClientId
+   *        The client id.
+   * @param aGsmCount
+   *        The size of GSM channel list range
+   * @param aGsms
+   *        The GSM channel range, it is a mutiplier of half-open paired.
+   *        Ex: following array enable channel 1, 2, 5.
+   *          "1", "3", "5", "6"
+   * @param aCdmaCount
+   *        The size of CDMA channel list range
+   * @param aCdmas
+   *        The CDMA channel range, it is a mutiplier of half-open paired.
+   *        Ex: following array enable channel 1, 2, 5.
+   *          "1", "3", "5", "6"
+   */
+  void setCBSearchList(in uint32_t aClientId,
+                       in uint32_t aGsmCount,
+                       [array, size_is(aGsmCount)] in unsigned short aGsms,
+                       in uint32_t aCdmaCount,
+                       [array, size_is(aCdmaCount)] in unsigned short aCdmas);
+
+  /**
+   * To disable/enable specific client's CB events.
+   * @param aClientId
+   *        The client id
+   * @param aDisabled
+   *        To disable it or not.
+   */
+  void setCBDisabled(in uint32_t aClientId, in boolean aDisabled);
 };
 
 %{C++

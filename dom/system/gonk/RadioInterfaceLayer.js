@@ -56,6 +56,7 @@ const NS_PREFBRANCH_PREFCHANGE_TOPIC_ID = "nsPref:changed";
 
 const kPrefRilNumRadioInterfaces = "ril.numRadioInterfaces";
 const kPrefRilDebuggingEnabled = "ril.debugging.enabled";
+const kPrefAppCBConfigurationEnabled = "dom.app_cb_configuration";
 
 const RADIO_POWER_OFF_TIMEOUT = 30000;
 const HW_DEFAULT_CLIENT_ID = 0;
@@ -494,6 +495,12 @@ WorkerMessenger.prototype = {
   tokenCallbackMap: null,
 
   init: function() {
+    let appCbListConfigurationEnabled = false;
+    try {
+      appCbListConfigurationEnabled =
+          Services.prefs.getBoolPref(kPrefAppCBConfigurationEnabled) || false,
+    } catch (e) {}
+
     let options = {
       debug: DEBUG,
       quirks: {
@@ -519,6 +526,8 @@ WorkerMessenger.prototype = {
           libcutils.property_get("ro.moz.ril.signal_extra_int", "false") === "true",
         availableNetworkExtraStr:
           libcutils.property_get("ro.moz.ril.avlbl_nw_extra_str", "false") === "true",
+        appCbListConfiguration:
+          appCbListConfigurationEnabled,
       }
     };
 

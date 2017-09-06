@@ -493,6 +493,8 @@
 @RESPATH@/components/CellBroadcastService.manifest
 @RESPATH@/components/DataCallManager.js
 @RESPATH@/components/DataCallManager.manifest
+@RESPATH@/components/GonkCellBroadcastConfigService.js
+@RESPATH@/components/GonkCellBroadcastConfigService.manifest
 @RESPATH@/components/IccService.js
 @RESPATH@/components/IccService.manifest
 @RESPATH@/components/MmsService.js

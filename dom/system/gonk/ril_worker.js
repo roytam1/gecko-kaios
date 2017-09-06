@@ -81,6 +81,11 @@ var RILQUIRKS_DATA_REGISTRATION_ON_DEMAND;
 var RILQUIRKS_SUBSCRIPTION_CONTROL;
 // Ril quirk to describe the SMSC address format.
 var RILQUIRKS_SMSC_ADDRESS_FORMAT;
+// APP Cellbroadcast list configuration
+/* true : controlled by customization which is controlled by mcc-mnc.json.
+ * false: controlled by setting "ril.cellbroadcast.searchlist" which is loaded from apn.json
+ */
+var RILQUIRKS_APP_CB_LIST;
 
 /**
  * The RIL state machine.
@@ -3733,7 +3738,8 @@ RilObject.prototype = {
    * Merge all members of cellBroadcastConfigs into mergedCellBroadcastConfig.
    */
   _mergeAllCellBroadcastConfigs: function() {
-    if (!this._isCellBroadcastConfigReady()) {
+    if (RILQUIRKS_APP_CB_LIST &&
+        !this._isCellBroadcastConfigReady()) {
       if (DEBUG) {
         this.context.debug("cell broadcast configs not ready, waiting ...");
       }
@@ -3742,7 +3748,7 @@ RilObject.prototype = {
 
     // Prepare cell broadcast config. CBMI* are only used in GSM.
     let usedCellBroadcastConfigs = {MMI: this.cellBroadcastConfigs.MMI};
-    if (!this._isCdma) {
+    if (RILQUIRKS_APP_CB_LIST && !this._isCdma) {
       usedCellBroadcastConfigs.CBMI = this.cellBroadcastConfigs.CBMI;
       usedCellBroadcastConfigs.CBMID = this.cellBroadcastConfigs.CBMID;
       usedCellBroadcastConfigs.CBMIR = this.cellBroadcastConfigs.CBMIR;
@@ -3818,7 +3824,8 @@ RilObject.prototype = {
 
       from = parseInt(result[1], 10);
       to = (result[2]) ? parseInt(result[2], 10) + 1 : from + 1;
-      if (!this._checkCellBroadcastMMISettable(from, to)) {
+      if (!CB_NON_MMI_SETTABLE_RANGES &&
+          !this._checkCellBroadcastMMISettable(from, to)) {
         throw "Invalid range";
       }
 
@@ -12813,20 +12820,22 @@ SimRecordHelperObject.prototype = {
         if (DEBUG) this.context.debug("GID1: GID1 is not available");
       }
 
-      if (ICCUtilsHelper.isICCServiceAvailable("CBMI")) {
-        this.readCBMI();
-      } else {
-        RIL.cellBroadcastConfigs.CBMI = null;
-      }
-      if (ICCUtilsHelper.isICCServiceAvailable("DATA_DOWNLOAD_SMS_CB")) {
-        this.readCBMID();
-      } else {
-        RIL.cellBroadcastConfigs.CBMID = null;
-      }
-      if (ICCUtilsHelper.isICCServiceAvailable("CBMIR")) {
-        this.readCBMIR();
-      } else {
-        RIL.cellBroadcastConfigs.CBMIR = null;
+      if (RILQUIRKS_APP_CB_LIST) {
+        if (ICCUtilsHelper.isICCServiceAvailable("CBMI")) {
+          this.readCBMI();
+        } else {
+          RIL.cellBroadcastConfigs.CBMI = null;
+        }
+        if (ICCUtilsHelper.isICCServiceAvailable("DATA_DOWNLOAD_SMS_CB")) {
+          this.readCBMID();
+        } else {
+          RIL.cellBroadcastConfigs.CBMID = null;
+        }
+        if (ICCUtilsHelper.isICCServiceAvailable("CBMIR")) {
+          this.readCBMIR();
+        } else {
+          RIL.cellBroadcastConfigs.CBMIR = null;
+        }
       }
       RIL._mergeAllCellBroadcastConfigs();
     }
@@ -15555,6 +15564,7 @@ var ContextPool = {
     RILQUIRKS_SIGNAL_EXTRA_INT32 = quirks.signalExtraInt;
     RILQUIRKS_AVAILABLE_NETWORKS_EXTRA_STRING = quirks.availableNetworkExtraStr;
     RILQUIRKS_SMSC_ADDRESS_FORMAT = quirks.smscAddressFormat;
+    RILQUIRKS_APP_CB_LIST = quirks.appCbListConfiguration;
   },
 
   setDebugFlag: function(aOptions) {

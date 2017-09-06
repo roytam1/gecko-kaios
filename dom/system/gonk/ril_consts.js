@@ -1396,6 +1396,11 @@ this.CB_NON_MMI_SETTABLE_RANGES = [
   /*0xF000 - 0xFFFE*/61440, 65535, /*0xFFFF - 0xFFFF*/65535, 65536
 ];
 
+// CB search list control.
+// true : controlled by customization which is controlled by mcc-mnc.json.
+// false: controlled by setting "ril.cellbroadcast.searchlist" which is loaded from apn.json
+this.CB_SEARCH_LIST_GECKO_CONFIG = true;
+
 // User Data max length in septets
 this.CB_MAX_CONTENT_7BIT = 93;
 // User Data max length in octets

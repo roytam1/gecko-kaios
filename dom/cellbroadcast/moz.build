@@ -18,11 +18,21 @@ UNIFIED_SOURCES += [
     'ipc/CellBroadcastParent.cpp',
 ]
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk' and CONFIG['MOZ_B2G_RIL'] and not CONFIG['DISABLE_MOZ_RIL_GEOLOC']:
-    EXTRA_COMPONENTS += [
-        'gonk/CellBroadcastService.js',
-        'gonk/CellBroadcastService.manifest',
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk' and CONFIG['MOZ_B2G_RIL']:
+    EXTRA_JS_MODULES += [
+        'gonk/sms_cb_consts.js'
     ]
+
+    EXTRA_COMPONENTS += [
+        'gonk/GonkCellBroadcastConfigService.js',
+        'gonk/GonkCellBroadcastConfigService.manifest',
+    ]
+
+    if not CONFIG['DISABLE_MOZ_RIL_GEOLOC']:
+        EXTRA_COMPONENTS += [
+            'gonk/CellBroadcastService.js',
+            'gonk/CellBroadcastService.manifest',
+        ]
 
 EXPORTS.mozilla.dom.cellbroadcast += [
     'ipc/CellBroadcastIPCService.h',
