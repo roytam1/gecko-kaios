@@ -4,8 +4,6 @@
 
 #include "NetIdManager.h"
 
-#define DEBUG 0
-
 #undef LOG
 #if DEBUG
 #define LOG(args...)  __android_log_print(ANDROID_LOG_DEBUG, "NetIdManager" , ## args)
