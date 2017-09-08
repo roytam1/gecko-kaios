@@ -36,7 +36,7 @@ const kPrefDefaultServiceId = "dom.telephony.defaultServiceId";
 
 const nsITelephonyAudioService = Ci.nsITelephonyAudioService;
 const nsITelephonyService = Ci.nsITelephonyService;
-const nsITelephonyCallInfo = Ci.nsiTelephonyCallInfo;
+const nsITelephonyCallInfo = Ci.nsITelephonyCallInfo;
 const nsIMobileConnection = Ci.nsIMobileConnection;
 
 const CALL_WAKELOCK_TIMEOUT = 5000;
