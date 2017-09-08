@@ -34,6 +34,8 @@ static const long NanoSecPerSec = 1000000000;
 // std::chrono::steady_clock, which is closest to CLOCK_MONOTONIC.
 static const clockid_t WhichClock = CLOCK_MONOTONIC;
 
+#endif
+
 // While timevaladd is widely available to work with timevals, the newer
 // timespec structure is largely lacking such conveniences. Thankfully, the
 // utilities available in MFBT make implementing our own quite easy.
@@ -59,7 +61,6 @@ moz_timespecadd(struct timespec* lhs, struct timespec* rhs, struct timespec* res
   MOZ_RELEASE_ASSERT(sec.isValid());
   result->tv_sec = sec.value();
 }
-#endif
 
 struct mozilla::detail::ConditionVariableImpl::PlatformData
 {
@@ -154,7 +155,17 @@ mozilla::detail::ConditionVariableImpl::wait_for(MutexImpl& lock,
 #else
   // Our non-clock-supporting platforms, OS X and Android, do support waiting
   // on a condition variable with a relative timeout.
-  r = pthread_cond_timedwait_relative_np(ptCond, ptMutex, &rel_ts);
+  struct timespec now_ts;
+  struct timeval tv;
+
+  gettimeofday(&tv, nullptr);
+  now_ts.tv_sec = tv.tv_sec;
+  now_ts.tv_nsec = tv.tv_usec * 1000;
+
+  struct timespec abs_ts;
+  moz_timespecadd(&now_ts, &rel_ts, &abs_ts);
+
+  r = pthread_cond_timedwait(ptCond, ptMutex, &abs_ts);
 #endif
 
   if (r == 0) {
