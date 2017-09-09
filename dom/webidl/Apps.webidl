@@ -136,5 +136,6 @@ interface DOMApplicationsManager : EventTarget {
 
   attribute EventHandler oninstall;
   attribute EventHandler onuninstall;
+  attribute EventHandler onupdate;
   attribute EventHandler onenabledstatechange;
 };

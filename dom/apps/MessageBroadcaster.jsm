@@ -112,6 +112,7 @@ this.MessageBroadcaster = {
   // Webapps:Install:Return:OK
   // Webapps:Uninstall:Return:OK
   // Webapps:Uninstall:Broadcast:Return:OK
+  // Webapps:ApplyDownload:Return:OK
   // Webapps:FireEvent
   // Webapps:checkForUpdate:Return:OK
   // Webapps:UpdateState

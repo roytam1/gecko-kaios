@@ -880,6 +880,7 @@ WebappsApplicationMgmt.prototype = {
                                         "Webapps:Uninstall:Broadcast:Return:OK",
                                         "Webapps:Uninstall:Return:KO",
                                         "Webapps:Install:Return:OK",
+                                        "Webapps:ApplyDownload:Return:OK",
                                         "Webapps:GetIcon:Return",
                                         "Webapps:Import:Return",
                                         "Webapps:ExtractManifest:Return",
@@ -887,6 +888,7 @@ WebappsApplicationMgmt.prototype = {
     cpmm.sendAsyncMessage("Webapps:RegisterForMessages",
                           {
                             messages: ["Webapps:Install:Return:OK",
+                                       "Webapps:ApplyDownload:Return:OK",
                                        "Webapps:Uninstall:Return:OK",
                                        "Webapps:Uninstall:Broadcast:Return:OK",
                                        "Webapps:SetEnabled:Return"]
@@ -901,6 +903,7 @@ WebappsApplicationMgmt.prototype = {
   uninit: function() {
     cpmm.sendAsyncMessage("Webapps:UnregisterForMessages",
                           ["Webapps:Install:Return:OK",
+                           "Webapps:ApplyDownload:Return:OK",
                            "Webapps:Uninstall:Return:OK",
                            "Webapps:Uninstall:Broadcast:Return:OK",
                            "Webapps:SetEnabled:Return"]);
@@ -999,6 +1002,10 @@ WebappsApplicationMgmt.prototype = {
     return this.__DOM_IMPL__.getEventHandler("onuninstall");
   },
 
+  get onupdate() {
+    return this.__DOM_IMPL__.getEventHandler("onupdate");
+  },
+
   get onenabledstatechange() {
     return this.__DOM_IMPL__.getEventHandler("onenabledstatechange");
   },
@@ -1009,6 +1016,10 @@ WebappsApplicationMgmt.prototype = {
 
   set onuninstall(aCallback) {
     this.__DOM_IMPL__.setEventHandler("onuninstall", aCallback);
+  },
+
+  set onupdate(aCallback) {
+    this.__DOM_IMPL__.setEventHandler("onupdate", aCallback);
   },
 
   set onenabledstatechange(aCallback) {
@@ -1028,12 +1039,15 @@ WebappsApplicationMgmt.prototype = {
       req = this.getRequest(msg.requestID);
     }
 
-    // We want Webapps:Install:Return:OK, Webapps:Uninstall:Broadcast:Return:OK
-    // and Webapps:SetEnabled:Return
-    // to be broadcasted to all instances of mozApps.mgmt.
+    // These messages will be broadcasted to all instances of mozApps.mgmt.
+    // Webapps:Install:Return:OK,
+    // Webapps:Uninstall:Broadcast:Return:OK
+    // Webapps:Uninstall:Broadcast:Return:OK
+    // Webapps:SetEnabled:Return
     if (!((msg.oid == this._id && req) ||
           aMessage.name == "Webapps:Install:Return:OK" ||
           aMessage.name == "Webapps:Uninstall:Broadcast:Return:OK" ||
+          aMessage.name == "Webapps:ApplyDownload:Return:OK" ||
           aMessage.name == "Webapps:SetEnabled:Return")) {
       return;
     }
@@ -1052,6 +1066,14 @@ WebappsApplicationMgmt.prototype = {
           let app = createContentApplicationObject(this._window, msg);
           let event =
             new this._window.MozApplicationEvent("uninstall", { application : app });
+          this.__DOM_IMPL__.dispatchEvent(event);
+        }
+        break;
+      case "Webapps:ApplyDownload:Return:OK":
+        {
+          let app = createContentApplicationObject(this._window, msg);
+          let event =
+            new this._window.MozApplicationEvent("update", { application : app });
           this.__DOM_IMPL__.dispatchEvent(event);
         }
         break;

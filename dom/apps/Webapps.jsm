@@ -1966,6 +1966,7 @@ this.DOMApplicationRegistry = {
       eventType: "downloadapplied",
       manifestURL: app.manifestURL
     });
+    MessageBroadcaster.broadcastMessage("Webapps:ApplyDownload:Return:OK", app);
   }),
 
   startOfflineCacheDownload: function(aManifest, aApp, aProfileDir, aIsUpdate) {
@@ -2383,6 +2384,7 @@ this.DOMApplicationRegistry = {
         manifestURL: aApp.manifestURL,
         requestID: aData.requestID
       });
+      MessageBroadcaster.broadcastMessage("Webapps:ApplyDownload:Return:OK", aApp);
       delete aApp.manifest;
       return;
     }
@@ -2431,6 +2433,7 @@ this.DOMApplicationRegistry = {
         manifestURL: aApp.manifestURL,
         requestID: aData.requestID
       });
+      MessageBroadcaster.broadcastMessage("Webapps:ApplyDownload:Return:OK", aApp);
     } else {
       // Check if the appcache is updatable, and send "downloadavailable" or
       // "downloadapplied".
@@ -2468,6 +2471,9 @@ this.DOMApplicationRegistry = {
         manifestURL: aApp.manifestURL,
         requestID: aData.requestID
       });
+      if (eventType == "downloadapplied") {
+        MessageBroadcaster.broadcastMessage("Webapps:ApplyDownload:Return:OK", aApp);
+      }
     }
 
     delete aApp.manifest;
@@ -3234,6 +3240,7 @@ this.DOMApplicationRegistry = {
       eventType: ["downloadsuccess", "downloadapplied"],
       manifestURL: aNewApp.manifestURL
     });
+    MessageBroadcaster.broadcastMessage("Webapps:ApplyDownload:Return:OK", aNewApp);
   }),
 
   _nextLocalId: function() {
@@ -3641,6 +3648,7 @@ this.DOMApplicationRegistry = {
         manifestURL: aApp.manifestURL,
         eventType: ["downloadsuccess", "downloadapplied"]
       });
+      MessageBroadcaster.broadcastMessage("Webapps:ApplyDownload:Return:OK", aApp);
     });
     let file = FileUtils.getFile("TmpD", ["webapps", aApp.id], false);
     if (file && file.exists()) {
@@ -4865,6 +4873,7 @@ AppcacheObserver.prototype = {
         eventType: ["downloadsuccess", "downloadapplied"],
         manifestURL: app.manifestURL
       });
+      MessageBroadcaster.broadcastMessage("Webapps:ApplyDownload:Return:OK", app);
     }
 
     let setError = function appObs_setError(aError) {
