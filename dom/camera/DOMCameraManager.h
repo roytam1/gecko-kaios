@@ -19,35 +19,18 @@
 #include "nsCycleCollectionParticipant.h"
 #include "mozilla/Attributes.h"
 
-#ifndef FXOS_SIMULATOR
-#define FEED_TEST_DATA_TO_PRODUCER
-#ifdef FEED_TEST_DATA_TO_PRODUCER
-//Test include files
-#include <gui/IGraphicBufferProducer.h>
-#include <gui/Surface.h>
-#include <android/native_window.h>
-#include <ui/GraphicBufferMapper.h>
-#include <system/graphics.h>
-class ITestDataSource;
-class ITestDataSourceResolutionResultListener;
-#endif
-#endif
 class nsPIDOMWindowInner;
 
 namespace mozilla {
   class ErrorResult;
   class nsDOMCameraControl;
-  class nsDOMSurfaceControl;
   namespace dom {
     struct CameraConfiguration;
-    struct SurfaceConfiguration;
   } // namespace dom
 } // namespace mozilla
 
 typedef nsTArray<nsWeakPtr> CameraControls;
 typedef nsClassHashtable<nsUint64HashKey, CameraControls> WindowTable;
-
-class DOMSurfaceControlCallback;
 
 class nsDOMCameraManager final
   : public nsIObserver
@@ -73,7 +56,6 @@ public:
   static bool IsWindowStillActive(uint64_t aWindowId);
 
   void Register(mozilla::nsDOMCameraControl* aDOMCameraControl);
-  void RegisterSurface(mozilla::nsDOMSurfaceControl* aDOMSurfaceControl);
   void OnNavigation(uint64_t aWindowId);
 
   void PermissionAllowed(uint32_t aCameraId,
@@ -90,28 +72,12 @@ public:
             const mozilla::dom::CameraConfiguration& aOptions,
             mozilla::ErrorResult& aRv);
   void GetListOfCameras(nsTArray<nsString>& aList, mozilla::ErrorResult& aRv);
-  already_AddRefed<mozilla::dom::Promise>
-  GetPreviewStream(const mozilla::dom::SurfaceConfiguration& aOptions, mozilla::ErrorResult& aRv);
-  already_AddRefed<mozilla::dom::Promise>
-  GetDisplayStream(const mozilla::dom::SurfaceConfiguration& aOptions, mozilla::ErrorResult& aRv);
 
   nsPIDOMWindowInner* GetParentObject() const { return mWindow; }
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
 #ifdef MOZ_WIDGET_GONK
   static void PreinitCameraHardware();
-#endif
-
-#ifndef FXOS_SIMULATOR
-#ifdef FEED_TEST_DATA_TO_PRODUCER
-  //VT test functions and variables
-  bool IsPreviewSurfaceNow() {return (mTestSurfaceCount == 0);}
-  ITestDataSource* mTestDataSource;
-  RefPtr<mozilla::nsDOMSurfaceControl> mDisplayControl;
-  RefPtr<mozilla::nsDOMSurfaceControl> mPreviewControl;
-  ITestDataSourceResolutionResultListener* mResolutionResultListener;
-  uint32_t mTestSurfaceCount;
-#endif
 #endif
 
 protected:
@@ -124,9 +90,6 @@ private:
   explicit nsDOMCameraManager(nsPIDOMWindowInner* aWindow);
   nsDOMCameraManager(const nsDOMCameraManager&) = delete;
   nsDOMCameraManager& operator=(const nsDOMCameraManager&) = delete;
-#ifndef FXOS_SIMULATOR
-  DOMSurfaceControlCallback* mDOMSurfaceControlCallback;
-#endif
 
 protected:
   uint64_t mWindowId;

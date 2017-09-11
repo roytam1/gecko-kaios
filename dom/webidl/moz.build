@@ -9,7 +9,6 @@ GENERATED_WEBIDL_FILES = [
 ]
 
 PREPROCESSED_WEBIDL_FILES = [
-    'CameraManager.webidl',
     'HTMLMediaElement.webidl',
     'Navigator.webidl',
     'Promise.webidl',
@@ -71,6 +70,7 @@ WEBIDL_FILES = [
     'CallsList.webidl',
     'CameraCapabilities.webidl',
     'CameraControl.webidl',
+    'CameraManager.webidl',
     'CameraUtil.webidl',
     'CanvasCaptureMediaStream.webidl',
     'CanvasRenderingContext2D.webidl',
