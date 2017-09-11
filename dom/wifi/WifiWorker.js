@@ -3305,8 +3305,6 @@ WifiWorker.prototype = {
 
   notifyClirModeChanged: function(aMode) {},
 
-  notifyLastKnownNetworkChanged: function() {},
-
   notifyLastKnownNetworkChanged: function() {
     let countryCode = PhoneNumberUtils.getCountryName().toUpperCase();
     if (countryCode != "" &&
