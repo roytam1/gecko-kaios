@@ -120,7 +120,9 @@ static bool IsArg(const char* arg, const char* s)
 XRE_GetFileFromPathType XRE_GetFileFromPath;
 XRE_CreateAppDataType XRE_CreateAppData;
 XRE_FreeAppDataType XRE_FreeAppData;
+#ifdef MOZ_TELEMETRY
 XRE_TelemetryAccumulateType XRE_TelemetryAccumulate;
+#endif
 XRE_StartupTimelineRecordType XRE_StartupTimelineRecord;
 XRE_mainType XRE_main;
 XRE_StopLateWriteChecksType XRE_StopLateWriteChecks;
@@ -130,7 +132,9 @@ static const nsDynamicFunctionLoad kXULFuncs[] = {
     { "XRE_GetFileFromPath", (NSFuncPtr*) &XRE_GetFileFromPath },
     { "XRE_CreateAppData", (NSFuncPtr*) &XRE_CreateAppData },
     { "XRE_FreeAppData", (NSFuncPtr*) &XRE_FreeAppData },
+#ifdef MOZ_TELEMETRY
     { "XRE_TelemetryAccumulate", (NSFuncPtr*) &XRE_TelemetryAccumulate },
+#endif
     { "XRE_StartupTimelineRecord", (NSFuncPtr*) &XRE_StartupTimelineRecord },
     { "XRE_main", (NSFuncPtr*) &XRE_main },
     { "XRE_StopLateWriteChecks", (NSFuncPtr*) &XRE_StopLateWriteChecks },
@@ -332,6 +336,7 @@ int main(int argc, char* argv[], char* envp[])
   XRE_StartupTimelineRecord(mozilla::StartupTimeline::START, start);
 
   if (gotCounters) {
+#ifdef MOZ_TELEMETRY
 #if defined(XP_WIN)
     XRE_TelemetryAccumulate(mozilla::Telemetry::EARLY_GLUESTARTUP_READ_OPS,
                             int(ioCounters.ReadOperationCount));
@@ -354,6 +359,7 @@ int main(int argc, char* argv[], char* envp[])
     }
 #else
   #error "Unknown platform"  // having this here keeps cppcheck happy
+#endif
 #endif
   }
 

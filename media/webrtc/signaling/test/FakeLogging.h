@@ -6,10 +6,20 @@
 #define FakeLogging_h
 
 namespace mozilla {
+LogModule*
+LogModule::Get(const char* aName)
+{
+  return nullptr;
+}
+
 namespace detail {
 void log_print(const PRLogModuleInfo* aModule,
-                      LogLevel aLevel,
-                      const char* aFmt, ...) { }
+               LogLevel aLevel,
+               const char* aFmt, ...) { }
+
+void log_print(const LogModule* aModule,
+               LogLevel aLevel,
+               const char* aFmt, ...) { }
 }
 }
 

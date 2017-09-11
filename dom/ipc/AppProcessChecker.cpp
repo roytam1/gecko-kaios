@@ -467,6 +467,13 @@ CheckAppPrincipal(mozilla::dom::PContentParent* aActor,
   return false;
 }
 
+bool
+CheckAppPrincipalOriginAttributes(mozilla::dom::PContentParent* aActor,
+                                  const PrincipalOriginAttributes& aPrincipalOriginAttributes)
+{
+  return false;
+}
+
 uint32_t
 CheckPermission(mozilla::dom::PContentParent* aActor,
                 nsIPrincipal* aPrincipal,

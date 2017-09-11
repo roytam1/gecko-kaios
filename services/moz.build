@@ -7,7 +7,6 @@
 DIRS += [
     'common',
     'crypto',
-    'fxaccounts/interfaces',
     'kaiaccounts',
 ]
 
@@ -19,3 +18,8 @@ if CONFIG['MOZ_B2G']:
 
 if CONFIG['MOZ_SERVICES_CLOUDSYNC']:
     DIRS += ['cloudsync']
+
+if CONFIG['MOZ_SERVICES_FXACCOUNTS']:
+    DIRS += ['fxaccounts']
+else:
+    DIRS += ['fxaccounts/interfaces']

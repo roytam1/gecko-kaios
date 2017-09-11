@@ -421,7 +421,7 @@ public:
 
   virtual bool RecvDeactivateSpatialNavigation() override;
 
-  virtual bool RecvUpdateSpatialNavigationTPSPanMode(const bool& aEnabled);
+  virtual bool RecvUpdateSpatialNavigationTPSPanMode(const bool& aEnabled) override;
 
   virtual bool RecvSwappedWithOtherRemoteLoader() override;
 
