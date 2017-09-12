@@ -5,7 +5,8 @@
 enum MobileConnectionState {"notSearching", "searching", "denied", "registered"};
 enum MobileConnectionType {"gsm", "gprs", "edge", "umts", "hsdpa", "hsupa",
                            "hspa", "hspa+", "is95a", "is95b", "1xrtt", "evdo0",
-                           "evdoa", "evdob", "ehrpd", "lte"};
+                           "evdoa", "evdob", "ehrpd", "lte", "tdscdma", "iwlan",
+                           "lte_ca"};
 
 [Pref="dom.mobileconnection.enabled"]
 interface MozMobileConnectionInfo

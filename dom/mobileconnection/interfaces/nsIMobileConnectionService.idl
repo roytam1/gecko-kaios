@@ -179,7 +179,7 @@ already_AddRefed<nsIMobileConnectionService>
 NS_CreateMobileConnectionService();
 %}
 
-[scriptable, uuid(fd401d55-7341-468f-9d56-00207c6c9bf5)]
+[scriptable, uuid(36c851a0-3717-4bf4-884c-4a2917e1eb97)]
 interface nsIMobileConnection : nsISupports
 {
   /*
@@ -262,18 +262,29 @@ interface nsIMobileConnection : nsISupports
   /**
    * Preferred network type.
    */
-  const long PREFERRED_NETWORK_TYPE_WCDMA_GSM               = 0;
-  const long PREFERRED_NETWORK_TYPE_GSM_ONLY                = 1;
-  const long PREFERRED_NETWORK_TYPE_WCDMA_ONLY              = 2;
-  const long PREFERRED_NETWORK_TYPE_WCDMA_GSM_AUTO          = 3;
-  const long PREFERRED_NETWORK_TYPE_CDMA_EVDO               = 4;
-  const long PREFERRED_NETWORK_TYPE_CDMA_ONLY               = 5;
-  const long PREFERRED_NETWORK_TYPE_EVDO_ONLY               = 6;
-  const long PREFERRED_NETWORK_TYPE_WCDMA_GSM_CDMA_EVDO     = 7;
-  const long PREFERRED_NETWORK_TYPE_LTE_CDMA_EVDO           = 8;
-  const long PREFERRED_NETWORK_TYPE_LTE_WCDMA_GSM           = 9;
-  const long PREFERRED_NETWORK_TYPE_LTE_WCDMA_GSM_CDMA_EVDO = 10;
-  const long PREFERRED_NETWORK_TYPE_LTE_ONLY                = 11;
+  const long PREFERRED_NETWORK_TYPE_WCDMA_GSM                         = 0;
+  const long PREFERRED_NETWORK_TYPE_GSM_ONLY                          = 1;
+  const long PREFERRED_NETWORK_TYPE_WCDMA_ONLY                        = 2;
+  const long PREFERRED_NETWORK_TYPE_WCDMA_GSM_AUTO                    = 3;
+  const long PREFERRED_NETWORK_TYPE_CDMA_EVDO                         = 4;
+  const long PREFERRED_NETWORK_TYPE_CDMA_ONLY                         = 5;
+  const long PREFERRED_NETWORK_TYPE_EVDO_ONLY                         = 6;
+  const long PREFERRED_NETWORK_TYPE_WCDMA_GSM_CDMA_EVDO               = 7;
+  const long PREFERRED_NETWORK_TYPE_LTE_CDMA_EVDO                     = 8;
+  const long PREFERRED_NETWORK_TYPE_LTE_WCDMA_GSM                     = 9;
+  const long PREFERRED_NETWORK_TYPE_LTE_WCDMA_GSM_CDMA_EVDO           = 10;
+  const long PREFERRED_NETWORK_TYPE_LTE_ONLY                          = 11;
+  const long PREFERRED_NETWORK_TYPE_LTE_WCDMA                         = 12;
+  const long PREFERRED_NETWORK_TYPE_TD_SCDMA_ONLY                     = 13;
+  const long PREFERRED_NETWORK_TYPE_TD_SCDMA_WCDMA                    = 14;
+  const long PREFERRED_NETWORK_TYPE_TD_SCDMA_LTE                      = 15;
+  const long PREFERRED_NETWORK_TYPE_TD_SCDMA_GSM                      = 16;
+  const long PREFERRED_NETWORK_TYPE_TD_SCDMA_GSM_LTE                  = 17;
+  const long PREFERRED_NETWORK_TYPE_TD_SCDMA_GSM_WCDMA                = 18;
+  const long PREFERRED_NETWORK_TYPE_TD_SCDMA_WCDMA_LTE                = 19;
+  const long PREFERRED_NETWORK_TYPE_TD_SCDMA_GSM_WCDMA_LTE            = 20;
+  const long PREFERRED_NETWORK_TYPE_TD_SCDMA_GSM_WCDMA_CDMA_EVDO_AUTO = 21;
+  const long PREFERRED_NETWORK_TYPE_TD_SCDMA_LTE_CDMA_EVDO_GSM_WCDMA  = 22;
 
   /**
    * CDMA roaming preference.
@@ -285,11 +296,12 @@ interface nsIMobileConnection : nsISupports
   /**
    * Supported network type.
    */
-  const long MOBILE_NETWORK_TYPE_GSM   = 0;
-  const long MOBILE_NETWORK_TYPE_WCDMA = 1;
-  const long MOBILE_NETWORK_TYPE_CDMA  = 2;
-  const long MOBILE_NETWORK_TYPE_EVDO  = 3;
-  const long MOBILE_NETWORK_TYPE_LTE   = 4;
+  const long MOBILE_NETWORK_TYPE_GSM     = 0;
+  const long MOBILE_NETWORK_TYPE_WCDMA   = 1;
+  const long MOBILE_NETWORK_TYPE_CDMA    = 2;
+  const long MOBILE_NETWORK_TYPE_EVDO    = 3;
+  const long MOBILE_NETWORK_TYPE_LTE     = 4;
+  const long MOBILE_NETWORK_TYPE_TDSCDMA = 5;
 
   readonly attribute unsigned long serviceId;
 

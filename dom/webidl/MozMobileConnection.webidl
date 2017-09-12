@@ -4,12 +4,33 @@
 
 enum MobileNetworkSelectionMode {"automatic", "manual"};
 enum MobileRadioState {"enabling", "enabled", "disabling", "disabled"};
-enum MobileNetworkType {"gsm", "wcdma", "cdma", "evdo", "lte"};
-enum MobilePreferredNetworkType {"wcdma/gsm", "gsm", "wcdma", "wcdma/gsm-auto",
-                                 "cdma/evdo", "cdma", "evdo",
-                                 "wcdma/gsm/cdma/evdo", "lte/cdma/evdo",
-                                 "lte/wcdma/gsm", "lte/wcdma/gsm/cdma/evdo",
-                                 "lte", "lte/wcdma", "lte/gsm"};
+enum MobileNetworkType {"gsm", "wcdma", "cdma", "evdo", "lte", "tdscdma"};
+enum MobilePreferredNetworkType {
+  "wcdma/gsm",                              //  0
+  "gsm",                                    //  1
+  "wcdma",                                  //  2
+  "wcdma/gsm-auto",                         //  3
+  "cdma/evdo",                              //  4
+  "cdma",                                   //  5
+  "evdo",                                   //  6
+  "wcdma/gsm/cdma/evdo",                    //  7
+  "lte/cdma/evdo",                          //  8
+  "lte/wcdma/gsm",                          //  9
+  "lte/wcdma/gsm/cdma/evdo",                // 10
+  "lte",                                    // 11
+  "lte/wcdma",                              // 12
+  "tdscdma",                                // 13
+  "tdscdma/wcdma",                          // 14
+  "tdscdma/lte",                            // 15
+  "tdscdma/gsm",                            // 16
+  "tdscdma/gsm/lte",                        // 17
+  "tdscdma/gsm/wcdma",                      // 18
+  "tdscdma/wcdma/lte",                      // 19
+  "tdscdma/gsm/wcdma/lte",                  // 20
+  "tdscdma/gsm/wcdma/cdma/evdo",            // 21
+  "tdscdma/lte/cdma/cdma/evdo/gsm/wcdma"    // 22
+};
+
 enum MobileRoamingMode {"home", "affiliated", "any"};
 
 [Pref="dom.mobileconnection.enabled"]

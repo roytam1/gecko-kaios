@@ -3070,6 +3070,8 @@ RilObject.prototype = {
       return true;
     }
 
+    // Refer to http://androidxref.com/7.1.1_r6/xref/frameworks/base/telephony/
+    // java/android/telephony/ServiceState.java#1172
     switch(radioTech) {
       case NETWORK_CREG_TECH_GPRS:
       case NETWORK_CREG_TECH_EDGE:
@@ -3080,8 +3082,9 @@ RilObject.prototype = {
       case NETWORK_CREG_TECH_LTE:
       case NETWORK_CREG_TECH_HSPAP:
       case NETWORK_CREG_TECH_GSM:
-      case NETWORK_CREG_TECH_DCHSPAP_1:
-      case NETWORK_CREG_TECH_DCHSPAP_2:
+      case NETWORK_CREG_TECH_TD_SCDMA:
+      case NETWORK_CREG_TECH_IWLAN:
+      case NETWORK_CREG_TECH_LTE_CA:
         return true;
     }
 
@@ -4658,10 +4661,10 @@ RilObject.prototype[REQUEST_GET_NEIGHBORING_CELL_IDS] = function REQUEST_GET_NEI
       case NETWORK_CREG_TECH_HSUPA:
       case NETWORK_CREG_TECH_HSPA:
       case NETWORK_CREG_TECH_HSPAP:
-      case NETWORK_CREG_TECH_DCHSPAP_1:
-      case NETWORK_CREG_TECH_DCHSPAP_2:
         cellId.wcdmaPsc = this.parseInt(cid, -1, 16);
         break;
+      default:
+        continue;
     }
 
     neighboringCellIds.push(cellId);
