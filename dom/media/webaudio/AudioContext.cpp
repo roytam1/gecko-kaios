@@ -1116,10 +1116,40 @@ AudioContext::GetBasicWaveFormCache()
   return mBasicWaveFormCache;
 }
 
+class MinimizeMemoryUsageRunnable : public nsRunnable
+{
+public:
+  explicit MinimizeMemoryUsageRunnable()
+    : mRemainingIters(sNumIters)
+  {
+  }
+
+  NS_IMETHOD Run()
+  {
+    mRemainingIters--;
+    NS_DispatchMemoryPressure(MemPressure_New);
+    if (mRemainingIters > 0) {
+      NS_DispatchToMainThread(this);
+    }
+    return NS_OK;
+  }
+
+private:
+  static const uint32_t sNumIters = 2;
+  uint32_t mRemainingIters;
+};
 void
 AudioContext::RequestCleanAfterRelease()
 {
+  // To imitate the behaviour of get_about_memory.py with -m. We send 3 memory
+  // pressure messages to force GC to clean the memory, see
+  // xpcom/base/nsMemoryReporterManager.cpp. Fist is in this function (for
+  // making the first message will be sent ASAP) and the others are in
+  // MinimizeMemoryUsageRunnable.
   NS_DispatchMemoryPressure(MemPressure_New);
+  RefPtr<MinimizeMemoryUsageRunnable> runnable =
+    new MinimizeMemoryUsageRunnable();
+  NS_DispatchToMainThread(runnable);
 }
 
 BasicWaveFormCache::BasicWaveFormCache(uint32_t aSampleRate)
