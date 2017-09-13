@@ -20,6 +20,10 @@ XPCOMUtils.defineLazyServiceGetter(this, "aceService",
 XPCOMUtils.defineLazyModuleGetter(this, "SEUtils",
                                   "resource://gre/modules/SEUtils.jsm");
 
+XPCOMUtils.defineLazyServiceGetter(this, "gSecureElementService",
+                                   "@mozilla.org/nfc;1",
+                                   "nsISecureElementService");
+
 XPCOMUtils.defineLazyGetter(this, "SE", () => {
   let obj = {};
   Cu.import("resource://gre/modules/se_consts.js", obj);
@@ -56,6 +60,11 @@ HCIEventTransactionSystemMessageConfigurator.prototype = {
 
     let appId = appsService.getAppLocalIdByManifestURL(aManifestURL);
     if (appId === Ci.nsIScriptSecurityManager.NO_APP_ID) {
+      return Promise.resolve(false);
+    }
+
+    if (aManifestURL != gSecureElementService.focusAppManifestUrl) {
+      debug("Send message to focus app only focus url:" + gSecureElementService.focusAppManifestUrl);
       return Promise.resolve(false);
     }
 

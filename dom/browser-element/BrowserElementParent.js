@@ -1154,7 +1154,11 @@ BrowserElementParent.prototype = {
     try {
       let nfcContentHelper =
         Cc["@mozilla.org/nfc/content-helper;1"].getService(Ci.nsINfcBrowserAPI);
-      nfcContentHelper.setFocusTab(tabId, isFocus);
+
+      let appManifestUrl =
+          this._frameElement.QueryInterface(Ci.nsIMozBrowserFrame).appManifestURL;
+
+      nfcContentHelper.setFocusTab(tabId, appManifestUrl, isFocus);
     } catch(e) {
       // Not all platforms support NFC
     }

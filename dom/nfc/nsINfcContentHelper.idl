@@ -147,6 +147,7 @@ interface nsINfcBrowserAPI : nsISupports
   const int32_t SYSTEM_APP_ID = 0;
 
   void setFocusTab(in uint64_t tabId,
+                   in DOMString focusAppManifestUrl,
                    in boolean isFocus);
 };
 
