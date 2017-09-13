@@ -410,6 +410,12 @@ PackPDU(const PackReversed<BluetoothUuid>& aIn, DaemonSocketPDU& aPDU)
    aPDU);
 }
 
+nsresult
+PackPDU(BluetoothSdpType aIn, DaemonSocketPDU& aPDU);
+
+nsresult
+PackPDU(const BluetoothSdpRecord& aIn, DaemonSocketPDU& aPDU);
+
 //
 // Unpacking
 //
@@ -566,6 +572,12 @@ UnpackPDU(DaemonSocketPDU& aPDU, const UnpackReversed<BluetoothUuid>& aOut)
     UnpackReversed<UnpackArray<uint8_t>>(
       UnpackArray<uint8_t>(aOut.mValue->mUuid, sizeof(aOut.mValue->mUuid))));
 }
+
+nsresult
+UnpackPDU(DaemonSocketPDU& aPDU, BluetoothSdpType& aOut);
+
+nsresult
+UnpackPDU(DaemonSocketPDU& aPDU, BluetoothSdpRecord& aOut);
 
 END_BLUETOOTH_NAMESPACE
 

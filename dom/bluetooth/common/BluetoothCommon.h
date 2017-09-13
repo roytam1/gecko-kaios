@@ -389,7 +389,8 @@ enum BluetoothSetupServiceId {
   SETUP_SERVICE_ID_HANDSFREE_CLIENT,
   SETUP_SERVICE_ID_MAP_CLIENT,
   SETUP_SERVICE_ID_AVRCP_CONTROLLER,
-  SETUP_SERVICE_ID_A2DP_SINK
+  SETUP_SERVICE_ID_A2DP_SINK,
+  SETUP_SERVICE_ID_SDP // not definded by BlueZ
 };
 
 /* Physical transport for GATT connections to remote dual-mode devices */
@@ -1460,6 +1461,52 @@ struct BluetoothGattAdvertisingData {
   }
 };
 
+// Enums for SDP record types
+enum BluetoothSdpType {
+  SDP_TYPE_RAW,        // Used to carry raw SDP search data for unknown UUIDs
+  SDP_TYPE_MAP_MAS,    // Message Access Profile - Server
+  SDP_TYPE_MAP_MNS,    // Message Access Profile - Client (Notification Server)
+  SDP_TYPE_PBAP_PSE,   // Phone Book Profile - Server
+  SDP_TYPE_PBAP_PCE,   // Phone Book Profile - Client
+  SDP_TYPE_OPP_SERVER, // Object Push Profile
+  SDP_TYPE_SAP_SERVER  // SIM Access Profile
+};
+
+struct BluetoothSdpRecord {
+    BluetoothSdpType mType;
+    BluetoothUuid    mUuid;
+    nsCString        mServiceName;
+    int32_t          mRfcommChannelNumber;
+    int32_t          mL2capPsm;
+    int32_t          mProfileVersion;
+    uint32_t         mSupportedFeatures;
+    uint32_t         mSupportedContentTypes;
+    uint32_t         mInstanceId;
+
+    BluetoothSdpRecord()
+    { }
+
+    BluetoothSdpRecord(
+      BluetoothSdpType aType,
+      BluetoothUuid aUuid,
+      const nsACString& aServiceName,
+      int32_t aRfcommChannelNumber,
+      int32_t aL2capPsm,
+      int32_t aProfileVersion,
+      uint32_t aSupportedFeatures,
+      uint32_t aSupportedContentTypes,
+      uint32_t aInstanceId)
+      : mType(aType)
+      , mUuid(aUuid)
+      , mServiceName(aServiceName)
+      , mRfcommChannelNumber(aRfcommChannelNumber)
+      , mL2capPsm(aL2capPsm)
+      , mProfileVersion(aProfileVersion)
+      , mSupportedFeatures(aSupportedFeatures)
+      , mSupportedContentTypes(aSupportedContentTypes) // content of MAS or PSE
+      , mInstanceId(aInstanceId)
+    { }
+};
 END_BLUETOOTH_NAMESPACE
 
 #endif // mozilla_dom_bluetooth_BluetoothCommon_h

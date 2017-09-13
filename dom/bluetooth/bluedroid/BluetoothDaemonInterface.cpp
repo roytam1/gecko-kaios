@@ -15,6 +15,7 @@
 #include "BluetoothDaemonHandsfreeInterface.h"
 #include "BluetoothDaemonHelpers.h"
 #include "BluetoothDaemonHidInterface.h"
+#include "BluetoothDaemonSdpInterface.h"
 #include "BluetoothDaemonSetupInterface.h"
 #include "BluetoothDaemonSocketInterface.h"
 #include "mozilla/Hal.h"
@@ -82,6 +83,7 @@ class BluetoothDaemonProtocol final
   , public BluetoothDaemonAvrcpModule
   , public BluetoothDaemonGattModule
   , public BluetoothDaemonHidModule
+  , public BluetoothDaemonSdpModule
 {
 public:
   BluetoothDaemonProtocol();
@@ -127,6 +129,9 @@ private:
                      DaemonSocketPDU& aPDU,
                      DaemonSocketResultHandler* aRes);
   void HandleHidSvc(const DaemonSocketPDUHeader& aHeader,
+                    DaemonSocketPDU& aPDU,
+                    DaemonSocketResultHandler* aRes);
+  void HandleSdpSvc(const DaemonSocketPDUHeader& aHeader,
                     DaemonSocketPDU& aPDU,
                     DaemonSocketResultHandler* aRes);
 
@@ -229,6 +234,14 @@ BluetoothDaemonProtocol::HandleHidSvc(
 }
 
 void
+BluetoothDaemonProtocol::HandleSdpSvc(
+  const DaemonSocketPDUHeader& aHeader, DaemonSocketPDU& aPDU,
+  DaemonSocketResultHandler* aRes)
+{
+  BluetoothDaemonSdpModule::HandleSvc(aHeader, aPDU, aRes);
+}
+
+void
 BluetoothDaemonProtocol::Handle(DaemonSocketPDU& aPDU)
 {
   static void (BluetoothDaemonProtocol::* const HandleSvc[])(
@@ -251,7 +264,13 @@ BluetoothDaemonProtocol::Handle(DaemonSocketPDU& aPDU)
     [BluetoothDaemonAvrcpModule::SERVICE_ID] =
       &BluetoothDaemonProtocol::HandleAvrcpSvc,
     [BluetoothDaemonGattModule::SERVICE_ID] =
-      &BluetoothDaemonProtocol::HandleGattSvc
+      &BluetoothDaemonProtocol::HandleGattSvc,
+    [0x0A] = nullptr, // HFP client
+    [0x0B] = nullptr, // MAP client
+    [0x0C] = nullptr, // AVRCP controller
+    [0x0D] = nullptr, // A2DP sink
+    [BluetoothDaemonSdpModule::SERVICE_ID] =  // 0x0E, not defined by BlueZ
+      &BluetoothDaemonProtocol::HandleSdpSvc
   };
 
   DaemonSocketPDUHeader header;
@@ -659,6 +678,18 @@ BluetoothDaemonInterface::GetBluetoothGattInterface()
   mGattInterface = MakeUnique<BluetoothDaemonGattInterface>(mProtocol.get());
 
   return mGattInterface.get();
+}
+
+BluetoothSdpInterface*
+BluetoothDaemonInterface::GetBluetoothSdpInterface()
+{
+  if (mSdpInterface) {
+    return mSdpInterface.get();
+  }
+
+  mSdpInterface = MakeUnique<BluetoothDaemonSdpInterface>(mProtocol.get());
+
+  return mSdpInterface.get();
 }
 
 // |DaemonSocketConsumer|, |ListenSocketConsumer|

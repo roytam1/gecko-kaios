@@ -1103,6 +1103,58 @@ BluetoothGattInterface::~BluetoothGattInterface()
 { }
 
 //
+// Bluetooth SDP Interface
+//
+
+// Notification handling
+//
+
+BluetoothSdpNotificationHandler::BluetoothSdpNotificationHandler()
+{ }
+
+BluetoothSdpNotificationHandler::~BluetoothSdpNotificationHandler()
+{ }
+
+void
+BluetoothSdpNotificationHandler::SdpSearchNotification(
+  BluetoothStatus aStatus, const BluetoothAddress& aBdAddr,
+  const BluetoothUuid& aUuid, int aNumRecords, const BluetoothSdpRecord& aRecords)
+{
+  // TODO: handle the SDP search results once the hardware stack is ready
+}
+
+// Result handling
+//
+
+void
+BluetoothSdpResultHandler::OnError(BluetoothStatus aStatus)
+{
+  BT_WARNING("Received error code %d", (int)aStatus);
+}
+
+void
+BluetoothSdpResultHandler::SdpSearch()
+{ }
+
+void
+BluetoothSdpResultHandler::CreateSdpRecord()
+{ }
+
+void
+BluetoothSdpResultHandler::RemoveSdpRecord()
+{ }
+
+// Interface
+//
+
+BluetoothSdpInterface::BluetoothSdpInterface()
+{ }
+
+BluetoothSdpInterface::~BluetoothSdpInterface()
+{ }
+
+
+//
 // Bluetooth Interface
 //
 

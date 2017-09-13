@@ -590,6 +590,28 @@ Convert(uint8_t aIn, BluetoothHidStatus& aOut)
 }
 
 nsresult
+Convert(int32_t aIn, BluetoothSdpType& aOut)
+{
+  static const BluetoothSdpType sSdpType[] = {
+    [0x00] = SDP_TYPE_RAW,
+    [0x01] = SDP_TYPE_MAP_MAS,
+    [0x02] = SDP_TYPE_MAP_MNS,
+    [0x03] = SDP_TYPE_PBAP_PSE,
+    [0x04] = SDP_TYPE_PBAP_PCE,
+    [0x05] = SDP_TYPE_OPP_SERVER,
+    [0x06] = SDP_TYPE_SAP_SERVER
+  };
+  if (MOZ_HAL_IPC_CONVERT_WARN_IF(
+    static_cast<size_t>(aIn) >= MOZ_ARRAY_LENGTH(sSdpType),
+    int32_t, BluetoothSdpType)) {
+    aOut = SDP_TYPE_RAW; // silences compiler warning
+    return NS_ERROR_ILLEGAL_VALUE;
+  }
+  aOut = sSdpType[aIn];
+  return NS_OK;
+}
+
+nsresult
 Convert(nsresult aIn, BluetoothStatus& aOut)
 {
   if (NS_SUCCEEDED(aIn)) {
@@ -942,7 +964,8 @@ Convert(BluetoothSetupServiceId aIn, uint8_t& aOut)
     [SETUP_SERVICE_ID_HANDSFREE_CLIENT] = 0x0a,
     [SETUP_SERVICE_ID_MAP_CLIENT] = 0x0b,
     [SETUP_SERVICE_ID_AVRCP_CONTROLLER] = 0x0c,
-    [SETUP_SERVICE_ID_A2DP_SINK] = 0x0d
+    [SETUP_SERVICE_ID_A2DP_SINK] = 0x0d,
+    [SETUP_SERVICE_ID_SDP] = 0x0e // not defined by BlueZ
   };
   if (MOZ_HAL_IPC_CONVERT_WARN_IF(
         aIn >= MOZ_ARRAY_LENGTH(sServiceId),
@@ -1094,6 +1117,26 @@ Convert(BluetoothHidReportType aIn, uint8_t& aOut)
     return NS_ERROR_ILLEGAL_VALUE;
   }
   aOut = sType[aIn];
+  return NS_OK;
+}
+
+nsresult
+Convert(BluetoothSdpType aIn, int32_t& aOut)
+{
+  static const int32_t sValue[] = {
+    [SDP_TYPE_RAW] = 0x00,
+    [SDP_TYPE_MAP_MAS] = 0x01,
+    [SDP_TYPE_MAP_MNS] = 0x02,
+    [SDP_TYPE_PBAP_PSE] = 0x03,
+    [SDP_TYPE_PBAP_PCE] = 0x04,
+    [SDP_TYPE_OPP_SERVER] = 0x05,
+    [SDP_TYPE_SAP_SERVER] = 0x06
+  };
+  if (MOZ_HAL_IPC_CONVERT_WARN_IF(
+        aIn >= MOZ_ARRAY_LENGTH(sValue), BluetoothSdpType, int32_t)) {
+    return NS_ERROR_ILLEGAL_VALUE;
+  }
+  aOut = sValue[aIn];
   return NS_OK;
 }
 
@@ -1275,6 +1318,57 @@ PackPDU(const BluetoothAvrcpEventParamPair& aIn, DaemonSocketPDU& aPDU)
       break;
   }
   return rv;
+}
+
+nsresult
+PackPDU(BluetoothSdpType aIn, DaemonSocketPDU& aPDU)
+{
+  return PackPDU(PackConversion<BluetoothSdpType, int32_t>(aIn), aPDU);
+}
+
+nsresult
+PackPDU(const BluetoothSdpRecord& aIn, DaemonSocketPDU& aPDU)
+{
+  nsresult rv;
+
+  rv = PackPDU(aIn.mType, aPDU);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+  rv = PackPDU(aIn.mUuid, aPDU);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+  rv = PackPDU(PackCString0(nsDependentCString(aIn.mServiceName.get())), aPDU);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+  rv = PackPDU(aIn.mRfcommChannelNumber, aPDU);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+  rv = PackPDU(aIn.mL2capPsm, aPDU);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+  rv = PackPDU(aIn.mProfileVersion, aPDU);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+
+  switch (aIn.mType) {
+    case SDP_TYPE_RAW:
+    case SDP_TYPE_MAP_MAS:
+    case SDP_TYPE_MAP_MNS:
+    case SDP_TYPE_PBAP_PSE:
+    case SDP_TYPE_PBAP_PCE:
+    case SDP_TYPE_OPP_SERVER:
+    case SDP_TYPE_SAP_SERVER:
+      // Not supported service records
+      break;
+  }
+
+  return NS_OK;
 }
 
 nsresult
@@ -2063,6 +2157,66 @@ UnpackPDU(DaemonSocketPDU& aPDU, BluetoothHidStatus& aOut)
 {
   return UnpackPDU(
     aPDU, UnpackConversion<uint8_t, BluetoothHidStatus>(aOut));
+}
+
+nsresult
+UnpackPDU(DaemonSocketPDU& aPDU, BluetoothSdpType& aOut)
+{
+  return UnpackPDU(
+    aPDU, UnpackConversion<int32_t, BluetoothSdpType>(aOut));
+}
+
+nsresult
+UnpackPDU(DaemonSocketPDU& aPDU, BluetoothSdpRecord& aOut)
+{
+  nsresult rv;
+
+  rv = UnpackPDU(aPDU, aOut.mType);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+  rv = UnpackPDU(aPDU, aOut.mUuid);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+
+  uint16_t len;
+  rv = UnpackPDU(aPDU, len);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+  const uint8_t* data = aPDU.Consume(len);
+  if (MOZ_HAL_IPC_UNPACK_WARN_IF(!data, BluetoothSdpRecord)) {
+    return NS_ERROR_ILLEGAL_VALUE;
+  }
+  aOut.mServiceName = nsDependentCString(reinterpret_cast<const char*>(data), len);
+
+  rv = UnpackPDU(aPDU, aOut.mRfcommChannelNumber);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+  rv = UnpackPDU(aPDU, aOut.mL2capPsm);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+  rv = UnpackPDU(aPDU, aOut.mProfileVersion);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+
+  switch (aOut.mType) {
+    case SDP_TYPE_RAW:
+    case SDP_TYPE_MAP_MAS:
+    case SDP_TYPE_MAP_MNS:
+    case SDP_TYPE_PBAP_PSE:
+    case SDP_TYPE_PBAP_PCE:
+    case SDP_TYPE_OPP_SERVER:
+    case SDP_TYPE_SAP_SERVER:
+      // Not supported service records
+      break;
+  }
+
+  return NS_OK;
 }
 
 END_BLUETOOTH_NAMESPACE
