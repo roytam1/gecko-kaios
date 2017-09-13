@@ -104,7 +104,7 @@ interface Telephony : EventTarget {
    * Test purpose.
    * To test loopback mode, please setup preference telephony.vt.loopback.enabled properly.
    */
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
   readonly attribute VideoCallProvider? loopbackProvider;
 #endif
 

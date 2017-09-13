@@ -16,7 +16,7 @@ USING_TELEPHONY_NAMESPACE
 using namespace mozilla::dom;
 USING_VIDEOCALLPROVIDER_NAMESPACE
 
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
 #include <android/log.h>
 #undef LOG
 #define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "TelephonyIPCService" , ## args)
@@ -58,7 +58,7 @@ NS_IMPL_ISUPPORTS(TelephonyIPCService,
                   nsIObserver)
 
 TelephonyIPCService::TelephonyIPCService()
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
   : mLoopbackProvider(nullptr)
 #endif
 {
@@ -74,7 +74,7 @@ TelephonyIPCService::TelephonyIPCService()
 TelephonyIPCService::~TelephonyIPCService()
 {
   LOG("deconstructor");
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
   CleanupVideocallProviders();
 #endif
 
@@ -84,7 +84,7 @@ TelephonyIPCService::~TelephonyIPCService()
   }
 }
 
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
 void
 TelephonyIPCService::CleanupVideocallProviders()
 {
@@ -109,7 +109,7 @@ TelephonyIPCService::NoteActorDestroyed()
 
   mPTelephonyChild = nullptr;
 
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
   MOZ_ASSERT(mLoopbackProvider);
   mLoopbackProvider = nullptr;
 #endif
@@ -376,7 +376,7 @@ TelephonyIPCService::CancelUSSD(uint32_t aClientId,
   return SendRequest(nullptr, aCallback, CancelUSSDRequest(aClientId));
 }
 
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
 NS_IMETHODIMP
 TelephonyIPCService::GetVideoCallProvider(uint32_t aClientId, uint32_t aCallIndex,
                                           nsIVideoCallProvider **aProvider)

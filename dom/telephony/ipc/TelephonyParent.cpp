@@ -6,7 +6,7 @@
 
 #include "mozilla/dom/telephony/TelephonyParent.h"
 #include "nsServiceManagerUtils.h"
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
 #include "mozilla/dom/videocallprovider/VideoCallProviderParent.h"
 #endif
 
@@ -179,7 +179,7 @@ TelephonyParent::DeallocPTelephonyRequestParent(PTelephonyRequestParent* aActor)
   return true;
 }
 
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
 PVideoCallProviderParent*
 TelephonyParent::AllocPVideoCallProviderParent(const uint32_t& aClientId,
                                                const uint32_t& aCallindex)

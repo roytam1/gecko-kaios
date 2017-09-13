@@ -630,12 +630,6 @@ WEBIDL_FILES = [
     'XULElement.webidl',
 ]
 
-if not CONFIG['FXOS_SIMULATOR']:
-    WEBIDL_FILES += [
-        'SurfaceControl.webidl',
-        'VideoCallProvider.webidl',
-    ]
-
 if CONFIG['MOZ_AUDIO_CHANNEL_MANAGER']:
     WEBIDL_FILES += [
         'AudioChannelManager.webidl',
@@ -775,6 +769,8 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
         'MozWifiCapabilities.webidl',
         'MozWifiManager.webidl',
         'MozWifiP2pManager.webidl',
+        'SurfaceControl.webidl',
+        'VideoCallProvider.webidl',
     ]
 else:
     WEBIDL_FILES += [
@@ -859,16 +855,6 @@ GENERATED_EVENTS_WEBIDL_FILES = [
     'USSDReceivedEvent.webidl',
 ]
 
-if not CONFIG['FXOS_SIMULATOR']:
-    GENERATED_EVENTS_WEBIDL_FILES += [
-        'VideoCallCameraCapabilitiesChangeEvent.webidl',
-        'VideoCallPeerDimensionsEvent.webidl',
-        'VideoCallQualityEvent.webidl',
-        'VideoCallSessionChangeEvent.webidl',
-        'VideoCallSessionModifyRequestEvent.webidl',
-        'VideoCallSessionModifyResponseEvent.webidl',
-    ]
-
 if CONFIG['MOZ_WEBRTC']:
     GENERATED_EVENTS_WEBIDL_FILES += [
         'MediaStreamTrackEvent.webidl',
@@ -919,6 +905,12 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
         'MozWifiP2pStatusChangeEvent.webidl',
         'MozWifiStationInfoEvent.webidl',
         'MozWifiStatusChangeEvent.webidl',
+        'VideoCallCameraCapabilitiesChangeEvent.webidl',
+        'VideoCallPeerDimensionsEvent.webidl',
+        'VideoCallQualityEvent.webidl',
+        'VideoCallSessionChangeEvent.webidl',
+        'VideoCallSessionModifyRequestEvent.webidl',
+        'VideoCallSessionModifyResponseEvent.webidl',
         'WifiOpenNetworkEvent.webidl',
     ]
 

@@ -7,7 +7,7 @@
 #include "TelephonyChild.h"
 
 #include "mozilla/dom/telephony/TelephonyDialCallback.h"
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
 #include "mozilla/dom/videocallprovider/VideoCallProviderChild.h"
 #endif
 #include "mozilla/UniquePtr.h"
@@ -52,7 +52,7 @@ TelephonyChild::DeallocPTelephonyRequestChild(PTelephonyRequestChild* aActor)
   return true;
 }
 
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
 PVideoCallProviderChild*
 TelephonyChild::AllocPVideoCallProviderChild(const uint32_t& clientId, const uint32_t& callIndex)
 {

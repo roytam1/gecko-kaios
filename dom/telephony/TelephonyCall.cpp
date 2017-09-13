@@ -9,7 +9,7 @@
 #include "mozilla/dom/telephony/TelephonyCallback.h"
 
 #include "mozilla/dom/DOMError.h"
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
 #include "mozilla/dom/DOMVideoCallProvider.h"
 #endif
 #include "nsPrintfCString.h"
@@ -43,7 +43,7 @@
 #define TELEPHONY_CALL_STATE(_state) \
   (TelephonyCallStateValues::strings[static_cast<int32_t>(_state)].value)
 
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
 #include <android/log.h>
 #undef LOG
 #define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "TelephonyCall" , ## args)
@@ -377,7 +377,7 @@ NS_IMPL_CYCLE_COLLECTION_INHERITED(TelephonyCall,
                                    mId,
                                    mSecondId,
                                    mCapabilities
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
                                    ,mVideoCallProvider
 #endif
                                    );
@@ -584,7 +584,7 @@ TelephonyCall::Resume(nsITelephonyCallback* aCallback)
   return NS_OK;
 }
 
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
 already_AddRefed<DOMVideoCallProvider>
 TelephonyCall::GetVideoCallProvider(ErrorResult& aRv)
 {

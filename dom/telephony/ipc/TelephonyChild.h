@@ -34,7 +34,7 @@ protected:
   virtual bool
   DeallocPTelephonyRequestChild(PTelephonyRequestChild* aActor) override;
 
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
   virtual PVideoCallProviderChild*
   AllocPVideoCallProviderChild(const uint32_t& clientId,
                                const uint32_t& callIndex) override;

@@ -38,7 +38,7 @@
 #include "nsXULAppAPI.h" // For XRE_GetProcessType()
 
 // === SIMULATOR START ===
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
 #include "mozilla/dom/DOMVideoCallProvider.h"
 
 #define FEED_TEST_DATA_TO_PRODUCER
@@ -708,7 +708,7 @@ Telephony::HandleAudioAgentState()
   return NS_OK;
 }
 
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
 already_AddRefed<DOMVideoCallProvider>
 Telephony::GetLoopbackProvider() const
 {

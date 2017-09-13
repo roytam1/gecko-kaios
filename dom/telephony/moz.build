@@ -50,22 +50,21 @@ UNIFIED_SOURCES += [
     'USSDSession.cpp',
 ]
 
-if CONFIG['FXOS_SIMULATOR']:
-    XPIDL_SOURCES += [
-        'fallback/nsITelephonyService.idl',
-    ]
-
-    IPDL_SOURCES += [
-        'fallback/ipc/PTelephony.ipdl',
-    ]
-
-if not CONFIG['FXOS_SIMULATOR']:
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
     XPIDL_SOURCES += [
         'nsITelephonyService.idl',
     ]
 
     IPDL_SOURCES += [
         'ipc/PTelephony.ipdl',
+    ]
+else:
+    XPIDL_SOURCES += [
+        'fallback/nsITelephonyService.idl',
+    ]
+
+    IPDL_SOURCES += [
+        'fallback/ipc/PTelephony.ipdl',
     ]
 
 IPDL_SOURCES += [

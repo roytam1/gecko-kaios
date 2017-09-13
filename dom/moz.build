@@ -120,19 +120,15 @@ DIRS += [
     'powersupply',
 ]
 
-if not CONFIG['FXOS_SIMULATOR']:
-    DIRS += [
-        'surface',
-        'videocallprovider',
-    ]
-
 if CONFIG['OS_ARCH'] == 'WINNT':
     DIRS += ['plugins/ipc/hangui']
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
     DIRS += [
         'speakermanager',
+        'surface',
         'tethering',
+        'videocallprovider',
         'wifi',
     ]
 

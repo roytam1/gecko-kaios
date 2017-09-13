@@ -79,7 +79,7 @@ interface TelephonyCall : EventTarget {
   /**
    * To acquire the video call handler which helps app to operate video call related function.
    */
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK 
   [Throws]
   readonly attribute VideoCallProvider? videoCallProvider;
 #endif

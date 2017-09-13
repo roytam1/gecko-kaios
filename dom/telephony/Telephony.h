@@ -31,7 +31,7 @@ class TelephonyDialCallback;
 } // namespace telephony
 
 class OwningTelephonyCallOrTelephonyCallGroup;
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
 class DOMVideoCallProvider;
 #endif
 
@@ -61,7 +61,7 @@ class Telephony final : public DOMEventTargetHelper,
   RefPtr<CallsList> mCallsList;
 
   RefPtr<TelephonyCallGroup> mGroup;
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
   mutable RefPtr<DOMVideoCallProvider> mLoopbackProvider;
 #endif
 
@@ -165,7 +165,7 @@ public:
   already_AddRefed<Promise>
   HangUpAllCalls(const Optional<uint32_t>& aServiceId, ErrorResult& aRv);
 
-#ifndef FXOS_SIMULATOR
+#ifdef MOZ_WIDGET_GONK
   already_AddRefed<DOMVideoCallProvider>
   GetLoopbackProvider() const;
 #endif
