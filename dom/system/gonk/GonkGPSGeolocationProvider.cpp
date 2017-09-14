@@ -82,6 +82,10 @@ static const int kDefaultPeriod = 1000; // ms
 static bool gDebug_isLoggingEnabled = false;
 static bool gDebug_isGPSLocationIgnored = false;
 static bool gHasAuthorizationKey = false;
+
+// Set the flag to 0 which wouldn't delete any aiding data
+static uint16_t gAidingDataDeleteFlag = 0;
+
 #ifdef MOZ_B2G_RIL
 static const char* kNetworkConnStateChangedTopic = "network-connection-state-changed";
 #endif
@@ -1088,6 +1092,11 @@ GonkGPSGeolocationProvider::StartGPS()
 #if FLUSH_AIDE_DATA
   // Delete cached data
   mGpsInterface->delete_aiding_data(GPS_DELETE_ALL);
+#else
+  if (gAidingDataDeleteFlag != 0) {
+    mGpsInterface->delete_aiding_data(gAidingDataDeleteFlag);
+    gAidingDataDeleteFlag = 0;
+  }
 #endif
 
   LOG("Starts GPS");
@@ -1332,22 +1341,25 @@ GonkGPSGeolocationProvider::ShutdownGPS()
 NS_IMETHODIMP
 GonkGPSGeolocationProvider::DeleteGpsData(uint16_t deleteType)
 {
-  if (!mGpsInterface) {
-    mGpsInterface = GetGPSInterface();
-  }
-
-  if (mGpsInterface) {
-    switch (deleteType) {
+  switch (deleteType) {
     case GPS_DELETE_ALL:
-      mGpsInterface->delete_aiding_data(GPS_DELETE_ALL);
+      gAidingDataDeleteFlag = GPS_DELETE_ALL;
       break;
     case GPS_DELETE_EPHEMERIS:
-      mGpsInterface->delete_aiding_data(GPS_DELETE_EPHEMERIS);
+      gAidingDataDeleteFlag = GPS_DELETE_EPHEMERIS;
       break;
-    }
-    //mGpsInterface->stop();
-   }
-   return NS_OK;
+    default:
+      LOG("Received unsupported GPS data type 0x%x for deleting", deleteType);
+      gAidingDataDeleteFlag = 0;
+      break;
+  }
+
+  if (mGpsInterface && mInitialized && gAidingDataDeleteFlag) {
+    mGpsInterface->delete_aiding_data(gAidingDataDeleteFlag);
+    gAidingDataDeleteFlag = 0;
+  }
+
+  return NS_OK;
 }
 
 NS_IMETHODIMP
