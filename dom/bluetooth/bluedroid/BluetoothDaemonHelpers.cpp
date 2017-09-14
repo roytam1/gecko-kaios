@@ -1357,8 +1357,25 @@ PackPDU(const BluetoothSdpRecord& aIn, DaemonSocketPDU& aPDU)
   }
 
   switch (aIn.mType) {
+    case SDP_TYPE_MAP_MAS: {
+      const BluetoothMasRecord* const masRecord =
+        (const BluetoothMasRecord* const) &aIn;
+
+      rv = PackPDU(masRecord->mSupportedFeatures, aPDU);
+      if (NS_FAILED(rv)) {
+        return rv;
+      }
+      rv = PackPDU(masRecord->mSupportedContentTypes, aPDU);
+      if (NS_FAILED(rv)) {
+        return rv;
+      }
+      rv = PackPDU(masRecord->mInstanceId, aPDU);
+      if (NS_FAILED(rv)) {
+        return rv;
+      }
+      break;
+    }
     case SDP_TYPE_RAW:
-    case SDP_TYPE_MAP_MAS:
     case SDP_TYPE_MAP_MNS:
     case SDP_TYPE_PBAP_PSE:
     case SDP_TYPE_PBAP_PCE:
@@ -2205,8 +2222,21 @@ UnpackPDU(DaemonSocketPDU& aPDU, BluetoothSdpRecord& aOut)
   }
 
   switch (aOut.mType) {
-    case SDP_TYPE_RAW:
     case SDP_TYPE_MAP_MAS:
+      rv = UnpackPDU(aPDU, aOut.mSupportedFeatures);
+      if (NS_FAILED(rv)) {
+        return rv;
+      }
+      rv = UnpackPDU(aPDU, aOut.mSupportedContentTypes);
+      if (NS_FAILED(rv)) {
+        return rv;
+      }
+      rv = UnpackPDU(aPDU, aOut.mInstanceId);
+      if (NS_FAILED(rv)) {
+        return rv;
+      }
+      break;
+    case SDP_TYPE_RAW:
     case SDP_TYPE_MAP_MNS:
     case SDP_TYPE_PBAP_PSE:
     case SDP_TYPE_PBAP_PCE:

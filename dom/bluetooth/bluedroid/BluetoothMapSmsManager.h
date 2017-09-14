@@ -8,6 +8,7 @@
 #define mozilla_dom_bluetooth_bluedroid_BluetoothMapSmsManager_h
 
 #include "BluetoothCommon.h"
+#include "BluetoothInterface.h"
 #include "BluetoothMapBMessage.h"
 #include "BluetoothMapFolder.h"
 #include "BluetoothProfileManagerBase.h"
@@ -68,6 +69,7 @@ class ObexHeaderSet;
 
 class BluetoothMapSmsManager : public BluetoothSocketObserver
                              , public BluetoothProfileManagerBase
+                             , public BluetoothSdpNotificationHandler
 {
 public:
   BT_DECL_PROFILE_MGR_BASE
@@ -227,6 +229,13 @@ protected:
   virtual ~BluetoothMapSmsManager();
 
 private:
+  class CreateSdpRecordResultHandler;
+  class RemoveSdpRecordResultHandler;
+  class InitProfileResultHandlerRunnable;
+  class DeinitProfileResultHandlerRunnable;
+  class RegisterModuleResultHandler;
+  class UnregisterModuleResultHandler;
+
   BluetoothMapSmsManager();
 
   nsresult Init();

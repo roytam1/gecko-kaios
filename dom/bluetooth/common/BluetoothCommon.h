@@ -1507,6 +1507,48 @@ struct BluetoothSdpRecord {
       , mInstanceId(aInstanceId)
     { }
 };
+
+#define DEFAULT_RFCOMM_CHANNEL_OPS  12
+#define DEFAULT_RFCOMM_CHANNEL_PBS  19
+#define DEFAULT_RFCOMM_CHANNEL_MAS  21
+#define DEFAULT_RFCOMM_CHANNEL_MNS  22
+
+#define MAP_PROFILE_VERSION  0x0101
+
+/*
+ * KaiOS supports feature bit 0, 1, 2, 3 and 4
+ * Bit 0 = Notification Registration Feature
+ * Bit 1 = Notification Feature
+ * Bit 2 = Browsing Feature
+ * Bit 3 = Uploading Feature
+ * Bit 4 = Delete Feature
+ * Bit 5 = Instance Information Feature
+ * Bit 6 = Extended Event Report 1.1
+ */
+#define MAP_SUPPORTED_FEATURES  0x0000001F
+
+/*
+ * KaiOS supports feature bit 1 and 2
+ * Bit 0 = EMAIL
+ * Bit 1 = SMS_GSM
+ * Bit 2 = SMS_CDMA
+ * Bit 3 = MMS
+ */
+#define MAP_SUPPORTED_MSG_TYPES 0x06
+
+struct BluetoothMasRecord : public BluetoothSdpRecord {
+    BluetoothMasRecord(int32_t aRfcommChannelNumber, int32_t aInstanceId)
+      : BluetoothSdpRecord(SDP_TYPE_MAP_MAS,
+                           BluetoothUuid(MAP_MAS),
+                           NS_LITERAL_CSTRING("SMS Message Access"),
+                           aRfcommChannelNumber,
+                           -1, // don't specify L2CAP PSM
+                           MAP_PROFILE_VERSION,
+                           MAP_SUPPORTED_FEATURES,
+                           MAP_SUPPORTED_MSG_TYPES,
+                           aInstanceId)
+    { }
+};
 END_BLUETOOTH_NAMESPACE
 
 #endif // mozilla_dom_bluetooth_BluetoothCommon_h

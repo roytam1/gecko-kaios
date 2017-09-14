@@ -56,6 +56,8 @@ namespace {
 
   StaticRefPtr<BluetoothMapSmsManager> sMapSmsManager;
   static bool sInShutdown = false;
+  static BluetoothSdpInterface* sBtSdpInterface;
+  static int sSdpMasHandle = 0;
 }
 
 BEGIN_BLUETOOTH_NAMESPACE
@@ -85,6 +87,8 @@ BluetoothMapSmsManager::HandleShutdown()
   Disconnect(nullptr);
   Uninit();
 
+  sBtSdpInterface->SetNotificationHandler(nullptr);
+  sBtSdpInterface = nullptr;
   sMapSmsManager = nullptr;
 }
 
@@ -161,16 +165,243 @@ BluetoothMapSmsManager::Uninit()
     obs->RemoveObserver(this, NS_XPCOM_SHUTDOWN_OBSERVER_ID)));
 }
 
+class BluetoothMapSmsManager::CreateSdpRecordResultHandler final
+  : public BluetoothSdpResultHandler
+{
+public:
+  void OnError(BluetoothStatus aStatus) override
+  {
+    BT_LOGR("BluetoothSdpInterface::CreateSdpRecord failed: %d", (int)aStatus);
+  }
+};
+
+class BluetoothMapSmsManager::RemoveSdpRecordResultHandler final
+  : public BluetoothSdpResultHandler
+{
+public:
+  void OnError(BluetoothStatus aStatus) override
+  {
+    BT_LOGR("BluetoothSdpInterface::RemoveSdpRecord failed: %d", (int)aStatus);
+  }
+};
+
+class BluetoothMapSmsManager::RegisterModuleResultHandler final
+  : public BluetoothSetupResultHandler
+{
+public:
+  RegisterModuleResultHandler(BluetoothSdpInterface* aInterface,
+                              BluetoothProfileResultHandler* aRes)
+    : mSdpInterface(aInterface)
+    , mRes(aRes)
+  { }
+
+  void OnError(BluetoothStatus aStatus) override
+  {
+    MOZ_ASSERT(NS_IsMainThread());
+
+    BT_WARNING("BluetoothSetupInterface::RegisterModule failed for SDP: %d",
+               (int)aStatus);
+
+    mSdpInterface->SetNotificationHandler(nullptr);
+
+    if (mRes) {
+      mRes->OnError(NS_ERROR_FAILURE);
+    }
+  }
+
+  void RegisterModule() override
+  {
+    MOZ_ASSERT(NS_IsMainThread());
+
+    sBtSdpInterface = mSdpInterface;
+
+    if (mRes) {
+      mRes->Init();
+    }
+  }
+
+private:
+  BluetoothSdpInterface* mSdpInterface;
+  RefPtr<BluetoothProfileResultHandler> mRes;
+};
+
+class BluetoothMapSmsManager::InitProfileResultHandlerRunnable final
+  : public nsRunnable
+{
+public:
+  InitProfileResultHandlerRunnable(BluetoothProfileResultHandler* aRes,
+                                   nsresult aRv)
+    : mRes(aRes)
+    , mRv(aRv)
+  {
+    MOZ_ASSERT(mRes);
+  }
+
+  NS_IMETHOD Run() override
+  {
+    MOZ_ASSERT(NS_IsMainThread());
+
+    if (NS_SUCCEEDED(mRv)) {
+      mRes->Init();
+    } else {
+      mRes->OnError(mRv);
+    }
+    return NS_OK;
+  }
+
+private:
+  RefPtr<BluetoothProfileResultHandler> mRes;
+  nsresult mRv;
+};
+
 // static
 void
 BluetoothMapSmsManager::InitMapSmsInterface(BluetoothProfileResultHandler* aRes)
 {
   MOZ_ASSERT(NS_IsMainThread());
 
+#if ANDROID_VERSION <= 22
   if (aRes) {
     aRes->Init();
   }
+  return;
+#endif
+
+  if (sBtSdpInterface) {
+    BT_LOGR("Bluetooth SDP interface is already initalized.");
+    RefPtr<nsRunnable> r = new InitProfileResultHandlerRunnable(aRes, NS_OK);
+    if (NS_FAILED(NS_DispatchToMainThread(r))) {
+      BT_LOGR("Failed to dispatch MAP Init runnable");
+    }
+    return;
+  }
+
+  auto btInf = BluetoothInterface::GetInstance();
+
+  if (NS_WARN_IF(!btInf)) {
+    // If there's no Bluetooth interface, we dispatch a runnable
+    // that calls the profile result handler.
+    RefPtr<nsRunnable> r =
+      new InitProfileResultHandlerRunnable(aRes, NS_ERROR_FAILURE);
+    if (NS_FAILED(NS_DispatchToMainThread(r))) {
+      BT_LOGR("Failed to dispatch MAP OnError runnable");
+    }
+    return;
+  }
+
+  auto setupInterface = btInf->GetBluetoothSetupInterface();
+
+  if (NS_WARN_IF(!setupInterface)) {
+    // If there's no Setup interface, we dispatch a runnable
+    // that calls the profile result handler.
+    RefPtr<nsRunnable> r =
+      new InitProfileResultHandlerRunnable(aRes, NS_ERROR_FAILURE);
+    if (NS_FAILED(NS_DispatchToMainThread(r))) {
+      BT_LOGR("Failed to dispatch MAP OnError runnable");
+    }
+    return;
+  }
+
+  auto sdpInterface = btInf->GetBluetoothSdpInterface();
+
+  if (NS_WARN_IF(!sdpInterface)) {
+    // If there's no SDP interface, we dispatch a runnable
+    // that calls the profile result handler.
+    RefPtr<nsRunnable> r =
+      new InitProfileResultHandlerRunnable(aRes, NS_ERROR_FAILURE);
+    if (NS_FAILED(NS_DispatchToMainThread(r))) {
+      BT_LOGR("Failed to dispatch MAP OnError runnable");
+    }
+    return;
+  }
+
+  // Set notification handler _before_ registering the module. It could
+  // happen that we receive notifications, before the result handler runs.
+  sdpInterface->SetNotificationHandler(BluetoothMapSmsManager::Get());
+
+  static const int MAX_NUM_CLIENTS = 1;
+  setupInterface->RegisterModule(
+    SETUP_SERVICE_ID_SDP, 0, MAX_NUM_CLIENTS,
+    new RegisterModuleResultHandler(sdpInterface, aRes));
 }
+
+class BluetoothMapSmsManager::UnregisterModuleResultHandler final
+  : public BluetoothSetupResultHandler
+{
+public:
+  UnregisterModuleResultHandler(BluetoothProfileResultHandler* aRes)
+    : mRes(aRes)
+  { }
+
+  void OnError(BluetoothStatus aStatus) override
+  {
+    MOZ_ASSERT(NS_IsMainThread());
+
+    BT_WARNING("BluetoothSetupInterface::UnregisterModule failed for SDP: %d",
+               (int)aStatus);
+
+    sBtSdpInterface->SetNotificationHandler(nullptr);
+    sBtSdpInterface = nullptr;
+
+    if (sMapSmsManager) {
+      sMapSmsManager->Uninit();
+      sMapSmsManager = nullptr;
+    }
+
+    if (mRes) {
+      mRes->OnError(NS_ERROR_FAILURE);
+    }
+  }
+
+  void UnregisterModule() override
+  {
+    MOZ_ASSERT(NS_IsMainThread());
+
+    sBtSdpInterface->SetNotificationHandler(nullptr);
+    sBtSdpInterface = nullptr;
+
+    if (sMapSmsManager) {
+      sMapSmsManager->Uninit();
+      sMapSmsManager = nullptr;
+    }
+
+    if (mRes) {
+      mRes->Deinit();
+    }
+  }
+
+private:
+  RefPtr<BluetoothProfileResultHandler> mRes;
+};
+
+class BluetoothMapSmsManager::DeinitProfileResultHandlerRunnable final
+  : public nsRunnable
+{
+public:
+  DeinitProfileResultHandlerRunnable(BluetoothProfileResultHandler* aRes,
+                                     nsresult aRv)
+    : mRes(aRes)
+    , mRv(aRv)
+  {
+    MOZ_ASSERT(mRes);
+  }
+
+  NS_IMETHOD Run() override
+  {
+    MOZ_ASSERT(NS_IsMainThread());
+
+    if (NS_SUCCEEDED(mRv)) {
+      mRes->Deinit();
+    } else {
+      mRes->OnError(mRv);
+    }
+    return NS_OK;
+  }
+
+private:
+  RefPtr<BluetoothProfileResultHandler> mRes;
+  nsresult mRv;
+};
 
 // static
 void
@@ -183,9 +414,55 @@ BluetoothMapSmsManager::DeinitMapSmsInterface(BluetoothProfileResultHandler* aRe
     sMapSmsManager = nullptr;
   }
 
+#if ANDROID_VERSION <= 22
   if (aRes) {
     aRes->Deinit();
   }
+  return;
+#endif
+
+  if (!sBtSdpInterface) {
+    BT_LOGR("Bluetooth SDP interface has not been initalized.");
+    RefPtr<nsRunnable> r =
+      new DeinitProfileResultHandlerRunnable(aRes, NS_OK);
+    if (NS_FAILED(NS_DispatchToMainThread(r))) {
+      BT_LOGR("Failed to dispatch MAP Deinit runnable");
+    }
+    return;
+  }
+
+  sBtSdpInterface->RemoveSdpRecord(sSdpMasHandle,
+                                   new RemoveSdpRecordResultHandler());
+
+  auto btInf = BluetoothInterface::GetInstance();
+
+  if (NS_WARN_IF(!btInf)) {
+    // If there's no Bluetooth interface, we dispatch a runnable
+    // that calls the profile result handler.
+    RefPtr<nsRunnable> r =
+      new DeinitProfileResultHandlerRunnable(aRes, NS_ERROR_FAILURE);
+    if (NS_FAILED(NS_DispatchToMainThread(r))) {
+      BT_LOGR("Failed to dispatch MAP OnError runnable");
+    }
+    return;
+  }
+
+  auto setupInterface = btInf->GetBluetoothSetupInterface();
+
+  if (NS_WARN_IF(!setupInterface)) {
+    // If there's no Setup interface, we dispatch a runnable
+    // that calls the profile result handler.
+    RefPtr<nsRunnable> r =
+      new DeinitProfileResultHandlerRunnable(aRes, NS_ERROR_FAILURE);
+    if (NS_FAILED(NS_DispatchToMainThread(r))) {
+      BT_LOGR("Failed to dispatch MAP OnError runnable");
+    }
+    return;
+  }
+
+  setupInterface->UnregisterModule(
+    SETUP_SERVICE_ID_SDP,
+    new UnregisterModuleResultHandler(aRes));
 }
 
 //static
@@ -252,14 +529,21 @@ BluetoothMapSmsManager::Listen()
                                  SDP_MESSAGE_TYPE_SMS_CDMA |
                                  SDP_MESSAGE_TYPE_MMS);
 #endif
-  /**
-   * SDP service name, we don't assign RFCOMM channel directly
-   * bluedroid automatically assign channel number randomly.
-   */
-  sdpString.AppendLiteral("SMS/MMS Message Access");
+
+  // BlueDroid automatically assign channel number if the given numver is -1
+  int rfcommChannel = -1;
+#if ANDROID_VERSION >= 23
+  rfcommChannel = DEFAULT_RFCOMM_CHANNEL_MAS;
+  BluetoothMasRecord masRecord(rfcommChannel, 0); // instance id starts from 0
+  sBtSdpInterface->CreateSdpRecord(masRecord, sSdpMasHandle,
+                                   new CreateSdpRecordResultHandler());
+#endif
+
+  // SDP service name
+  sdpString.AppendLiteral("SMS Message Access");
   nsresult rv = mMasServerSocket->Listen(sdpString, kMapMas,
-                                         BluetoothSocketType::RFCOMM, -1, false,
-                                         true);
+                                         BluetoothSocketType::RFCOMM,
+                                         rfcommChannel, false, true);
   if (NS_FAILED(rv)) {
     mMasServerSocket = nullptr;
     return false;
