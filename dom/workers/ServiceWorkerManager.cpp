@@ -1060,6 +1060,7 @@ ServiceWorkerManager::SendPushSubscriptionChangeEvent(const nsACString& aOriginA
 #endif
 }
 
+#ifdef MOZ_B2G
 NS_IMETHODIMP
 ServiceWorkerManager::SendNotificationEvent(const nsAString& aEventName,
                                             const nsACString& aOriginSuffix,
@@ -1126,6 +1127,43 @@ ServiceWorkerManager::SendNotificationEvent(const nsAString& aEventName,
                                               NS_ConvertUTF8toUTF16(aScope),
                                               aUserAction);
 }
+#else
+NS_IMETHODIMP
+ServiceWorkerManager::SendNotificationEvent(const nsAString& aEventName,
+                                            const nsACString& aOriginSuffix,
+                                            const nsACString& aScope,
+                                            const nsAString& aID,
+                                            const nsAString& aTitle,
+                                            const nsAString& aDir,
+                                            const nsAString& aLang,
+                                            const nsAString& aBody,
+                                            const nsAString& aTag,
+                                            const nsAString& aIcon,
+                                            const nsAString& aData,
+                                            const nsAString& aBehavior,
+                                            bool aRequireInteraction,
+                                            const nsAString& aActions,
+                                            const nsAString& aUserAction)
+{
+  PrincipalOriginAttributes attrs;
+  if (!attrs.PopulateFromSuffix(aOriginSuffix)) {
+    return NS_ERROR_INVALID_ARG;
+  }
+
+  ServiceWorkerInfo* info = GetActiveWorkerInfoForScope(attrs, aScope);
+  if (!info) {
+    return NS_ERROR_FAILURE;
+  }
+
+  ServiceWorkerPrivate* workerPrivate = info->WorkerPrivate();
+  return workerPrivate->SendNotificationEvent(aEventName, aID, aTitle, aDir,
+                                              aLang, aBody, aTag,
+                                              aIcon, aData, aBehavior,
+                                              aRequireInteraction, aActions,
+                                              NS_ConvertUTF8toUTF16(aScope),
+                                              aUserAction);
+}
+#endif
 
 NS_IMETHODIMP
 ServiceWorkerManager::GetReadyPromise(mozIDOMWindow* aWindow,

@@ -8,9 +8,14 @@
  *
  */
 
+#ifdef MOZ_B2G
 [Func="ServiceWorkerContainer::IsEnabled",
  CheckAnyPermissions="serviceworker",
  Exposed=Window]
+#else
+[Func="ServiceWorkerContainer::IsEnabled",
+ Exposed=Window]
+#endif
 interface ServiceWorkerContainer : EventTarget {
   // FIXME(nsm):
   // https://github.com/slightlyoff/ServiceWorker/issues/198

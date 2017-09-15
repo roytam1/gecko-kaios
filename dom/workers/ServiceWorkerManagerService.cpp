@@ -162,6 +162,7 @@ ServiceWorkerManagerService::UnregisterActor(ServiceWorkerManagerParent* aParent
   mAgents.RemoveEntry(aParent);
 }
 
+#ifdef MOZ_B2G
 void
 ServiceWorkerManagerService::PropagateRegistration(
                                            uint64_t aParentID,
@@ -187,6 +188,33 @@ ServiceWorkerManagerService::PropagateRegistration(
   MOZ_ASSERT(parentFound);
 #endif
 }
+#else
+void
+ServiceWorkerManagerService::PropagateRegistration(
+  uint64_t aParentID,
+  ServiceWorkerRegistrationData& aData)
+{
+AssertIsOnBackgroundThread();
+
+DebugOnly<bool> parentFound = false;
+for (auto iter = mAgents.Iter(); !iter.Done(); iter.Next()) {
+RefPtr<ServiceWorkerManagerParent> parent = iter.Get()->GetKey();
+MOZ_ASSERT(parent);
+
+if (parent->ID() != aParentID) {
+Unused << parent->SendNotifyRegister(aData);
+#ifdef DEBUG
+} else {
+parentFound = true;
+#endif
+}
+}
+
+#ifdef DEBUG
+MOZ_ASSERT(parentFound);
+#endif
+}
+#endif
 
 void
 ServiceWorkerManagerService::PropagateSoftUpdate(
@@ -238,6 +266,7 @@ ServiceWorkerManagerService::PropagateSoftUpdate(
 #endif
 }
 
+#ifdef MOZ_B2G
 void
 ServiceWorkerManagerService::PropagateUnregister(
                                             uint64_t aParentID,
@@ -274,6 +303,44 @@ ServiceWorkerManagerService::PropagateUnregister(
   MOZ_ASSERT(parentFound);
 #endif
 }
+#else
+void
+ServiceWorkerManagerService::PropagateUnregister(
+                                            uint64_t aParentID,
+                                            const PrincipalInfo& aPrincipalInfo,
+                                            const nsAString& aScope)
+{
+  AssertIsOnBackgroundThread();
+
+  RefPtr<dom::ServiceWorkerRegistrar> service =
+    dom::ServiceWorkerRegistrar::Get();
+  MOZ_ASSERT(service);
+
+  // It's possible that we don't have any ServiceWorkerManager managing this
+  // scope but we still need to unregister it from the ServiceWorkerRegistrar.
+  service->UnregisterServiceWorker(aPrincipalInfo,
+                                   NS_ConvertUTF16toUTF8(aScope));
+
+  DebugOnly<bool> parentFound = false;
+  for (auto iter = mAgents.Iter(); !iter.Done(); iter.Next()) {
+    RefPtr<ServiceWorkerManagerParent> parent = iter.Get()->GetKey();
+    MOZ_ASSERT(parent);
+
+    if (parent->ID() != aParentID) {
+      nsString scope(aScope);
+      Unused << parent->SendNotifyUnregister(aPrincipalInfo, scope);
+#ifdef DEBUG
+    } else {
+      parentFound = true;
+#endif
+    }
+  }
+
+#ifdef DEBUG
+  MOZ_ASSERT(parentFound);
+#endif
+}
+#endif
 
 void
 ServiceWorkerManagerService::PropagateRemove(uint64_t aParentID,

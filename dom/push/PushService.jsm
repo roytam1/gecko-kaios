@@ -286,8 +286,8 @@ this.PushService = {
       case "quit-application":
         this.uninit();
         break;
+
       case "network-active-changed":         /* On B2G. */
-      case "network:offline-status-changed": /* On desktop. */
         this._stateChangeProcessEnqueue(_ => {
           let activeNetworkInfo = aSubject;
           let offline = false;
@@ -300,6 +300,12 @@ this.PushService = {
           }
           this._changeStateOfflineEvent(offline, false);
         });
+        break;
+
+      case "network:offline-status-changed": /* On desktop. */
+        this._stateChangeProcessEnqueue(_ =>
+          this._changeStateOfflineEvent(aData === "offline", false)
+        );
         break;
 
       case "nsPref:changed":

@@ -127,6 +127,7 @@ PushNotifier::NotifyPush(const nsACString& aScope, nsIPrincipal* aPrincipal,
   return NS_OK;
 }
 
+#ifdef MOZ_B2G
 nsresult
 PushNotifier::NotifyPushWorkers(const nsACString& aScope,
                                 nsIPrincipal* aPrincipal,
@@ -263,6 +264,138 @@ PushNotifier::NotifyErrorWorkers(const nsACString& aScope,
   }
   return;
 }
+#else
+nsresult
+PushNotifier::NotifyPushWorkers(const nsACString& aScope,
+                                nsIPrincipal* aPrincipal,
+                                const nsAString& aMessageId,
+                                const Maybe<nsTArray<uint8_t>>& aData)
+{
+  AssertIsOnMainThread();
+  if (!aPrincipal) {
+    return NS_ERROR_INVALID_ARG;
+  }
+
+  if (XRE_IsContentProcess() || !BrowserTabsRemoteAutostart()) {
+    // Notify the worker from the current process. Either we're running in
+    // the content process and received a message from the parent, or e10s
+    // is disabled.
+    RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
+    if (!swm) {
+      return NS_ERROR_FAILURE;
+    }
+    nsAutoCString originSuffix;
+    nsresult rv = aPrincipal->GetOriginSuffix(originSuffix);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
+    return swm->SendPushEvent(originSuffix, aScope, aMessageId, aData);
+  }
+
+  // Otherwise, we're in the parent and e10s is enabled. Broadcast the event
+  // to all content processes.
+  bool ok = true;
+  nsTArray<ContentParent*> contentActors;
+  ContentParent::GetAll(contentActors);
+  for (uint32_t i = 0; i < contentActors.Length(); ++i) {
+    if (aData) {
+      ok &= contentActors[i]->SendPushWithData(PromiseFlatCString(aScope),
+        IPC::Principal(aPrincipal), PromiseFlatString(aMessageId), aData.ref());
+    } else {
+      ok &= contentActors[i]->SendPush(PromiseFlatCString(aScope),
+        IPC::Principal(aPrincipal), PromiseFlatString(aMessageId));
+    }
+  }
+  return ok ? NS_OK : NS_ERROR_FAILURE;
+}
+
+nsresult
+PushNotifier::NotifySubscriptionChangeWorkers(const nsACString& aScope,
+                                              nsIPrincipal* aPrincipal)
+{
+  AssertIsOnMainThread();
+  if (!aPrincipal) {
+    return NS_ERROR_INVALID_ARG;
+  }
+
+  if (XRE_IsContentProcess() || !BrowserTabsRemoteAutostart()) {
+    // Content process or e10s disabled.
+    RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
+    if (!swm) {
+      return NS_ERROR_FAILURE;
+    }
+    nsAutoCString originSuffix;
+    nsresult rv = aPrincipal->GetOriginSuffix(originSuffix);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
+    return swm->SendPushSubscriptionChangeEvent(originSuffix, aScope);
+  }
+
+  // Parent process, e10s enabled.
+  bool ok = true;
+  nsTArray<ContentParent*> contentActors;
+  ContentParent::GetAll(contentActors);
+  for (uint32_t i = 0; i < contentActors.Length(); ++i) {
+    ok &= contentActors[i]->SendPushSubscriptionChange(
+      PromiseFlatCString(aScope), IPC::Principal(aPrincipal));
+  }
+  return ok ? NS_OK : NS_ERROR_FAILURE;
+}
+
+void
+PushNotifier::NotifyErrorWorkers(const nsACString& aScope,
+                                 const nsAString& aMessage,
+                                 uint32_t aFlags,
+                                 nsIPrincipal* aPrincipal)
+{
+  AssertIsOnMainThread();
+
+  if (XRE_IsContentProcess() || !BrowserTabsRemoteAutostart()) {
+    // Content process or e10s disabled.
+    RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
+    if (swm) {
+      swm->ReportToAllClients(PromiseFlatCString(aScope),
+                              PromiseFlatString(aMessage),
+                              NS_ConvertUTF8toUTF16(aScope), /* aFilename */
+                              EmptyString(), /* aLine */
+                              0, /* aLineNumber */
+                              0, /* aColumnNumber */
+                              aFlags);
+    }
+    return;
+  }
+
+  // Parent process, e10s enabled.
+  nsTArray<ContentParent*> contentActors;
+  ContentParent::GetAll(contentActors);
+  if (!contentActors.IsEmpty()) {
+    // At least one content process active.
+    for (uint32_t i = 0; i < contentActors.Length(); ++i) {
+      Unused << NS_WARN_IF(
+        !contentActors[i]->SendPushError(PromiseFlatCString(aScope),
+          PromiseFlatString(aMessage), aFlags, IPC::Principal(aPrincipal)));
+    }
+    return;
+  }
+  // Report to the console if no content processes are active.
+  nsCOMPtr<nsIURI> scopeURI;
+  nsresult rv = NS_NewURI(getter_AddRefs(scopeURI), aScope);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return;
+  }
+  Unused << NS_WARN_IF(NS_FAILED(
+    nsContentUtils::ReportToConsoleNonLocalized(aMessage,
+                                                aFlags,
+                                                NS_LITERAL_CSTRING("Push"),
+                                                nullptr, /* aDocument */
+                                                scopeURI, /* aURI */
+                                                EmptyString(), /* aLine */
+                                                0, /* aLineNumber */
+                                                0, /* aColumnNumber */
+                                                nsContentUtils::eOMIT_LOCATION)));
+}
+#endif
 
 nsresult
 PushNotifier::NotifyPushObservers(const nsACString& aScope,
