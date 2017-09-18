@@ -1215,10 +1215,18 @@ pref("media.webspeech.service.default", "adaptor");
 // Force fullscreen video in landscape mode if its width larger than height.
 pref("media.video.fullscreen.force-landscape", true);
 
+#ifdef TARGET_VARIANT_ENG
+// Turn on performance marker in engineering build.
 pref('dom.enable_user_timing', true);
 pref('dom.performance.enable_user_timing_logging', true);
+#else
+// Turn off performance marker in user/userdebug build.
+pref('dom.enable_user_timing', false);
+pref('dom.performance.enable_user_timing_logging', false);
+#endif
 
 #ifdef TARGET_VARIANT_USER
+// Keep the least debug log in user build, to turn it off completely, set to 0.
 pref('focusmanager.loglevel', 1);
 pref('dom.browserElement.loglevel', 1);
 #else
