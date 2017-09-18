@@ -43,12 +43,15 @@
 #include "nsToolkitCompsCID.h"
 #include "nsIObserverService.h"
 #include "nsIPrefService.h"
+#include "mozilla/StaticPtr.h"
+#include "mozilla/ClearOnShutdown.h"
 
 static nsPermissionManager *gPermissionManager = nullptr;
 
 using mozilla::dom::ContentParent;
 using mozilla::dom::ContentChild;
 using mozilla::Unused; // ha!
+using namespace mozilla;
 
 static bool
 IsChildProcess()
@@ -634,7 +637,6 @@ CloseDatabaseListener::Complete(nsresult, nsISupports*)
   return NS_OK;
 }
 
-
 class UpdateFromMozPermListener : public mozIStorageStatementCallback
 {
 public:
@@ -642,11 +644,26 @@ public:
   NS_DECL_MOZISTORAGESTATEMENTCALLBACK
   bool mDBCompleted = false;
   int mUpdateDBCount = 0;
-  UpdateFromMozPermListener(){}
-protected:
+  static already_AddRefed<UpdateFromMozPermListener> GetInstance();
+private:
   int mDBCount = 0;
-  virtual ~UpdateFromMozPermListener() {}
+  UpdateFromMozPermListener(){}
+  virtual ~UpdateFromMozPermListener() {};
 };
+
+static StaticRefPtr<UpdateFromMozPermListener> sPermListener;
+
+/*static*/ already_AddRefed<UpdateFromMozPermListener>
+UpdateFromMozPermListener::GetInstance() {
+  MOZ_ASSERT(NS_IsMainThread());
+  if (!sPermListener) {
+    sPermListener = new UpdateFromMozPermListener();
+    ClearOnShutdown(&sPermListener);
+  }
+
+  RefPtr<UpdateFromMozPermListener> cb = sPermListener.get();
+  return cb.forget();
+}
 
 NS_IMETHODIMP
 UpdateFromMozPermListener::HandleError(mozIStorageError *aError)
@@ -763,8 +780,6 @@ static const char kDefaultsUrlPrefName[] = "permissions.manager.defaultsUrl";
 
 static const char kPermissionChangeNotification[] = PERM_CHANGE_NOTIFICATION;
 
-static RefPtr<UpdateFromMozPermListener> cbPerm = new UpdateFromMozPermListener();
-
 NS_IMPL_ISUPPORTS(nsPermissionManager, nsIPermissionManager, nsIObserver, nsISupportsWeakReference)
 
 nsPermissionManager::nsPermissionManager()
@@ -847,7 +862,8 @@ nsPermissionManager::RefreshPermission() {
 
 NS_IMETHODIMP
 nsPermissionManager::LoadAppPermissionDone() {
-  cbPerm->mDBCompleted = true;
+  RefPtr<UpdateFromMozPermListener> listener = UpdateFromMozPermListener::GetInstance();
+  listener->mDBCompleted = true;
   return NS_OK;
 }
 
@@ -2845,7 +2861,8 @@ nsPermissionManager::UpdateDB(OperationType aOp,
       if (NS_FAILED(rv)) break;
 
       rv = aStmt->BindInt64ByIndex(6, aModificationTime);
-      cbPerm->mUpdateDBCount++;
+      RefPtr<UpdateFromMozPermListener> listener = UpdateFromMozPermListener::GetInstance();
+      listener->mUpdateDBCount++;
       break;
     }
 
@@ -2887,7 +2904,8 @@ nsPermissionManager::UpdateDB(OperationType aOp,
   }
 
   nsCOMPtr<mozIStoragePendingStatement> pending;
-  rv = aStmt->ExecuteAsync(cbPerm, getter_AddRefs(pending));
+  RefPtr<UpdateFromMozPermListener> listener = UpdateFromMozPermListener::GetInstance();
+  rv = aStmt->ExecuteAsync(listener, getter_AddRefs(pending));
   MOZ_ASSERT(NS_SUCCEEDED(rv));
 }
 
