@@ -517,6 +517,10 @@ public:
 #endif
       return Allow();
 
+    case __NR_timer_create:
+    case __NR_rt_sigtimedwait:
+      return Allow();
+
     case __NR_readlink:
     case __NR_readlinkat:
       // Workaround for bug 964455:
