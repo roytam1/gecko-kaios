@@ -13,6 +13,8 @@ Cu.import("resource://gre/modules/AppsUtils.jsm");
 Cu.import('resource://gre/modules/Keyboard.jsm');
 Cu.import('resource://gre/modules/ErrorPage.jsm');
 Cu.import('resource://gre/modules/AlertsHelper.jsm');
+// TODO Bug #22792
+Cu.import('resource://gre/modules/ContactService.jsm');
 
 if (isGonk) {
   Cu.import('resource://gre/modules/NetworkStatsService.jsm');
@@ -783,7 +785,6 @@ var shell = {
     SystemAppProxy.setIsReady();
 
     // At this point, load js modules that should not be in the hot startup path.
-    Cu.import('resource://gre/modules/ContactService.jsm');
     Cu.import('resource://gre/modules/AlarmService.jsm');
     Cu.import('resource://gre/modules/AboutServiceWorkers.jsm');
     Cu.import('resource://gre/modules/UserAgentOverrides.jsm');
