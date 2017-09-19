@@ -6,6 +6,7 @@
 
 #include "NfcService.h"
 #include <binder/Parcel.h>
+#include <cutils/properties.h>
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/dom/NfcOptionsBinding.h"
 #include "mozilla/dom/MozNFCBinding.h"
@@ -41,6 +42,7 @@ static StaticRefPtr<NfcService> gNfcService;
 
 NS_IMPL_ISUPPORTS(NfcService, nsINfcService)
 
+static const int sRetryInterval = 100; // ms
 //
 // NfcConsumer
 //
@@ -72,6 +74,11 @@ public:
   void OnConnectError(int aIndex) override;
   void OnDisconnect(int aIndex) override;
 
+  nsresult StartNfcService(const char* aSvcName, const char* aArgs);
+  void StopNfcService(const char* aSvcName);
+  bool NfcServiceIsStopped(const char* aSvcName);
+  bool NfcServiceIsRunning(const char* aSvcName);
+
 private:
   class DispatchNfcEventRunnable;
   class ShutdownServiceRunnable;
@@ -97,6 +104,135 @@ NfcConsumer::NfcConsumer(NfcService* aNfcService)
   MOZ_ASSERT(mNfcService);
 }
 
+class StartNfcServiceTimerCallback final : public nsITimerCallback
+{
+  NS_DECL_THREADSAFE_ISUPPORTS;
+
+public:
+  StartNfcServiceTimerCallback(NfcConsumer *consumer, const char* aSvcName, const char* aArgs)
+    : mConsumer(consumer)
+    , mSvcName(aSvcName)
+    , mArgs(aArgs)
+  {
+    MOZ_COUNT_CTOR_INHERITED(StartNfcServiceTimerCallback,
+                             nsITimerCallback);
+  }
+
+  NS_IMETHOD Notify(nsITimer* aTimer) override
+  {
+    MOZ_ASSERT(NS_IsMainThread());
+
+    return mConsumer->StartNfcService(mSvcName.get(), mArgs.get());
+  }
+
+protected:
+  ~StartNfcServiceTimerCallback()
+  {
+    MOZ_COUNT_DTOR_INHERITED(StartNfcServiceTimerCallback,
+                             nsITimerCallback);
+  }
+
+private:
+  NfcConsumer *mConsumer;
+  nsCString mSvcName;
+  nsCString mArgs;
+};
+
+NS_IMPL_ISUPPORTS0(StartNfcServiceTimerCallback);
+
+nsresult
+NfcConsumer::StartNfcService(const char* aSvcName, const char* aArgs)
+{
+  MOZ_ASSERT(IsNfcServiceThread());
+
+  char value[PROPERTY_VALUE_MAX];
+  auto res = snprintf(value, sizeof(value), "%s:%s", aSvcName, aArgs);
+
+  if (res < 0) {
+    return NS_ERROR_FAILURE;
+  } else if (static_cast<size_t>(res) >= sizeof(value)) {
+    NS_WARNING("trunctated service name ");
+    return NS_ERROR_OUT_OF_MEMORY;
+  }
+
+  if (NS_WARN_IF(property_set("ctl.start", value) < 0)) {
+    return NS_ERROR_FAILURE;
+  }
+
+  /* If the system service is not running, re-try later to start it.
+   *
+   * This condition happens when we restart a service immediately
+   * after it crashed, as the service state remains 'stopping'
+   * instead of 'stopped'. Due to the limitation of property service,
+   * hereby add delay. See Bug 1143925 Comment 41.
+   */
+  if (!NfcServiceIsRunning(aSvcName)) {
+    nsCOMPtr<nsITimer> timer = do_CreateInstance("@mozilla.org/timer;1");
+    if (!timer) {
+      return NS_ERROR_FAILURE;
+    }
+
+    RefPtr<StartNfcServiceTimerCallback> timerCallback =
+      new StartNfcServiceTimerCallback(this, aSvcName, aArgs);
+
+    timer->InitWithCallback(timerCallback,
+                            sRetryInterval,
+                            nsITimer::TYPE_ONE_SHOT);
+  }
+
+  return NS_OK;
+}
+
+void
+NfcConsumer::StopNfcService(const char* aSvcName)
+{
+  MOZ_ASSERT(IsNfcServiceThread());
+
+  Unused << NS_WARN_IF(property_set("ctl.stop", aSvcName));
+}
+
+bool
+NfcConsumer::NfcServiceIsRunning(const char* aSvcName)
+{
+  MOZ_ASSERT(IsNfcServiceThread());
+
+  char key[PROPERTY_KEY_MAX];
+  auto res = snprintf(key, sizeof(key), "init.svc.%s", aSvcName);
+
+  if (res < 0) {
+    return false;
+  } else if (static_cast<size_t>(res) >= sizeof(key)) {
+    NS_WARNING("trunctated service name ");
+    return false;
+  }
+
+  char value[PROPERTY_VALUE_MAX];
+  NS_WARN_IF(property_get(key, value, "") < 0);
+
+  return !strcmp(value, "running");
+}
+
+bool
+NfcConsumer::NfcServiceIsStopped(const char* aSvcName)
+{
+  MOZ_ASSERT(IsNfcServiceThread());
+
+  char key[PROPERTY_KEY_MAX];
+  auto res = snprintf(key, sizeof(key), "init.svc.%s", aSvcName);
+
+  if (res < 0) {
+    return false;
+  } else if (static_cast<size_t>(res) >= sizeof(key)) {
+    NS_WARNING("trunctated service name ");
+    return false;
+  }
+
+  char value[PROPERTY_VALUE_MAX];
+  NS_WARN_IF(property_get(key, value, "") < 0);
+
+  return !strcmp(value, "stopped");
+}
+
 nsresult
 NfcConsumer::Start()
 {
@@ -111,16 +247,16 @@ NfcConsumer::Start()
   // If we could not cleanup properly before and an old
   // instance of the daemon is still running, we kill it
   // here.
-  StopSystemService("nfcd");
+  StopNfcService("nfcd");
 
-  bool stopped = SystemServiceIsStopped("nfcd");
+  bool stopped = NfcServiceIsStopped("nfcd");
   int count = 0;
   // Make sure nfcd is not in middle of stop stage.
   // Android's init service creates a new process only when
   // the process is in stopped state.
   while (!stopped && count++ < 5) {
     PR_Sleep(PR_MillisecondsToInterval(100));
-    stopped = SystemServiceIsStopped("nfcd");
+    stopped = NfcServiceIsStopped("nfcd");
   }
 
   mHandler = MakeUnique<NfcMessageHandler>();
@@ -464,7 +600,7 @@ NfcConsumer::OnConnectSuccess(int aIndex)
     case LISTEN_SOCKET: {
       nsCString args("-S -a ");
       args.Append(mListenSocketName);
-      nsresult rv = StartSystemService("nfcd", args.get());
+      nsresult rv = StartNfcService("nfcd", args.get());
       if (NS_FAILED(rv)) {
         OnConnectError(STREAM_SOCKET);
       }

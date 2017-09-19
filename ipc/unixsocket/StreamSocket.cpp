@@ -439,12 +439,11 @@ StreamSocket::SendSocketData(UnixSocketIOBuffer* aBuffer)
 void
 StreamSocket::Close()
 {
-  MOZ_ASSERT(mIO);
-  MOZ_ASSERT(mIO->IsConsumerThread());
-
   if (!mIO) {
     return;
   }
+
+  MOZ_ASSERT(mIO->IsConsumerThread());
 
   mIO->CancelDelayedConnectTask();
 
