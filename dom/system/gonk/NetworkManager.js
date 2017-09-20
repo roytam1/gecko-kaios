@@ -402,8 +402,33 @@ NetworkManager.prototype = {
       }
     }
 
-    // TODO: We may need to add more check (such as gatways, dnses etc...) if
-    //       necessary. For now, we only check state/IPs change or not.
+    // Check if gateway changes.
+    if (preIface.gateways.length != newIface.gateways.length) {
+      return true;
+    }
+
+    for (let i in preIface.gateways) {
+      if (newIface.gateways.indexOf(preIface.gateways[i]) == -1) {
+        return true;
+      }
+    }
+
+    // Check if dns changes.
+    if (preIface.dnses.length != newIface.dnses.length) {
+      return true;
+    }
+
+    for (let i in preIface.dnses) {
+      if (newIface.dnses.indexOf(preIface.dnses[i]) == -1) {
+        return true;
+      }
+    }
+
+    // Check if mtu changes.
+    if (preIface.mtu != newIface.mtu) {
+      return true;
+    }
+
     return false;
   },
 

@@ -24,8 +24,13 @@ const WIFIWORKER_CID        = Components.ID("{a14e8977-d259-433a-a88d-58dd44657e
 
 const WIFIWORKER_WORKER     = "resource://gre/modules/wifi_worker.js";
 
-const kMozSettingsChangedObserverTopic   = "mozsettings-changed";
-const kScreenStateChangedTopic           = "screen-state-changed";
+const kMozSettingsChangedObserverTopic    = "mozsettings-changed";
+const kXpcomShutdownChangedTopic          = "xpcom-shutdown";
+const kScreenStateChangedTopic            = "screen-state-changed";
+const kInterfaceAddressChangedTopic       = "interface-address-change";
+const kInterfaceDnsInfoTopic              = "interface-dns-info";
+const kRouteChangedTopic                  = "route-change";
+const kNetworkConnectionStateChangedTopic = "network-connection-state-changed";
 
 const MAX_RETRIES_ON_AUTHENTICATION_FAILURE = 1;
 const MAX_SUPPLICANT_LOOP_ITERATIONS = 4;
@@ -2516,8 +2521,12 @@ function WifiWorker() {
   }).bind(this));
 
   Services.obs.addObserver(this, kMozSettingsChangedObserverTopic, false);
-  Services.obs.addObserver(this, "xpcom-shutdown", false);
+  Services.obs.addObserver(this, kXpcomShutdownChangedTopic, false);
   Services.obs.addObserver(this, kScreenStateChangedTopic, false);
+  Services.obs.addObserver(this, kInterfaceAddressChangedTopic, false);
+  Services.obs.addObserver(this, kInterfaceDnsInfoTopic, false);
+  Services.obs.addObserver(this, kRouteChangedTopic, false);
+  Services.obs.addObserver(this, kNetworkConnectionStateChangedTopic, false);
 
   this.wantScanResults = [];
 
@@ -2971,14 +2980,19 @@ function WifiWorker() {
       return;
     }
 
+    // router subnet change, clear all config and notify ip changed.
     if (WifiNetworkInterface.info.ips.length !== 0 &&
-      WifiNetworkInterface.info.ips[0] !== this.info.ipaddr_str) {
+      WifiNetworkInterface.info.ips.indexOf(addr) === -1) {
       gNetworkService.configureInterface( { ifname: WifiManager.ifname,
                                             ipaddr: 0,
                                             mask: 0,
                                             gateway: 0,
                                             dns1: 0,
                                             dns2: 0 }, function (data) {});
+      WifiNetworkInterface.info.ips = [];
+      WifiNetworkInterface.info.prefixLengths = [];
+      WifiNetworkInterface.info.gateways = [];
+      WifiNetworkInterface.info.dnses = [];
       self.deliverListenerEvent("notifyIpChanged", [this.info.ipaddr_str]);
     }
 
@@ -3286,6 +3300,10 @@ WifiWorker.prototype = {
   _needToEnableNetworks: false,
   tetheringSettings: {},
   wifiNetworkInfo: wifiInfo,
+
+  // To indicate if network had been created or not. If network had been
+  // created, it allows WifiWorker to update routing info to NetworkManager.
+  _wifiCreated: false,
 
   initTetheringSettings: function initTetheringSettings() {
     this.tetheringSettings[SETTINGS_WIFI_TETHERING_ENABLED] = null;
@@ -4569,6 +4587,13 @@ WifiWorker.prototype = {
     this.queueRequest({command: "setWifiEnabled", value: false}, function(data) {
       this._setWifiEnabled(false, this._setWifiEnabledCallback.bind(this));
     }.bind(this));
+    Services.obs.removeObserver(this, kMozSettingsChangedObserverTopic);
+    Services.obs.removeObserver(this, kXpcomShutdownChangedTopic);
+    Services.obs.removeObserver(this, kScreenStateChangedTopic);
+    Services.obs.removeObserver(this, kInterfaceAddressChangedTopic);
+    Services.obs.removeObserver(this, kInterfaceDnsInfoTopic);
+    Services.obs.removeObserver(this, kRouteChangedTopic);
+    Services.obs.removeObserver(this, kNetworkConnectionStateChangedTopic);
   },
 
   // TODO: Remove command queue in Bug 1050147.
@@ -4727,37 +4752,161 @@ WifiWorker.prototype = {
   // nsIObserver implementation
   observe: function observe(subject, topic, data) {
     switch (topic) {
-    case kMozSettingsChangedObserverTopic:
-      // To avoid WifiWorker setting the wifi again, don't need to deal with
-      // the "mozsettings-changed" event fired from internal setting.
-      if ("wrappedJSObject" in subject) {
-        subject = subject.wrappedJSObject;
-      }
-      if (subject.isInternalChange) {
-        return;
-      }
+      case kMozSettingsChangedObserverTopic:
+        // To avoid WifiWorker setting the wifi again, don't need to deal with
+        // the "mozsettings-changed" event fired from internal setting.
+        if ("wrappedJSObject" in subject) {
+          subject = subject.wrappedJSObject;
+        }
+        if (subject.isInternalChange) {
+          return;
+        }
 
-      this.handle(subject.key, subject.value);
-      break;
+        this.handle(subject.key, subject.value);
+        break;
 
-    case "xpcom-shutdown":
-      // Ensure the supplicant is detached from B2G to avoid XPCOM shutdown
-      // blocks forever.
-      WifiManager.ensureSupplicantDetached(() => {
-        let wifiService = Cc["@mozilla.org/wifi/service;1"].getService(Ci.nsIWifiProxyService);
-        wifiService.shutdown();
-        let wifiCertService = Cc["@mozilla.org/wifi/certservice;1"].getService(Ci.nsIWifiCertService);
-        wifiCertService.shutdown();
-      });
-      gMobileConnectionService
-        .getItemByServiceId(WifiManager.telephonyServiceId).unregisterListener(this);
-      break;
+      case kXpcomShutdownChangedTopic:
+        // Ensure the supplicant is detached from B2G to avoid XPCOM shutdown
+        // blocks forever.
+        WifiManager.ensureSupplicantDetached(() => {
+          let wifiService = Cc["@mozilla.org/wifi/service;1"].getService(Ci.nsIWifiProxyService);
+          wifiService.shutdown();
+          let wifiCertService = Cc["@mozilla.org/wifi/certservice;1"].getService(Ci.nsIWifiCertService);
+          wifiCertService.shutdown();
+        });
+        Services.obs.removeObserver(this, kMozSettingsChangedObserverTopic);
+        Services.obs.removeObserver(this, kXpcomShutdownChangedTopic);
+        Services.obs.removeObserver(this, kScreenStateChangedTopic);
+        Services.obs.removeObserver(this, kInterfaceAddressChangedTopic);
+        Services.obs.removeObserver(this, kInterfaceDnsInfoTopic);
+        Services.obs.removeObserver(this, kRouteChangedTopic);
+        Services.obs.removeObserver(this, kNetworkConnectionStateChangedTopic);
+        gMobileConnectionService
+          .getItemByServiceId(WifiManager.telephonyServiceId).unregisterListener(this);
+        break;
 
-    case kScreenStateChangedTopic:
-      let enabled = (data === "on" ? true : false);
-      debug("Receive ScreenStateChanged=" + enabled);
-      WifiManager.handleScreenStateChanged(enabled);
-      break;
+      case kScreenStateChangedTopic:
+        let enabled = (data === "on" ? true : false);
+        debug("Receive ScreenStateChanged=" + enabled);
+        WifiManager.handleScreenStateChanged(enabled);
+        break;
+
+      case kInterfaceAddressChangedTopic:
+        // Format: "Address updated <addr> <iface> <flags> <scope>"
+        //         "Address removed <addr> <iface> <flags> <scope>"
+        var token = data.split(" ");
+        if (token.length < 6) {
+          return;
+        }
+        var iface = token[3];
+        if (iface.indexOf("wlan") === -1 || !this._wifiCreated) {
+          return;
+        }
+        var action = token[1];
+        var addr = token[2].split("/")[0];
+        var prefix = token[2].split("/")[1];
+        if (action == "updated") {
+          if (WifiNetworkInterface.info.ips.indexOf(addr) !== -1) {
+            return;
+          }
+          WifiNetworkInterface.info.ips.push(addr);
+          WifiNetworkInterface.info.prefixLengths.push(prefix);
+        } else {
+          var found = WifiNetworkInterface.info.ips.indexOf(addr);
+          if (found === -1) {
+            return;
+          }
+          WifiNetworkInterface.info.ips.splice(found, 1);
+          WifiNetworkInterface.info.prefixLengths.splice(prefix);
+        }
+        gNetworkManager.updateNetworkInterface(WifiNetworkInterface);
+        wifiInfo.setInetAddress(WifiNetworkInterface.info.ips);
+        this.deliverListenerEvent("notifyIpChanged", WifiNetworkInterface.info.ips);
+        break;
+
+      case kInterfaceDnsInfoTopic:
+        // Format: "DnsInfo servers <interface> <lifetime> <servers>"
+        var token = data.split(" ");
+        if (token.length !== 5) {
+          return;
+        }
+        var iface = token[2];
+        if (iface.indexOf("wlan") === -1 || !this._wifiCreated) {
+          return;
+        }
+        var dnses = token[4].split(",");
+        for (let i in dnses) {
+          if (WifiNetworkInterface.info.dnses.indexOf(dnses[i]) !== -1) {
+            continue;
+          }
+          WifiNetworkInterface.info.dnses.push(dnses[i]);
+        }
+        gNetworkManager.updateNetworkInterface(WifiNetworkInterface);
+        break;
+
+      case kRouteChangedTopic:
+        // Format: "Route <updated|removed> <dst> [via <gateway] [dev <iface>]"
+        var token = data.split(" ");
+        if (token.length < 7) {
+          return;
+        }
+        var iface = null;
+        var gateway = null;
+        var action = token[1];
+        var valid = true;
+        for (let i = 3; (i + 1) < token.length; i += 2) {
+          if (token[i] == "dev") {
+            if (iface == null) {
+              iface = token[i + 1];
+            } else {
+              valid = false; // Duplicate interface.
+            }
+          } else if (token[i] == "via") {
+            if (gateway == null) {
+              gateway = token[i + 1];
+            } else {
+              valid = false; // Duplicate gateway.
+            }
+          } else {
+            valid = false; // Unknown syntax.
+          }
+        }
+
+        if (!valid || iface.indexOf("wlan") === -1 || !this._wifiCreated) {
+          return;
+        }
+
+        if (action == "updated") {
+          if (WifiNetworkInterface.info.gateways.indexOf(gateway) !== -1) {
+            return;
+          }
+          WifiNetworkInterface.info.gateways.push(gateway);
+        } else {
+          var found = WifiNetworkInterface.info.gateways.indexOf(gateway);
+          if (found  === -1) {
+            return;
+          }
+          WifiNetworkInterface.info.gateways.splice(found, 1);
+        }
+        gNetworkManager.updateNetworkInterface(WifiNetworkInterface);
+        break;
+
+      case kNetworkConnectionStateChangedTopic:
+        if (!(subject instanceof Ci.nsINetworkInfo)) {
+          return;
+        }
+        let networkInfo = subject.QueryInterface(Ci.nsINetworkInfo);
+        if (networkInfo.type != Ci.nsINetworkInfo.NETWORK_TYPE_WIFI) {
+          return;
+        }
+        debug("Network " + networkInfo.type + "/" + networkInfo.name +
+                 " changed state to " + networkInfo.state);
+        if (networkInfo.state == Ci.nsINetworkInfo.NETWORK_STATE_CONNECTED) {
+          this._wifiCreated = true;
+        } else {
+          this._wifiCreated = false;
+        }
+        break;
     }
   },
 

@@ -79,8 +79,11 @@ static const uint32_t NETD_COMMAND_ERROR        = 500;
 static const uint32_t NETD_COMMAND_UNSOLICITED  = 600;
 
 // Broadcast messages
-static const uint32_t NETD_COMMAND_INTERFACE_CHANGE     = 600;
-static const uint32_t NETD_COMMAND_BANDWIDTH_CONTROLLER = 601;
+static const uint32_t NETD_COMMAND_INTERFACE_CHANGE         = 600;
+static const uint32_t NETD_COMMAND_BANDWIDTH_CONTROLLER     = 601;
+static const uint32_t NETD_COMMAND_INTERFACE_ADDRESS_CHANGE = 614;
+static const uint32_t NETD_COMMAND_INTERFACE_DNS_INFO       = 615;
+static const uint32_t NETD_COMMAND_ROUTE_CHANGE             = 616;
 
 static const char* INTERFACE_DELIMIT = ",";
 static const char* USB_CONFIG_DELIMIT = ",";
@@ -3137,6 +3140,15 @@ void NetworkUtils::sendBroadcastMessage(uint32_t code, char* reason)
       break;
     case NETD_COMMAND_BANDWIDTH_CONTROLLER:
       result.mTopic = NS_ConvertUTF8toUTF16("netd-bandwidth-control");
+      break;
+    case NETD_COMMAND_INTERFACE_ADDRESS_CHANGE:
+      result.mTopic = NS_ConvertUTF8toUTF16("interface-address-change");
+      break;
+    case NETD_COMMAND_INTERFACE_DNS_INFO:
+      result.mTopic = NS_ConvertUTF8toUTF16("interface-dns-info");
+      break;
+    case NETD_COMMAND_ROUTE_CHANGE:
+      result.mTopic = NS_ConvertUTF8toUTF16("route-change");
       break;
     default:
       return;
