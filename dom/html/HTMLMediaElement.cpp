@@ -2986,7 +2986,15 @@ nsresult HTMLMediaElement::InitializeDecoderForChannel(nsIChannel* aChannel,
 
   DecoderDoctorDiagnostics diagnostics;
   RefPtr<MediaDecoder> decoder =
-    DecoderTraits::CreateDecoder(mimeType, this, &diagnostics, /*MSE?*/(mSrcMediaSource != nullptr));
+    DecoderTraits::CreateDecoder(mimeType, this, &diagnostics,
+    // On devices, we need to fallback to OMX codec for reducing the power
+    // consumptions.
+#ifdef MOZ_WIDGET_GONK
+      /*MSE?*/(mSrcMediaSource != nullptr)
+#else
+      true
+#endif
+      );
   diagnostics.StoreFormatDiagnostics(OwnerDoc(),
                                      NS_ConvertASCIItoUTF16(mimeType),
                                      decoder != nullptr,
