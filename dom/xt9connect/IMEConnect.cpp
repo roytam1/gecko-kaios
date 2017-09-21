@@ -318,18 +318,18 @@ ET9AWLdbReadData(ET9AWLingInfo *pLingInfo,
                  ET9U32        *pdwSizeInBytes)
 {
   switch (pLingInfo->pLingCmnInfo->dwLdbNum) {
-    case (11 * 256) + 9 : /* English */
-      *ppbSrc = (ET9U8 ET9FARDATA *)l1109b00; *pdwSizeInBytes = 326771;
+    case (11 * 256) +  9 : /* English */
+      *ppbSrc = (ET9U8 ET9FARDATA *)l1109b00; *pdwSizeInBytes = 5513122;
       return ET9STATUS_NONE;
-    case (8 * 256) + 10 : /* Spanish */
-      *ppbSrc = (ET9U8 ET9FARDATA *)l0810b00; *pdwSizeInBytes = 349415;
+    case ( 8 * 256) + 10 : /* Spanish */
+      *ppbSrc = (ET9U8 ET9FARDATA *)l0810b00; *pdwSizeInBytes = 5126824;
       return ET9STATUS_NONE;
     case (12 * 256) + 12 : /* French */
-      *ppbSrc = (ET9U8 ET9FARDATA *)l1212b00; *pdwSizeInBytes = 348099;
+      *ppbSrc = (ET9U8 ET9FARDATA *)l1212b00; *pdwSizeInBytes = 4950147;
       return ET9STATUS_NONE;
-  default :
-    XT9_LOGD("ET9AWLdbReadData = 0x%lx", pLingInfo->pLingCmnInfo->dwLdbNum);
-    return ET9STATUS_READ_DB_FAIL;
+    default :
+      XT9_LOGD("ET9AWLdbReadData = 0x%lx", pLingInfo->pLingCmnInfo->dwLdbNum);
+      return ET9STATUS_READ_DB_FAIL;
   }
 }
 
@@ -438,9 +438,9 @@ PrintState(demoIMEInfo *pIME)
       break;
     default:
     case ET9POSTSHIFTMODE_DEFAULT:
-      if (ET9SHIFT_MODE(pIME->sKdbInfo.dwStateBits)) {
+      if (ET9SHIFT_MODE(&sIME.sWordSymbInfo)) {
         XT9_LOGD(" Aa");
-      } else if (ET9CAPS_MODE(pIME->sKdbInfo.dwStateBits)) {
+      } else if (ET9CAPS_MODE(&sIME.sWordSymbInfo)) {
         XT9_LOGD(" A ");
       } else {
         XT9_LOGD(" a ");
@@ -451,9 +451,11 @@ PrintState(demoIMEInfo *pIME)
   XT9_LOGD(" SPC:");
 
   switch (ET9AW_GetSpellCorrectionMode(&pIME->sLingInfo)) {
+#ifdef ET9AW_UNHIDE_SPC_EXACT_MODE
     case ET9ASPCMODE_EXACT:
       XT9_LOGD("Exact");
       break;
+#endif
     case ET9ASPCMODE_REGIONAL:
       XT9_LOGD("Reg");
       break;
@@ -714,7 +716,7 @@ IMEConnect::Init(uint32_t aLID)
 
   sIME.pEditor = &sEditor;
 
-  ET9STATUS SymbInit_eStatus(ET9WordSymbInit(&sIME.sWordSymbInfo, 1));
+  ET9STATUS SymbInit_eStatus(ET9WordSymbInit(&sIME.sWordSymbInfo, 1, NULL, NULL));
 
   if (SymbInit_eStatus) {
     XT9_LOGE("Init::SymbInit_eStatus: [%d]", SymbInit_eStatus);
@@ -756,7 +758,7 @@ IMEConnect::Init(uint32_t aLID)
     return NS_ERROR_FAILURE;
   }
 
-  ET9STATUS LdbSetLanguage_eStatus(ET9AWLdbSetLanguage(&sIME.sLingInfo, aLID, ET9PLIDNone, 1));
+  ET9STATUS LdbSetLanguage_eStatus(ET9AWLdbSetLanguage(&sIME.sLingInfo, aLID, ET9PLIDNone, 1, ET9AWInputMode_Default));
 
   if (LdbSetLanguage_eStatus) {
     XT9_LOGE("Init::LdbSetLanguage_eStatus: [%d], aLID = 0x%x", LdbSetLanguage_eStatus, aLID);
@@ -794,7 +796,7 @@ IMEConnect::Init(uint32_t aLID)
     return NS_ERROR_FAILURE;
   }
 
-  ET9STATUS AWASDBInit_eStatus(ET9AWASDBInit(&sIME.sLingInfo, (ET9AWASDBInfo*)sIME.pbASdb, ASDB_SIZE, NULL));
+  ET9STATUS AWASDBInit_eStatus(ET9AWASDBInit(&sIME.sLingInfo, (ET9AWASDBInfo*)sIME.pbASdb, ASDB_SIZE));
 
   if (AWASDBInit_eStatus) {
     XT9_LOGE("Init::AWASDBInit_eStatus: [%d]", AWASDBInit_eStatus);
@@ -822,8 +824,13 @@ IMEConnect::Init(uint32_t aLID)
     return NS_ERROR_FAILURE;
   }
 
+#ifdef ET9AW_UNHIDE_NO_DUAL_KDB
   ET9STATUS Init_eStatus(ET9KDB_Init(&sIME.sKdbInfo, &sIME.sWordSymbInfo,
                                      GENERIC_HQR, 0, 0, 0, ET9KDBLoad, &ET9Handle_KDB_Request, &sIME));
+#else
+  ET9STATUS Init_eStatus(ET9KDB_Init(&sIME.sKdbInfo, &sIME.sWordSymbInfo,
+                                     GENERIC_HQR, 0, ET9KDBLoad, &ET9Handle_KDB_Request, &sIME));
+#endif
 
   if (Init_eStatus) {
     XT9_LOGE("Init::Init_eStatus: [%d]", Init_eStatus);
@@ -859,12 +866,19 @@ IMEConnect::Init(uint32_t aLID)
   }
 
   ET9U16  wPageNum;
+#ifdef ET9AW_UNHIDE_NO_DUAL_KDB
   ET9U16  wSecondPageNum;
   ET9KDB_GetPageNum(&sIME.sKdbInfo, &wPageNum, &wSecondPageNum);
-  sIME.eInputMode = I_HPD;
   ET9KDB_SetKdbNum(&sIME.sKdbInfo, ((sIME.sLingCmnInfo.dwFirstLdbNum & ET9PLIDMASK) | ET9SKIDPhonePad),
                    wPageNum, ((sIME.sLingCmnInfo.dwSecondLdbNum & ET9PLIDMASK) | ET9SKIDPhonePad),
                    wSecondPageNum);
+#else
+  ET9KDB_GetPageNum(&sIME.sKdbInfo, &wPageNum);
+  ET9KDB_SetKdbNum(&sIME.sKdbInfo, ((sIME.sLingCmnInfo.dwFirstLdbNum & ET9PLIDMASK) | ET9SKIDPhonePad),
+                   wPageNum);
+#endif
+
+  sIME.eInputMode = I_HPD;
 
   ET9STATUS SetRegionalMode_eStatus(ET9KDB_SetRegionalMode(&sIME.sKdbInfo));
 
@@ -873,7 +887,11 @@ IMEConnect::Init(uint32_t aLID)
     return NS_ERROR_FAILURE;
   }
 
+#ifdef ET9AW_UNHIDE_NO_DUAL_KDB
   ET9STATUS SetAmbigMode_eStatus(ET9KDB_SetAmbigMode(&sIME.sKdbInfo, 0, 0));
+#else
+  ET9STATUS SetAmbigMode_eStatus(ET9KDB_SetAmbigMode(&sIME.sKdbInfo, 0));
+#endif
 
   if (SetAmbigMode_eStatus) {
     XT9_LOGE("Init::SetAmbigMode_eStatus: [%d]", SetAmbigMode_eStatus);
@@ -941,6 +959,7 @@ IMEConnect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLe
 
           ET9AWReselectWord(&sIME.sLingInfo, &sIME.sKdbInfo,
                             sString.sString, sString.wLen,
+                            0,
                             &sIME.bTotWords, &sIME.bActiveWordIndex,
                             &bSelectedWasAutomatic, &bWasFoundInHistory);
 
@@ -991,9 +1010,9 @@ IMEConnect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLe
         if (bKey != 0xFF) {
           if (bKey == 0x80) {
             ET9INPUTSHIFTSTATE eShiftState;
-            if (ET9SHIFT_MODE(sIME.sKdbInfo.dwStateBits)) {
+            if (ET9SHIFT_MODE(&sIME.sWordSymbInfo)) {
               eShiftState = ET9SHIFT;
-            } else if (ET9CAPS_MODE(sIME.sKdbInfo.dwStateBits)) {
+            } else if (ET9CAPS_MODE(&sIME.sWordSymbInfo)) {
               eShiftState = ET9CAPSLOCK;
             } else {
               eShiftState = ET9NOSHIFT;
@@ -1031,7 +1050,7 @@ uint32_t
 IMEConnect::SetLanguage(const uint32_t lid)
 {
 
-  ET9STATUS LdbSetLanguage_eStatus(ET9AWLdbSetLanguage(&sIME.sLingInfo, lid, ET9PLIDNone, 1));
+  ET9STATUS LdbSetLanguage_eStatus(ET9AWLdbSetLanguage(&sIME.sLingInfo, lid, ET9PLIDNone, 1, ET9AWInputMode_Default));
 
   if (LdbSetLanguage_eStatus) {
     XT9_LOGE("Init::LdbSetLanguage_eStatus: [%d], aLID = 0x%x", LdbSetLanguage_eStatus, lid);
@@ -1042,11 +1061,17 @@ IMEConnect::SetLanguage(const uint32_t lid)
 
   if ((sIME.sKdbInfo.dwKdbNum & ET9SLIDMASK) == ET9SKIDPhonePad) {
     ET9U16  wPageNum;
+#ifdef ET9AW_UNHIDE_NO_DUAL_KDB
     ET9U16  wSecondPageNum;
     ET9KDB_GetPageNum(&sIME.sKdbInfo, &wPageNum, &wSecondPageNum);
     ET9KDB_SetKdbNum(&sIME.sKdbInfo, ((sIME.sLingCmnInfo.dwFirstLdbNum & ET9PLIDMASK) |
-    ET9SKIDPhonePad), wPageNum, ((sIME.sLingCmnInfo.dwSecondLdbNum & ET9PLIDMASK) |
-    ET9SKIDPhonePad), wSecondPageNum);
+        ET9SKIDPhonePad), wPageNum, ((sIME.sLingCmnInfo.dwSecondLdbNum & ET9PLIDMASK) |
+        ET9SKIDPhonePad), wSecondPageNum);
+#else
+    ET9KDB_GetPageNum(&sIME.sKdbInfo, &wPageNum);
+    ET9KDB_SetKdbNum(&sIME.sKdbInfo, ((sIME.sLingCmnInfo.dwFirstLdbNum & ET9PLIDMASK) |
+        ET9SKIDPhonePad), wPageNum);
+#endif
   }
 
   ET9AWSelLstBuild(&sIME.sLingInfo, &sIME.bTotWords, &sIME.bActiveWordIndex, &sIME.wGestureValue);
