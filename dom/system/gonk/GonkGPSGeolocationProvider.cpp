@@ -65,9 +65,9 @@
 #undef LOG
 #undef ERR
 #undef DBG
-#define LOG(args...)  __android_log_print(ANDROID_LOG_INFO,  "GonkGPSGeolocationProvider", ## args)
-#define ERR(args...)  __android_log_print(ANDROID_LOG_ERROR, "GonkGPSGeolocationProvider", ## args)
-#define DBG(args...)  __android_log_print(ANDROID_LOG_DEBUG, "GonkGPSGeolocationProvider" , ## args)
+#define LOG(args...)  __android_log_print(ANDROID_LOG_INFO,  "GonkGPS_GEO", ## args)
+#define ERR(args...)  __android_log_print(ANDROID_LOG_ERROR, "GonkGPS_GEO", ## args)
+#define DBG(args...)  __android_log_print(ANDROID_LOG_DEBUG, "GonkGPS_GEO", ## args)
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -368,8 +368,7 @@ GonkGPSGeolocationProvider::SendChromeEvent(int id, GpsNiNotifyFlags flags, nsSt
       RefPtr<GonkGPSGeolocationProvider> provider = GonkGPSGeolocationProvider::GetSingleton();
       provider->SetNiResponse(id, GPS_NI_RESPONSE_NORESP);
     }
-    nsContentUtils::LogMessageToConsole(nsPrintfCString(
-      "geo: SendChromeEvent Failed(id:%d, flags:%x)", id, flags).get());
+    ERR("geo: SendChromeEvent Failed(id:%d, flags:%x)", id, flags);
     return false;
   }
 
@@ -418,9 +417,8 @@ GonkGPSGeolocationProvider::GPSNiNotifyCallback(GpsNiNotification *notification)
       GpsNiNotifyFlags flags = mNotification->notify_flags;
 
       if (gDebug_isLoggingEnabled) {
-        nsContentUtils::LogMessageToConsole(nsPrintfCString(
-          "geo: GPSNiNotifyCallback id:%d, flag:%x, timeout:%d, default response:%d\n",
-           id, flags, mNotification->timeout, mNotification->default_response).get());
+        DBG("geo: GPSNiNotifyCallback id:%d, flag:%x, timeout:%d, default response:%d",
+           id, flags, mNotification->timeout, mNotification->default_response);
       }
 
       RefPtr<GonkGPSGeolocationProvider> provider =
@@ -439,8 +437,7 @@ GonkGPSGeolocationProvider::GPSNiNotifyCallback(GpsNiNotification *notification)
           encodingType == GPS_ENC_SUPL_GSM_DEFAULT) {
         message.Append(DecodeNIString(mNotification->text, encodingType));
       } else {
-         nsContentUtils::LogMessageToConsole(nsPrintfCString(
-          "geo: GPSNiNotifyCallback text in unsupport decodeing format(%d)\n", encodingType).get());
+        LOG("geo: GPSNiNotifyCallback text in unsupport decodeing format(%d)", encodingType);
       }
       message.AppendLiteral(",");
       encodingType = mNotification->requestor_id_encoding;
@@ -449,8 +446,7 @@ GonkGPSGeolocationProvider::GPSNiNotifyCallback(GpsNiNotification *notification)
           encodingType == GPS_ENC_SUPL_GSM_DEFAULT) {
         message.Append(DecodeNIString(mNotification->requestor_id, encodingType));
       } else {
-         nsContentUtils::LogMessageToConsole(nsPrintfCString(
-          "geo: GPSNiNotifyCallback requestor_id in unsupport decodeing format(%d)\n", encodingType).get());
+        LOG("geo: GPSNiNotifyCallback requestor_id in unsupport decodeing format(%d)", encodingType);
       }
       provider->SendChromeEvent(id, flags, message);
 
@@ -470,8 +466,7 @@ GonkGPSGeolocationProvider::GPSNiNotifyCallback(GpsNiNotification *notification)
             RefPtr<GonkGPSGeolocationProvider> provider =
               GonkGPSGeolocationProvider::GetSingleton();
             if (!provider->SendChromeEvent(mId, GPS_NI_NEED_TIMEOUT, mMsg)) {
-              nsContentUtils::LogMessageToConsole(nsPrintfCString(
-                "geo: SendChromeEvent Failed(id:%d, flags:%x", mId, GPS_NI_NEED_TIMEOUT).get());
+              ERR("geo: SendChromeEvent Failed(id:%d, flags:%x", mId, GPS_NI_NEED_TIMEOUT);
             }
             provider->SetNiResponse(mId, mDefaultResp);
             return;
@@ -946,6 +941,7 @@ GonkGPSGeolocationProvider::Init()
 
   mGpsInterface = GetGPSInterface();
   if (!mGpsInterface) {
+    ERR("Failed to get GPS HAL.");
     return;
   }
 
@@ -978,6 +974,7 @@ GonkGPSGeolocationProvider::Init()
   }
 
   if (mGpsInterface->init(&mCallbacks) != 0) {
+    ERR("Failed to init GPS HAL.");
     return;
   }
 
@@ -1002,6 +999,8 @@ GonkGPSGeolocationProvider::Init()
 #endif
 
   mInitialized = true;
+
+  LOG("GPS HAL has been initialized");
 
   // If there is an ongoing location request, starts GPS navigating
   if (mStarted) {
@@ -1047,6 +1046,7 @@ GonkGPSGeolocationProvider::StartGPS()
   mGpsInterface->delete_aiding_data(GPS_DELETE_ALL);
 #endif
 
+  LOG("Starts GPS");
   mGpsInterface->start();
 }
 
@@ -1277,6 +1277,7 @@ GonkGPSGeolocationProvider::ShutdownGPS()
   MOZ_ASSERT(!mStarted, "Should only be called after Shutdown");
 
   if (mGpsInterface) {
+    LOG("Stops GPS");
     mGpsInterface->stop();
   }
 }
@@ -1416,8 +1417,7 @@ GonkGPSGeolocationProvider::Observe(nsISupports* aSubject,
 
       return NS_OK;
     } else if (setting.mKey.EqualsASCII(kSettingSuplVerificationChoice)) {
-      nsContentUtils::LogMessageToConsole(nsPrintfCString(
-        "geo: received the choice of supl ni verification\n").get());
+      LOG("geo: received the choice of supl ni verification");
       int id = setting.mValue.toNumber();
       RefPtr<GonkGPSGeolocationProvider> provider =
         GonkGPSGeolocationProvider::GetSingleton();

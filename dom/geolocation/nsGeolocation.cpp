@@ -151,6 +151,9 @@ class nsGeolocationRequest final
 static PositionOptions*
 CreatePositionOptionsCopy(const PositionOptions& aOptions)
 {
+  GEO_LOGI("highAccuracy: %d, maximunAge: %u, timeout, %u",
+    aOptions.mEnableHighAccuracy, aOptions.mMaximumAge, aOptions.mTimeout);
+
   nsAutoPtr<PositionOptions> geoOptions(new PositionOptions());
 
   geoOptions->mEnableHighAccuracy = aOptions.mEnableHighAccuracy;
@@ -184,9 +187,9 @@ public:
         value = aResult.toBoolean();
       }
 
-      GPSLOG("%s set to %s",
-             NS_ConvertUTF16toUTF8(aName).get(),
-             (value ? "ENABLED" : "DISABLED"));
+      GEO_LOGI("%s set to %s",
+               NS_ConvertUTF16toUTF8(aName).get(),
+               (value ? "ENABLED" : "DISABLED"));
       MozSettingValue(value);
 
     } else {
@@ -202,7 +205,7 @@ public:
   NS_IMETHOD HandleError(const nsAString& aName) override
   {
     if (aName.EqualsASCII(GEO_SETTINGS_ENABLED)) {
-      GPSLOG("Unable to get value for '" GEO_SETTINGS_ENABLED "'");
+      GEO_LOGW("Unable to get value for '" GEO_SETTINGS_ENABLED "'");
 
       // Default it's enabled:
       MozSettingValue(true);
@@ -636,7 +639,7 @@ nsGeolocationRequest::AdjustedLocation(nsIDOMGeoPosition *aPosition)
 {
   nsCOMPtr<nsIDOMGeoPosition> pos = aPosition;
   if (XRE_IsContentProcess()) {
-    GPSLOG("child process just copying position");
+    GEO_LOGD("child process just copying position");
     return pos.forget();
   }
 
@@ -648,7 +651,7 @@ nsGeolocationRequest::AdjustedLocation(nsIDOMGeoPosition *aPosition)
 
   // make sure ALA is enabled
   if (!gs->IsAlaEnabled()) {
-    GPSLOG("ALA is disabled, returning precise location");
+    GEO_LOGD("ALA is disabled, returning precise location");
     return pos.forget();
   }
 
@@ -657,20 +660,20 @@ nsGeolocationRequest::AdjustedLocation(nsIDOMGeoPosition *aPosition)
   GeolocationSetting setting = gs->LookupGeolocationSetting(mWatchId);
   switch (setting.GetType()) {
     case GEO_ALA_TYPE_PRECISE:
-      GPSLOG("returning precise location watch ID: %d", mWatchId);
+      GEO_LOGD("returning precise location watch ID: %d", mWatchId);
       return pos.forget();
 #ifdef MOZ_APPROX_LOCATION
     case GEO_ALA_TYPE_APPROX:
-      GPSLOG("returning approximate location for watch ID: %d", mWatchId);
+      GEO_LOGD("returning approximate location for watch ID: %d", mWatchId);
       return nsGeoGridFuzzer::FuzzLocation(setting, aPosition);
 #endif
     case GEO_ALA_TYPE_FIXED:
-      GPSLOG("returning fixed location for watch ID:: %d", mWatchId);
+      GEO_LOGD("returning fixed location for watch ID:: %d", mWatchId);
       // use "now" as time stamp
       return SynthesizeLocation(ts, setting.GetFixedLatitude(),
                                 setting.GetFixedLongitude());
     case GEO_ALA_TYPE_NONE:
-      GPSLOG("returning no location for watch ID: %d", mWatchId);
+      GEO_LOGD("returning no location for watch ID: %d", mWatchId);
       // return nullptr so no location callback happens
       return nullptr;
   }
@@ -708,7 +711,7 @@ nsGeolocationRequest::SendLocation(nsIDOMGeoPosition* aPosition)
       double lat = 0.0, lon = 0.0;
       coords->GetLatitude(&lat);
       coords->GetLongitude(&lon);
-      GPSLOG("returning coordinates: %f, %f", lat, lon);
+      GEO_LOGD("returning coordinates: %f, %f", lat, lon);
 #endif
       wrapped = new Position(ToSupports(mLocator), aPosition);
     }
@@ -960,9 +963,9 @@ nsGeolocationService::HandleMozsettingChanged(nsISupports* aSubject)
       return;
     }
 
-    GPSLOG("mozsetting changed: %s == %s",
-          NS_ConvertUTF16toUTF8(setting.mKey).get(),
-          (setting.mValue.toBoolean() ? "TRUE" : "FALSE"));
+    GEO_LOGI("mozsetting changed: %s == %s",
+             NS_ConvertUTF16toUTF8(setting.mKey).get(),
+             (setting.mValue.toBoolean() ? "TRUE" : "FALSE"));
 
     HandleMozsettingValue(setting.mValue.toBoolean());
 }
@@ -1521,6 +1524,10 @@ Geolocation::GetCurrentPosition(PositionCallback& aCallback,
                                 const PositionOptions& aOptions,
                                 ErrorResult& aRv)
 {
+  nsAutoCString appOrigin;
+  GetPrincipal()->GetOrigin(appOrigin);
+  GEO_LOGI("Web API getCurrentPosition() called by %s", appOrigin.get());
+
   GeoPositionCallback successCallback(&aCallback);
   GeoPositionErrorCallback errorCallback(aErrorCallback);
 
@@ -1609,6 +1616,10 @@ Geolocation::WatchPosition(PositionCallback& aCallback,
                            const PositionOptions& aOptions,
                            ErrorResult& aRv)
 {
+  nsAutoCString appOrigin;
+  GetPrincipal()->GetOrigin(appOrigin);
+  GEO_LOGI("Web API watchPosition() called by %s", appOrigin.get());
+
   int32_t ret = 0;
   GeoPositionCallback successCallback(&aCallback);
   GeoPositionErrorCallback errorCallback(aErrorCallback);
@@ -1659,7 +1670,7 @@ Geolocation::WatchPosition(GeoPositionCallback& aCallback,
                              static_cast<uint8_t>(mProtocolType), true, *aRv);
 
   if (!sGeoEnabled) {
-    GPSLOG("request allow event");
+    GEO_LOGD("request allow event");
     nsCOMPtr<nsIRunnable> ev = new RequestAllowEvent(false, request);
     NS_DispatchToMainThread(ev);
     return NS_OK;
@@ -1699,6 +1710,8 @@ Geolocation::WatchPositionReady(nsGeolocationRequest* aRequest)
 NS_IMETHODIMP
 Geolocation::ClearWatch(int32_t aWatchId)
 {
+  GEO_LOGD("Web API clearWatch() called. watch Id is %d", aWatchId);
+
   if (aWatchId < 0) {
     return NS_OK;
   }

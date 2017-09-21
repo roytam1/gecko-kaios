@@ -17,8 +17,14 @@
 #include "KaiGeolocationProvider.h"
 
 #include "mozstumbler/MozStumbler.h"
-#include "nsContentUtils.h"
 #include "nsGeoPosition.h"
+
+#undef LOG
+#undef ERR
+#undef DBG
+#define LOG(args...)  __android_log_print(ANDROID_LOG_INFO,  "KAI_GEO", ## args)
+#define ERR(args...)  __android_log_print(ANDROID_LOG_ERROR, "KAI_GEO", ## args)
+#define DBG(args...)  __android_log_print(ANDROID_LOG_DEBUG, "KAI_GEO", ## args)
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -210,7 +216,7 @@ class RequestWiFiAndCellInfoEvent : public nsRunnable {
       nsCOMPtr<nsIWifi> wifi = do_GetInterface(ir);
       if (!wifi) {
         mRequestCallback->SetWifiInfoResponseReceived();
-        nsContentUtils::LogMessageToConsole("Stumbler: can not get nsIWifi interface\n");
+        LOG("Stumbler: can not get nsIWifi interface");
         return NS_OK;
       }
       wifi->GetWifiScanResults(mRequestCallback);
@@ -296,18 +302,14 @@ KaiGeolocationProvider::NetworkLocationUpdate::Update(nsIDOMGeoPosition *positio
        (isGPSTempInactive && delta > kMinCoordChangeInMeters))
     {
       if (gDebug_isLoggingEnabled) {
-        nsContentUtils::LogMessageToConsole(nsPrintfCString(
-                                            "geo: Using network location, "
-                                            "GPS age:%fs, network Delta:%fm\n",
-                                            diff_ms / 1000.0, delta).get());
+        DBG("geo: Using network location, GPS age:%fs, network Delta:%fm",
+          diff_ms / 1000.0, delta);
       }
 
       provider->mLocationCallback->Update(provider->FindProperNetworkPos());
     } else if (provider->mLastGPSPosition) {
       if (gDebug_isLoggingEnabled) {
-        nsContentUtils::LogMessageToConsole(nsPrintfCString(
-                                            "geo: Using old GPS age:%fs\n",
-                                            diff_ms / 1000.0).get());
+        DBG("geo: Using old GPS age:%fs", diff_ms / 1000.0);
       }
 
       // This is a fallback case so that the GPS provider responds with its last
@@ -381,8 +383,8 @@ KaiGeolocationProvider::GpsLocationUpdate::Update(nsIDOMGeoPosition *position)
     delta = CalculateDeltaInMeter(lat, lon, sLastLat, sLastLon);
   }
   if (gDebug_isLoggingEnabled) {
-    nsContentUtils::LogMessageToConsole(nsPrintfCString(
-      "Stumbler: Location. [%f , %f] time_diff:%lld, delta : %f\n", lon, lat, timediff, delta).get());
+    DBG("Stumbler: Location. [%f , %f] time_diff:%lld, delta : %f",
+      lon, lat, timediff, delta);
   }
 
   // Consecutive GPS locations must be 30 meters and 3 seconds apart
@@ -395,8 +397,7 @@ KaiGeolocationProvider::GpsLocationUpdate::Update(nsIDOMGeoPosition *position)
     NS_DispatchToMainThread(runnable);
   } else {
     if (gDebug_isLoggingEnabled) {
-      nsContentUtils::LogMessageToConsole(
-        "Stumbler: GPS locations less than 30 meters and 3 seconds. Ignore!\n");
+      DBG("Stumbler: GPS locations less than 30 meters and 3 seconds. Ignore!");
     }
   }
 

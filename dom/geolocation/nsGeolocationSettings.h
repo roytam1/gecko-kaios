@@ -17,12 +17,20 @@
 #include "nsJSUtils.h"
 #include "nsTArray.h"
 
-#if (defined(MOZ_GPS_DEBUG) && defined(ANDROID))
+#if (defined(MOZ_WIDGET_GONK) || defined(ANDROID))
 #include <android/log.h>
-#define GPSLOG(fmt, ...) __android_log_print(ANDROID_LOG_WARN, "GPS", "%12s:%-5d " fmt,  __FILE__, __LINE__, ##__VA_ARGS__)
+#define GEO_LOGW(fmt, ...) __android_log_print(ANDROID_LOG_WARN, "GECKO_GEO", "%s: " fmt,  __FUNCTION__, ##__VA_ARGS__)
+#define GEO_LOGI(fmt, ...) __android_log_print(ANDROID_LOG_INFO, "GECKO_GEO", "%s: " fmt,  __FUNCTION__, ##__VA_ARGS__)
 #else
-#define GPSLOG(...) {;}
-#endif // MOZ_GPS_DEBUG && ANDROID
+#define GEO_LOGW(...) {;}
+#define GEO_LOGI(...) {;}
+#endif
+
+#if (defined(MOZ_GPS_DEBUG) && (defined(MOZ_WIDGET_GONK) || defined(ANDROID)))
+#define GEO_LOGD(fmt, ...) __android_log_print(ANDROID_LOG_DEBUG, "GECKO_GEO", "%s: " fmt,  __FUNCTION__, ##__VA_ARGS__)
+#else
+#define GEO_LOGD(...) {;}
+#endif
 
 // The settings key.
 #define GEO_ENABLED             "geolocation.enabled"

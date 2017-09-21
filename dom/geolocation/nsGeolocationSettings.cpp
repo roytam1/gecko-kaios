@@ -155,7 +155,7 @@ nsGeolocationSettings::HandleMozsettingsChanged(nsISupports* aSubject)
     return;
   }
 
-  GPSLOG("mozsettings changed: %s", NS_ConvertUTF16toUTF8(setting.mKey).get());
+  GEO_LOGD("mozsettings changed: %s", NS_ConvertUTF16toUTF8(setting.mKey).get());
 
   // and handle the geolocation settings change...
   HandleGeolocationSettingsChange(setting.mKey, setting.mValue);
@@ -166,19 +166,19 @@ void
 nsGeolocationSettings::HandleGeolocationSettingsError(const nsAString& aName)
 {
   if (aName.EqualsASCII(GEO_ALA_ENABLED)) {
-    GPSLOG("Unable to get value for '" GEO_ALA_ENABLED "'");
+    GEO_LOGD("Unable to get value for '" GEO_ALA_ENABLED "'");
   } else if (aName.EqualsASCII(GEO_ALA_TYPE)) {
-    GPSLOG("Unable to get value for '" GEO_ALA_TYPE "'");
+    GEO_LOGD("Unable to get value for '" GEO_ALA_TYPE "'");
 #ifdef MOZ_APPROX_LOCATION
   } else if (aName.EqualsASCII(GEO_ALA_APPROX_DISTANCE)) {
-    GPSLOG("Unable to get value for '" GEO_ALA_APPROX_DISTANCE "'");
+    GEO_LOGD("Unable to get value for '" GEO_ALA_APPROX_DISTANCE "'");
 #endif
   } else if (aName.EqualsASCII(GEO_ALA_FIXED_COORDS)) {
-    GPSLOG("Unable to get value for '" GEO_ALA_FIXED_COORDS "'");
+    GEO_LOGD("Unable to get value for '" GEO_ALA_FIXED_COORDS "'");
   } else if (aName.EqualsASCII(GEO_ALA_APP_SETTINGS)) {
-    GPSLOG("Unable to get value for '" GEO_ALA_APP_SETTINGS "'");
+    GEO_LOGD("Unable to get value for '" GEO_ALA_APP_SETTINGS "'");
   } else if (aName.EqualsASCII(GEO_ALA_ALWAYS_PRECISE)) {
-    GPSLOG("Unable to get value for '" GEO_ALA_ALWAYS_PRECISE "'");
+    GEO_LOGD("Unable to get value for '" GEO_ALA_ALWAYS_PRECISE "'");
   }
 }
 
@@ -190,14 +190,14 @@ nsGeolocationSettings::PutWatchOrigin(int32_t aWatchID,
     return;
   }
 
-  GPSLOG("mapping watch ID %d to origin %s", aWatchID, aOrigin.get());
+  GEO_LOGD("mapping watch ID %d to origin %s", aWatchID, aOrigin.get());
   mCurrentWatches.Put(static_cast<uint32_t>(aWatchID), new nsCString(aOrigin));
 }
 
 void
 nsGeolocationSettings::RemoveWatchOrigin(int32_t aWatchID)
 {
-  GPSLOG("unmapping watch ID %d", aWatchID);
+  GEO_LOGD("unmapping watch ID %d", aWatchID);
   mCurrentWatches.Remove(static_cast<uint32_t>(aWatchID));
 }
 
@@ -209,7 +209,7 @@ nsGeolocationSettings::GetWatchOrigin(int32_t aWatchID, nsCString& aOrigin)
     return;
   }
   aOrigin = *str;
-  GPSLOG("returning origin %s for watch ID %d", aOrigin.get(), aWatchID);
+  GEO_LOGD("returning origin %s for watch ID %d", aOrigin.get(), aWatchID);
 }
 
 void
@@ -275,7 +275,7 @@ nsGeolocationSettings::HandleGeolocationPerOriginSettingsChange(const JS::Value&
     JS::RootedObject settingObj(cx, &propertyValue.toObject());
 
     GeolocationSetting *settings = new GeolocationSetting(origin);
-    GPSLOG("adding exception for %s", NS_ConvertUTF16toUTF8(origin).get());
+    GEO_LOGD("adding exception for %s", NS_ConvertUTF16toUTF8(origin).get());
 
     // get the geolocation type
     JS::RootedValue fm(cx);
@@ -353,7 +353,7 @@ nsGeolocationSettings::HandleGeolocationAlwaysPreciseChange(const JS::Value& aVa
       continue;
     }
 
-    GPSLOG("adding always precise for %s", NS_ConvertUTF16toUTF8(origin).get());
+    GEO_LOGD("adding always precise for %s", NS_ConvertUTF16toUTF8(origin).get());
 
     // add the origin to the list of apps that will always receive
     // precise location information
@@ -388,10 +388,10 @@ GeolocationSetting::HandleTypeChange(const JS::Value& aVal)
   }
 
   if ((fm >= GEO_ALA_TYPE_FIRST) && (fm <= GEO_ALA_TYPE_LAST)) {
-    GPSLOG("changing type for %s to %s (%d)",
-           (mOrigin.IsEmpty() ? "global" : NS_ConvertUTF16toUTF8(mOrigin).get()),
-           NS_ConvertUTF16toUTF8(str).get(),
-           static_cast<int>(fm));
+    GEO_LOGD("changing type for %s to %s (%d)",
+             (mOrigin.IsEmpty() ? "global" : NS_ConvertUTF16toUTF8(mOrigin).get()),
+             NS_ConvertUTF16toUTF8(str).get(),
+             static_cast<int>(fm));
     mFuzzMethod = fm;
   }
 
@@ -427,9 +427,9 @@ GeolocationSetting::HandleApproxDistanceChange(const JS::Value& aVal)
     return;
   }
 
-  GPSLOG("changing approx distance for %s to %d",
-       (mOrigin.IsEmpty() ? "global" : NS_ConvertUTF16toUTF8(mOrigin).get()),
-       aVal.toInt32());
+  GEO_LOGD("changing approx distance for %s to %d",
+           (mOrigin.IsEmpty() ? "global" : NS_ConvertUTF16toUTF8(mOrigin).get()),
+           aVal.toInt32());
 
   // set the approximate distance
   mDistance = aVal.toInt32();
@@ -466,9 +466,9 @@ GeolocationSetting::HandleFixedCoordsChange(const JS::Value& aVal)
   mLatitude = lat;
   mLongitude = lon;
 
-  GPSLOG("changing coords for %s to %s (%f, %f)",
-         (mOrigin.IsEmpty() ? "global" : NS_ConvertUTF16toUTF8(mOrigin).get()),
-         NS_ConvertUTF16toUTF8(str).get(),
-         mLatitude, mLongitude);
+  GEO_LOGD("changing coords for %s to %s (%f, %f)",
+           (mOrigin.IsEmpty() ? "global" : NS_ConvertUTF16toUTF8(mOrigin).get()),
+           NS_ConvertUTF16toUTF8(str).get(),
+           mLatitude, mLongitude);
 }
 
