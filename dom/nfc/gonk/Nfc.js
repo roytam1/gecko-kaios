@@ -678,6 +678,10 @@ Nfc.prototype = {
   pendingNfcService: null,
   pendingMessageQueue: [],
 
+  // Temporary variable to store RF change request while doing loader service.
+  isLoaderService: 0,
+  pendingRequestMessage: null,
+
   /**
    * Start NFC service
    */
@@ -702,6 +706,14 @@ Nfc.prototype = {
    */
   shutdownNfcService : function shutdownNfcService() {
     debug("Shutting down Nfc Service");
+
+    if (this.isLoaderService) {
+      this.isLoaderService = 0;
+      if (this.pendingRequestMessage) {
+        this.sendNfcErrorResponse(this.pendingRequestMessage, "NotInitialize");
+        this.pendingRequestMessage = null;
+      }
+    }
 
     this.nfcService.shutdown();
     this.nfcService = null;
@@ -1005,6 +1017,21 @@ Nfc.prototype = {
     if (message.name != "NFC:ChangeRFState") {
       // Update the current sessionId before sending to the NFC service.
       message.data.sessionId = SessionHelper.getId(message.data.sessionToken);
+    } else {
+      if (this.isLoaderService) {
+        this.pendingRequestMessage = message;
+        let fakeMessage = {
+          type: NfcResponseType.CHANGE_RF_STATE_RSP,
+          rfState: message.rfState,
+          requestId: message.data.requestId,
+          rspType: "changeRFStateRsp"
+        };
+        this.targetsByRequestId[message.data.requestId] = message.target;
+
+        this.sendNfcResponse(fakeMessage);
+        gMessageManager.onRFStateChanged(fakeMessage.rfState);
+        return;
+      }
     }
 
     let command = CommandMsgTable[message.name];
@@ -1047,6 +1074,13 @@ Nfc.prototype = {
   },
 
   shutdown: function shutdown() {
+    if (this.isLoaderService) {
+      this.isLoaderService = 0;
+      if (this.pendingRequestMessage) {
+        this.sendNfcErrorResponse(this.pendingRequestMessage, "NotInitialize");
+        this.pendingRequestMessage = null;
+      }
+    }
     // We shutdown before initialization has been completed. The
     // pending messages will receive an error response.
     while (this.pendingMessageQueue.length) {
@@ -1422,12 +1456,21 @@ Nfc.prototype = {
         fullResponseFileName: fullResponseFileName
       };
 
+      self.isLoaderService++;
       self.sendToNfcService(command, message);
     });
   },
 
   lsExecuteScriptResponse: function(message)
   {
+    if (this.isLoaderService) {
+      this.isLoaderService--;
+      if (this.pendingRequestMessage) {
+        this.receiveMessage(this.pendingRequestMessage);
+        this.pendingRequestMessage = null;
+      }
+    }
+
     let callback = this.getTargetByRequestId(message.requestId);
     if (!callback) {
       debug("lsExecuteScriptResponse: can't find callback");
