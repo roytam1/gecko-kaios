@@ -517,9 +517,11 @@ public:
 #endif
       return Allow();
 
+#ifdef PRODUCT_MANUFACTURER_SPRD
     case __NR_timer_create:
     case __NR_rt_sigtimedwait:
       return Allow();
+#endif
 
     case __NR_readlink:
     case __NR_readlinkat:
