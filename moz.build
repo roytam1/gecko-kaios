@@ -87,4 +87,7 @@ if not CONFIG['JS_STANDALONE'] and CONFIG['MOZ_BUILD_APP']:
 if CONFIG['HAS_KOOST_MODULES']:
   DIRS += ['koost']
 
+if CONFIG['HAS_PRIOPRIETARY_MODULES']:
+  DIRS += ['proprietary']
+
 include('build/templates.mozbuild')

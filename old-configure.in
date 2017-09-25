@@ -7423,6 +7423,17 @@ fi
 AC_SUBST(HAS_KOOST_MODULES)
 AC_DEFINE(HAS_KOOST_MODULES)
 
+dnl ========================================================
+dnl Build kaios proprietary modules if the dir exists
+dnl ========================================================
+if test -d "$_topsrcdir/proprietary" ; then
+  HAS_PRIOPRIETARY_MODULES=1
+else
+  HAS_PRIOPRIETARY_MODULES=
+fi
+AC_SUBST(HAS_PRIOPRIETARY_MODULES)
+AC_DEFINE(HAS_PRIOPRIETARY_MODULES)
+
 if test "$PRODUCT_MANUFACTURER" = "QUALCOMM" ; then
   PRODUCT_MANUFACTURER_QUALCOMM=1
   AC_DEFINE(PRODUCT_MANUFACTURER_QUALCOMM)
