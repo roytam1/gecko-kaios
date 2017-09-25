@@ -67,6 +67,7 @@ interface DOMApplication : EventTarget {
   readonly attribute DOMTimeStamp lastUpdateCheck;
   readonly attribute DOMTimeStamp updateTime;
 
+  readonly attribute boolean allowedAutoDownload;
   readonly attribute boolean downloadAvailable;
   readonly attribute boolean downloading;
   readonly attribute boolean readyToApplyDownload;
@@ -86,7 +87,7 @@ interface DOMApplication : EventTarget {
   DOMRequest launch(optional DOMString? url);
 
   DOMRequest clearBrowserData();
-  DOMRequest checkForUpdate();
+  DOMRequest checkForUpdate(optional boolean allowedAuto = true);
 
   /**
    * Inter-App Communication APIs.

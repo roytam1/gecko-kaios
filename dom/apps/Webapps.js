@@ -429,6 +429,10 @@ WebappsApplication.prototype = {
     return this._proxy.appStatus;
   },
 
+  get allowedAutoDownload() {
+    return this._proxy.allowedAutoDownload;
+  },
+
   get downloadAvailable() {
     return this._proxy.downloadAvailable;
   },
@@ -560,11 +564,12 @@ WebappsApplication.prototype = {
                           { manifestURL: this.manifestURL });
   },
 
-  checkForUpdate: function() {
+  checkForUpdate: function(allowedAuto = true) {
     let request = this.createRequest();
 
     cpmm.sendAsyncMessage("Webapps:CheckForUpdate",
                           { manifestURL: this.manifestURL,
+                            allowedAuto: allowedAuto,
                             oid: this._id,
                             topId: this._topId,
                             requestID: this.getRequestId(request) });

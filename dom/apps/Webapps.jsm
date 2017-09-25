@@ -2140,6 +2140,7 @@ this.DOMApplicationRegistry = {
                   app.manifestURL + " - event is " + aTopic);
             if (aTopic == "offline-cache-update-available") {
               app.downloadAvailable = true;
+              app.allowedAutoDownload = aData.allowedAuto;
               this._saveApps().then(() => {
                 MessageBroadcaster.broadcastMessage("Webapps:UpdateState", {
                   app: app,
@@ -2387,6 +2388,7 @@ this.DOMApplicationRegistry = {
     aApp.downloadAvailable = true;
     aApp.downloadSize = manifest.size;
     aApp.updateManifest = aNewManifest;
+    aApp.allowedAutoDownload = aData.allowedAuto;
     this._saveWidgetsFullPath(manifest, aApp);
 
     yield this._saveApps();
