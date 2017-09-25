@@ -70,6 +70,17 @@ if (AppConstants.MOZ_SAFE_BROWSING) {
                 "resource://gre/modules/SafeBrowsing.jsm");
 }
 
+try {
+  // For external screen rendered by a native buffer, event of display-changed
+  // (to tell a display is added), is fired after rendering the first drawble
+  // frame. Load the handler asap in order to ensure our system observe that
+  // event, and yes this is unfortunately a hack. So try not to delay loading
+  // this module.
+  if (isGonk && Services.prefs.getBoolPref('b2g.multiscreen.enabled')) {
+    Cu.import('resource://gre/modules/MultiscreenHandler.jsm');
+  }
+} catch(e) {}
+
 window.performance.measure('gecko-shell-jsm-loaded', 'gecko-shell-loadstart');
 
 function debug(str) {
@@ -801,9 +812,7 @@ var shell = {
     // Customization files.
     Cu.import('resource://gre/modules/CustomizationService.jsm');
     Cu.import('resource://gre/modules/CustomizationConfigManager.jsm');
-    if (isGonk) {
-      Cu.import('resource://gre/modules/MultiscreenHandler.jsm');
-    }
+
     UserAgentOverrides.init();
   }
 };
