@@ -3,10 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "nsISupports.idl"
-#include "nsIDOMDOMRequest.idl"
-#include "nsIDOMEvent.idl"
 
-interface nsIVariant;
 interface nsIWifiInfo;
 
 [scriptable, uuid(cf1ac02b-1f39-446e-815b-651ac78d2233)]

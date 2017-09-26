@@ -96,6 +96,18 @@ DIST="$MOZ_BUILD_ROOT/dist"
 MOZ_DEFAULT_COMPILER
 
 dnl ========================================================
+dnl = Disable WIFI Support feature
+dnl ========================================================
+MOZ_ARG_DISABLE_BOOL(wifi-support,
+[  --disable-wifi-support       Set compile flag necessary for disabling Wifi],
+    DISABLE_WIFI=1,
+    DISABLE_WIFI= )
+if test -n "$DISABLE_WIFI"; then
+   AC_DEFINE(DISABLE_WIFI)
+fi
+AC_SUBST(DISABLE_WIFI)
+
+dnl ========================================================
 dnl = Enable Nuance XT9 Library Support
 dnl ========================================================
 MOZ_ARG_ENABLE_BOOL(nuance-xt9,

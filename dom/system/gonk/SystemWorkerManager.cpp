@@ -78,11 +78,14 @@ SystemWorkerManager::Init()
   NS_ASSERTION(NS_IsMainThread(), "We can only initialize on the main thread");
   NS_ASSERTION(!mShutdown, "Already shutdown!");
 
-  nsresult rv = InitWifi();
+  nsresult rv;
+#ifndef DISABLE_WIFI
+  rv = InitWifi();
   if (NS_FAILED(rv)) {
     NS_WARNING("Failed to initialize WiFi Networking!");
     return rv;
   }
+#endif
 
   InitKeyStore();
 
@@ -119,12 +122,14 @@ SystemWorkerManager::Shutdown()
   RilWorker::Shutdown();
 #endif
 
+#ifndef DISABLE_WIFI
   nsCOMPtr<nsIWifi> wifi(do_QueryInterface(mWifiWorker));
   if (wifi) {
     wifi->Shutdown();
     wifi = nullptr;
   }
   mWifiWorker = nullptr;
+#endif
 
   if (mKeyStore) {
     mKeyStore->Shutdown();
@@ -171,8 +176,12 @@ SystemWorkerManager::GetInterface(const nsIID &aIID, void **aResult)
   NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
 
   if (aIID.Equals(NS_GET_IID(nsIWifi))) {
+#ifndef DISABLE_WIFI
     return CallQueryInterface(mWifiWorker,
                               reinterpret_cast<nsIWifi**>(aResult));
+#else
+    return NS_ERROR_NOT_IMPLEMENTED;
+#endif
   }
 
   NS_WARNING("Got nothing for the requested IID!");
@@ -202,6 +211,7 @@ SystemWorkerManager::RegisterRilWorker(unsigned int aClientId,
 #endif // MOZ_B2G_RIL
 }
 
+#ifndef DISABLE_WIFI
 nsresult
 SystemWorkerManager::InitWifi()
 {
@@ -211,6 +221,7 @@ SystemWorkerManager::InitWifi()
   mWifiWorker = worker;
   return NS_OK;
 }
+#endif
 
 nsresult
 SystemWorkerManager::InitKeyStore()

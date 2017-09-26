@@ -59,10 +59,12 @@ private:
   SystemWorkerManager();
   ~SystemWorkerManager();
 
-  nsresult InitWifi();
   nsresult InitKeyStore();
 
+#ifndef DISABLE_WIFI
+  nsresult InitWifi();
   nsCOMPtr<nsIWorkerHolder> mWifiWorker;
+#endif
 
   RefPtr<mozilla::ipc::KeyStore> mKeyStore;
 

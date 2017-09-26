@@ -1246,3 +1246,8 @@ pref('dom.battery.test.dummy_battery_level', false);
 
 // Enable hang monitor with 10 seconds timeout
 pref("hangmonitor.timeout", 10);
+
+#ifdef DISABLE_WIFI
+// Disable Gecko wifi
+pref("device.capability.wifi", false);
+#endif

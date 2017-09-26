@@ -2407,6 +2407,9 @@ bool
 Navigator::HasWifiManagerSupport(JSContext* /* unused */,
                                  JSObject* aGlobal)
 {
+#ifdef DISABLE_WIFI
+  return false;
+#endif
   // On XBL scope, the global object is NOT |window|. So we have
   // to use nsContentUtils::GetObjectPrincipal to get the principal
   // and test directly with permission manager.

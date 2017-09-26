@@ -6,36 +6,41 @@
 
 XPIDL_SOURCES += [
     'nsIWifi.idl',
-    'nsIWifiCertService.idl',
-    'nsIWifiService.idl',
 ]
 
 XPIDL_MODULE = 'dom_wifi'
 
-EXTRA_COMPONENTS += [
-    'DOMWifiManager.js',
-    'DOMWifiManager.manifest',
-    'DOMWifiP2pManager.js',
-    'DOMWifiP2pManager.manifest',
-    'WifiWorker.js',
-    'WifiWorker.manifest',
-]
+if not CONFIG['DISABLE_WIFI']:
+  XPIDL_SOURCES += [
+      'nsIWifiCertService.idl',
+      'nsIWifiService.idl',
+  ]
 
-EXTRA_JS_MODULES += [
-    'StateMachine.jsm',
-    'WifiCommand.jsm',
-    'WifiNetUtil.jsm',
-    'WifiP2pManager.jsm',
-    'WifiP2pWorkerObserver.jsm',
-]
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
-    UNIFIED_SOURCES = [
-        'WifiCertService.cpp',
-        'WifiHotspotUtils.cpp',
-        'WifiProxyService.cpp',
-        'WifiUtils.cpp',
-    ]
-    DEFINES['CERT_AddTempCertToPerm'] = '__CERT_AddTempCertToPerm'
+  EXTRA_COMPONENTS += [
+      'DOMWifiManager.js',
+      'DOMWifiManager.manifest',
+      'DOMWifiP2pManager.js',
+      'DOMWifiP2pManager.manifest',
+      'WifiWorker.js',
+      'WifiWorker.manifest',
+  ]
+
+  EXTRA_JS_MODULES += [
+      'StateMachine.jsm',
+      'WifiCommand.jsm',
+      'WifiNetUtil.jsm',
+      'WifiP2pManager.jsm',
+      'WifiP2pWorkerObserver.jsm',
+  ]
+
+  if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
+      UNIFIED_SOURCES = [
+          'WifiCertService.cpp',
+          'WifiHotspotUtils.cpp',
+          'WifiProxyService.cpp',
+          'WifiUtils.cpp',
+      ]
+      DEFINES['CERT_AddTempCertToPerm'] = '__CERT_AddTempCertToPerm'
 
 FINAL_LIBRARY = 'xul'
