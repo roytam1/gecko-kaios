@@ -56,13 +56,20 @@ var ContactService = this.ContactService = {
       ppmm.addMessageListener(msgName, this);
     }.bind(this));
 
+    Services.obs.addObserver(this, "profile-before-change", false);
+    Services.prefs.addObserver("ril.lastKnownSimMcc", this, false);
+  },
+
+  _initDB: function() {
+    if (!this._children) {
+      if (DEBUG) debug("Not intialized yet.");
+      return;
+    }
+
     this._db = new ContactDB();
     this._db.init();
 
     this.configureSubstringMatching();
-
-    Services.obs.addObserver(this, "profile-before-change", false);
-    Services.prefs.addObserver("ril.lastKnownSimMcc", this, false);
   },
 
   observe: function(aSubject, aTopic, aData) {
@@ -85,6 +92,10 @@ var ContactService = this.ContactService = {
   },
 
   configureSubstringMatching: function() {
+    if (!this._db) {
+      this._initDB();
+    }
+
     let countryName = PhoneNumberUtils.getCountryName();
     if (Services.prefs.getPrefType("dom.phonenumber.substringmatching." + countryName) == Ci.nsIPrefBranch.PREF_INT) {
       let val = Services.prefs.getIntPref("dom.phonenumber.substringmatching." + countryName);
@@ -118,6 +129,15 @@ var ContactService = this.ContactService = {
     let mm = aMessage.target;
     let msg = aMessage.data;
     let cursorList;
+
+    if (this._messages.indexOf(aMessage.name) === -1) {
+      if (DEBUG) debug("WRONG MESSAGE NAME: " + aMessage.name);
+      return;
+    }
+
+    if (!this._db) {
+      this._initDB();
+    }
 
     switch (aMessage.name) {
       case "Contacts:Find":
