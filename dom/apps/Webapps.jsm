@@ -2319,8 +2319,38 @@ this.DOMApplicationRegistry = {
                             value: device || "unknown" });
       }
 #endif
-      doRequest.call(this, aResult[0].manifest, extraHeaders);
+      doRequest.call(this, aResult[0].manifest, this._prepareKaiHeaders());
     });
+  },
+
+  _prepareKaiHeaders: function(){
+    let extraHeaders = [];
+    let KAIAPIVERSION = 'Kai-API-Version';
+    let prefName = 'app.kaiapi.version';
+    let kaiapiVer = '2.0';
+    try {
+      kaiapiVer = Services.prefs.getCharPref(prefName);
+    } catch(e) {}
+    let KAIAPIDEVICEINFO = 'Kai-Device-Info';
+    if (!this.imei) {
+      let mobileConnectionService = Cc["@mozilla.org/mobileconnection/mobileconnectionservice;1"]
+            .createInstance(Ci.nsIMobileConnectionService);
+      let defaultProvider = 0;
+      let mobile = mobileConnectionService.getItemByServiceId(defaultProvider);
+      if (mobile && mobile.deviceIdentities) {
+        this.imei = mobile.deviceIdentities.imei;
+      }
+    }
+    let imei = this.imei || '123456789012345';
+    let RO_CUNAME = 'ro.fota.cu_ref';
+    let curef = libcutils.property_get(RO_CUNAME) || '40440-2AJIIN1';
+    function formatDeviceInfoHeader(imei, curef) {
+      return 'imei="'+imei+'", curef="'+curef+'"';
+    };
+    extraHeaders.push({'name':KAIAPIVERSION, 'value': kaiapiVer});
+    extraHeaders.push({'name':KAIAPIDEVICEINFO, 'value':formatDeviceInfoHeader(imei, curef)});
+
+    return extraHeaders;
   },
 
   updatePackagedApp: Task.async(function*(aData, aId, aApp, aNewManifest) {
@@ -2602,6 +2632,10 @@ this.DOMApplicationRegistry = {
     }
     xhr.channel.notificationCallbacks = AppsUtils.createLoadContext(aData.appId,
                                                                     aData.isBrowser);
+    this._prepareKaiHeaders().forEach(function(aHeader) {
+      debug("Adding Kai header: " + aHeader.name + ": " + aHeader.value);
+      xhr.setRequestHeader(aHeader.name, aHeader.value);
+    });
     xhr.responseType = "json";
 
     xhr.addEventListener("load", (function() {
@@ -2721,6 +2755,10 @@ this.DOMApplicationRegistry = {
     }
     xhr.channel.notificationCallbacks = AppsUtils.createLoadContext(aData.appId,
                                                                     aData.isBrowser);
+    this._prepareKaiHeaders().forEach(function(aHeader) {
+      debug("Adding Kai header: " + aHeader.name + ": " + aHeader.value);
+      xhr.setRequestHeader(aHeader.name, aHeader.value);
+    });
     xhr.responseType = "json";
 
     xhr.addEventListener("load", (function() {
