@@ -72,9 +72,14 @@ if CONFIG['OS_TARGET'] == 'Android':
     DEFINES['__linux__'] = True
 
     if not CONFIG['MOZ_WEBRTC']:
-        SOURCES += [
-            '%%%s/sources/android/cpufeatures/cpu-features.c' % CONFIG['ANDROID_NDK'],
-        ]
+        if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
+            SOURCES += [
+                    '../webrtc/trunk/webrtc/system_wrappers/source/droid-cpu-features.c',
+            ]
+        else:
+            SOURCES += [
+                    '%%%s/sources/android/cpufeatures/cpu-features.c' % CONFIG['ANDROID_NDK'],
+            ]
 
 if CONFIG['CLANG_CL'] or not CONFIG['_MSC_VER']:
     for f in SOURCES:
