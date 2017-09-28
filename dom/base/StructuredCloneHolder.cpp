@@ -38,6 +38,7 @@
 #include "MultipartBlobImpl.h"
 #include "nsIRemoteBlob.h"
 #include "nsQueryObject.h"
+#include "WorkerPrivate.h"
 
 #ifdef MOZ_NFC
 #include "mozilla/dom/MozNDEFRecord.h"
@@ -560,6 +561,10 @@ EnsureBlobForBackgroundManager(BlobImpl* aBlobImpl,
 {
   MOZ_ASSERT(aBlobImpl);
   RefPtr<BlobImpl> blobImpl = aBlobImpl;
+
+  if (NS_IsMainThread() || !workers::GetCurrentThreadWorkerPrivate()) {
+    return blobImpl.forget();
+  }
 
   if (!aManager) {
     aManager = BackgroundChild::GetForCurrentThread();
