@@ -20,6 +20,7 @@
 #include <pthread.h>
 #include <hardware/gps.h>
 #include <hardware_legacy/power.h>
+#include <sys/stat.h>
 
 #include "GeolocationUtil.h"
 #include "mozilla/Preferences.h"
@@ -244,7 +245,9 @@ GonkGPSGeolocationProvider::StatusCallback(GpsStatus* status)
 void
 GonkGPSGeolocationProvider::SvStatusCallback(GpsSvStatus* sv_info)
 {
-  if (gDebug_isLoggingEnabled) {
+  char enableSatellite[PROPERTY_VALUE_MAX + 1];
+  property_get("mmitestgps.satellite.enabled", enableSatellite, "false");
+  if (gDebug_isLoggingEnabled || !strcmp(enableSatellite, "true")) {
     static int numSvs = 0;
     static uint32_t numEphemeris = 0;
     static uint32_t numAlmanac = 0;
@@ -287,6 +290,54 @@ GonkGPSGeolocationProvider::SvStatusCallback(GpsSvStatus* sv_info)
       numAlmanac = svAlmanacCount;
       numEphemeris = svEphemerisCount;
       numUsedInFix = svUsedCount;
+    }
+
+   //If there are other places set the enableSatellite is true,
+   //it will generate a file ,the path and name is /data/mmitest_log/gps_info.txt.
+    if (!strcmp(enableSatellite, "true")) {
+      static FILE * fp = NULL;
+      if (fp != NULL) {
+        return;
+      }
+      if (sv_info->num_svs >= 0) {
+        int num = sv_info->num_svs;
+        mode_t procMask = umask(0);
+        const char* path = "/data/mmitest_log";
+        if (opendir(path) == NULL) {
+          if (mkdir(path, 0755) < 0){
+            LOG("can't create directory %s\n", path);
+          }
+        }
+        fp = fopen("/data/mmitest_log/gps_info.txt", "wb");
+        if (NULL == fp) {
+          LOG("fp == NULL\n");
+        }
+        fprintf(fp, "{");
+
+        fprintf(fp, "\"num\": %d", num);
+        LOG("sv_info->num_svs = %d, num = %d\n",sv_info->num_svs, num);
+        if (sv_info->num_svs != 0) {
+          fprintf(fp, ",");
+        }
+
+        if (num > 0) {
+          fprintf(fp, "\"gps\": [");
+
+          for(int i = 0; i < num; i++) {
+            fprintf(fp, "{\"prn\": %d, \"snr\": %f}",
+              sv_info->sv_list[i].prn, sv_info->sv_list[i].snr);
+            if (i < num - 1) {
+              fprintf(fp, ",");
+            }
+          }
+
+          fprintf(fp, "]");
+        }
+        fprintf(fp, "}");
+        fclose(fp);
+        umask(procMask);
+        fp = NULL;
+      }
     }
   }
 }
