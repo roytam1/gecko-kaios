@@ -149,7 +149,7 @@ IsUsbCablePluggedIn()
 #endif
 }
 
-static bool
+bool
 IsUsbConfigured()
 {
   if (access(ICS_SYS_USB_STATE, F_OK) == 0) {

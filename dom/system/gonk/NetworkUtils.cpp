@@ -17,6 +17,7 @@
 #include "nsINetworkInterface.h"
 
 #include "mozilla/Snprintf.h"
+#include "AutoMounter.h"
 #include "SystemProperty.h"
 
 #include <android/log.h>
@@ -44,6 +45,7 @@
 
 using namespace mozilla::dom;
 using namespace mozilla::ipc;
+using namespace mozilla::system;
 using mozilla::system::Property;
 
 static const char* PERSIST_SYS_USB_CONFIG_PROPERTY = "persist.sys.usb.config";
@@ -2811,7 +2813,8 @@ CommandResult NetworkUtils::checkUsbRndisState(NetworkParams& aOptions)
   split(currentState, USB_CONFIG_DELIMIT, stateFuncs);
   bool rndisPresent = stateFuncs.Contains(nsCString(USB_FUNCTION_RNDIS));
 
-  if (aOptions.mEnable == rndisPresent) {
+  if ((aOptions.mEnable && IsUsbConfigured()) ||
+      (!aOptions.mEnable && !rndisPresent)) {
     NetworkResultOptions result;
     result.mEnable = aOptions.mEnable;
     result.mResult = true;
