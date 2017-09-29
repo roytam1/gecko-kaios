@@ -548,6 +548,13 @@ int VP8EncoderImpl::InitEncode(const VideoCodec* inst,
                                                  configurations_[0].g_h,
                                                  number_of_cores);
 
+#if defined(WEBRTC_ARCH_ARM)
+  // This parameter sets the encoder profile (0-3). For non-zero values the
+  // encoder increasingly optimizes for reduced complexity playback on low
+  // powered devices at the expense of encode quality.
+  configurations_[0].g_profile = 3;
+#endif
+
   // Creating a wrapper to the image - setting image data to NULL.
   // Actual pointer will be set in encode. Setting align to 1, as it
   // is meaningless (no memory allocation is done here).
@@ -612,9 +619,8 @@ int VP8EncoderImpl::InitEncode(const VideoCodec* inst,
 
 int VP8EncoderImpl::SetCpuSpeed(int width, int height) {
 #if defined(WEBRTC_ARCH_ARM)
-  // On mobile platform, always set to -12 to leverage between cpu usage
-  // and video quality.
-  return -12;
+  // On mobile platform, always set to -16 to reduce cpu usage.
+  return -16;
 #else
   // For non-ARM, increase encoding complexity (i.e., use lower speed setting)
   // if resolution is below CIF. Otherwise, keep the default/user setting
