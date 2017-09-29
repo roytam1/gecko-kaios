@@ -16,6 +16,7 @@ Cu.import("resource://gre/modules/WifiCommand.jsm");
 Cu.import("resource://gre/modules/WifiNetUtil.jsm");
 Cu.import("resource://gre/modules/WifiP2pManager.jsm");
 Cu.import("resource://gre/modules/WifiP2pWorkerObserver.jsm");
+Cu.import("resource://gre/modules/Timer.jsm");
 
 var DEBUG = false; // set to true to show debug messages.
 
@@ -131,6 +132,15 @@ XPCOMUtils.defineLazyModuleGetter(this, "PhoneNumberUtils",
 XPCOMUtils.defineLazyServiceGetter(this, "gIccService",
                                    "@mozilla.org/icc/iccservice;1",
                                    "nsIIccService");
+
+XPCOMUtils.defineLazyServiceGetter(this, "gPowerManagerService",
+                                   "@mozilla.org/power/powermanagerservice;1",
+                                   "nsIPowerManagerService");
+
+XPCOMUtils.defineLazyServiceGetter(this, "gImsRegService",
+                                   "@mozilla.org/mobileconnection/imsregservice;1",
+                                   "nsIImsRegService");
+
 const INVALID_RSSI = -127;
 const INVALID_NETWORK_ID = -1;
 
@@ -201,10 +211,6 @@ WifiInfo.prototype = {
   }
 };
 var wifiInfo = new WifiInfo();
-
-XPCOMUtils.defineLazyServiceGetter(this, "gPowerManagerService",
-                                   "@mozilla.org/power/powermanagerservice;1",
-                                   "nsIPowerManagerService");
 
 // A note about errors and error handling in this file:
 // The libraries that we use in this file are intended for C code. For
@@ -1483,6 +1489,7 @@ var WifiManager = (function() {
                                              Ci.nsITimer.TYPE_ONE_SHOT);
   };
 
+  var wifiDisablePendingCb = null;
   // Public interface of the wifi service.
   manager.setWifiEnabled = function(enabled, callback) {
     if (enabled === manager.isWifiEnabled(manager.state)) {
@@ -1565,55 +1572,80 @@ var WifiManager = (function() {
         });
       });
     } else {
-      manager.state = "DISABLING";
-      wifiInfo.reset();
-      // Note these following calls ignore errors. If we fail to kill the
-      // supplicant gracefully, then we need to continue telling it to die
-      // until it does.
-      let doDisableWifi = function() {
-        manager.stopSupplicantCallback = (function () {
-          wifiCommand.stopSupplicant(function (status) {
-            wifiCommand.closeSupplicantConnection(function() {
-              manager.connectToSupplicant = false;
-              manager.state = "UNINITIALIZED";
-              gNetworkService.disableInterface(manager.ifname, function (ok) {
-                unloadDriver(WIFI_FIRMWARE_STATION, callback);
+      wifiDisablePendingCb = callback;
+      let imsCapability;
+      try {
+        imsCapability =
+          gImsRegService.getHandlerByServiceId(manager.telephonyServiceId).capability;
+      } catch(e) {
+        manager.setWifiDisable();
+        return;
+      }
+      if (imsCapability == Ci.nsIImsRegHandler.IMS_CAPABILITY_VOICE_OVER_WIFI ||
+          imsCapability == Ci.nsIImsRegHandler.IMS_CAPABILITY_VIDEO_OVER_WIFI) {
+        notify("registerimslistener", {register: true});
+      } else {
+        manager.setWifiDisable();
+      }
+    }
+  }
+
+  manager.setWifiDisable = function() {
+    notify("registerimslistener", {register: false});
+    if (wifiDisablePendingCb === null) {
+      return;
+    }
+    manager.state = "DISABLING";
+    wifiInfo.reset();
+    // Note these following calls ignore errors. If we fail to kill the
+    // supplicant gracefully, then we need to continue telling it to die
+    // until it does.
+    let doDisableWifi = function() {
+      manager.stopSupplicantCallback = (function () {
+        wifiCommand.stopSupplicant(function (status) {
+          wifiCommand.closeSupplicantConnection(function() {
+            manager.connectToSupplicant = false;
+            manager.state = "UNINITIALIZED";
+            gNetworkService.disableInterface(manager.ifname, function (ok) {
+              unloadDriver(WIFI_FIRMWARE_STATION, function(status) {
+                wifiDisablePendingCb(status);
+                wifiDisablePendingCb = null;
               });
             });
           });
-        }).bind(this);
+        });
+      }).bind(this);
 
-        let terminateEventCallback = (function() {
-          handleEvent("CTRL-EVENT-TERMINATING");
-        }).bind(this);
-        createWaitForTerminateEventTimer(terminateEventCallback);
+      let terminateEventCallback = (function() {
+        handleEvent("CTRL-EVENT-TERMINATING");
+      }).bind(this);
+      createWaitForTerminateEventTimer(terminateEventCallback);
 
-        // We are going to terminate the connection between wpa_supplicant.
-        // Stop the polling timer immediately to prevent connection info update
-        // command blocking in control thread until socket timeout.
-        notify("stopconnectioninfotimer");
+      // We are going to terminate the connection between wpa_supplicant.
+      // Stop the polling timer immediately to prevent connection info update
+      // command blocking in control thread until socket timeout.
+      notify("stopconnectioninfotimer");
 
-        let terminalSupplicant = (function() {
-          wifiCommand.terminateSupplicant(function() {
-            manager.connectionDropped(function() {
-            });
+      let terminalSupplicant = (function() {
+        wifiCommand.terminateSupplicant(function() {
+          manager.connectionDropped(function() {
           });
         });
+      });
 
-        if (manager.inObtainingIpState) {
-          postDhcpSetup(function() {
-            terminalSupplicant();
-          });
-        } else {
+      if (manager.inObtainingIpState) {
+        postDhcpSetup(function() {
           terminalSupplicant();
-        }
-      }
-
-      if (p2pSupported) {
-        p2pManager.setEnabled(false, { onDisabled: doDisableWifi });
+        });
       } else {
-        doDisableWifi();
+        terminalSupplicant();
       }
+    }
+
+    if (p2pSupported) {
+      p2pManager.setEnabled(false, { onDisabled: doDisableWifi });
+    } else {
+      doDisableWifi();
     }
   }
 
@@ -2551,6 +2583,7 @@ function WifiWorker() {
   this._connectionInfoTimer = null;
   this._reconnectOnDisconnect = false;
   this._listeners = [];
+  this.wifiDisableDelayId = null;
 
   // Create p2pObserver and assign to p2pManager.
   if (WifiManager.p2pSupported()) {
@@ -3119,6 +3152,31 @@ function WifiWorker() {
     });
   };
 
+  WifiManager.onregisterimslistener = function() {
+    let imsService;
+    try {
+      imsService = gImsRegService.getHandlerByServiceId(WifiManager.telephonyServiceId);
+    } catch(e) {
+      return;
+    }
+    if (this.register) {
+      imsService.registerListener(self);
+      let imsDelayTimeout = 7000;
+      try {
+        imsDelayTimeout = Services.prefs.getIntPref("vowifi.delay.timer");
+      } catch(e) { }
+      debug("delay " + imsDelayTimeout / 1000 + " secs for disabling wifi");
+      self.wifiDisableDelayId = setTimeout(WifiManager.setWifiDisable, imsDelayTimeout);
+    } else {
+      if (self.wifiDisableDelayId === null) {
+        return;
+      }
+      clearTimeout(self.wifiDisableDelayId);
+      self.wifiDisableDelayId = null;
+      imsService.unregisterListener(self);
+    }
+  };
+
   WifiManager.onstationinfoupdate = function() {
     self._fireEvent("stationinfoupdate", { station: this.station });
   };
@@ -3281,7 +3339,8 @@ WifiWorker.prototype = {
                                          Ci.nsIWifi,
                                          Ci.nsIObserver,
                                          Ci.nsISettingsServiceCallback,
-                                         Ci.nsIMobileConnectionListener]),
+                                         Ci.nsIMobileConnectionListener,
+                                         Ci.nsIImsRegListener]),
 
   disconnectedByWifi: false,
 
@@ -3318,6 +3377,19 @@ WifiWorker.prototype = {
 
     this.tetheringSettings[SETTINGS_USB_DHCPSERVER_STARTIP] = DEFAULT_USB_DHCPSERVER_STARTIP;
     this.tetheringSettings[SETTINGS_USB_DHCPSERVER_ENDIP] = DEFAULT_USB_DHCPSERVER_ENDIP;
+  },
+
+  // nsIImsRegListener
+  notifyEnabledStateChanged: function(aEnabled) {},
+
+  notifyPreferredProfileChanged: function(aProfile) {},
+
+  notifyCapabilityChanged: function(aCapability, aUnregisteredReason) {
+    debug("notifyCapabilityChanged: aCapability = " + aCapability);
+    if (aCapability != Ci.nsIImsRegHandler.IMS_CAPABILITY_VOICE_OVER_WIFI &&
+      aCapability != Ci.nsIImsRegHandler.IMS_CAPABILITY_VIDEO_OVER_WIFI) {
+      WifiManager.setWifiDisable();
+    }
   },
 
   // nsIMobileConnectionListener
