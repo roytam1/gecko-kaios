@@ -251,6 +251,7 @@ public:
     : mRegistration(aRegistration)
     , mNeedTimeCheck(aNeedTimeCheck)
   {
+    MOZ_DIAGNOSTIC_ASSERT(mRegistration);
   }
 
   NS_IMETHOD
@@ -340,9 +341,12 @@ public:
   void
   PostRun(JSContext* aCx, WorkerPrivate* aWorkerPrivate, bool aRunResult)
   {
-    nsCOMPtr<nsIRunnable> runnable =
-      new RegistrationUpdateRunnable(mRegistration, true /* time check */);
-    NS_DispatchToMainThread(runnable.forget());
+    // Sub-class PreRun() or WorkerRun() methods could clear our mRegistration.
+    if (mRegistration) {
+      nsCOMPtr<nsIRunnable> runnable =
+        new RegistrationUpdateRunnable(mRegistration, true /* time check */);
+      NS_DispatchToMainThread(runnable.forget());
+    }
 
     ExtendableEventWorkerRunnable::PostRun(aCx, aWorkerPrivate, aRunResult);
   }
@@ -1123,7 +1127,6 @@ class FetchEventRunnable : public ExtendableFunctionalEventWorkerRunnable
                          , public nsIHttpHeaderVisitor {
   nsMainThreadPtrHandle<nsIInterceptedChannel> mInterceptedChannel;
   const nsCString mScriptSpec;
-  nsMainThreadPtrHandle<ServiceWorkerRegistrationInfo> mRegistration;
   nsTArray<nsCString> mHeaderNames;
   nsTArray<nsCString> mHeaderValues;
   nsCString mSpec;
@@ -1153,7 +1156,6 @@ public:
         aWorkerPrivate, aKeepAliveToken, aRegistration)
     , mInterceptedChannel(aChannel)
     , mScriptSpec(aScriptSpec)
-    , mRegistration(aRegistration)
     , mClientId(aDocumentId)
     , mIsReload(aIsReload)
     , mCacheMode(RequestCache::Default)
