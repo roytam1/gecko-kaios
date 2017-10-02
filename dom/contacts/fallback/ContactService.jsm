@@ -29,14 +29,16 @@ XPCOMUtils.defineLazyServiceGetter(this, "gSimContactService",
                                    "@kaiostech.com/simcontactservice;1",
                                    "nsISimContactService");
 
-XPCOMUtils.defineLazyServiceGetter(this, "gIccService",
-                                   "@mozilla.org/icc/iccservice;1",
-                                   "nsIIccService");
+XPCOMUtils.defineLazyServiceGetter(this, "gMobileConnectionService",
+                                   "@mozilla.org/mobileconnection/mobileconnectionservice;1",
+                                   "nsIMobileConnectionService");
 
 const CATEGORY_DEFAULT = ["DEVICE", "KAICONTACT"];
 const CATEGORY_DEVICE = "DEVICE";
 const CATEGORY_KAICONTACT = "KAICONTACT";
 const CATEGORY_SIM = "SIM";
+
+const SIM_CLIENT_NONE = -1;
 
 /* all exported symbols need to be bound to this on B2G - Bug 961777 */
 var ContactService = this.ContactService = {
@@ -203,8 +205,9 @@ var ContactService = this.ContactService = {
 
         let contact = msg.options.contact;
         this._makeCategory(contact);
-        let simContact = this._isSimContact(contact);
-        let newSimContact = simContact &&
+        let simClient = this._getSimClient(contact);
+        let isSimContact = simClient != SIM_CLIENT_NONE;
+        let newSimContact = isSimContact &&
                             msg.options.reason && msg.options.reason === "create";
 
         let successCb = (result) => {
@@ -225,7 +228,7 @@ var ContactService = this.ContactService = {
           );
         }.bind(this);
 
-        if (!simContact) {
+        if (!isSimContact) {
           saveContact(msg);
           return;
         }
@@ -254,7 +257,7 @@ var ContactService = this.ContactService = {
               contact.properties.name && contact.properties.name[0],
               contact.properties.tel && contact.properties.tel[0] && contact.properties.tel[0].value,
               contact.properties.email && contact.properties.email[0] && contact.properties.email[0].value);
-        gSimContactService.updateSimContact(updateContact, callback);
+        gSimContactService.getClient(simClient).updateSimContact(updateContact, callback);
       }
       break;
       case "Contact:Remove":
@@ -280,8 +283,8 @@ var ContactService = this.ContactService = {
           );
         }.bind(this);
 
-        let simContact = this._isSimContactById(msg.options.id);
-        if (!simContact) {
+        let simClient = gSimContactService.getSimClient(msg.options.id);
+        if (simClient === SIM_CLIENT_NONE) {
           removeContact(msg)
           return;
         }
@@ -299,8 +302,7 @@ var ContactService = this.ContactService = {
             failureCb(aErrorMsg);
           },
         };
-
-        gSimContactService.removeSimContact(contactToRemove, deleteCallback);
+        gSimContactService.getClient(simClient).removeSimContact(contactToRemove, deleteCallback);
       }
       break;
       case "Contacts:Clear":
@@ -507,34 +509,27 @@ var ContactService = this.ContactService = {
     return iccContact;
   },
 
-  _isSimContact: function (aContactOrId) {
+  _getSimClient: function (aContactOrId) {
     if (typeof aContactOrId === "string") {
-      return this._isSimContactById(aContactOrId);
+      return gSimContactService.getSimClient(aContactOrId);
     } else {
-      return this._isSimContactByStruct(aContactOrId);
+      return this._getSimContactClientByStruct(aContactOrId);
     }
   },
 
-  _isSimContactByStruct: function (aContact) {
-    return aContact && aContact.properties && aContact.properties.category &&
-           aContact.properties.category.includes("SIM");
-  },
-
-  _isSimContactById: function (aId) {
-    if (!aId) {
-      return false;
+  _getSimContactClientByStruct: function (aContact) {
+    if (!aContact || !aContact.properties|| !aContact.properties.category) {
+      return SIM_CLIENT_NONE;
     }
 
-    let icc = gIccService.getIccByServiceId(0);
-    if (!icc) {
-      return false;
+    let numOfSIM = gMobileConnectionService.numItems;
+    for (let i = 0; i < numOfSIM; i++) {
+      if (aContact.properties.category.indexOf("SIM"+i) !== -1) {
+        return i;
+      }
     }
 
-    if (aId.startsWith(icc.iccInfo.iccid)) {
-      return true;
-    }
-
-    return false;
+    return SIM_CLIENT_NONE;
   },
 
   _makeCategory: function(aContact) {
