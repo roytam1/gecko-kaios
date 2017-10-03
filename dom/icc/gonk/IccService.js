@@ -270,6 +270,9 @@ IccService.prototype = {
 
     let icc = this.getIccByServiceId(aServiceId);
     icc.imsi = aImsi || null;
+    if (icc.iccInfo) {
+      icc.IccInfo.imsi = icc.imsi;
+    }
     icc._deliverListenerEvent("notifyIccInfoChanged");
   },
 
@@ -386,6 +389,7 @@ Icc.prototype = {
     }
 
     this._updateInfo(aIccInfo, this.iccInfo);
+    this.iccInfo.imsi = this.imsi || null;
 
     this._deliverListenerEvent("notifyIccInfoChanged");
 
