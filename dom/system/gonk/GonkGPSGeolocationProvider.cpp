@@ -21,7 +21,6 @@
 #include <hardware/gps.h>
 
 #include "GeolocationUtil.h"
-#include "mozstumbler/MozStumbler.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/Services.h"
 #include "nsContentUtils.h"
@@ -1254,9 +1253,8 @@ GonkGPSGeolocationProvider::Shutdown()
 
   nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
   if (obs) {
-    nsresult rv;
 #ifdef MOZ_B2G_RIL
-    rv = obs->RemoveObserver(this, kNetworkConnStateChangedTopic);
+    nsresult rv = obs->RemoveObserver(this, kNetworkConnStateChangedTopic);
     if (NS_FAILED(rv)) {
       NS_WARNING("geo: Gonk GPS network state RemoveObserver failed");
     } else {
@@ -1288,6 +1286,7 @@ GonkGPSGeolocationProvider::SetHighAccuracy(bool)
   return NS_OK;
 }
 
+#ifdef MOZ_B2G_RIL
 namespace {
 int
 ConvertToGpsNetworkType(int aNetworkInterfaceType)
@@ -1310,6 +1309,7 @@ ConvertToGpsNetworkType(int aNetworkInterfaceType)
   }
 }
 } // namespace
+#endif
 
 NS_IMETHODIMP
 GonkGPSGeolocationProvider::Observe(nsISupports* aSubject,

@@ -16,7 +16,9 @@
 
 #include "KaiGeolocationProvider.h"
 
+#ifdef MOZ_B2G_RIL
 #include "mozstumbler/MozStumbler.h"
+#endif
 #include "nsGeoPosition.h"
 
 #undef LOG
@@ -195,6 +197,7 @@ KaiGeolocationProvider::FindProperNetworkPos()
   return qc_acc < network_acc ? mLastQcPosition : mLastNetworkPosition;
 }
 
+#ifdef MOZ_B2G_RIL
 class RequestWiFiAndCellInfoEvent : public nsRunnable {
   public:
     RequestWiFiAndCellInfoEvent(StumblerInfo *callback)
@@ -225,6 +228,7 @@ class RequestWiFiAndCellInfoEvent : public nsRunnable {
   private:
     RefPtr<StumblerInfo> mRequestCallback;
 };
+#endif
 
 NS_IMPL_ISUPPORTS(KaiGeolocationProvider::NetworkLocationUpdate,
                   nsIGeolocationUpdate)
@@ -365,6 +369,7 @@ KaiGeolocationProvider::GpsLocationUpdate::Update(nsIDOMGeoPosition *position)
     }
   }
 
+#ifdef MOZ_B2G_RIL
   // Note above: Can't use location->timestamp as the time from the satellite is a
   // minimum of 16 secs old (see http://leapsecond.com/java/gpsclock.htm).
   // All code from this point on expects the gps location to be timestamped with the
@@ -400,6 +405,7 @@ KaiGeolocationProvider::GpsLocationUpdate::Update(nsIDOMGeoPosition *position)
       DBG("Stumbler: GPS locations less than 30 meters and 3 seconds. Ignore!");
     }
   }
+#endif
 
   return NS_OK;
 }
