@@ -6014,7 +6014,7 @@ MOZ_ARG_ENABLE_BOOL(kaios-midi,
 if test -n "KAIOS_MIDI"; then
     AC_DEFINE(KAIOS_MIDI)
 fi
-AC_SUBST(ENABLE_KAIOS_MIDI_FEATURE)
+AC_SUBST(KAIOS_MIDI)
 
 dnl ========================================================
 dnl = Enable Support for Time Manager API
