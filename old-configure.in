@@ -2953,7 +2953,8 @@ MOZ_ARG_WITH_STRING(kaios-geo-api-keyfile,
 [  --with-kaios-geo-api-keyfile=file   Use the secret key contained in the given keyfile for KaiOS location API requests],
   KAI_KAIOS_GEO_API_KEY=`cat $withval`)
 if test -z "$KAI_KAIOS_GEO_API_KEY"; then
-    KAI_KAIOS_GEO_API_KEY=no-kaios-geo-api-key
+    # An empty key indicates the device isn't granted by KaiOS location server
+    KAI_KAIOS_GEO_API_KEY=
 fi
 AC_SUBST(KAI_KAIOS_GEO_API_KEY)
 

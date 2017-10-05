@@ -74,6 +74,7 @@ using namespace mozilla::dom;
 static const int kDefaultPeriod = 1000; // ms
 static bool gDebug_isLoggingEnabled = false;
 static bool gDebug_isGPSLocationIgnored = false;
+static bool gHasAuthorizationKey = false;
 #ifdef MOZ_B2G_RIL
 static const char* kNetworkConnStateChangedTopic = "network-connection-state-changed";
 #endif
@@ -173,7 +174,10 @@ GonkGPSGeolocationProvider::LocationCallback(GpsLocation* location)
   NS_DispatchToMainThread(event);
 
 #ifdef MOZ_B2G_RIL
-  MozStumble(somewhere);
+  // Don't collect stumble data if lacking of API key of location server.
+  if (gHasAuthorizationKey) {
+    MozStumble(somewhere);
+  }
 #endif
 }
 
@@ -193,8 +197,6 @@ public:
 private:
   const char16_t* mData;
 };
-
-
 
 void
 GonkGPSGeolocationProvider::StatusCallback(GpsStatus* status)
@@ -1197,6 +1199,7 @@ GonkGPSGeolocationProvider::Startup()
     nsString key;
     rv = formatter->FormatURLPref(NS_LITERAL_STRING("geo.authorization.key"), key);
     if (NS_SUCCEEDED(rv) && !key.IsEmpty()) {
+      gHasAuthorizationKey = true;
       mNetworkLocationProvider = do_CreateInstance("@mozilla.org/geolocation/mls-provider;1");
       if (mNetworkLocationProvider) {
         rv = mNetworkLocationProvider->Startup();
