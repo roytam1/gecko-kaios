@@ -90,6 +90,147 @@ protected:
   virtual ~VideoConverterListener() {}
 };
 
+// A wrapper class of Gecko native image. With this class, WebRTC library can
+// directly read data from the underlying graphic buffer or planar YUV buffer.
+// Note that it only supports planar YCbCr 4:2:0 formats (I420 and YV12).
+class NativeFrameBuffer : public webrtc::VideoFrameBuffer
+{
+public:
+  NativeFrameBuffer(RefPtr<Image> image)
+    : mImage(image)
+    , mYPtr(nullptr)
+    , mUPtr(nullptr)
+    , mVPtr(nullptr)
+    , mWidth(0)
+    , mHeight(0)
+    , mYStride(0)
+    , mUVStride(0)
+  {
+    MOZ_ASSERT(mImage != nullptr);
+  }
+
+  int width() const { return mWidth; }
+  int height() const { return mHeight; }
+
+  int stride(webrtc::PlaneType type) const
+  {
+    switch (type) {
+      case webrtc::PlaneType::kYPlane:
+        return mYStride;
+      case webrtc::PlaneType::kUPlane:
+      case webrtc::PlaneType::kVPlane:
+        return mUVStride;
+      default:
+        return 0;
+    }
+  }
+
+  const uint8_t* data(webrtc::PlaneType type) const
+  {
+    switch (type) {
+      case webrtc::PlaneType::kYPlane:
+        return mYPtr;
+      case webrtc::PlaneType::kUPlane:
+        return mUPtr;
+      case webrtc::PlaneType::kVPlane:
+        return mVPtr;
+      default:
+        return nullptr;
+    }
+  }
+
+  uint8_t* data(webrtc::PlaneType type) { return nullptr; }
+
+  rtc::scoped_refptr<webrtc::NativeHandle> native_handle() const { return nullptr; }
+
+  bool init()
+  {
+    bool ret = false;
+#ifdef WEBRTC_GONK
+    if (mImage->AsPlanarYCbCrImage()) {
+      ret = initGralloc();
+    } else
+#endif
+    if (mImage->AsGrallocImage()) {
+      ret = initPlanarYCbCr();
+    }
+    return ret;
+  }
+
+protected:
+  ~NativeFrameBuffer()
+  {
+#ifdef WEBRTC_GONK
+    if (mGraphicBuffer != nullptr) {
+      mGraphicBuffer->unlock();
+    }
+#endif
+  }
+
+private:
+#ifdef WEBRTC_GONK
+  bool initGralloc()
+  {
+    GrallocImage* grallocImage = mImage->AsGrallocImage();
+    mGraphicBuffer = grallocImage->GetGraphicBuffer();
+    void *basePtr = nullptr;
+    mGraphicBuffer->lock(android::GraphicBuffer::USAGE_SW_READ_MASK, &basePtr);
+
+    mWidth = mGraphicBuffer->getWidth();
+    mHeight = mGraphicBuffer->getHeight();
+    mYStride = mGraphicBuffer->getStride();
+    mUVStride = ((mYStride / 2) + 15) & ~0x0F; // Align to 16 bytes boundary
+
+    // Only supports planar YUV format
+    switch (mGraphicBuffer->getPixelFormat()) {
+      case HAL_PIXEL_FORMAT_YV12:
+        mYPtr = static_cast<uint8_t *>(basePtr);
+        mVPtr = mYPtr + mYStride * mHeight;
+        mUPtr = mVPtr + mUVStride * ((mHeight + 1) / 2);
+        return true;
+      case GrallocImage::HAL_PIXEL_FORMAT_YCbCr_420_P:
+        mYPtr = static_cast<uint8_t *>(basePtr);
+        mUPtr = mYPtr + mYStride * mHeight;
+        mVPtr = mUPtr + mUVStride * ((mHeight + 1) / 2);
+        return true;
+      default:
+        return false;
+    }
+  }
+#endif
+
+  bool initPlanarYCbCr()
+  {
+    PlanarYCbCrImage* yuvImage = mImage->AsPlanarYCbCrImage();
+    const PlanarYCbCrData *data = yuvImage->GetData();
+    if (!data) {
+      return false;
+    }
+    mYPtr = data->mYChannel;
+    mUPtr = data->mCbChannel;
+    mVPtr = data->mCrChannel;
+    mWidth = data->mPicSize.width;
+    mHeight = data->mPicSize.height;
+    mYStride = data->mYStride;
+    mUVStride = data->mCbCrStride;
+    return true;
+  }
+
+  // Hold a reference of the native image until this instance is destroyed.
+  RefPtr<Image> mImage;
+#ifdef WEBRTC_GONK
+  android::sp<android::GraphicBuffer> mGraphicBuffer;
+#endif
+
+  uint8_t *mYPtr;
+  uint8_t *mUPtr;
+  uint8_t *mVPtr;
+  int mWidth;
+  int mHeight;
+  int mYStride;
+  int mUVStride;
+};
+
 // I420 buffer size macros
 #define YSIZE(x,y) ((x)*(y))
 #define CRSIZE(x,y) ((((x)+1) >> 1) * (((y)+1) >> 1))
@@ -253,6 +394,21 @@ protected:
     }
   }
 
+  void VideoFrameConverted(Image* aImage)
+  {
+      rtc::scoped_refptr<NativeFrameBuffer> frameBuffer(
+        new rtc::RefCountedObject<NativeFrameBuffer>(aImage));
+      if (!frameBuffer->init()) {
+        MOZ_MTLOG(ML_ERROR, "Failed to initialize native frame buffer");
+        return;
+      }
+
+      webrtc::I420VideoFrame i420_frame(frameBuffer,
+                                        0, 0, // not setting timestamps
+                                        webrtc::kVideoRotation_0);
+      VideoFrameConverted(i420_frame);
+  }
+
   void ProcessVideoFrame(Image* aImage, bool aForceBlack)
   {
     if (mQueueObserver != nullptr) {
@@ -305,97 +461,51 @@ protected:
           MOZ_MTLOG(ML_ERROR, "Un-handled GRALLOC buffer type:" << pixelFormat);
           MOZ_CRASH();
       }
+
+      // No need to convert planar format.
+      if (destFormat == mozilla::kVideoI420 ||
+          destFormat == mozilla::kVideoYV12) {
+        VideoFrameConverted(aImage);
+        return;
+      }
+
       void *basePtr;
       graphicBuffer->lock(android::GraphicBuffer::USAGE_SW_READ_MASK, &basePtr);
       uint32_t width = graphicBuffer->getWidth();
       uint32_t height = graphicBuffer->getHeight();
       // XXX gralloc buffer's width and stride could be different depends on implementations.
 
-      if (destFormat != mozilla::kVideoI420) {
-        unsigned char *video_frame = static_cast<unsigned char*>(basePtr);
-        webrtc::I420VideoFrame i420_frame;
-        int stride_y = width;
-        int stride_uv = (width + 1) / 2;
-        int target_width = width;
-        int target_height = height;
-        if (i420_frame.CreateEmptyFrame(target_width,
-                                        abs(target_height),
-                                        stride_y,
-                                        stride_uv, stride_uv) < 0) {
-          MOZ_ASSERT(false, "Can't allocate empty i420frame");
-          return;
-        }
-        webrtc::VideoType commonVideoType =
-          webrtc::RawVideoTypeToCommonVideoVideoType(
-            static_cast<webrtc::RawVideoType>((int)destFormat));
-        if (ConvertToI420(commonVideoType, video_frame, 0, 0, width, height,
-                          I420SIZE(width, height), webrtc::kVideoRotation_0,
-                          &i420_frame)) {
-          MOZ_ASSERT(false, "Can't convert video type for sending to I420");
-          return;
-        }
-        i420_frame.set_ntp_time_ms(0);
-        VideoFrameConverted(i420_frame);
-      } else {
-        VideoFrameConverted(static_cast<unsigned char*>(basePtr),
-                            I420SIZE(width, height),
-                            width,
-                            height,
-                            destFormat, 0);
+      unsigned char *video_frame = static_cast<unsigned char*>(basePtr);
+      webrtc::I420VideoFrame i420_frame;
+      int stride_y = width;
+      int stride_uv = (width + 1) / 2;
+      int target_width = width;
+      int target_height = height;
+      if (i420_frame.CreateEmptyFrame(target_width,
+                                      abs(target_height),
+                                      stride_y,
+                                      stride_uv, stride_uv) < 0) {
+        MOZ_ASSERT(false, "Can't allocate empty i420frame");
+        return;
       }
+      webrtc::VideoType commonVideoType =
+        webrtc::RawVideoTypeToCommonVideoVideoType(
+          static_cast<webrtc::RawVideoType>((int)destFormat));
+      if (ConvertToI420(commonVideoType, video_frame, 0, 0, width, height,
+                        I420SIZE(width, height), webrtc::kVideoRotation_0,
+                        &i420_frame)) {
+        MOZ_ASSERT(false, "Can't convert video type for sending to I420");
+        return;
+      }
+      i420_frame.set_ntp_time_ms(0);
+      VideoFrameConverted(i420_frame);
       graphicBuffer->unlock();
       return;
     } else
 #endif
     if (format == ImageFormat::PLANAR_YCBCR) {
-      // Cast away constness b/c some of the accessors are non-const
-      PlanarYCbCrImage* yuv = const_cast<PlanarYCbCrImage *>(
-          static_cast<const PlanarYCbCrImage *>(aImage));
-
-      const PlanarYCbCrData *data = yuv->GetData();
-      if (data) {
-        uint8_t *y = data->mYChannel;
-        uint8_t *cb = data->mCbChannel;
-        uint8_t *cr = data->mCrChannel;
-        uint32_t width = yuv->GetSize().width;
-        uint32_t height = yuv->GetSize().height;
-        uint32_t length = yuv->GetDataSize();
-        // NOTE: length may be rounded up or include 'other' data (see
-        // YCbCrImageDataDeserializerBase::ComputeMinBufferSize())
-
-        // XXX Consider modifying these checks if we ever implement
-        // any subclasses of PlanarYCbCrImage that allow disjoint buffers such
-        // that y+3(width*height)/2 might go outside the allocation or there are
-        // pads between y, cr and cb.
-        // GrallocImage can have wider strides, and so in some cases
-        // would encode as garbage.  If we need to encode it we'll either want to
-        // modify SendVideoFrame or copy/move the data in the buffer.
-        if (cb == (y + YSIZE(width, height)) &&
-            cr == (cb + CRSIZE(width, height)) &&
-            length >= I420SIZE(width, height)) {
-          MOZ_MTLOG(ML_DEBUG, "Sending an I420 video frame");
-          VideoFrameConverted(y, I420SIZE(width, height), width, height, mozilla::kVideoI420, 0);
-          return;
-        } else {
-          MOZ_MTLOG(ML_ERROR, "Unsupported PlanarYCbCrImage format: "
-                              "width=" << width << ", height=" << height << ", y=" << y
-                              << "\n  Expected: cb=y+" << YSIZE(width, height)
-                                          << ", cr=y+" << YSIZE(width, height)
-                                                        + CRSIZE(width, height)
-                              << "\n  Observed: cb=y+" << cb - y
-                                          << ", cr=y+" << cr - y
-                              << "\n            ystride=" << data->mYStride
-                                          << ", yskip=" << data->mYSkip
-                              << "\n            cbcrstride=" << data->mCbCrStride
-                                          << ", cbskip=" << data->mCbSkip
-                                          << ", crskip=" << data->mCrSkip
-                              << "\n            ywidth=" << data->mYSize.width
-                                          << ", yheight=" << data->mYSize.height
-                              << "\n            cbcrwidth=" << data->mCbCrSize.width
-                                          << ", cbcrheight=" << data->mCbCrSize.height);
-          NS_ASSERTION(false, "Unsupported PlanarYCbCrImage format");
-        }
-      }
+      VideoFrameConverted(aImage);
+      return;
     }
 
     RefPtr<SourceSurface> surf = aImage->GetAsSourceSurface();
