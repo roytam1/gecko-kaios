@@ -133,7 +133,7 @@ uint32_t GetTickCount();
 
 void EditorInitEmptyWord(demoIMEInfo *pIME, bool& initEmptyWord);
 
-void EditorInitWord(demoIMEInfo *pIME, nsCString& initWord);
+void EditorInitWord(demoIMEInfo *pIME, nsString& initWord);
 
 void EditorSetCursor(demoIMEInfo * const pIME, const int32_t& initCursor, bool& enabledCursor);
 
@@ -206,18 +206,18 @@ public:
 
   void GetWholeWord(nsAString& aResult)
   {
-    CopyASCIItoUTF16(mWholeWord, aResult);
-    mWholeWord.Assign("");
+    aResult = mWholeWord;
+    mWholeWord.AssignLiteral("");
   }
 
   void SetWholeWord(const nsAString& aResult)
   {
-    LossyCopyUTF16toASCII(aResult, sWholeWord);
+    sWholeWord = aResult;
   }
 
   void GetCandidateWord(nsAString& aResult)
   {
-    CopyASCIItoUTF16(mCandidateWord, aResult);
+    aResult = mCandidateWord;
   }
 
   uint16_t TotalWord() const
@@ -265,9 +265,9 @@ public:
   static uint32_t SetLanguage(const uint32_t lid);
 
   static bool mEmptyWord;
-  static nsCString mWholeWord;
-  static nsCString sWholeWord;
-  static nsCString mCandidateWord;
+  static nsString mWholeWord;
+  static nsString sWholeWord;
+  static nsString mCandidateWord;
   static uint16_t  mTotalWord;
   static uint32_t  mCursorPosition;
   static uint32_t  sCursorPosition;

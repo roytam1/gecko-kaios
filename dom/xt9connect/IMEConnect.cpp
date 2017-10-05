@@ -12,9 +12,9 @@ static demoIMEInfo         sIME;
 static demoEditorInfo      sEditor;
 
 bool      IMEConnect::mEmptyWord;
-nsCString IMEConnect::mWholeWord;
-nsCString IMEConnect::sWholeWord;
-nsCString IMEConnect::mCandidateWord;
+nsString IMEConnect::mWholeWord;
+nsString IMEConnect::sWholeWord;
+nsString IMEConnect::mCandidateWord;
 uint16_t  IMEConnect::mTotalWord;
 uint32_t  IMEConnect::mCursorPosition;
 uint32_t  IMEConnect::sCursorPosition;
@@ -33,7 +33,6 @@ EditorInitEmptyWord(demoIMEInfo * const pIME, bool& initEmptyWord)
 {
   demoEditorInfo *pEditor = pIME->pEditor;
   if (initEmptyWord) {
-    nsCString emptyWord("");
     pEditor->snCursorPos = pEditor->snBufferLen = 0;
     initEmptyWord = false;
     ET9ClearAllSymbs(&pIME->sWordSymbInfo);
@@ -43,7 +42,7 @@ EditorInitEmptyWord(demoIMEInfo * const pIME, bool& initEmptyWord)
 }
 
 void
-EditorInitWord(demoIMEInfo * const pIME, nsCString& initWord)
+EditorInitWord(demoIMEInfo * const pIME, nsString& initWord)
 {
   demoEditorInfo *pEditor = pIME->pEditor;
   if (initWord.IsEmpty()) {
@@ -54,7 +53,7 @@ EditorInitWord(demoIMEInfo * const pIME, nsCString& initWord)
       initWord.get() + initWordLength,
       pEditor->psBuffer);
     pEditor->snCursorPos = pEditor->snBufferLen = initWordLength;
-    initWord.Assign("");
+    initWord.AssignLiteral("");
   }
 }
 
@@ -544,24 +543,26 @@ PrintCandidateList(demoIMEInfo *pIME)
       continue;
     }
 
-    nsCString dbgWord;
-    nsCString jsWord;
+    nsString dbgWord;
+    nsString jsWord;
 
     /* print prefix */
-    dbgWord.Append("Word ");
+    dbgWord.AppendLiteral("Word ");
     dbgWord.AppendInt(bCandidateIndex);
-    dbgWord.Append(" ");
-    dbgWord.Append((pWord->bIsSpellCorr ? 'C' : ' '));
+    dbgWord.AppendLiteral(" ");
+    dbgWord.AppendLiteral((pWord->bIsSpellCorr ? "C" : " "));
 
     /* print equality with active word marker (if applicable) */
-    dbgWord.Append((bCandidateIndex == pIME->bActiveWordIndex ? "=>" : "= "));
+    dbgWord.AppendLiteral((bCandidateIndex == pIME->bActiveWordIndex ? "=>" : "= "));
 
-    jsWord.Append((bCandidateIndex == pIME->bActiveWordIndex ? ">" : ""));
+    if (bCandidateIndex == pIME->bActiveWordIndex) {
+      jsWord.AppendLiteral(">");
+    }
 
     /* print candidate */
     for (wIndex = 0; wIndex < pWord->wWordLen; ++wIndex) {
       if (wIndex == (pWord->wWordLen - pWord->wWordCompLen)) {
-        dbgWord.Append("[");
+        dbgWord.AppendLiteral("[");
       }
 
       dbgWord.Append(pWord->sWord[wIndex]);
@@ -570,12 +571,13 @@ PrintCandidateList(demoIMEInfo *pIME)
     }
 
     if (pWord->wWordCompLen) {
-      dbgWord.Append("]");
+      dbgWord.AppendLiteral("]");
     }
 
-    jsWord.Append(" ");
+    jsWord.AppendLiteral(" ");
 
-    XT9_LOGD("%s", dbgWord.get());
+    XT9_LOGD("%s", NS_ConvertUTF16toUTF8(dbgWord).get());
+
     IMEConnect::mCandidateWord.Append(jsWord);
 
     /* print auto subst */
@@ -593,15 +595,15 @@ PrintEditorBuffer(demoEditorInfo *pEditor)
 {
   ET9U16    wIndex;
 
-  nsCString dbgWord;
-  nsCString jsWord;
+  nsString dbgWord;
+  nsString jsWord;
 
   if (!pEditor->snBufferLen) {
     return;
   }
 
   if (!pEditor->snCursorPos) {
-    dbgWord.Append("|");
+    dbgWord.AppendLiteral("|");
   }
 
   for (wIndex = 0; wIndex < pEditor->snBufferLen; ++wIndex) {
@@ -609,11 +611,11 @@ PrintEditorBuffer(demoEditorInfo *pEditor)
     dbgWord.Append(pEditor->psBuffer[wIndex]);
 
     if (wIndex + 1 == pEditor->snCursorPos) {
-      dbgWord.Append("|");
+      dbgWord.AppendLiteral("|");
     }
   }
 
-  XT9_LOGD("%s", dbgWord.get());
+  XT9_LOGD("%s", NS_ConvertUTF16toUTF8(dbgWord).get());
 
   IMEConnect::mWholeWord.Append(jsWord);
 
@@ -641,7 +643,7 @@ PrintScreen(demoIMEInfo *pIME)
 
   // Clear input sequence in IMEconnet before libxt9 processing input text or after word applied
   if (!IMEConnect::mCandidateWord.IsEmpty()) {
-    IMEConnect::mCandidateWord.Assign("");
+    IMEConnect::mCandidateWord.AssignLiteral("");
   }
 
   if (pIME->bTotWords) {
