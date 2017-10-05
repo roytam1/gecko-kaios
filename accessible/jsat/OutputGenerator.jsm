@@ -277,9 +277,7 @@ var OutputGenerator = {
   _addMencloseNotations: function _addMencloseNotations(aOutput, aAccessible) {
     let notations = Utils.getAttributes(aAccessible).notation || 'longdiv';
     aOutput[this.outputOrder === OUTPUT_DESC_FIRST ? 'push' : 'unshift'].apply(
-      aOutput, [for (notation of notations.split(' '))
-        {string: this._getOutputName('notation-' + notation)}
-      ]
+      aOutput, notations.split(' ').map(notation => {string: this._getOutputName('notation-' + notation)})
     );
   },
 
@@ -882,12 +880,14 @@ this.BriefGenerator = {  // jshint ignore:line
     if (this.outputOrder === OUTPUT_DESC_FIRST) {
       contextStart.forEach(addOutputInParents);
       addOutput(aContext.accessible);
-      [addOutput(node) for // jshint ignore:line
-        (node of aContext.subtreeGenerator(true, ignoreSubtree))]; // jshint ignore:line
+      for (let node of aContext.subtreeGenerator(true, ignoreSubtree)) {
+        addOutput(node);
+      }
     } else {
       contextStart.reverse().forEach(addOutputInParents);
-      [addOutput(node) for // jshint ignore:line
-        (node of aContext.subtreeGenerator(false, ignoreSubtree))]; // jshint ignore:line
+      for (let node of aContext.subtreeGenerator(false, ignoreSubtree)) {
+        addOutput(node);
+      }
       addOutput(aContext.accessible);
     }
 

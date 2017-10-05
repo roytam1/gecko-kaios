@@ -867,6 +867,6 @@ this.Presentation = { // jshint ignore:line
   },
 
   selected: function Presentation_selected(aAccessible) {
-    return [ p.selected(aAccessible) for (p of this.presenters) ]; // jshint ignore:line
+    return this.presenters.map(p => p.selected(aAccessible));
   }
 };
