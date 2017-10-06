@@ -214,6 +214,7 @@ var Activities = {
   messages: [
     // ActivityProxy.js
     "Activity:Start",
+    "Activity:Cancel",
 
     // ActivityWrapper.js
     "Activity:Ready",
@@ -443,6 +444,7 @@ var Activities = {
 
     if (aMessage.name == "Activity:PostResult" ||
         aMessage.name == "Activity:PostError" ||
+        aMessage.name == "Activity:Cancel" ||
         aMessage.name == "Activity:Ready") {
       caller = this.callers[msg.id];
       if (!caller) {
@@ -462,6 +464,12 @@ var Activities = {
                                  childID: msg.childID,
                                  pageURL: msg.pageURL };
         this.startActivity(msg);
+        break;
+
+      case "Activity:Cancel":
+        if (caller.childMM) {
+          caller.childMM.sendAsyncMessage("Activity:FireCancel", msg);
+        }
         break;
 
       case "Activity:Ready":

@@ -31,6 +31,8 @@ ActivityWrapper.prototype = {
   wrapMessage: function wrapMessage(aMessage, aWindow) {
     debug("Wrapping " + JSON.stringify(aMessage));
 
+    this._id = aMessage.id;
+
     // This message is useful to communicate that the activity message has been
     // properly received by the app. If the app will be killed, the
     // ActivitiesService will be able to fire an error and complete the
@@ -72,6 +74,7 @@ ActivityWrapper.prototype = {
             }
             Services.obs.removeObserver(observer, "activity-error");
             Services.obs.removeObserver(observer, "activity-success");
+            cpmm.removeMessageListener("Activity:FireCancel", this);
             let docshell = aWindow.QueryInterface(Ci.nsIInterfaceRequestor)
                                   .getInterface(Ci.nsIWebNavigation);
             Services.obs.notifyObservers(docshell, "activity-done", aTopic);
@@ -83,7 +86,18 @@ ActivityWrapper.prototype = {
     Services.obs.addObserver(observer, "activity-error", false);
     Services.obs.addObserver(observer, "activity-success", false);
     Services.obs.addObserver(observer, "inner-window-destroyed", false);
+    cpmm.addMessageListener("Activity:FireCancel", this);
     return handler;
+  },
+
+  receiveMessage: function actWrapper_receiveMessage(aMessage) {
+    debug("Got message: " + aMessage.name);
+    let msg = aMessage.json;
+    if (msg.id != this._id) {
+      return;
+    }
+    // Receive only Activity:FireCancel.
+    Services.obs.notifyObservers(null, "activity-error", this._id);
   },
 
   classID: Components.ID("{5430d6f9-32d6-4924-ba39-6b6d1b093cd6}"),

@@ -135,6 +135,15 @@ ActivityProxy.prototype = {
     this.cleanedUp = true;
   },
 
+  cancelActivity: function actProxy_stopActivity() {
+    debug("cancelActivity");
+    if (cpmm && this.activity) {
+      cpmm.sendAsyncMessage("Activity:Cancel", {
+        id: this.id
+      });
+    }
+  },
+
   classID: Components.ID("{ba9bd5cb-76a0-4ecf-a7b3-d2f7c43c5949}"),
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIActivityProxy])
 }

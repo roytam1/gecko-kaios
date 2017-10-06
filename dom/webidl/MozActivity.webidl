@@ -13,4 +13,8 @@ dictionary ActivityOptions {
 [Pref="dom.sysmsg.enabled",
  Constructor(optional ActivityOptions options)]
 interface MozActivity : DOMRequest {
+  // Cancel this activity from caller, will dispatch a mozbrowseractivitydone
+  // event, and fire an error callback on this activity.
+  // An activity is cancelable if it is already opened.
+  void cancel();
 };

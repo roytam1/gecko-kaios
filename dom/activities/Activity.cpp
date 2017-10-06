@@ -102,3 +102,9 @@ Activity::Activity(nsPIDOMWindowInner* aWindow)
 {
 }
 
+void
+Activity::Cancel() {
+  if (mProxy) {
+    mProxy->CancelActivity();
+  }
+}

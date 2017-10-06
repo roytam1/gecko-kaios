@@ -43,6 +43,8 @@ public:
 
   explicit Activity(nsPIDOMWindowInner* aWindow);
 
+  void Cancel();
+
 protected:
   nsresult Initialize(nsPIDOMWindowInner* aWindow,
                       JSContext* aCx,
