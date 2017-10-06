@@ -330,6 +330,13 @@ PicoCallbackRunnable::Run()
       PICO_ENSURE_SUCCESS("pico_getData", status, NS_ERROR_FAILURE);
       buffer_offset += bytes_recv;
     } while (status == PICO_STEP_BUSY);
+
+    // Dispatch the last chunk of audio data when exit the loop.
+    if (buffer_offset > 0) {
+      DispatchSynthDataRunnable(buffer.forget(), buffer_offset);
+      buffer_offset = 0;
+      buffer = SharedBuffer::Create(buffer_size);
+    }
   }
 
   return NS_OK;
