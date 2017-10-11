@@ -584,7 +584,6 @@ WEBIDL_FILES = [
     'TVProgram.webidl',
     'TVSource.webidl',
     'TVTuner.webidl',
-    'U2F.webidl',
     'UDPMessageEvent.webidl',
     'UDPSocket.webidl',
     'UIEvent.webidl',
@@ -974,4 +973,9 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
 if CONFIG['ENABLE_NUANCE_XT9'] or CONFIG['ENABLE_REVERIE_RT9']:
     WEBIDL_FILES += [
         'IMEConnect.webidl'
+    ]
+
+if CONFIG['ENABLE_U2F']:
+    WEBIDL_FILES += [
+        'U2F.webidl'
     ]

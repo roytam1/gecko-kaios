@@ -261,6 +261,7 @@ def old_configure_options(*options):
     '--enable-thread-sanitizer',
     '--enable-trace-logging',
     '--enable-tree-freetype',
+    '--enable-u2f-support',
     '--enable-ui-locale',
     '--enable-universalchardet',
     '--enable-update-channel',

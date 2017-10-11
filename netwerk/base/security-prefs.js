@@ -66,9 +66,15 @@ pref("security.pki.name_matching_mode", 1);
 pref("security.pki.name_matching_mode", 2);
 #endif
 
+#ifdef ENABLE_U2F
+pref("security.webauth.u2f", true);
+pref("security.webauth.u2f_enable_softtoken", true);
+pref("security.webauth.u2f_enable_usbtoken", true);
+#else
 pref("security.webauth.u2f", false);
 pref("security.webauth.u2f_enable_softtoken", false);
 pref("security.webauth.u2f_enable_usbtoken", false);
+#endif
 
 pref("security.ssl.errorReporting.enabled", true);
 pref("security.ssl.errorReporting.url", "https://data.mozilla.com/submit/sslreports");

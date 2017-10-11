@@ -227,7 +227,9 @@
 #include "mozilla/dom/NavigatorBinding.h"
 #include "mozilla/dom/ImageBitmap.h"
 #include "mozilla/dom/ServiceWorkerRegistration.h"
+#ifdef ENABLE_U2F
 #include "mozilla/dom/U2F.h"
+#endif
 #ifdef HAVE_SIDEBAR
 #include "mozilla/dom/ExternalBinding.h"
 #endif
@@ -1886,7 +1888,11 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INTERNAL(nsGlobalWindow)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mStatusbar)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mScrollbars)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mCrypto)
+
+#ifdef ENABLE_U2F
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mU2F)
+#endif
+
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mConsole)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mExternal)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mMozSelfSupport)
@@ -1961,7 +1967,11 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(nsGlobalWindow)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mStatusbar)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mScrollbars)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mCrypto)
+
+#ifdef ENABLE_U2F
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mU2F)
+#endif
+
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mConsole)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mExternal)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mMozSelfSupport)
@@ -4395,6 +4405,7 @@ nsGlobalWindow::GetCrypto(ErrorResult& aError)
   return mCrypto;
 }
 
+#ifdef ENABLE_U2F
 mozilla::dom::U2F*
 nsGlobalWindow::GetU2f(ErrorResult& aError)
 {
@@ -4411,6 +4422,7 @@ nsGlobalWindow::GetU2f(ErrorResult& aError)
   }
   return mU2F;
 }
+#endif
 
 nsIControllers*
 nsGlobalWindow::GetControllersOuter(ErrorResult& aError)

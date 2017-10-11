@@ -96,6 +96,18 @@ DIST="$MOZ_BUILD_ROOT/dist"
 MOZ_DEFAULT_COMPILER
 
 dnl ========================================================
+dnl = Enable Universal Second Factor(U2F) Support
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(u2f-support,
+[  --enable-u2f-support        Enable Universal Second Factor Support],
+    ENABLE_U2F=1,
+    ENABLE_U2F= )
+if test -n "$ENABLE_U2F"; then
+   AC_DEFINE(ENABLE_U2F)
+fi
+AC_SUBST(ENABLE_U2F)
+
+dnl ========================================================
 dnl = Disable WIFI Support feature
 dnl ========================================================
 MOZ_ARG_DISABLE_BOOL(wifi-support,

@@ -24,7 +24,6 @@ XPIDL_SOURCES += [
     'nsIKeygenThread.idl',
     'nsIKeyModule.idl',
     'nsILocalCertService.idl',
-    'nsINSSU2FToken.idl',
     'nsINSSVersion.idl',
     'nsIPK11Token.idl',
     'nsIPK11TokenDB.idl',
@@ -52,6 +51,11 @@ if CONFIG['MOZ_XUL']:
         'nsICertTree.idl',
     ]
 
+if CONFIG['ENABLE_U2F']:
+    XPIDL_SOURCES += [
+        'nsINSSU2FToken.idl',
+    ]
+
 XPIDL_MODULE = 'pipnss'
 
 EXPORTS += [
@@ -63,13 +67,17 @@ EXPORTS += [
     'nsNSSComponent.h',
     'nsNSSHelper.h',
     'nsNSSShutDown.h',
-    'nsNSSU2FToken.h',
     'nsRandomGenerator.h',
     'nsSecurityHeaderParser.h',
     'NSSErrorsService.h',
     'ScopedNSSTypes.h',
     'SharedCertVerifier.h',
 ]
+
+if CONFIG['ENABLE_U2F']:
+    EXPORTS += [
+        'nsNSSU2FToken.h',
+    ]
 
 EXPORTS.mozilla += [
     'DataStorage.h',
@@ -116,7 +124,6 @@ UNIFIED_SOURCES += [
     'nsNSSIOLayer.cpp',
     'nsNSSModule.cpp',
     'nsNSSShutDown.cpp',
-    'nsNSSU2FToken.cpp',
     'nsNSSVersion.cpp',
     'nsNTLMAuthModule.cpp',
     'nsPK11TokenDB.cpp',
@@ -156,6 +163,11 @@ if not CONFIG['MOZ_NO_SMART_CARDS']:
 if CONFIG['MOZ_XUL']:
     UNIFIED_SOURCES += [
         'nsCertTree.cpp',
+    ]
+
+if CONFIG['ENABLE_U2F']:
+    UNIFIED_SOURCES += [
+        'nsNSSU2FToken.cpp',
     ]
 
 UNIFIED_SOURCES += [

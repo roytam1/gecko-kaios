@@ -141,7 +141,9 @@
 #include "nsIMemoryReporter.h"
 #include "nsIMozBrowserFrame.h"
 #include "nsIMutable.h"
+#ifdef ENABLE_U2F
 #include "nsINSSU2FToken.h"
+#endif
 #include "nsIObserverService.h"
 #include "nsIPresShell.h"
 #include "nsIRemoteWindowContext.h"
@@ -4304,6 +4306,7 @@ bool
 ContentParent::RecvNSSU2FTokenIsCompatibleVersion(const nsString& aVersion,
                                                   bool* aIsCompatible)
 {
+#ifdef ENABLE_U2F
   MOZ_ASSERT(aIsCompatible);
 
   nsCOMPtr<nsINSSU2FToken> nssToken(do_GetService(NS_NSSU2FTOKEN_CONTRACTID));
@@ -4313,12 +4316,16 @@ ContentParent::RecvNSSU2FTokenIsCompatibleVersion(const nsString& aVersion,
 
   nsresult rv = nssToken->IsCompatibleVersion(aVersion, aIsCompatible);
   return NS_SUCCEEDED(rv);
+#else
+  return false;
+#endif
 }
 
 bool
 ContentParent::RecvNSSU2FTokenIsRegistered(nsTArray<uint8_t>&& aKeyHandle,
                                            bool* aIsValidKeyHandle)
 {
+#ifdef ENABLE_U2F
   MOZ_ASSERT(aIsValidKeyHandle);
 
   nsCOMPtr<nsINSSU2FToken> nssToken(do_GetService(NS_NSSU2FTOKEN_CONTRACTID));
@@ -4329,6 +4336,9 @@ ContentParent::RecvNSSU2FTokenIsRegistered(nsTArray<uint8_t>&& aKeyHandle,
   nsresult rv = nssToken->IsRegistered(aKeyHandle.Elements(), aKeyHandle.Length(),
                                        aIsValidKeyHandle);
   return  NS_SUCCEEDED(rv);
+#else
+  return false;
+#endif
 }
 
 bool
@@ -4336,6 +4346,7 @@ ContentParent::RecvNSSU2FTokenRegister(nsTArray<uint8_t>&& aApplication,
                                        nsTArray<uint8_t>&& aChallenge,
                                        nsTArray<uint8_t>* aRegistration)
 {
+#ifdef ENABLE_U2F
   MOZ_ASSERT(aRegistration);
 
   nsCOMPtr<nsINSSU2FToken> nssToken(do_GetService(NS_NSSU2FTOKEN_CONTRACTID));
@@ -4355,6 +4366,9 @@ ContentParent::RecvNSSU2FTokenRegister(nsTArray<uint8_t>&& aApplication,
   aRegistration->ReplaceElementsAt(0, aRegistration->Length(), buffer, bufferlen);
   free(buffer);
   return NS_SUCCEEDED(rv);
+#else
+  return false;
+#endif
 }
 
 bool
@@ -4363,6 +4377,7 @@ ContentParent::RecvNSSU2FTokenSign(nsTArray<uint8_t>&& aApplication,
                                    nsTArray<uint8_t>&& aKeyHandle,
                                    nsTArray<uint8_t>* aSignature)
 {
+#ifdef ENABLE_U2F
   MOZ_ASSERT(aSignature);
 
   nsCOMPtr<nsINSSU2FToken> nssToken(do_GetService(NS_NSSU2FTOKEN_CONTRACTID));
@@ -4383,6 +4398,9 @@ ContentParent::RecvNSSU2FTokenSign(nsTArray<uint8_t>&& aApplication,
   aSignature->ReplaceElementsAt(0, aSignature->Length(), buffer, bufferlen);
   free(buffer);
   return NS_SUCCEEDED(rv);
+#else
+  return false;
+#endif
 }
 
 bool

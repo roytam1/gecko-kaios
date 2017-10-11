@@ -116,7 +116,9 @@ struct RequestInit;
 class RequestOrUSVString;
 class Selection;
 class SpeechSynthesis;
+#ifdef ENABLE_U2F
 class U2F;
+#endif
 class VRDevice;
 class WakeLock;
 #if defined(MOZ_WIDGET_ANDROID) || defined(MOZ_WIDGET_GONK)
@@ -1073,7 +1075,9 @@ public:
   void SizeToContentOuter(mozilla::ErrorResult& aError, bool aCallerIsChrome);
   void SizeToContent(mozilla::ErrorResult& aError);
   mozilla::dom::Crypto* GetCrypto(mozilla::ErrorResult& aError);
+#ifdef ENABLE_U2F
   mozilla::dom::U2F* GetU2f(mozilla::ErrorResult& aError);
+#endif
   nsIControllers* GetControllersOuter(mozilla::ErrorResult& aError);
   nsIControllers* GetControllers(mozilla::ErrorResult& aError);
   nsresult GetControllers(nsIControllers** aControllers) override;
@@ -1775,7 +1779,9 @@ protected:
   nsString                      mDefaultStatus;
   RefPtr<nsGlobalWindowObserver> mObserver; // Inner windows only.
   RefPtr<mozilla::dom::Crypto>  mCrypto;
+#ifdef ENABLE_U2F
   RefPtr<mozilla::dom::U2F> mU2F;
+#endif
   RefPtr<mozilla::dom::cache::CacheStorage> mCacheStorage;
   RefPtr<mozilla::dom::Console> mConsole;
   // We need to store an nsISupports pointer to this object because the
