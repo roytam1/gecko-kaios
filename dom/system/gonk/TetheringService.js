@@ -594,6 +594,8 @@ TetheringService.prototype = {
     let dns2 = this.tetheringSettings[SETTINGS_USB_DNS2];
     let internalInterface = aTetheringInterface.internalInterface;
     let externalInterface = aTetheringInterface.externalInterface;
+    let dnses = (gNetworkManager.activeNetworkInfo) ?
+      gNetworkManager.activeNetworkInfo.getDnses() : new Array(0);
 
     // Using the default values here until application support these settings.
     if (interfaceIp == "" || prefix == "" ||
@@ -616,7 +618,8 @@ TetheringService.prototype = {
       internalIfname: internalInterface,
       externalIfname: externalInterface,
       enable: aEnable,
-      link: aEnable ? NETWORK_INTERFACE_UP : NETWORK_INTERFACE_DOWN
+      link: aEnable ? NETWORK_INTERFACE_UP : NETWORK_INTERFACE_DOWN,
+      dnses: dnses,
     };
   },
 
@@ -642,6 +645,8 @@ TetheringService.prototype = {
     aConfig.ifname         = this._tetheringInterface[TETHERING_TYPE_WIFI].internalInterface;
     aConfig.internalIfname = this._tetheringInterface[TETHERING_TYPE_WIFI].internalInterface;
     aConfig.externalIfname = this._tetheringInterface[TETHERING_TYPE_WIFI].externalInterface;
+    aConfig.dnses = (gNetworkManager.activeNetworkInfo) ?
+      gNetworkManager.activeNetworkInfo.getDnses() : new Array(0);
 
     this._wifiTetheringRequestOngoing = true;
     gNetworkService.setWifiTethering(aEnable, aConfig, (aError) => {
@@ -927,7 +932,11 @@ TetheringService.prototype = {
 
         let current = {
           internalIfname: this._tetheringInterface[tetheringType].internalInterface,
-          externalIfname: aNetworkInfo.name
+          externalIfname: aNetworkInfo.name,
+          dns1: this.tetheringSettings[SETTINGS_USB_DNS1],
+          dns2: this.tetheringSettings[SETTINGS_USB_DNS2],
+          dnses: (gNetworkManager.activeNetworkInfo) ?
+            gNetworkManager.activeNetworkInfo.getDnses() : new Array(0)
         };
 
         let callback = (function() {

@@ -24,6 +24,7 @@
 #include <limits>
 #include "mozilla/dom/network/NetUtils.h"
 #include "mozilla/fallible.h"
+#include "mozilla/Preferences.h"
 
 #include <errno.h>
 #include <string.h>
@@ -98,6 +99,10 @@ static const int32_t SUCCESS = 0;
 static uint32_t SDK_VERSION;
 static uint32_t SUPPORT_IPV6_TETHERING;
 
+static bool SUPPORT_IPV6_ROUTER_MODE;
+static const char IPV6_PROC_PATH[] = "/proc/sys/net/ipv6/conf";
+static const char RADVD_CONF_FILE[] = "/data/misc/radvd/radvd.conf";
+
 struct IFProperties {
   char gateway[Property::VALUE_MAX_LENGTH];
   char dns1[Property::VALUE_MAX_LENGTH];
@@ -137,6 +142,7 @@ static CurrentCommand gCurrentCommand;
 static bool gPending = false;
 static nsTArray<nsCString> gReason;
 static NetworkParams *gWifiTetheringParms = 0;
+static char gPreIPv6Prefix[64] = {0};
 
 static nsTArray<CommandChain*> gCommandChainQueue;
 
@@ -156,10 +162,13 @@ const CommandFunc NetworkUtils::sWifiEnableChain[] = {
   NetworkUtils::startTethering,
   NetworkUtils::setDnsForwarders,
   NetworkUtils::enableNat,
+  NetworkUtils::startIPv6Tethering,
+  NetworkUtils::addIPv6RouteToLocalNetwork,
   NetworkUtils::wifiTetheringSuccess
 };
 
 const CommandFunc NetworkUtils::sWifiDisableChain[] = {
+  NetworkUtils::stopIPv6Tethering,
   NetworkUtils::clearWifiTetherParms,
   NetworkUtils::stopSoftAP,
   NetworkUtils::stopAccessPointDriver,
@@ -176,6 +185,7 @@ const CommandFunc NetworkUtils::sWifiDisableChain[] = {
 };
 
 const CommandFunc NetworkUtils::sWifiFailChain[] = {
+  NetworkUtils::stopIPv6Tethering,
   NetworkUtils::clearWifiTetherParms,
   NetworkUtils::stopSoftAP,
   NetworkUtils::setIpForwardingEnabled,
@@ -184,6 +194,7 @@ const CommandFunc NetworkUtils::sWifiFailChain[] = {
 };
 
 const CommandFunc NetworkUtils::sWifiRetryChain[] = {
+  NetworkUtils::stopIPv6Tethering,
   NetworkUtils::clearWifiTetherParms,
   NetworkUtils::stopSoftAP,
   NetworkUtils::stopTethering,
@@ -203,6 +214,8 @@ const CommandFunc NetworkUtils::sWifiRetryChain[] = {
   NetworkUtils::startTethering,
   NetworkUtils::setDnsForwarders,
   NetworkUtils::enableNat,
+  NetworkUtils::startIPv6Tethering,
+  NetworkUtils::addIPv6RouteToLocalNetwork,
   NetworkUtils::wifiTetheringSuccess
 };
 
@@ -223,10 +236,13 @@ const CommandFunc NetworkUtils::sUSBEnableChain[] = {
   NetworkUtils::startTethering,
   NetworkUtils::setDnsForwarders,
   NetworkUtils::addUpstreamInterface,
+  NetworkUtils::startIPv6Tethering,
+  NetworkUtils::addIPv6RouteToLocalNetwork,
   NetworkUtils::usbTetheringSuccess
 };
 
 const CommandFunc NetworkUtils::sUSBDisableChain[] = {
+  NetworkUtils::stopIPv6Tethering,
   NetworkUtils::untetherInterface,
   NetworkUtils::removeInterfaceFromLocalNetwork,
   NetworkUtils::preTetherInterfaceList,
@@ -240,6 +256,7 @@ const CommandFunc NetworkUtils::sUSBDisableChain[] = {
 };
 
 const CommandFunc NetworkUtils::sUSBFailChain[] = {
+  NetworkUtils::stopIPv6Tethering,
   NetworkUtils::stopSoftAP,
   NetworkUtils::setIpForwardingEnabled,
   NetworkUtils::setInterfaceForwardingDisabled,
@@ -247,6 +264,8 @@ const CommandFunc NetworkUtils::sUSBFailChain[] = {
 };
 
 const CommandFunc NetworkUtils::sUpdateUpStreamChain[] = {
+  NetworkUtils::stopIPv6Tethering,
+  NetworkUtils::removeIPv6LocalNetworkRoute,
   NetworkUtils::cleanUpStream,
   NetworkUtils::cleanUpStreamInterfaceForwarding,
   NetworkUtils::removeUpstreamInterface,
@@ -254,6 +273,8 @@ const CommandFunc NetworkUtils::sUpdateUpStreamChain[] = {
   NetworkUtils::createUpStreamInterfaceForwarding,
   NetworkUtils::setDnsForwarders,
   NetworkUtils::addUpstreamInterface,
+  NetworkUtils::startIPv6Tethering,
+  NetworkUtils::addIPv6RouteToLocalNetwork,
   NetworkUtils::updateUpStreamSuccess
 };
 
@@ -896,6 +917,80 @@ void NetworkUtils::addRouteToLocalNetwork(CommandChain* aChain,
            GET_CHAR(mInternalIfname), networkAddr, GET_CHAR(mPrefix));
 
   doCommand(command, aChain, aCallback);
+}
+
+void NetworkUtils::addIPv6RouteToLocalNetwork(CommandChain* aChain,
+                                              CommandCallback aCallback,
+                                              NetworkResultOptions& aResult)
+{
+  if (GET_FIELD(mLoopIndex) >= GET_FIELD(mIPv6Routes).Length()) {
+    aCallback(aChain, false, aResult);
+    return;
+  }
+  nsCString internalIface(GET_CHAR(mInternalIfname));
+
+  if (!internalIface.get()[0]) {
+    internalIface = GET_CHAR(mCurInternalIfname);
+  }
+
+  char command[MAX_COMMAND_SIZE];
+  nsTArray<nsString>& ipv6routes = GET_FIELD(mIPv6Routes);
+  NS_ConvertUTF16toUTF8 autoIPv6Routes(ipv6routes[GET_FIELD(mLoopIndex)]);
+
+  snprintf(command, MAX_COMMAND_SIZE - 1, "network route add local %s %s",
+           internalIface.get(), autoIPv6Routes.get());
+
+  struct MyCallback {
+    static void callback(CommandCallback::CallbackType aOriginalCallback,
+                         CommandChain* aChain,
+                         bool aError,
+                         mozilla::dom::NetworkResultOptions& aResult)
+    {
+      GET_FIELD(mLoopIndex)++;
+      return addIPv6RouteToLocalNetwork(aChain, aOriginalCallback, aResult);
+    }
+  };
+
+  CommandCallback wrappedCallback(MyCallback::callback, aCallback);
+  doCommand(command, aChain, wrappedCallback);
+}
+
+void NetworkUtils::removeIPv6LocalNetworkRoute(CommandChain* aChain,
+                                               CommandCallback aCallback,
+                                               NetworkResultOptions& aResult)
+{
+  if (strlen(gPreIPv6Prefix) == 0) {
+    NU_DBG("%s: No previous IPv6 route need to remove.", __FUNCTION__);
+    aCallback(aChain, false, aResult);
+    return;
+  }
+
+  nsCString preinternalIface(GET_CHAR(mPreInternalIfname));
+  if (!preinternalIface.get()[0]) {
+    NU_DBG("%s: No previous IPv6 internal interface", __FUNCTION__);
+    aCallback(aChain, false, aResult);
+  }
+
+  char command[MAX_COMMAND_SIZE];
+  snprintf(command, MAX_COMMAND_SIZE - 1, "network route remove local %s %s",
+           preinternalIface.get(), gPreIPv6Prefix);
+  memset(&gPreIPv6Prefix, 0, sizeof(gPreIPv6Prefix));
+
+  struct MyCallback {
+    static void callback(CommandCallback::CallbackType aOriginalCallback,
+                         CommandChain* aChain,
+                         bool aError,
+                         mozilla::dom::NetworkResultOptions& aResult)
+    {
+      NS_ConvertUTF16toUTF8 reason(aResult.mResultReason);
+      NU_DBG("%s: reason %s", __FUNCTION__, reason.get());
+      // We don't really care about remove ipv6 local network route result
+      aOriginalCallback(aChain, false, aResult);
+    }
+  };
+
+  CommandCallback wrappedCallback(MyCallback::callback, aCallback);
+  doCommand(command, aChain, wrappedCallback);
 }
 
 void NetworkUtils::preTetherInterfaceList(CommandChain* aChain,
@@ -1636,6 +1731,234 @@ void NetworkUtils::isClatdRunning(CommandChain* aChain,
   doCommand(command, aChain, aCallback);
 }
 
+
+void NetworkUtils::startIPv6Tethering(CommandChain* aChain,
+                                      CommandCallback aCallback,
+                                      NetworkResultOptions& aResult)
+{
+  nsCString externalIface(GET_CHAR(mExternalIfname));
+  nsCString internalIface(GET_CHAR(mInternalIfname));
+  nsCString network_prefix(GET_CHAR(mIPv6Prefix));
+  nsTArray<nsString>& dnses = GET_FIELD(mDnses);
+  uint32_t dnsLength = dnses.Length();
+
+  if (!externalIface.get()[0]) {
+    externalIface = GET_CHAR(mCurExternalIfname);
+  }
+  if (!internalIface.get()[0]) {
+    internalIface = GET_CHAR(mCurInternalIfname);
+  }
+
+  if (!strcmp(externalIface.get(), "wlan0")) {
+    NU_DBG("Do not enable IPv6 Tethering if Wi-Fi as external interface");
+    next(aChain, false, aResult);
+    return;
+  }
+
+  if (!dnsLength) {
+    NU_DBG("Do not enable IPv6 Tethering since no DNS");
+    next(aChain, false, aResult);
+    return;
+  }
+
+  NU_DBG("enable IPv6 Tethering for %s %s %s",
+         externalIface.get(), internalIface.get(), network_prefix.get());
+
+  if (network_prefix.get()[0] &&
+      composeIPv6TetherConf(internalIface.get(), network_prefix.get(), dnsLength)) {
+
+    if (SUPPORT_IPV6_ROUTER_MODE) {
+      configureIPv6RouterMode(internalIface.get(), true);
+    }
+
+    NU_DBG("radvd configured, start radvd");
+    Property::Set("ctl.start", "radvd");
+  }
+  // Proceed next cmd.
+  next(aChain, false, aResult);
+}
+
+void NetworkUtils::stopIPv6Tethering(CommandChain* aChain,
+                                     CommandCallback aCallback,
+                                     NetworkResultOptions& aResult)
+{
+  NU_DBG("disable IPv6 Tethering");
+  Property::Set("ctl.stop", "radvd");
+
+  // Proceed next cmd.
+  next(aChain, false, aResult);
+}
+
+bool NetworkUtils::composeIPv6TetherConf(const char* aInternalIface,
+                                         const char* aNetworkPrefix,
+                                         uint32_t aDnsLength)
+{
+  int type;
+  char dnses_list[256] = {0};
+  char dns_prop_key[PROPERTY_VALUE_MAX] = {0};
+  char dns_buffer[PROPERTY_VALUE_MAX] = {0};
+  char dns_buffer2[PROPERTY_VALUE_MAX] = {0};
+  FILE *radvdFile;
+  char buffer[512] = {0};
+
+  memset(&gPreIPv6Prefix, 0, sizeof(gPreIPv6Prefix));
+  strcpy(gPreIPv6Prefix, aNetworkPrefix);
+
+  for (uint32_t i = 0; i < aDnsLength; i++) {
+    snprintf_literal(dns_prop_key, "net.dns%d", i+1);
+    Property::Get(dns_prop_key, dns_buffer, "8.8.8.8");
+    type = getIpType(dns_buffer);
+    if (type == AF_INET6) {
+      snprintf(dns_buffer2, strlen(dns_buffer) + 2, " %s", dns_buffer);
+      strcat(dnses_list, dns_buffer2);
+    }
+    memset(&dns_buffer, 0, sizeof(dns_buffer));
+  }
+
+  if (strlen(dnses_list) == 0) {
+    NU_DBG("Do not enable IPv6 Tethering since no IPv6 DNS");
+    return false;
+  }
+
+  // Compose radvd config file
+  radvdFile = fopen(RADVD_CONF_FILE, "w");
+
+  if (radvdFile == NULL) {
+    NU_DBG("Cannot open %s", RADVD_CONF_FILE);
+    return false;
+  }
+
+  snprintf(buffer, sizeof(buffer), "interface %s\n{\n\tAdvSendAdvert on;\n"
+    "\tMinRtrAdvInterval 3;\n\tMaxRtrAdvInterval 10;\n"
+    "\tAdvManagedFlag off;\n\tAdvOtherConfigFlag off;\n"
+    "\tprefix %s\n"
+    "\t{\n\t\tAdvOnLink off;\n"
+    "\t\tAdvAutonomous on;\n"
+    "\t\tAdvRouterAddr off;\n"
+    "\t};\n\tRDNSS%s\n"
+    "\t{\n"
+    "\t\tAdvRDNSSLifetime 3600;\n"
+    "\t};"
+    "\n};\n",
+    aInternalIface, aNetworkPrefix, dnses_list);
+
+  if (!fwrite(buffer, sizeof(char), strlen(buffer), radvdFile)) {
+    NU_DBG("Write %s fail", RADVD_CONF_FILE);
+    fclose(radvdFile);
+    return false;
+  }
+
+  fclose(radvdFile);
+
+  if (chmod(RADVD_CONF_FILE, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH) < 0 ||
+      chown(RADVD_CONF_FILE, AID_SYSTEM, AID_SYSTEM)) {
+    NU_DBG("Cannot chmod %s", RADVD_CONF_FILE);
+    return false;
+  }
+
+  return true;
+}
+
+int NetworkUtils::getIPv6IfaceInfo(const char* aIface, char* aNetworkPrefix)
+{
+  char rawaddrstr[INET6_ADDRSTRLEN], addrstr[INET6_ADDRSTRLEN];
+  unsigned int prefixlen;
+  int i, j;
+  char ifname[64];
+  FILE *file = fopen("/proc/net/if_inet6", "r");
+  if (!file) {
+    return -errno;
+  }
+
+  // Format:
+  // 20010db8000a0001fc446aa4b5b347ed 03 40 00 01    wlan0
+  while (fscanf(file, "%32s %*02x %02x %*02x %*02x %63s\n",
+           rawaddrstr, &prefixlen, ifname) == 3) {
+    if (strcmp(aIface, ifname)) {
+      continue;
+    }
+
+    // Put the colons back into the address.
+    for (i = 0, j = 0; i < 32; i++, j++) {
+      addrstr[j] = rawaddrstr[i];
+      if (i % 4 == 3) {
+        addrstr[++j] = ':';
+      }
+    }
+    addrstr[j - 1] = '\0';
+
+    // We're not interested on link local address.
+    if (strncmp(addrstr, "fe80:", 5) == 0) {
+      continue;
+    }
+
+    int addrlen = strlen(addrstr);
+    for(i = 0, j = 0; i < addrlen; i++) {
+      if (addrstr[i] != ':')
+        j += 4;
+      if ( j <= (int) prefixlen)
+        aNetworkPrefix[i] = addrstr[i];
+      if (j >= (int) prefixlen)
+        break;
+    }
+
+    addrlen = strlen(aNetworkPrefix);
+    for (i = addrlen; i >= 0; i--) {
+      if (aNetworkPrefix[i] == ':') {
+        if ((i + 2 < INET6_ADDRSTRLEN) && strncmp(aNetworkPrefix + i + 1, "0000", 4) == 0) {
+          aNetworkPrefix[i + 1] = ':';
+          aNetworkPrefix[i + 2] = '\0';
+          continue;
+        } else
+          break;
+      }
+    }
+
+    addrlen = strlen(aNetworkPrefix);
+    if (aNetworkPrefix[addrlen -1] != ':') // last char is not ':'
+      snprintf(aNetworkPrefix + addrlen, 7, "::/%d", prefixlen);
+    else
+      snprintf(aNetworkPrefix + addrlen, 5, "/%d", prefixlen);
+
+    NU_DBG("address %s/%d on %s of %s", addrstr, prefixlen, aNetworkPrefix, ifname);
+    fclose(file);
+    return 1;
+  }
+  fclose(file);
+  return -1;
+}
+
+bool NetworkUtils::configureIPv6RouterMode(const char* aInternalIface, bool aEnable)
+{
+
+  if (aEnable && !WriteSysFile(nsPrintfCString("%s/%s/disable_ipv6",
+                               IPV6_PROC_PATH, aInternalIface).get(), "1")) {
+    return false;
+  }
+
+  if (!WriteSysFile(nsPrintfCString("%s/%s/accept_ra",
+                    IPV6_PROC_PATH, aInternalIface).get(), aEnable ? "0" : "2")) {
+    return false;
+  }
+
+  if (!WriteSysFile(nsPrintfCString("%s/%s/accept_dad",
+                    IPV6_PROC_PATH, aInternalIface).get(), aEnable ? "0" : "1")) {
+    return false;
+  }
+
+  if (!WriteSysFile(nsPrintfCString("%s/%s/dad_transmits",
+                    IPV6_PROC_PATH, aInternalIface).get(), aEnable ? "0" : "1")) {
+    return false;
+  }
+
+  if (!WriteSysFile(nsPrintfCString("%s/%s/disable_ipv6",
+                    IPV6_PROC_PATH, aInternalIface).get(), "0")) {
+    return false;
+  }
+
+  return true;
+}
+
 #undef GET_CHAR
 #undef GET_FIELD
 
@@ -1890,6 +2213,8 @@ NetworkUtils::NetworkUtils(MessageCallback aCallback)
 
   Property::Get(IPV6_TETHERING, value, "0");
   SUPPORT_IPV6_TETHERING = atoi(value);
+
+  SUPPORT_IPV6_ROUTER_MODE = Preferences::GetBool("dom.b2g_ipv6_router_mode", false);
 
   gNetworkUtils = this;
 }
@@ -2718,8 +3043,10 @@ CommandResult NetworkUtils::setWifiOperationMode(NetworkParams& aOptions)
 CommandResult NetworkUtils::setWifiTethering(NetworkParams& aOptions)
 {
   bool enable = aOptions.mEnable;
+  char network_prefix[64] = {0};
   IFProperties interfaceProperties;
   getIFProperties(GET_CHAR(mExternalIfname), interfaceProperties);
+  nsCString externalIface(GET_CHAR(mExternalIfname));
 
   if (strcmp(interfaceProperties.dns1, "")) {
     int type = getIpType(interfaceProperties.dns1);
@@ -2733,6 +3060,15 @@ CommandResult NetworkUtils::setWifiTethering(NetworkParams& aOptions)
       aOptions.mDns2 = NS_ConvertUTF8toUTF16(interfaceProperties.dns2);
     }
   }
+
+  // Collect external interface IPv6 info.
+  if (getIPv6IfaceInfo(externalIface.get(), network_prefix) > 0) {
+    aOptions.mIPv6Prefix = NS_ConvertUTF8toUTF16(network_prefix);
+    aOptions.mIPv6Routes.AppendElement(NS_ConvertUTF8toUTF16(network_prefix));
+    aOptions.mIPv6Routes.AppendElement(NS_ConvertUTF8toUTF16("fe80::/64"));
+  }
+  aOptions.mLoopIndex = 0;
+
   dumpParams(aOptions, "WIFI");
 
   if (SDK_VERSION >= 20) {
@@ -2759,8 +3095,10 @@ CommandResult NetworkUtils::setWifiTethering(NetworkParams& aOptions)
 CommandResult NetworkUtils::setUSBTethering(NetworkParams& aOptions)
 {
   bool enable = aOptions.mEnable;
+  char network_prefix[64] = {0};
   IFProperties interfaceProperties;
   getIFProperties(GET_CHAR(mExternalIfname), interfaceProperties);
+  nsCString externalIface(GET_CHAR(mExternalIfname));
 
   if (strcmp(interfaceProperties.dns1, "")) {
     int type = getIpType(interfaceProperties.dns1);
@@ -2782,6 +3120,14 @@ CommandResult NetworkUtils::setUSBTethering(NetworkParams& aOptions)
     }
     aOptions.mNetId = netIdInfo.mNetId;
   }
+  // Collect external interface IPv6 info.
+  if (getIPv6IfaceInfo(externalIface.get(), network_prefix) > 0) {
+    aOptions.mIPv6Prefix = NS_ConvertUTF8toUTF16(network_prefix);
+    aOptions.mIPv6Routes.AppendElement(NS_ConvertUTF8toUTF16(network_prefix));
+    aOptions.mIPv6Routes.AppendElement(NS_ConvertUTF8toUTF16("fe80::/64"));
+  }
+  aOptions.mLoopIndex = 0;
+
   dumpParams(aOptions, "USB");
 
   if (enable) {
@@ -2902,8 +3248,10 @@ CommandResult NetworkUtils::enableUsbRndis(NetworkParams& aOptions)
  */
 CommandResult NetworkUtils::updateUpStream(NetworkParams& aOptions)
 {
+  char network_prefix[64] = {0};
   IFProperties interfaceProperties;
   getIFProperties(GET_CHAR(mCurExternalIfname), interfaceProperties);
+  nsCString externalIface(GET_CHAR(mExternalIfname));
 
   if (strcmp(interfaceProperties.dns1, "")) {
     int type = getIpType(interfaceProperties.dns1);
@@ -2927,6 +3275,18 @@ CommandResult NetworkUtils::updateUpStream(NetworkParams& aOptions)
     }
     aOptions.mNetId = netIdInfo.mNetId;
   }
+
+  // Collect external interface IPv6 info.
+  if (!externalIface.get()[0]) {
+    externalIface = GET_CHAR(mCurExternalIfname);
+  }
+  if (getIPv6IfaceInfo(externalIface.get(), network_prefix) > 0) {
+    aOptions.mIPv6Prefix = NS_ConvertUTF8toUTF16(network_prefix);
+    aOptions.mIPv6Routes.AppendElement(NS_ConvertUTF8toUTF16(network_prefix));
+    aOptions.mIPv6Routes.AppendElement(NS_ConvertUTF8toUTF16("fe80::/64"));
+  }
+  aOptions.mLoopIndex = 0;
+
   dumpParams(aOptions, GET_CHAR(mType));
 
   runChain(aOptions, sUpdateUpStreamChain, updateUpStreamFail);
@@ -3221,6 +3581,7 @@ void NetworkUtils::dumpParams(NetworkParams& aOptions, const char* aType)
   NU_DBG("     preExternalIfname: %s", GET_CHAR(mPreExternalIfname));
   NU_DBG("     curInternalIfname: %s", GET_CHAR(mCurInternalIfname));
   NU_DBG("     curExternalIfname: %s", GET_CHAR(mCurExternalIfname));
+  NU_DBG("     ipv6Prefix: %s", GET_CHAR(mIPv6Prefix));
 #endif
 }
 

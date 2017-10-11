@@ -148,6 +148,8 @@ public:
     COPY_OPT_FIELD(mDns2_long, 0)
     COPY_OPT_FIELD(mMtu, 0)
     COPY_OPT_FIELD(mPrivacyExtensions, false)
+    COPY_SEQUENCE_FIELD(mIPv6Routes, nsString)
+    COPY_OPT_STRING_FIELD(mIPv6Prefix, EmptyString())
 
     mLoopIndex = 0;
 
@@ -204,6 +206,8 @@ public:
   long mDns1_long;
   long mDns2_long;
   long mMtu;
+  nsTArray<nsString> mIPv6Routes;
+  nsString mIPv6Prefix;
 
   // Auxiliary information required to carry accros command chain.
   int mNetId; // A locally defined id per interface.
@@ -440,6 +444,10 @@ private:
   static void startClatd(PARAMS);
   static void stopClatd(PARAMS);
   static void isClatdRunning(PARAMS);
+  static void startIPv6Tethering(PARAMS);
+  static void stopIPv6Tethering(PARAMS);
+  static void addIPv6RouteToLocalNetwork(PARAMS);
+  static void removeIPv6LocalNetworkRoute(PARAMS);
 
 #undef PARAMS
 
@@ -498,6 +506,11 @@ private:
                        ErrorCallback aError);
 
   static nsCString getSubnetIp(const nsCString& aIp, int aPrefixLength);
+
+  static bool composeIPv6TetherConf(const char* aInternalIface,
+                                    const char* aNetworkPrefix, uint32_t aDnsLength);
+  static bool configureIPv6RouterMode(const char* aInternalIface, bool aEnable);
+  static int getIPv6IfaceInfo(const char* aIface, char* aNetworkPrefix);
 
   /**
    * Callback function to send netd result to main thread.

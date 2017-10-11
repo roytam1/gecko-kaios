@@ -690,7 +690,10 @@ NetworkService.prototype = {
       preInternalIfname: aPrevious.internalIfname,
       preExternalIfname: aPrevious.externalIfname,
       curInternalIfname: aCurrent.internalIfname,
-      curExternalIfname: aCurrent.externalIfname
+      curExternalIfname: aCurrent.externalIfname,
+      dns1: aCurrent.dns1,
+      dns2: aCurrent.dns2,
+      dnses: aCurrent.dnses
     };
 
     this.controlMessage(params, function(aData) {

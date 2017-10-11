@@ -59,6 +59,8 @@ dictionary NetworkCommandOptions
   long mtu;                           // for "setMtu".
   long networkType;                   // for "createNetwork", "destroyNetwork".
   boolean privacyExtensions;          // for "setIpv6PrivacyExtensions".
+  sequence<DOMString> IPv6Routes;     // for "addIPv6RouteToLocalNetwork"
+  DOMString IPv6Prefix;               // for "startIPv6Tethering"
 };
 
 /**

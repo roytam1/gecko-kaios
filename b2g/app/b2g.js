@@ -1251,3 +1251,6 @@ pref("hangmonitor.timeout", 0);
 // Disable Gecko wifi
 pref("device.capability.wifi", false);
 #endif
+
+// Enable IPv6 tethering router mode in Gecko
+pref("dom.b2g_ipv6_router_mode", true);
