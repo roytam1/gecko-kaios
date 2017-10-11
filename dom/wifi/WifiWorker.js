@@ -2945,17 +2945,16 @@ function WifiWorker() {
           }
         });
 
+        // wifi disconnected and reset open network notification.
+        WifiNotificationController.resetNotification();
+
         WifiNetworkInterface.info.state =
           Ci.nsINetworkInfo.NETWORK_STATE_DISCONNECTED;
-
-        // Update network infterface first then clear properties.
-        gNetworkManager.updateNetworkInterface(WifiNetworkInterface);
         WifiNetworkInterface.info.ips = [];
         WifiNetworkInterface.info.prefixLengths = [];
         WifiNetworkInterface.info.gateways = [];
         WifiNetworkInterface.info.dnses = [];
-        // wifi disconnected and reset open network notification.
-        WifiNotificationController.resetNotification();
+        gNetworkManager.updateNetworkInterface(WifiNetworkInterface);
         break;
       case "WPS_TIMEOUT":
         self._fireEvent("onwpstimeout", {});
