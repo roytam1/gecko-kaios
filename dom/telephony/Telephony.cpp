@@ -197,16 +197,12 @@ Telephony::GetServiceId(const Optional<uint32_t>& aServiceId,
     return aServiceId.Value();
   } else if (aGetIfActiveCall) {
     if (mGroup->IsActive()) {
-      for (uint32_t i = 0; i < mGroup->mCalls.Length(); i++) {
-        if (mGroup->mCalls[i]->IsActive()) {
-          return mGroup->mCalls[i]->mServiceId;
-        }
-      }
-    } else {
-      for (uint32_t i = 0; i < mCalls.Length(); i++) {
-        if (mCalls[i]->IsActive()) {
-          return mCalls[i]->mServiceId;
-        }
+      return mGroup->GetServiceId();
+    }
+
+    for (uint32_t i = 0; i < mCalls.Length(); i++) {
+      if (mCalls[i]->IsActive()) {
+        return mCalls[i]->mServiceId;
       }
     }
   }
