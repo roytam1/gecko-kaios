@@ -636,7 +636,8 @@ GonkGPSGeolocationProvider::GetGPSInterface()
   gps_device_t* gps_device = (gps_device_t *)device;
   const GpsInterface* result = gps_device->get_gps_interface(gps_device);
 
-  if (result->size != sizeof(GpsInterface)) {
+  if (!result || result->size != sizeof(GpsInterface)) {
+    ERR("GpsInterface is not available.");
     return nullptr;
   }
   return result;
