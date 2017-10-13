@@ -3449,9 +3449,9 @@ WifiWorker.prototype = {
       callback();
       return;
     }
-    for each (let net in self.configuredNetworks) {
-      WifiManager.enableNetwork(net.netId, false, function(ok) {
-        net.disabled = ok ? 0 : 1;
+    for (let net in self.configuredNetworks) {
+      WifiManager.enableNetwork(self.configuredNetworks[net].netId, false, function(ok) {
+        self.configuredNetworks[net].disabled = ok ? 0 : 1;
         ++finishEnableCount;
         if (finishEnableCount === numberOfConfNetworks) {
           callback();
