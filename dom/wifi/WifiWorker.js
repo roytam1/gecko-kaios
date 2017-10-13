@@ -912,7 +912,7 @@ var WifiManager = (function() {
       if (event.indexOf("CTRL-REQ-") == 0) {
         const REQUEST_PREFIX_STR = "CTRL-REQ-";
         let requestName = event.substring(REQUEST_PREFIX_STR.length);
-        if (!requestName) return false;
+        if (!requestName) return true;
 
         if (requestName.startsWith("PASSWORD")) {
           notify("networkdisable",
