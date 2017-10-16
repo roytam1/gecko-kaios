@@ -4597,6 +4597,9 @@ pref("dom.battery.enabled", true);
 // PowerSupply API
 pref("dom.powersupply.enabled", true);
 
+// Usb API
+pref("dom.usb.enabled", true);
+
 // Image srcset
 pref("dom.image.srcset.enabled", true);
 

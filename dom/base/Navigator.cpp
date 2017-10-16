@@ -34,6 +34,7 @@
 #include "mozilla/Telemetry.h"
 #include "BatteryManager.h"
 #include "PowerSupplyManager.h"
+#include "UsbManager.h"
 #include "mozilla/dom/DeviceStorageAreaListener.h"
 #include "mozilla/dom/PowerManager.h"
 #include "mozilla/dom/WakeLock.h"
@@ -204,6 +205,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Navigator)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBatteryPromise)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFlipManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFlashlightManager)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mUsbManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPowerSupplyManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPowerManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mCellBroadcast)
@@ -299,6 +301,11 @@ Navigator::Invalidate()
     mFMRadio = nullptr;
   }
 #endif
+
+  if (mUsbManager) {
+    mUsbManager->Shutdown();
+    mUsbManager = nullptr;
+  }
 
   if (mPowerManager) {
     mPowerManager->Shutdown();
@@ -1583,6 +1590,23 @@ Navigator::GetDeprecatedBattery(ErrorResult& aRv)
   }
 
   return mBatteryManager;
+}
+
+usb::UsbManager*
+Navigator::GetUsb(ErrorResult& aRv)
+{
+  if (!mUsbManager) {
+    if (!mWindow) {
+      aRv.Throw(NS_ERROR_UNEXPECTED);
+      return nullptr;
+    }
+    NS_ENSURE_TRUE(mWindow->GetDocShell(), nullptr);
+
+    mUsbManager = new usb::UsbManager(mWindow);
+    mUsbManager->Init();
+  }
+
+  return mUsbManager;
 }
 
 powersupply::PowerSupplyManager*

@@ -59,6 +59,11 @@ namespace battery {
 class BatteryManager;
 } // namespace battery
 
+namespace usb {
+class UsbManager;
+} // namespace usb
+
+
 namespace powersupply {
 class PowerSupplyManager;
 } // namespace powersupply
@@ -179,6 +184,7 @@ public:
 
   already_AddRefed<Promise> GetFlipManager(ErrorResult& aRv);
   already_AddRefed<Promise> GetFlashlightManager(ErrorResult& aRv);
+  usb::UsbManager* GetUsb(ErrorResult& aRv);
   powersupply::PowerSupplyManager* GetPowersupply(ErrorResult& aRv);
 
   static already_AddRefed<Promise> GetDataStores(nsPIDOMWindowInner* aWindow,
@@ -400,6 +406,7 @@ private:
   RefPtr<FlipManager> mFlipManager;
   RefPtr<FlashlightManager> mFlashlightManager;
   RefPtr<Promise> mBatteryPromise;
+  RefPtr<usb::UsbManager> mUsbManager;
   RefPtr<powersupply::PowerSupplyManager> mPowerSupplyManager;
   RefPtr<SoftkeyManager> mSoftkeyManager;
 #ifdef MOZ_B2G_FM

@@ -150,6 +150,13 @@ partial interface Navigator {
 };
 
 [NoInterfaceObject]
+interface NavigatorUsb {
+    [Throws, Pref="dom.usb.enabled"]
+    readonly attribute UsbManager? usb;
+};
+Navigator implements NavigatorUsb;
+
+[NoInterfaceObject]
 interface NavigatorPowerSupply {
     [Throws, Pref="dom.powersupply.enabled"]
     readonly attribute PowerSupplyManager? powersupply;

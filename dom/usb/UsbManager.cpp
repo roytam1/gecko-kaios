@@ -5,7 +5,6 @@
 
 #include <limits>
 #include "UsbManager.h"
-#include "Constants.h"
 #include "mozilla/DOMEventTargetHelper.h"
 #include "mozilla/Hal.h"
 #include "mozilla/dom/UsbEvent.h"
@@ -26,6 +25,7 @@ UsbManager::UsbManager(nsPIDOMWindowInner* aWindow)
   : DOMEventTargetHelper(aWindow)
   , mDeviceAttached(false)
   , mDeviceConfigured(false)
+  , mDebounce(false)
 {
 }
 
@@ -70,10 +70,34 @@ UsbManager::Notify(const hal::UsbStatus& aUsbStatus)
     UsbEventInit init;
     init.mDeviceAttached = aUsbStatus.deviceAttached();
     RefPtr<UsbEvent> event = UsbEvent::Constructor(this,
-                                                     USB_STATUS_CHANGE_NAME,
-                                                     init);
+                                                   USB_STATUS_CHANGE_NAME,
+                                                   init);
+    // Delay for debouncing USB disconnects.
+    // We often get rapid connect/disconnect events
+    // when enabling USB functions which need debouncing.
+    if (!mDeviceAttached && !mDebounce) {
+      MessageLoopForIO::current()->PostDelayedTask(FROM_HERE,
+          NewRunnableMethod(this, &UsbManager::DebounceEvent), 500);
+      mDebounce = true;
+      return;
+    }
+    mDebounce = false;
     DispatchTrustedEvent(event);
   }
+}
+
+void
+UsbManager::DebounceEvent()
+{
+  if (!mDebounce)
+    return;
+  UsbEventInit init;
+  init.mDeviceAttached = mDeviceAttached;
+  RefPtr<UsbEvent> event = UsbEvent::Constructor(this,
+                                                 USB_STATUS_CHANGE_NAME,
+                                                 init);
+  mDebounce = false;
+  DispatchTrustedEvent(event);
 }
 
 } // namespace usb

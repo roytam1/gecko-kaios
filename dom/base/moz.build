@@ -430,6 +430,7 @@ LOCAL_INCLUDES += [
     '../network',
     '../powersupply',
     '../time',
+    '../usb',
     '/caps',
     '/docshell/base',
     '/dom/base',

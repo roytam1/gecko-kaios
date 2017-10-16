@@ -63,8 +63,15 @@ private:
    * a usbDeviceStatusobject.
    */
   void  UpdateFromUsbStatus(const hal::UsbStatus& aUsbStatus);
+
+  /**
+   * Delay for debouncing USB disconnects event during usb function swtiching
+   */
+  void  DebounceEvent();
+
   bool  mDeviceAttached;
   bool  mDeviceConfigured;
+  bool  mDebounce;
 };
 
 } // namespace usb

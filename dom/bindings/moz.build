@@ -66,6 +66,7 @@ LOCAL_INCLUDES += [
     '/dom/powersupply',
     '/dom/surface',
     '/dom/svg',
+    '/dom/usb',
     '/dom/workers',
     '/dom/xbl',
     '/dom/xml',

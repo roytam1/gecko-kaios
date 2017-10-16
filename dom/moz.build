@@ -117,6 +117,7 @@ DIRS += [
     'vr',
     'datacall',
     'powersupply',
+    'usb',
 ]
 
 if CONFIG['OS_ARCH'] == 'WINNT':
