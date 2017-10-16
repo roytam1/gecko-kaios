@@ -37,6 +37,10 @@ using mozilla::BrowserElementParent;
 
 bool
 IsApp(nsIURI* aURI) {
+  if (!aURI) {
+    return false;
+  }
+
   bool isApp = false;
   nsresult rv = aURI->SchemeIs("app", &isApp);
   NS_ENSURE_SUCCESS(rv, false);
