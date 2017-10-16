@@ -61,6 +61,9 @@ private:
   bool MPOSReaderModeRequest(android::Parcel& aParcel, const CommandOptions& aOptions);
   bool MPOSReaderModeResponse(const android::Parcel& aParcel, EventOptions& aOptions);
 
+  bool NfcSelfTestRequest(android::Parcel& aParcel, const CommandOptions& aOptions);
+  bool NfcSelfTestResponse(const android::Parcel& aParcel, EventOptions& aOptions);
+
   bool ProcessNotification(int32_t aType, const android::Parcel& aParcel, EventOptions& aOptions);
   bool InitializeNotification(const android::Parcel& aParcel, EventOptions& aOptions);
   bool TechDiscoveredNotification(const android::Parcel& aParcel, EventOptions& aOptions);

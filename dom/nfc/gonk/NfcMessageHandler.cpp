@@ -74,6 +74,9 @@ NfcMessageHandler::Marshall(Parcel& aParcel, const CommandOptions& aOptions)
     case NfcRequestType::MPOSReaderMode:
       result = MPOSReaderModeRequest(aParcel, aOptions);
       break;
+    case NfcRequestType::NfcSelfTest:
+      result = NfcSelfTestRequest(aParcel, aOptions);
+      break;
     default:
       result = false;
       break;
@@ -138,6 +141,9 @@ NfcMessageHandler::ProcessResponse(int32_t aType, const Parcel& aParcel, EventOp
       break;
     case NfcResponseType::MPOSReaderModeRsp:
       result = MPOSReaderModeResponse(aParcel, aOptions);
+      break;
+    case NfcResponseType::NfcSelfTestRsp:
+      result = NfcSelfTestResponse(aParcel, aOptions);
       break;
     default:
       result = false;
@@ -686,6 +692,27 @@ bool
 NfcMessageHandler::MPOSReaderModeResponse(const Parcel& aParcel, EventOptions& aOptions)
 {
   NMH_LOG("MPOSReaderModeResponse\n");
+  aOptions.mErrorCode = aParcel.readInt32();
+  NS_ENSURE_TRUE(!mRequestIdQueue.IsEmpty(), false);
+  aOptions.mRequestId = mRequestIdQueue[0];
+  mRequestIdQueue.RemoveElementAt(0);
+  return true;
+}
+
+bool
+NfcMessageHandler::NfcSelfTestRequest(Parcel& aParcel, const CommandOptions& aOptions)
+{
+  NMH_LOG("NfcSelfTestRequest %d\n", aOptions.mSelfTestType);
+  aParcel.writeInt32(static_cast<int32_t>(NfcRequestType::NfcSelfTest));
+  aParcel.writeInt32(aOptions.mSelfTestType);
+  mRequestIdQueue.AppendElement(aOptions.mRequestId);
+  return true;
+}
+
+bool
+NfcMessageHandler::NfcSelfTestResponse(const Parcel& aParcel, EventOptions& aOptions)
+{
+  NMH_LOG("NfcSelfTestResponse\n");
   aOptions.mErrorCode = aParcel.readInt32();
   NS_ENSURE_TRUE(!mRequestIdQueue.IsEmpty(), false);
   aOptions.mRequestId = mRequestIdQueue[0];

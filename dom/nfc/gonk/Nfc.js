@@ -94,7 +94,8 @@ const NFC_IPC_MSG_ENTRIES = [
                "NFC:NotifySendFileStatus",
                "NFC:ChangeRFState",
                "NFC:SetFocusTab",
-               "NFC:MPOSReaderMode"] }
+               "NFC:MPOSReaderMode",
+               "NFC:NfcSelfTest"] }
 ];
 
 // Should be consistent with NfcRequestType defined in NfcOptions.webidl.
@@ -112,7 +113,8 @@ const NfcRequestType = {
   GETATR: "getAtr",
   LSEXECUTESCRIPT: "lsExecuteScript",
   LSGETVERSION: "lsGetVersion",
-  MPOSREADERMODE: "mPOSReaderMode"
+  MPOSREADERMODE: "mPOSReaderMode",
+  NFCSELFTEST: "nfcSelfTest"
 };
 
 const CommandMsgTable = {};
@@ -130,6 +132,8 @@ CommandMsgTable["NFC:GetAtr"] = NfcRequestType.GETATR;
 CommandMsgTable["NFC:LsExecuteScript"] = NfcRequestType.LSEXECUTESCRIPT;
 CommandMsgTable["NFC:LsGetVersion"] = NfcRequestType.LSGETVERSION;
 CommandMsgTable["NFC:MPOSReaderMode"] = NfcRequestType.MPOSREADERMODE;
+CommandMsgTable["NFC:NfcSelfTest"] = NfcRequestType.NFCSELFTEST;
+
 
 // Should be consistent with NfcResponseType defined in NfcOptions.webidl.
 const NfcResponseType = {
@@ -147,7 +151,8 @@ const NfcResponseType = {
   LSEXECUTESCRIPT_RSP: "lsExecuteScriptRsp",
   LSGETVERSION_RSP: "lsGetVersionRsp",
   MPOSREADERMODE_RSP: "mPOSReaderModeRsp",
-  CONNECTERROR_RSP: "connectErrorRsp"
+  CONNECTERROR_RSP: "connectErrorRsp",
+  NFCSELFTEST_RSP: "nfcSelfTestRsp"
 };
 
 const EventMsgTable = {};
@@ -165,6 +170,7 @@ EventMsgTable[NfcResponseType.GETATR_RSP] = "NFC:GetAtrResponse";
 EventMsgTable[NfcResponseType.LSEXECUTESCRIPT_RSP] = "NFC:LsExecuteScriptResponse";
 EventMsgTable[NfcResponseType.LSGETVERSION_RSP] = "NFC:LsGetVersionResponse";
 EventMsgTable[NfcResponseType.MPOSREADERMODE_RSP] = "NFC:MPOSReaderModeResponse";
+EventMsgTable[NfcResponseType.NFCSELFTEST_RSP] = "NFC:NfcSelfTestResponse";
 
 // Should be consistent with NfcNotificationType defined in NfcOptions.webidl.
 const NfcNotificationType = {
@@ -956,6 +962,9 @@ Nfc.prototype = {
       case NfcResponseType.MPOSREADERMODE_RSP:
         this.mPOSReaderModeResponse(message);
         break;
+      case NfcResponseType.NFCSELFTEST_RSP:
+        this.nfcSelfTestResponse(message);
+        break;
       default:
         throw new Error("Don't know about this message type: " + message.type);
     }
@@ -1575,6 +1584,12 @@ Nfc.prototype = {
   mPOSReaderModeResponse: function(message)
   {
     debug("mPOSReaderModeResponse: send mpos reader mode response:" + JSON.stringify(message));
+    this.sendNfcResponse(message);
+  },
+
+  nfcSelfTestResponse: function(message)
+  {
+    debug("nfcSelfTestResponse: send nfc self test response:" + JSON.stringify(message));
     this.sendNfcResponse(message);
   },
 

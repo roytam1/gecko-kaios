@@ -60,7 +60,8 @@ const NFC_IPC_MSG_NAMES = [
   "NFC:DOMEvent",
   "NFC:NotifySendFileStatusResponse",
   "NFC:ChangeRFStateResponse",
-  "NFC:MPOSReaderModeResponse"
+  "NFC:MPOSReaderModeResponse",
+  "NFC:NfcSelfTestResponse"
 ];
 
 XPCOMUtils.defineLazyServiceGetter(this, "cpmm",
@@ -244,6 +245,14 @@ NfcContentHelper.prototype = {
                            mPOSReaderMode: enabled});
   },
 
+  nfcSelfTest: function nfcSelfTest(type, callback) {
+    let requestId = callback.getCallbackId();
+    this._requestMap[requestId] = callback;
+    cpmm.sendAsyncMessage("NFC:NfcSelfTest",
+                          {requestId: requestId,
+                           selfTestType: type});
+  },
+
   get isMPOSReaderMode() {
     return this._mPOSReaderModeOn;
   },
@@ -297,15 +306,23 @@ NfcContentHelper.prototype = {
       case "NFC:MPOSReaderModeResponse":
         this.handleMPOSReaderModeResponse(result);
         break;
+      case "NFC:NfcSelfTestResponse":
+        this.handleNfcSelfTestResponse(result);
+        break;
       case "NFC:DOMEvent":
         this.handleDOMEvent(result);
         break;
     }
   },
+
   handleMPOSReaderModeResponse: function handleMPOSReaderModeResponse(result) {
     if (result.errorMsg) {
       this._mPOSReaderModeOn = false;
     }
+    this.handleGeneralResponse(result);
+  },
+
+  handleNfcSelfTestResponse: function handleNfcSelfTestResponse(result) {
     this.handleGeneralResponse(result);
   },
 

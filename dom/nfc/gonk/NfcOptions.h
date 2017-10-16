@@ -100,6 +100,10 @@ struct CommandOptions
 
     COPY_OPT_FIELD(mMPOSReaderMode, false)
 
+    mSelfTestType = aOther.mSelfTestType.WasPassed() ?
+                 static_cast<int32_t>(aOther.mSelfTestType.Value()) :
+                 0;
+
 #undef COPY_FIELD
 #undef COPY_OPT_FIELD
   }
@@ -123,6 +127,8 @@ struct CommandOptions
   nsString mUniqueApplicationID;
 
   bool mMPOSReaderMode;
+
+  int32_t mSelfTestType;
 };
 
 struct EventOptions

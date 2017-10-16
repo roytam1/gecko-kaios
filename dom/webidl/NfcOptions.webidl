@@ -25,7 +25,8 @@ enum NfcRequestType {
   "getAtr",
   "lsExecuteScript",
   "lsGetVersion",
-  "mPOSReaderMode"
+  "mPOSReaderMode",
+  "nfcSelfTest"
 };
 
 /**
@@ -45,7 +46,8 @@ enum NfcResponseType {
   "getAtrRsp",
   "lsExecuteScriptRsp",
   "lsGetVersionRsp",
-  "mPOSReaderModeRsp"
+  "mPOSReaderModeRsp",
+  "nfcSelfTestRsp"
 };
 
 /**
@@ -103,6 +105,8 @@ dictionary NfcCommandOptions
   DOMString uniqueApplicationID;
 
   boolean mPOSReaderMode;
+
+  NfcSelfTestType selfTestType;
 };
 
 dictionary NfcEventOptions

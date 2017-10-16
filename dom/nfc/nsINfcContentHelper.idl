@@ -386,4 +386,15 @@ interface nsINfcContentHelper : nsISupports
   void mPOSReaderMode(in boolean enabled, in nsINfcRequestCallback callback);
 
   readonly attribute boolean isMPOSReaderMode;
+
+  /**
+   * Nfc self test.
+   *
+   * @param test type. Possible value is "test_rf_on" or "test_rf_off".
+   *
+   * @param callback
+   *        Called when request is finished
+   */
+  void nfcSelfTest(in DOMString type,
+                     in nsINfcRequestCallback callback);
 };

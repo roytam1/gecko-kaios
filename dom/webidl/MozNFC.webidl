@@ -34,6 +34,11 @@ enum StopPollPowerMode {
   "mode_ultra_low_power"
 };
 
+enum NfcSelfTestType {
+  "test_rf_on",
+  "test_rf_off"
+};
+
 [NoInterfaceObject]
 interface MozNFCManager {
   /**
@@ -169,6 +174,12 @@ partial interface MozNFC {
    */
   [CheckAnyPermissions="nfc-manager", AvailableIn=CertifiedApps]
   attribute EventHandler onmposreaderevent;
+
+  /**
+   * Perform Nfc analog test for DTE certification.
+   */
+  [CheckAnyPermissions="nfc-manager", AvailableIn=CertifiedApps]
+  Promise<void> nfcSelfTest(NfcSelfTestType type);
 };
 
 MozNFC implements MozNFCManager;

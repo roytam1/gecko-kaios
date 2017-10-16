@@ -467,6 +467,12 @@ MozNFCImpl.prototype = {
     return callback.promise;
   },
 
+  nfcSelfTest: function nfcSelfTest(type) {
+    let callback = new NfcCallback(this.window);
+    this._nfcContentHelper.nfcSelfTest(type, callback);
+    return callback.promise;
+  },
+
   observe: function observe(subject, topic, data) {
     if (topic !== "inner-window-destroyed") {
       return;
