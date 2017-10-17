@@ -1244,8 +1244,8 @@ pref('dom.battery.test.dummy_thermal_status', false);
 // Turn off update of dummy battery level
 pref('dom.battery.test.dummy_battery_level', false);
 
-// Enable hang monitor with 10 seconds timeout
-pref("hangmonitor.timeout", 10);
+// Disable hang monitor, see bug 24699
+pref("hangmonitor.timeout", 0);
 
 #ifdef DISABLE_WIFI
 // Disable Gecko wifi
