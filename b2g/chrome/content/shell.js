@@ -19,6 +19,7 @@ Cu.import('resource://gre/modules/ContactService.jsm');
 if (isGonk) {
   Cu.import('resource://gre/modules/NetworkStatsService.jsm');
   Cu.import('resource://gre/modules/ResourceStatsService.jsm');
+  Cu.import('resource://gre/modules/engmodeEx_service.jsm');
 }
 
 Cu.import('resource://gre/modules/KillSwitchMain.jsm');
