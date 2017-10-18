@@ -43,6 +43,7 @@ Cu.import("resource://gre/modules/osfile.jsm");
 Cu.import("resource://gre/modules/Task.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
 Cu.import("resource://gre/modules/MessageBroadcaster.jsm");
+Cu.import("resource://gre/modules/KaiAccounts.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "TrustedRootCertificate",
   "resource://gre/modules/StoreTrustAnchor.jsm");
@@ -73,6 +74,9 @@ XPCOMUtils.defineLazyModuleGetter(this, "AppConstants",
 
 XPCOMUtils.defineLazyModuleGetter(this, "Messaging",
                                   "resource://gre/modules/Messaging.jsm");
+
+XPCOMUtils.defineLazyModuleGetter(this, "CryptoUtils",
+                                  "resource://services-crypto/utils.js");
 
 #ifdef MOZ_WIDGET_GONK
 XPCOMUtils.defineLazyGetter(this, "libcutils", function() {
@@ -2304,33 +2308,44 @@ this.DOMApplicationRegistry = {
     }
 
     // Read the current app manifest file
-    this._readManifests([{ id: id }]).then((aResult) => {
-      let extraHeaders = [];
-#ifdef MOZ_WIDGET_GONK
-      let pingManifestURL;
-      try {
-        pingManifestURL = Services.prefs.getCharPref("ping.manifestURL");
-      } catch(e) { }
-
-      if (pingManifestURL && pingManifestURL == aData.manifestURL) {
-        // Get the device info.
-        let device = libcutils.property_get("ro.product.model");
-        extraHeaders.push({ name: "X-MOZ-B2G-DEVICE",
-                            value: device || "unknown" });
-      }
-#endif
-      doRequest.call(this, aResult[0].manifest, this._prepareKaiHeaders());
+    // read account for hawk token
+    Promise.all([ this._readManifests([{ id: id }]),
+      this._prepareKaiHeaders(aData.manifestURL) ]).then((aResult) => {
+        doRequest.call(this, aResult[0][0].manifest, aResult[1]);
     });
   },
 
-  _prepareKaiHeaders: function(){
-    let extraHeaders = [];
+  _hawkHeader: function(url){
+    let deferred = Promise.defer();
+    kaiAccounts.getAssertion().then( assertion => {
+      let authHeader = [];
+      let hawkCredentials = {
+        id: assertion.kid,
+        key: assertion.mac_key,
+        algorithm: 'sha256'
+      };
+      let options = { credentials : hawkCredentials };
+      let uri = Services.io.newURI(url, null, null);
+      let hawkHeader = CryptoUtils.computeHAWK(uri, "GET", options);
+      authHeader = { 'name' : 'Authorization', 'value' : hawkHeader.field };
+      deferred.resolve(authHeader);
+    });
+
+    return deferred.promise;
+  },
+
+  _prepareKaiHeaders: function(url){
+    let deferred = Promise.defer();
+
+    let kaiHeaders = [];
     let KAIAPIVERSION = 'Kai-API-Version';
     let prefName = 'app.kaiapi.version';
-    let kaiapiVer = '2.0';
+    let kaiapiVer = '3.0';
     try {
       kaiapiVer = Services.prefs.getCharPref(prefName);
     } catch(e) {}
+    kaiHeaders.push({ 'name' : KAIAPIVERSION, 'value' : kaiapiVer});
+
     let KAIAPIDEVICEINFO = 'Kai-Device-Info';
     if (!this.imei) {
       let mobileConnectionService = Cc["@mozilla.org/mobileconnection/mobileconnectionservice;1"]
@@ -2347,10 +2362,14 @@ this.DOMApplicationRegistry = {
     function formatDeviceInfoHeader(imei, curef) {
       return 'imei="'+imei+'", curef="'+curef+'"';
     };
-    extraHeaders.push({'name':KAIAPIVERSION, 'value': kaiapiVer});
-    extraHeaders.push({'name':KAIAPIDEVICEINFO, 'value':formatDeviceInfoHeader(imei, curef)});
+    kaiHeaders.push({ 'name' : KAIAPIDEVICEINFO, 'value' : formatDeviceInfoHeader(imei, curef) });
 
-    return extraHeaders;
+    this._hawkHeader(url).then( hawkHeader => {
+      kaiHeaders.push(hawkHeader);
+      deferred.resolve(kaiHeaders);
+    });
+
+    return deferred.promise;
   },
 
   updatePackagedApp: Task.async(function*(aData, aId, aApp, aNewManifest) {
@@ -2622,23 +2641,7 @@ this.DOMApplicationRegistry = {
       return;
     }
 
-    let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
-                .createInstance(Ci.nsIXMLHttpRequest);
-    xhr.open("GET", app.manifestURL, true);
-    xhr.channel.loadFlags |= Ci.nsIRequest.INHIBIT_CACHING;
-    if (xhr.channel.loadInfo) {
-      xhr.channel.loadInfo.originAttributes = { appId: aData.appId,
-                                                inIsolatedMozBrowser: aData.isBrowser};
-    }
-    xhr.channel.notificationCallbacks = AppsUtils.createLoadContext(aData.appId,
-                                                                    aData.isBrowser);
-    this._prepareKaiHeaders().forEach(function(aHeader) {
-      debug("Adding Kai header: " + aHeader.name + ": " + aHeader.value);
-      xhr.setRequestHeader(aHeader.name, aHeader.value);
-    });
-    xhr.responseType = "json";
-
-    xhr.addEventListener("load", (function() {
+    function onLoad(xhr) {
       if (xhr.status == 200) {
         if (!AppsUtils.checkManifestContentType(app.installOrigin, app.origin,
                                                 xhr.getResponseHeader("content-type"))) {
@@ -2659,13 +2662,37 @@ this.DOMApplicationRegistry = {
       } else {
         sendError("MANIFEST_URL_ERROR");
       }
-    }).bind(this), false);
+    };
 
-    xhr.addEventListener("error", (function() {
-      sendError("NETWORK_ERROR");
-    }).bind(this), false);
+    function doRequest(headers) {
+      let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
+                  .createInstance(Ci.nsIXMLHttpRequest);
+      xhr.open("GET", app.manifestURL, true);
+      xhr.channel.loadFlags |= Ci.nsIRequest.INHIBIT_CACHING;
+      if (xhr.channel.loadInfo) {
+        xhr.channel.loadInfo.originAttributes = { appId: aData.appId,
+                                                  inIsolatedMozBrowser: aData.isBrowser};
+      }
+      xhr.channel.notificationCallbacks = AppsUtils.createLoadContext(aData.appId,
+                                                                      aData.isBrowser);
+      headers.forEach(function(aHeader) {
+        debug("Adding Kai header: " + aHeader.name + ": " + aHeader.value);
+        xhr.setRequestHeader(aHeader.name, aHeader.value);
+      });
+      xhr.responseType = "json";
 
-    xhr.send(null);
+      xhr.addEventListener("load", onLoad.bind(this, xhr), false);
+
+      xhr.addEventListener("error", (function() {
+        sendError("NETWORK_ERROR");
+      }).bind(this), false);
+
+      xhr.send(null);
+    }
+
+    this._prepareKaiHeaders(app.manifestURL).then( extraHeaders => {
+      doRequest.call(this, extraHeaders);
+    });
   },
 
   doInstallPackage: function doInstallPackage(aData, aMm) {
@@ -2744,24 +2771,7 @@ this.DOMApplicationRegistry = {
       }
       return;
     }
-
-    let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
-                .createInstance(Ci.nsIXMLHttpRequest);
-    xhr.open("GET", app.manifestURL, true);
-    xhr.channel.loadFlags |= Ci.nsIRequest.INHIBIT_CACHING;
-    if (xhr.channel.loadInfo) {
-      xhr.channel.loadInfo.originAttributes = { appId: aData.appId,
-                                                inIsolatedMozBrowser: aData.isBrowser};
-    }
-    xhr.channel.notificationCallbacks = AppsUtils.createLoadContext(aData.appId,
-                                                                    aData.isBrowser);
-    this._prepareKaiHeaders().forEach(function(aHeader) {
-      debug("Adding Kai header: " + aHeader.name + ": " + aHeader.value);
-      xhr.setRequestHeader(aHeader.name, aHeader.value);
-    });
-    xhr.responseType = "json";
-
-    xhr.addEventListener("load", (function() {
+    function onLoad(xhr) {
       if (xhr.status == 200) {
         if (!AppsUtils.checkManifestContentType(app.installOrigin, app.origin,
                                                 xhr.getResponseHeader("content-type"))) {
@@ -2783,18 +2793,42 @@ this.DOMApplicationRegistry = {
       else {
         sendError("MANIFEST_URL_ERROR");
       }
-    }).bind(this), false);
+    }
 
-    xhr.addEventListener("error", (function() {
-      sendError("NETWORK_ERROR");
-    }).bind(this), false);
+    function doRequest(headers) {
+      let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
+                  .createInstance(Ci.nsIXMLHttpRequest);
+      xhr.open("GET", app.manifestURL, true);
+      xhr.channel.loadFlags |= Ci.nsIRequest.INHIBIT_CACHING;
+      if (xhr.channel.loadInfo) {
+        xhr.channel.loadInfo.originAttributes = { appId: aData.appId,
+                                                  inIsolatedMozBrowser: aData.isBrowser};
+      }
+      xhr.channel.notificationCallbacks = AppsUtils.createLoadContext(aData.appId,
+                                                                      aData.isBrowser);
+      headers.forEach(function(aHeader) {
+        debug("Adding Kai header: " + aHeader.name + ": " + aHeader.value);
+        xhr.setRequestHeader(aHeader.name, aHeader.value);
+      });
+      xhr.responseType = "json";
 
-    xhr.timeout = XHR_REQUEST_TIMEOUT;
-    xhr.addEventListener("timeout", (function() {
-      sendError("NETWORK_TIMEOUT");
-    }).bind(this), false);
+      xhr.addEventListener("load", onLoad.bind(this, xhr), false);
 
-    xhr.send(null);
+      xhr.addEventListener("error", (function() {
+        sendError("NETWORK_ERROR");
+      }).bind(this), false);
+
+      xhr.timeout = XHR_REQUEST_TIMEOUT;
+      xhr.addEventListener("timeout", (function() {
+        sendError("NETWORK_TIMEOUT");
+      }).bind(this), false);
+
+      xhr.send(null);
+    }
+
+    this._prepareKaiHeaders(app.manifestURL).then( extraHeaders => {
+      doRequest.call(this, extraHeaders);
+    });
   },
 
   onLocationChange(oid) {
