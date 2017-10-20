@@ -300,6 +300,10 @@ function TelephonyCallInfo(aCall) {
   this.isMergeable = aCall.isMergeable;
   this.isConferenceParent = aCall.isConferenceParent || false;
 
+  this.isVt = aCall.isVt || false;
+  this.capabilities = aCall.capabilities || Ci.nsITelephonyCallInfo.CAPABILITY_SUPPORTS_NONE;
+  this.videoCallState = aCall.videoCallState || Ci.nsITelephonCallInfo.STATE_AUDIO_ONLY;
+  this.radioTech = aCall.radioTech || Ci.nsITelephonyCallInfo.RADIO_TECH_CS;
   this.vowifiCallQuality = aCall.vowifiCallQuality || nsITelephonyCallInfo.VOWIFI_QUALITY_NONE;
 }
 TelephonyCallInfo.prototype = {
@@ -330,7 +334,11 @@ TelephonyCallInfo.prototype = {
   isSwitchable: true,
   isMergeable: true,
 
-  vowifiCallQuality: nsITelephonyCallInfo.VOWIFI_QUALITY_NONE
+  isVt: false,
+  capabilities: Ci.nsITelephonyCallInfo.CAPABILITY_SUPPORTS_NONE,
+  videoCallState: Ci.nsITelephonyCallInfo.STATE_AUDIO_ONLY,
+  radioTech: Ci.nsITelephonyCallInfo.RADIO_TECH_CS,
+  vowifiCallQuality: nsITelephonyCallInfo.VOWIFI_QUALITY_NONE,
 };
 
 function Call(aClientId, aCallIndex) {
@@ -353,8 +361,12 @@ Call.prototype = {
   started: null,
   isConferenceParent: false,
 
+  isVt: false,
   voiceQuality: nsITelephonyService.CALL_VOICE_QUALITY_NORMAL,
-  vowifiCallQuality: nsITelephonyCallInfo.VOWIFI_QUALITY_NONE
+  capabilities: Ci.nsITelephonyCallInfo.CAPABILITY_SUPPORTS_NONE,
+  videoCallState: Ci.nsITelephonyCallInfo.STATE_AUDIO_ONLY,
+  radioTech: Ci.nsITelephonyCallInfo.RADIO_TECH_CS,
+  vowifiCallQuality: nsITelephonyCallInfo.VOWIFI_QUALITY_NONE,
 };
 
 function MobileConnectionListener() {}
@@ -1795,7 +1807,9 @@ TelephonyService.prototype = {
                  "namePresentation"];
 
     for (let k of key) {
-      if (aCall[k] != aRilCall[k]) {
+      if (k === 'isVt') {
+        aCall[k] |= aRilCall[k]
+      } else  if (aCall[k] != aRilCall[k]) {
         aCall[k] = aRilCall[k];
         change = true;
       }
@@ -2341,7 +2355,8 @@ TelephonyService.prototype = {
                                         aCall.isEmergency,
                                         duration,
                                         aCall.isOutgoing,
-                                        aCall.hangUpLocal);
+                                        aCall.hangUpLocal,
+                                        aCall.isVt);
 
     // Clear cache of this._cdmaCallWaitingNumber after call disconnected.
     this._cdmaCallWaitingNumber = null;

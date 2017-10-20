@@ -4,7 +4,7 @@
 
 #include "nsISupports.idl"
 
-[scriptable, uuid(086b3ba8-5738-40a9-a126-0e3d85c2e78e)]
+[scriptable, uuid(0bfa0006-ef75-40de-b8e4-d86c86c415f4)]
 interface nsITelephonyMessenger : nsISupports
 {
   /**
@@ -36,7 +36,8 @@ interface nsITelephonyMessenger : nsISupports
                        in boolean aEmergency,
                        in unsigned long aDuration,
                        in boolean aOutgoing,
-                       in boolean aHangUpLocal);
+                       in boolean aHangUpLocal,
+                       in boolean aIsVt);
 
   /**
    * 'ussd-received' system message

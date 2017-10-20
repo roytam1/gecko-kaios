@@ -55,14 +55,15 @@ RILSystemMessenger.prototype = {
    * Wrapper to send "telephony-call-ended" system message.
    */
   notifyCallEnded: function(aServiceId, aNumber, aCdmaWaitingNumber, aEmergency,
-                            aDuration, aOutgoing, aHangUpLocal) {
+                            aDuration, aOutgoing, aHangUpLocal, aIsVt) {
     let data = {
       serviceId: aServiceId,
       number: aNumber,
       emergency: aEmergency,
       duration: aDuration,
       direction: aOutgoing ? "outgoing" : "incoming",
-      hangUpLocal: aHangUpLocal
+      hangUpLocal: aHangUpLocal,
+      isVt: aIsVt
     };
 
     if (aCdmaWaitingNumber != null) {

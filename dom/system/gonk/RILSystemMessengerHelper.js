@@ -76,9 +76,9 @@ RILSystemMessengerHelper.prototype = {
   },
 
   notifyCallEnded: function(aServiceId, aNumber, aCdmaWaitingNumber, aEmergency,
-                            aDuration, aOutgoing, aHangUpLocal) {
+                            aDuration, aOutgoing, aHangUpLocal, aIsVt) {
     this.messenger.notifyCallEnded(aServiceId, aNumber, aCdmaWaitingNumber, aEmergency,
-                                   aDuration, aOutgoing, aHangUpLocal);
+                                   aDuration, aOutgoing, aHangUpLocal, aIsVt);
   },
 
   notifyHacModeChanged: function(aEnable) {
