@@ -12,19 +12,30 @@ const Cu = Components.utils;
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
+Cu.import("resource://gre/modules/AppConstants.jsm");
 
-const PREF_SERVICE_DEVICE_TYPE = "services.kaiostech.device_type";
-const PREF_SERVICE_DEVICE_BRAND = "services.kaiostech.brand";
-const PREF_SERVICE_DEVICE_MODEL = "services.kaiostech.model";
+const isGonk = AppConstants.platform === 'gonk';
+
+if (isGonk) {
+  XPCOMUtils.defineLazyModuleGetter(this, "libcutils", "resource://gre/modules/systemlibs.js");
+}
 
 XPCOMUtils.defineLazyServiceGetter(this, "gMobileConnectionService",
                                    "@mozilla.org/mobileconnection/mobileconnectionservice;1",
                                    "nsIMobileConnectionService");
 
-let device_info;
+
+const device_type_map = {
+  default: 1000,
+  feature_phone: 1000,
+  phone: 2000,
+  tablet: 3000,
+  watch: 4000
+}
+
+let device_info_cache;
 
 this.DeviceUtils = {
-
   /**
    * Returns a device reference number which is vendor dependent.
    * For developer, a pref could be set from device config folder.
@@ -33,9 +44,9 @@ this.DeviceUtils = {
     let cuRefStr;
 
     try {
-      let sysLibs = {};
-      Cu.import("resource://gre/modules/systemlibs.js", sysLibs);
-      cuRefStr = sysLibs.libcutils.property_get("ro.fota.cu_ref");
+      if (isGonk) {
+        cuRefStr = libcutils.property_get("ro.fota.cu_ref");
+      }
       if (!cuRefStr) {
         cuRefStr = Services.prefs.getCharPref("device.cuRef.default");
       }
@@ -45,28 +56,28 @@ this.DeviceUtils = {
     return cuRefStr;
   },
 
-  initTDeviceObject: function DeviceUtils_initTDeviceObject() {
-    if (!device_info) {
+  getTDeviceObject: function DeviceUtils_getTDeviceObject() {
+    if (device_info_cache) {
+      return Promise.resolve(device_info_cache);
+    }
+
+    let device_info;
+    if (isGonk) {
+      let characteristics = libcutils.property_get("ro.build.characteristics");
+
       device_info = {
         reference: this.getRefNumber(),
         os: Services.prefs.getCharPref("b2g.osName"),
         os_version: Services.prefs.getCharPref("b2g.version"),
+        device_type: device_type_map[characteristics],
+        brand: libcutils.property_get("ro.product.brand"),
+        model: libcutils.property_get("ro.product.name")
       };
-      try {
-        device_info.device_type = Services.prefs.getIntPref(PREF_SERVICE_DEVICE_TYPE);
-        device_info.brand       = Services.prefs.getCharPref(PREF_SERVICE_DEVICE_BRAND);
-        device_info.model       = Services.prefs.getCharPref(PREF_SERVICE_DEVICE_MODEL);
-      } catch (e) {}
+    } else {
+      return Promise.reject();
     }
-  },
 
-  getTDeviceObject: function DeviceUtils_getTDeviceObject() {
-    let deferred = Promise.defer();
-    this.initTDeviceObject();
     // TODO: need to check how to handle dual-SIM case.
-    if (typeof device_info.device_id != "undefined") {
-      deferred.resolve(device_info);
-    }
     if (typeof gMobileConnectionService != "undefined") {
       let conn = gMobileConnectionService.getItemByServiceId(0);
       conn.getDeviceIdentities({
@@ -78,15 +89,14 @@ this.DeviceUtils = {
           } else if (aResult.esn && parseInt(aResult.esn) !== 0) {
             device_info.device_id = aResult.esn;
           } else {
-            deferred.reject();
-            return;
+            return Promise.reject();
           }
-          deferred.resolve(device_info);
         }
       });
     } else {
-      deferred.reject();
+      return Promise.reject();
     }
-    return deferred.promise;
+    device_info_cache = device_info;
+    return Promise.resolve(device_info);
   },
 };
