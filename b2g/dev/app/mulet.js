@@ -3,7 +3,7 @@ pref("browser.startup.homepage", "chrome://b2g/content/shell.html");
 
 // Disable some painful behavior of fx
 pref("startup.homepage_welcome_url", "");
-pref("browser.shell.checkDefaultBrowser", "");
+pref("browser.shell.checkDefaultBrowser", false);
 pref("browser.sessionstore.max_tabs_undo", 0);
 pref("browser.sessionstore.max_windows_undo", 0);
 pref("browser.sessionstore.restore_on_demand", false);
