@@ -33,22 +33,17 @@
 #include <netdb.h>
 #include <arpa/inet.h>  // inet_ntop()
 
-#define _DEBUG 0
-
 #define WARN(args...)   __android_log_print(ANDROID_LOG_WARN,  "NetworkUtils", ## args)
 #define ERROR(args...)  __android_log_print(ANDROID_LOG_ERROR,  "NetworkUtils", ## args)
-
-#if _DEBUG
-#define NU_DBG(args...)  __android_log_print(ANDROID_LOG_DEBUG, "NetworkUtils" , ## args)
-#else
-#define NU_DBG(args...)
-#endif
 
 using namespace mozilla::dom;
 using namespace mozilla::ipc;
 using namespace mozilla::system;
 using mozilla::system::Property;
 
+static bool ENABLE_DEBUG = false;
+
+static const char* PREF_NETWORK_DEBUG_ENABLED      = "network.debugging.enabled";
 static const char* PERSIST_SYS_USB_CONFIG_PROPERTY = "persist.sys.usb.config";
 static const char* SYS_USB_CONFIG_PROPERTY         = "sys.usb.config";
 static const char* SYS_USB_STATE_PROPERTY          = "sys.usb.state";
@@ -338,6 +333,17 @@ const CommandFunc NetworkUtils::sTetheringGetStatusChain[] = {
   NetworkUtils::tetheringStatus,
   NetworkUtils::defaultAsyncSuccessHandler
 };
+
+static void NU_DBG(const char *format, ...)
+{
+  if (!ENABLE_DEBUG) {
+    return;
+  }
+  va_list args;
+  va_start(args, format);
+  __android_log_vprint(ANDROID_LOG_INFO, "NetworkUtils" , format, args);
+  va_end(args);
+}
 
 /**
  * Helper function to get the mask from given prefix length.
@@ -2216,6 +2222,8 @@ NetworkUtils::NetworkUtils(MessageCallback aCallback)
 
   SUPPORT_IPV6_ROUTER_MODE = Preferences::GetBool("dom.b2g_ipv6_router_mode", false);
 
+  ENABLE_DEBUG = Preferences::GetBool(PREF_NETWORK_DEBUG_ENABLED, false);
+
   gNetworkUtils = this;
 }
 
@@ -3553,7 +3561,6 @@ inline bool NetworkUtils::isProceeding(uint32_t code)
 
 void NetworkUtils::dumpParams(NetworkParams& aOptions, const char* aType)
 {
-#ifdef _DEBUG
   NU_DBG("Dump params:");
   NU_DBG("     ifname: %s", GET_CHAR(mIfname));
   NU_DBG("     networktype %ld", GET_FIELD(mNetworkType));
@@ -3582,7 +3589,6 @@ void NetworkUtils::dumpParams(NetworkParams& aOptions, const char* aType)
   NU_DBG("     curInternalIfname: %s", GET_CHAR(mCurInternalIfname));
   NU_DBG("     curExternalIfname: %s", GET_CHAR(mCurExternalIfname));
   NU_DBG("     ipv6Prefix: %s", GET_CHAR(mIPv6Prefix));
-#endif
 }
 
 #undef GET_CHAR
