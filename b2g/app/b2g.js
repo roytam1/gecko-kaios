@@ -56,12 +56,20 @@ pref("browser.cache.disk.smart_size.enabled", false);
 pref("browser.cache.disk.smart_size.first_run", false);
 
 pref("browser.cache.memory.enable", true);
-pref("browser.cache.memory.capacity", 1024); // kilobytes
 
+#ifdef KAIOS_256MB_SUPPORT
+pref("browser.cache.memory.capacity", 512); //kilobytes
+#else
+pref("browser.cache.memory.capacity", 1024); // kilobytes
+#endif
 pref("browser.cache.memory_limit", 2048); // 2 MB
 
 /* image cache prefs */
+#ifdef KAIOS_256MB_SUPPORT
+pref("image.cache.size", 524288); //bytes
+#else
 pref("image.cache.size", 1048576); // bytes
+#endif
 pref("canvas.image.cache.limit", 20971520); // 20 MB
 
 /* offline cache prefs */
@@ -328,7 +336,11 @@ pref("notification.feature.enabled", true);
 // prevent video elements from preloading too much data
 pref("media.preload.default", 1); // default to preload none
 pref("media.preload.auto", 2);    // preload metadata if preload=auto
+#ifdef KAIOS_256MB_SUPPORT
+pref("media.cache_size", 2048);  //2MB media cache
+#else
 pref("media.cache_size", 4096);    // 4MB media cache
+#endif
 // Try to save battery by not resuming reading from a connection until we fall
 // below 10s of buffered data.
 pref("media.cache_resume_threshold", 10);
@@ -339,10 +351,17 @@ pref("media.cache_readahead_limit", 30);
 pref("media.gonk.enabled", true);
 #endif
 
+#ifdef KAIOS_256MB_SUPPORT
+//set maximum video buffer size to 20MB(20*1024*1024)
+pref("media.mediasource.eviction_threshold.video", 20971520); //byte
+////set maximum Audio buffer size to 10MB(10*1024*1024)
+pref("media.mediasource.eviction_threshold.audio", 10485760); //byte
+#else
 // Set maximum Video buffer size to 40MB(40*1024*1024).
 pref("media.mediasource.eviction_threshold.video", 41943040);
 // Set maximum Audio buffer size to 20MB(20*1024*1024).
 pref("media.mediasource.eviction_threshold.audio", 20971520);
+#endif
 
 //Encrypted media extensions.
 pref("media.eme.enabled", true);
@@ -358,8 +377,13 @@ pref("image.mem.allow_locking_in_content_processes", true);
 // Almost everything that was factored into 'max_decoded_image_kb' is now stored
 // in the surface cache.  1/8 of main memory is 32MB on a 256MB device, which is
 // about the same as the old 'max_decoded_image_kb'.
+#ifdef KAIOS_256MB_SUPPORT
+pref("image.mem.surfacecache.max_size_kb", 8192);  // 8MB
+pref("image.mem.surfacecache.size_factor", 32);  // 1/32 of main memory
+#else
 pref("image.mem.surfacecache.max_size_kb", 131072);  // 128MB
 pref("image.mem.surfacecache.size_factor", 8);  // 1/8 of main memory
+#endif
 pref("image.mem.surfacecache.discard_factor", 2);  // Discard 1/2 of the surface cache at a time.
 pref("image.mem.surfacecache.min_expiration_ms", 86400000); // 24h, we rely on the out of memory hook
 
@@ -801,12 +825,20 @@ pref("hal.gonk.COMPOSITOR.nice", -4);
 // this too high, then we'll send out a memory pressure event every Z seconds
 // (see below), even while we have processes that we would happily kill in
 // order to free up memory.
+#ifdef KAIOS_256MB_SUPPORT
+pref("gonk.notifyHardLowMemUnderKB", 7168); //kilobytes
+#else
 pref("gonk.notifyHardLowMemUnderKB", 14336);
+#endif
 
 // Fire a memory pressure event when the system has less than Xmb of memory
 // remaining and then switch to the hard trigger, see above.  This should be
 // placed above the BACKGROUND priority class.
+#ifdef KAIOS_256MB_SUPPORT
+pref("gonk.notifySoftLowMemUnderKB", 14336); //kilobytes
+#else
 pref("gonk.notifySoftLowMemUnderKB", 43008);
+#endif
 
 // We wait this long before polling the memory-pressure fd after seeing one
 // memory pressure event.  (When we're not under memory pressure, we sit
