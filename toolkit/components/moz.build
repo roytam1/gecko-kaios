@@ -101,7 +101,7 @@ if CONFIG['MOZ_URL_CLASSIFIER']:
 
 DIRS += ['captivedetect']
 
-if not CONFIG['MOZ_B2G']:
+if not CONFIG['MOZ_B2G'] or CONFIG['MOZ_MULET']:
     DIRS += ['extensions']
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] != "gonk" and CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
