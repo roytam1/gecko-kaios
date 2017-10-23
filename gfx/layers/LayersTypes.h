@@ -32,7 +32,10 @@
 #define INVALID_OVERLAY -1
 
 namespace android {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
 class MOZ_EXPORT GraphicBuffer;
+#pragma GCC diagnostic pop
 } // namespace android
 
 namespace mozilla {
