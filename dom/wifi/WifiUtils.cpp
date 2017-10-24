@@ -495,13 +495,6 @@ bool WpaSupplicant::ExecuteCommand(CommandOptions aOptions,
       CheckBuffer(buffer, len, value);
     }
     aResult.mReply = value;
-  } else if (aOptions.mCmd.EqualsLiteral("hostapd_get_stations")) {
-    aResult.mStatus = mWifiHotspotUtils->do_wifi_hostapd_get_stations();
-  } else if (aOptions.mCmd.EqualsLiteral("connect_to_hostapd")) {
-    aResult.mStatus = mWifiHotspotUtils->do_wifi_connect_to_hostapd();
-  } else if (aOptions.mCmd.EqualsLiteral("close_hostapd_connection")) {
-    aResult.mStatus = mWifiHotspotUtils->do_wifi_close_hostapd_connection();
-
   } else {
     NS_WARNING("WpaSupplicant::ExecuteCommand : Unknown command");
     printf_stderr("WpaSupplicant::ExecuteCommand : Unknown command: %s",
