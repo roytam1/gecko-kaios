@@ -147,11 +147,11 @@ public:
   {
     bool ret = false;
 #ifdef WEBRTC_GONK
-    if (mImage->AsPlanarYCbCrImage()) {
+    if (mImage->AsGrallocImage()) {
       ret = initGralloc();
     } else
 #endif
-    if (mImage->AsGrallocImage()) {
+    if (mImage->AsPlanarYCbCrImage()) {
       ret = initPlanarYCbCr();
     }
     return ret;
