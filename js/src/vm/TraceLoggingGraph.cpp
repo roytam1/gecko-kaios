@@ -135,7 +135,8 @@ TraceLoggerGraph::init(uint64_t startTimestamp)
     }
 
     char dictFilename[sizeof TRACE_LOG_DIR "tl-dict.100.json"];
-    sprintf(dictFilename, TRACE_LOG_DIR "tl-dict.%d.json", loggerId);
+    snprintf(dictFilename, sizeof dictFilename,
+             TRACE_LOG_DIR "tl-dict.%d.json", loggerId);
     dictFile = fopen(dictFilename, "w");
     if (!dictFile) {
         failed = true;
@@ -143,7 +144,8 @@ TraceLoggerGraph::init(uint64_t startTimestamp)
     }
 
     char treeFilename[sizeof TRACE_LOG_DIR "tl-tree.100.tl"];
-    sprintf(treeFilename, TRACE_LOG_DIR "tl-tree.%d.tl", loggerId);
+    snprintf(treeFilename, sizeof treeFilename,
+             TRACE_LOG_DIR "tl-tree.%d.tl", loggerId);
     treeFile = fopen(treeFilename, "w+b");
     if (!treeFile) {
         fclose(dictFile);
@@ -153,7 +155,8 @@ TraceLoggerGraph::init(uint64_t startTimestamp)
     }
 
     char eventFilename[sizeof TRACE_LOG_DIR "tl-event.100.tl"];
-    sprintf(eventFilename, TRACE_LOG_DIR "tl-event.%d.tl", loggerId);
+    snprintf(eventFilename, sizeof eventFilename,
+             TRACE_LOG_DIR "tl-event.%d.tl", loggerId);
     eventFile = fopen(eventFilename, "wb");
     if (!eventFile) {
         fclose(dictFile);

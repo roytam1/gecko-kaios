@@ -360,9 +360,9 @@ PRMJ_FormatTime(char* buf, int buflen, const char* fmt, PRMJTime* prtm)
         size_t fake_year_len;
         char* p;
 
-        sprintf(real_year, "%d", prtm->tm_year);
+        snprintf(real_year, sizeof real_year, "%d", prtm->tm_year);
         real_year_len = strlen(real_year);
-        sprintf(fake_year, "%d", fake_tm_year);
+        snprintf(fake_year, sizeof fake_year, "%d", fake_tm_year);
         fake_year_len = strlen(fake_year);
 
         /* Replace the fake year in the result with the real year. */
