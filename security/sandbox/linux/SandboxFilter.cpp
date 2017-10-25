@@ -518,8 +518,12 @@ public:
       return Allow();
 
 #ifdef PRODUCT_MANUFACTURER_SPRD
+    case __NR_statfs64:
     case __NR_timer_create:
     case __NR_rt_sigtimedwait:
+    case __NR_umask:
+    case __NR_mkdirat:
+    case __NR_eventfd2:
       return Allow();
 #endif
 
