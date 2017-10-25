@@ -1362,6 +1362,7 @@ var CaptivePortalDetectionHelper = (function() {
   const EVENT_CONNECT = "Connect";
   const EVENT_DISCONNECT = "Disconnect";
   let _ongoingInterface = null;
+  let _lastCaptivePortalStatus = EVENT_DISCONNECT;
   let _available = ("nsICaptivePortalDetector" in Ci);
   let getService = function() {
     return Cc['@mozilla.org/toolkit/captive-detector;1']
@@ -1423,7 +1424,9 @@ var CaptivePortalDetectionHelper = (function() {
         case EVENT_CONNECT:
           // perform captive portal detection on wifi interface
           if (_available && network &&
-              network.type == Ci.nsINetworkInfo.NETWORK_TYPE_WIFI) {
+              network.type == Ci.nsINetworkInfo.NETWORK_TYPE_WIFI &&
+              _lastCaptivePortalStatus !== EVENT_CONNECT) {
+            _lastCaptivePortalStatus = EVENT_CONNECT;
             _performDetection(network.name, function(success) {
               _sendNotification(success);
             });
@@ -1432,7 +1435,9 @@ var CaptivePortalDetectionHelper = (function() {
           break;
         case EVENT_DISCONNECT:
           if (_available &&
-              network.type == Ci.nsINetworkInfo.NETWORK_TYPE_WIFI) {
+              network.type == Ci.nsINetworkInfo.NETWORK_TYPE_WIFI &&
+              _lastCaptivePortalStatus !== EVENT_DISCONNECT) {
+            _lastCaptivePortalStatus = EVENT_DISCONNECT;
             _abort(network.name);
             _sendNotification(false);
           }
