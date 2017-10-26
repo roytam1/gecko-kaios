@@ -408,13 +408,15 @@ Telephony::HandleCallInfo(nsITelephonyCallInfo* aInfo)
   }
 
   // Update an existing call
-  // TODO we should update call detail inside a call instance, instead of telephony.
-  // It is werid.
+  // TODO We should update call detail inside a call instance, instead of telephony.
+  // TODO We should update attribute only if it changed.
   call->UpdateEmergency(isEmergency);
   call->UpdateSwitchable(isSwitchable);
   call->UpdateMergeable(isMergeable);
+  bool changed = isConferenceParent != call->IsConferenceParent();
+  call->UpdateIsConferenceParent(isConferenceParent);
 
-  bool changed = quality != call->VoiceQuality();
+  changed |= quality != call->VoiceQuality();
   call->UpdateVoiceQuality(quality);
 
   changed |= videoState != call->VideoCallState();

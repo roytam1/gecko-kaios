@@ -234,6 +234,12 @@ public:
     return mCallIndex;
   }
 
+  bool
+  IsConferenceParent()
+  {
+    return mIsConferenceParent;
+  }
+
   void
   UpdateEmergency(bool aEmergency)
   {
@@ -241,42 +247,56 @@ public:
   }
 
   void
-  UpdateSwitchable(bool aSwitchable) {
+  UpdateSwitchable(bool aSwitchable)
+  {
     mSwitchable = aSwitchable;
   }
 
   void
-  UpdateMergeable(bool aMergeable) {
+  UpdateMergeable(bool aMergeable)
+  {
     mMergeable = aMergeable;
   }
 
   void
-  UpdateSecondId(TelephonyCallId* aId) {
+  UpdateSecondId(TelephonyCallId* aId)
+  {
     mSecondId = aId;
   }
 
   void
-  UpdateVoiceQuality(TelephonyCallVoiceQuality aVoiceQuality) {
+  UpdateIsConferenceParent(bool aIsParent)
+  {
+    mIsConferenceParent = aIsParent;
+  }
+
+  void
+  UpdateVoiceQuality(TelephonyCallVoiceQuality aVoiceQuality)
+  {
     mVoiceQuality = aVoiceQuality;
   }
 
   void
-  UpdateVideoCallState(TelephonyVideoCallState aState) {
+  UpdateVideoCallState(TelephonyVideoCallState aState)
+  {
     mVideoCallState = aState;
   }
 
   void
-  UpdateCapabilities(uint32_t aCapabilities) {
+  UpdateCapabilities(uint32_t aCapabilities)
+  {
     mCapabilities->Update(aCapabilities);
   }
 
   void
-  UpdateRadioTech(TelephonyCallRadioTech aRadioTech) {
+  UpdateRadioTech(TelephonyCallRadioTech aRadioTech)
+  {
     mRadioTech = aRadioTech;
   }
 
   void
-  UpdateVowifiQuality(TelephonyVowifiQuality aVowifiQuality) {
+  UpdateVowifiQuality(TelephonyVowifiQuality aVowifiQuality)
+  {
     mVowifiQuality = aVowifiQuality;
   }
 
