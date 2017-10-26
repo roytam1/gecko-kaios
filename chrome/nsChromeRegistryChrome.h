@@ -63,6 +63,7 @@ class nsChromeRegistryChrome : public nsChromeRegistry
   nsresult OverrideLocalePackage(const nsACString& aPackage,
                                  nsACString& aOverride);
   nsresult SelectLocaleFromPref(nsIPrefBranch* prefs);
+  nsresult SelectBidiNumericalFromLocale(nsIPrefBranch* prefs);
   nsresult UpdateSelectedLocale() override;
   nsIURI* GetBaseURIFromPackage(const nsCString& aPackage,
                                  const nsCString& aProvider,

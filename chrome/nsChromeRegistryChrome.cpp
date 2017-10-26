@@ -44,6 +44,7 @@
 #define SELECTED_LOCALE_PREF "general.useragent.locale"
 #define SELECTED_SKIN_PREF   "general.skins.selectedSkin"
 #define PACKAGE_OVERRIDE_BRANCH "chrome.override_package."
+#define BIDI_NUMERAL_PREF "bidi.numeral"
 
 using namespace mozilla;
 using mozilla::dom::ContentParent;
@@ -288,6 +289,27 @@ nsChromeRegistryChrome::SelectLocaleFromPref(nsIPrefBranch* prefs)
 
   if (NS_FAILED(rv))
     NS_ERROR("Couldn't select locale from pref!");
+
+  rv = SelectBidiNumericalFromLocale(prefs);
+
+  return rv;
+}
+
+nsresult
+nsChromeRegistryChrome::SelectBidiNumericalFromLocale(nsIPrefBranch* aPrefs)
+{
+  nsresult rv;
+  if (LanguagesMatch(mSelectedLocale, NS_LITERAL_CSTRING("ar"))) {
+    // 4 = hindinumeralBidi, which used by eastern-arabic.
+    rv = aPrefs->SetIntPref(BIDI_NUMERAL_PREF, 4);
+  } else {
+    // 0 = nominalnumeralBidi *
+    rv = aPrefs->SetIntPref(BIDI_NUMERAL_PREF, 0);
+  }
+
+  if (NS_FAILED(rv)) {
+    NS_ERROR("Couldn't set bidi.number to pref!");
+  }
 
   return rv;
 }
