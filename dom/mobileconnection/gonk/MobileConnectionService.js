@@ -48,6 +48,10 @@ const NS_PREFBRANCH_PREFCHANGE_TOPIC_ID  = "nsPref:changed";
 const NS_NETWORK_ACTIVE_CHANGED_TOPIC_ID = "network-active-changed";
 const NS_DATA_CALL_ERROR_TOPIC_ID        = "data-call-error";
 
+const TOPIC_MOZSETTINGS_CHANGED = "mozsettings-changed";
+const kPrefRilDataServiceId = "ril.data.defaultServiceId";
+const kPrefSupportPrimarySimSwitch = "ril.support.primarysim.switch";
+
 const kPrefRilDebuggingEnabled = "ril.debugging.enabled";
 
 const UNKNOWN_VALUE = Ci.nsICellInfo.UNKNOWN_VALUE;
@@ -819,7 +823,6 @@ function MobileConnectionProvider(aClientId, aRadioInterface) {
   // An array of nsIMobileConnectionListener instances.
   this._listeners = [];
 
-  this.supportedNetworkTypes = this._getSupportedNetworkTypes();
   this.voice = new MobileConnectionInfo();
   this.data = new MobileConnectionInfo();
   this.signalStrength = new MobileSignalStrength(this._clientId);
@@ -851,7 +854,6 @@ MobileConnectionProvider.prototype = {
   radioState: Ci.nsIMobileConnection.MOBILE_RADIO_STATE_UNKNOWN,
   lastKnownNetwork: null,
   lastKnownHomeNetwork: null,
-  supportedNetworkTypes: null,
   deviceIdentities: null,
   isInEmergencyCbMode: false,
   signalStrength: null,
@@ -879,7 +881,7 @@ MobileConnectionProvider.prototype = {
    * A utility function to get supportedNetworkTypes from system property.
    */
   _getSupportedNetworkTypes: function() {
-    let key = "ro.moz.ril." + this._clientId + ".network_types";
+    let key = "persist.ril." + this._clientId + ".network_types";
     let supportedNetworkTypes = libcutils.property_get(key, "").split(",");
 
     // If mozRIL system property is not available, fallback to AOSP system
@@ -1351,7 +1353,7 @@ MobileConnectionProvider.prototype = {
   },
 
   getSupportedNetworkTypes: function(aTypes) {
-    aTypes.value = this.supportedNetworkTypes.slice();
+    aTypes.value = this._getSupportedNetworkTypes().slice();
     return aTypes.value.length;
   },
 
@@ -1808,10 +1810,19 @@ function MobileConnectionService() {
     this._providers.push(provider);
   }
 
+  // A preference to determine if device support switching primary SIM feature.
+  this._supportPrimarySimSwitch = Services.prefs.getBoolPref(
+                                    kPrefSupportPrimarySimSwitch);
+
+  this._updateSupportedNetworkTypes();
+
   Services.prefs.addObserver(kPrefRilDebuggingEnabled, this, false);
   Services.obs.addObserver(this, NS_NETWORK_ACTIVE_CHANGED_TOPIC_ID, false);
   Services.obs.addObserver(this, NS_DATA_CALL_ERROR_TOPIC_ID, false);
   Services.obs.addObserver(this, NS_XPCOM_SHUTDOWN_OBSERVER_ID, false);
+  if (this.numItems == 2 && this._supportPrimarySimSwitch) {
+    Services.obs.addObserver(this, TOPIC_MOZSETTINGS_CHANGED, false);
+  }
 
   debug("init complete");
 }
@@ -1830,11 +1841,17 @@ MobileConnectionService.prototype = {
   // An array of MobileConnectionProvider instances.
   _providers: null,
 
+  // A flag to indicate if device support primary SIM switch.
+  _supportPrimarySimSwitch: false,
+
   _shutdown: function() {
     Services.prefs.removeObserver(kPrefRilDebuggingEnabled, this);
     Services.obs.removeObserver(this, NS_NETWORK_ACTIVE_CHANGED_TOPIC_ID);
     Services.obs.removeObserver(this, NS_DATA_CALL_ERROR_TOPIC_ID);
     Services.obs.removeObserver(this, NS_XPCOM_SHUTDOWN_OBSERVER_ID);
+    if (this.numItems == 2 && this._supportPrimarySimSwitch) {
+      Services.obs.removeObserver(this, TOPIC_MOZSETTINGS_CHANGED);
+    }
   },
 
   _updateDebugFlag: function() {
@@ -1842,6 +1859,47 @@ MobileConnectionService.prototype = {
       DEBUG = RIL.DEBUG_RIL ||
               Services.prefs.getBoolPref(kPrefRilDebuggingEnabled);
     } catch (e) {}
+  },
+
+  _updateSupportedNetworkTypes: function() {
+    // Update "persist.ril.[clientId].network_types" if these keys do not exist.
+    for (let i = 0; i < this.numItems; i++) {
+      let key = "persist.ril." + i + ".network_types";
+      let supportedNetworkTypes = libcutils.property_get(key, "");
+
+      if (!supportedNetworkTypes) {
+        key = "ro.moz.ril." + i + ".network_types";
+        libcutils.property_set("persist.ril." + i + ".network_types",
+          // This should be customizable regarding default value.
+          libcutils.property_get(key, i == 0 ? RIL.GECKO_SUPPORTED_NETWORK_TYPES_DEFAULT
+                                             : RIL.GECKO_SUPPORTED_NETWORK_TYPES[0]));
+      }
+    }
+  },
+
+  _swapSupportedNetworkTypes: function(aNewPrimarySlot) {
+    let roKeyPrimary = "ro.moz.ril.0.network_types";
+    let roKeySlave = "ro.moz.ril.1.network_types";
+
+    let persistKeyPrimary = "persist.ril." + aNewPrimarySlot + ".network_types";
+    let persistTypesPrimary = libcutils.property_get(persistKeyPrimary, "");
+
+    let persistKeySlave = "persist.ril." + (aNewPrimarySlot ^ 1) + ".network_types";
+    let persistTypesSlave = libcutils.property_get(persistKeySlave, "");
+
+    if (!persistTypesPrimary || !persistTypesSlave) {
+      if (DEBUG) {
+        debug("Don't expect empty values for both slots");
+      }
+      return;
+    }
+
+    // Update persist value for according to aNewPrimarySlot, Default value
+    // should be customizable.
+    libcutils.property_set(persistKeyPrimary, libcutils.property_get(roKeyPrimary,
+      RIL.GECKO_SUPPORTED_NETWORK_TYPES_DEFAULT));
+    libcutils.property_set(persistKeySlave, libcutils.property_get(roKeySlave,
+      RIL.GECKO_SUPPORTED_NETWORK_TYPES[0]));
   },
 
   /**
@@ -2133,6 +2191,24 @@ MobileConnectionService.prototype = {
         break;
       case NS_XPCOM_SHUTDOWN_OBSERVER_ID:
         this._shutdown();
+        break;
+      case TOPIC_MOZSETTINGS_CHANGED:
+        if ("wrappedJSObject" in aSubject) {
+          aSubject = aSubject.wrappedJSObject;
+        }
+        this.handle(aSubject.key, aSubject.value);
+        break;
+    }
+  },
+
+  handle: function(aName, aResult) {
+    switch (aName) {
+      case kPrefRilDataServiceId:
+        aResult = aResult || 0;
+        if (DEBUG) {
+          debug("'ril.data.defaultServiceId' is now " + aResult);
+        }
+        this._swapSupportedNetworkTypes(aResult);
         break;
     }
   }

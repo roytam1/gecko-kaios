@@ -1286,3 +1286,6 @@ pref("device.capability.wifi", false);
 
 // Enable IPv6 tethering router mode in Gecko
 pref("dom.b2g_ipv6_router_mode", true);
+
+// Support primary sim switch
+pref("ril.support.primarysim.switch", false);
