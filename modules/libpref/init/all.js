@@ -4679,6 +4679,13 @@ pref("dom.push.http2.reset_retry_count_after_ms", 60000);
 pref("dom.push.http2.maxRetries", 2);
 pref("dom.push.http2.retryInterval", 5000);
 
+// KaiOS push service needs authorization
+pref("dom.push.authorization.enabled", false);
+// The end point to get a access token for KaiOS push service
+pref("dom.push.token.uri", "");
+// the secret API key of KaiOS push service
+pref("dom.push.authorization.keyName", "%KAIOS_PUSH_API_KEY%");
+
 // WebNetworkStats
 pref("dom.mozNetworkStats.enabled", false);
 
@@ -5286,6 +5293,8 @@ pref("dom.mozKillSwitch.enabled", false);
 pref("toolkit.pageThumbs.screenSizeDivisor", 7);
 pref("toolkit.pageThumbs.minWidth", 0);
 pref("toolkit.pageThumbs.minHeight", 0);
+
+pref("toolkit.deviceUtils.loglevel", "error");
 
 pref("webextensions.tests", false);
 
