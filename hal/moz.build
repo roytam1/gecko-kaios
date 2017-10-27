@@ -43,6 +43,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
         'fallback/FallbackFlipManager.cpp',
         'fallback/FallbackPower.cpp',
         'fallback/FallbackPowerSupply.cpp',
+        'fallback/FallbackUsbManager.cpp',
         'linux/LinuxMemory.cpp',
     ]
     # AndroidHal.cpp cannot be built in unified mode because it relies on HalImpl.h.
@@ -76,6 +77,7 @@ elif CONFIG['OS_TARGET'] == 'Linux':
         'fallback/FallbackPowerSupply.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
         'fallback/FallbackSensor.cpp',
+        'fallback/FallbackUsbManager.cpp',
         'fallback/FallbackVibration.cpp',
         'linux/LinuxMemory.cpp',
         'linux/LinuxPower.cpp',
@@ -97,6 +99,7 @@ elif CONFIG['OS_TARGET'] == 'WINNT':
         'fallback/FallbackPower.cpp',
         'fallback/FallbackPowerSupply.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
+        'fallback/FallbackUsbManager.cpp',
         'fallback/FallbackVibration.cpp',
         'windows/WindowsSensor.cpp',
     ]
@@ -114,6 +117,7 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
         'fallback/FallbackPower.cpp',
         'fallback/FallbackPowerSupply.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
+        'fallback/FallbackUsbManager.cpp',
         'fallback/FallbackVibration.cpp',
     ]
 elif CONFIG['OS_TARGET'] in ('OpenBSD', 'NetBSD', 'FreeBSD', 'DragonFly'):
@@ -126,6 +130,7 @@ elif CONFIG['OS_TARGET'] in ('OpenBSD', 'NetBSD', 'FreeBSD', 'DragonFly'):
         'fallback/FallbackPowerSupply.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
         'fallback/FallbackSensor.cpp',
+        'fallback/FallbackUsbManager.cpp',
         'fallback/FallbackVibration.cpp',
     ]
     if CONFIG['MOZ_ENABLE_DBUS']:
@@ -147,6 +152,7 @@ else:
         'fallback/FallbackPowerSupply.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
         'fallback/FallbackSensor.cpp',
+        'fallback/FallbackUsbManager.cpp',
         'fallback/FallbackVibration.cpp',
     ]
 
