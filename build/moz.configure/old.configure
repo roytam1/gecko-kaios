@@ -311,6 +311,7 @@ def old_configure_options(*options):
     '--with-ios-sdk',
     '--with-java-bin-path',
     '--with-jitreport-granularity',
+    '--with-kaios-push-api-keyfile',
     '--with-linux-headers',
     '--with-macbundlename-prefix',
     '--with-macos-private-frameworks',
