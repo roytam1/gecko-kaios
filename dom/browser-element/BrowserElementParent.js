@@ -1001,15 +1001,32 @@ BrowserElementParent.prototype = {
                                              Ci.nsIRequestObserver])
     };
 
-    let referrer = Services.io.newURI(_options.referrer, null, null);
-    let principal =
-      Services.scriptSecurityManager.createCodebasePrincipal(
-        referrer, this._frameLoader.loadContext.originAttributes);
+    let referrer = null;
+    let principal = null;
+    if (_options.referrer) {
+      try {
+        // newURI will throw on malformed URIs.
+        referrer = Services.io.newURI(_options.referrer, null, null);
+        // This returns null if there is no principal available.
+        principal =
+          Services.scriptSecurityManager.createCodebasePrincipal(
+            referrer, this._frameLoader.loadContext.originAttributes);
+      }
+      catch(e) {
+        debug('Malformed referrer -- ' + e);
+      }
+    }
+
+    // newChannel does not allow null loadingPrincipal, so set principal by uri.
+    if (!principal) {
+      principal = Services.scriptSecurityManager.createCodebasePrincipal(
+        uri, this._frameLoader.loadContext.originAttributes);
+    }
 
     let channel = NetUtil.newChannel({
       uri: url,
       loadingPrincipal: principal,
-      securityFlags: SEC_ALLOW_CROSS_ORIGIN_DATA_INHERITS,
+      securityFlags: Ci.nsILoadInfo.SEC_ALLOW_CROSS_ORIGIN_DATA_INHERITS,
       contentPolicyType: Ci.nsIContentPolicy.TYPE_OTHER
     });
 

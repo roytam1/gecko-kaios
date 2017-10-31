@@ -2712,7 +2712,7 @@ TabParent::RecvTriggerSpatialNavigationCursorClick()
 {
   RefPtr<SpatialNavigationService> service =
     SpatialNavigationService::GetOrCreate();
-  service->RecvTriggerCursorClick();
+  service->CursorClick();
 
   return true;
 }
@@ -2733,6 +2733,16 @@ TabParent::RecvTriggerSpatialNavigationCursorMove()
   RefPtr<SpatialNavigationService> service =
     SpatialNavigationService::GetOrCreate();
   service->CursorMove();
+
+  return true;
+}
+
+bool
+TabParent::RecvTriggerSpatialNavigationContextMenu()
+{
+  RefPtr<SpatialNavigationService> service =
+    SpatialNavigationService::GetOrCreate();
+  service->SendContextMenuEvent();
 
   return true;
 }

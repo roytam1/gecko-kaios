@@ -523,6 +523,7 @@ parent:
     async TriggerSpatialNavigationCursorClick();
     async TriggerSpatialNavigationCursorOut();
     async TriggerSpatialNavigationCursorMove();
+    async TriggerSpatialNavigationContextMenu();
 
     async RequestVolumeChange(bool up);
     async RequestVolumeShow();

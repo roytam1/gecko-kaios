@@ -321,6 +321,7 @@ public:
   virtual bool RecvTriggerSpatialNavigationCursorClick() override;
   virtual bool RecvTriggerSpatialNavigationCursorOut() override;
   virtual bool RecvTriggerSpatialNavigationCursorMove() override;
+  virtual bool RecvTriggerSpatialNavigationContextMenu() override;
 
   virtual bool
   RecvDispatchWheelEvent(const mozilla::WidgetWheelEvent& aEvent) override;
