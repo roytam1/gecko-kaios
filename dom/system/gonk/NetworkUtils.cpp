@@ -54,11 +54,6 @@ static const char* USB_FUNCTION_ADB    = "adb";
 // Use this command to continue the function chain.
 static const char* DUMMY_COMMAND = "tether status";
 
-// IPV6 Tethering is not supported in AOSP, use the property to
-// identify vendor specific support in IPV6. We can remove this flag
-// once upstream Android support IPV6 in tethering.
-static const char* IPV6_TETHERING = "ro.tethering.ipv6";
-
 // Retry 20 times (2 seconds) for usb state transition.
 static const uint32_t USB_FUNCTION_RETRY_TIMES = 20;
 // Check "sys.usb.state" every 100ms.
@@ -92,7 +87,6 @@ static const uint32_t BUF_SIZE = 1024;
 static const int32_t SUCCESS = 0;
 
 static uint32_t SDK_VERSION;
-static uint32_t SUPPORT_IPV6_TETHERING;
 
 static bool SUPPORT_IPV6_ROUTER_MODE;
 static const char IPV6_PROC_PATH[] = "/proc/sys/net/ipv6/conf";
@@ -230,7 +224,6 @@ const CommandFunc NetworkUtils::sUSBEnableChain[] = {
   NetworkUtils::tetheringStatus,
   NetworkUtils::startTethering,
   NetworkUtils::setDnsForwarders,
-  NetworkUtils::addUpstreamInterface,
   NetworkUtils::startIPv6Tethering,
   NetworkUtils::addIPv6RouteToLocalNetwork,
   NetworkUtils::usbTetheringSuccess
@@ -242,7 +235,6 @@ const CommandFunc NetworkUtils::sUSBDisableChain[] = {
   NetworkUtils::removeInterfaceFromLocalNetwork,
   NetworkUtils::preTetherInterfaceList,
   NetworkUtils::postTetherInterfaceList,
-  NetworkUtils::removeUpstreamInterface,
   NetworkUtils::disableNat,
   NetworkUtils::setIpForwardingEnabled,
   NetworkUtils::setInterfaceForwardingDisabled,
@@ -263,11 +255,9 @@ const CommandFunc NetworkUtils::sUpdateUpStreamChain[] = {
   NetworkUtils::removeIPv6LocalNetworkRoute,
   NetworkUtils::cleanUpStream,
   NetworkUtils::cleanUpStreamInterfaceForwarding,
-  NetworkUtils::removeUpstreamInterface,
   NetworkUtils::createUpStream,
   NetworkUtils::createUpStreamInterfaceForwarding,
   NetworkUtils::setDnsForwarders,
-  NetworkUtils::addUpstreamInterface,
   NetworkUtils::startIPv6Tethering,
   NetworkUtils::addIPv6RouteToLocalNetwork,
   NetworkUtils::updateUpStreamSuccess
@@ -1028,79 +1018,6 @@ void NetworkUtils::postTetherInterfaceList(CommandChain* aChain,
   memcpy(buf, reason.get(), length);
   split(buf, INTERFACE_DELIMIT, GET_FIELD(mInterfaceList));
 
-  doCommand(command, aChain, aCallback);
-}
-
-bool isCommandChainIPv6(CommandChain* aChain, const char *externalInterface) {
-  // Check by gateway address
-  if (getIpType(GET_CHAR(mGateway)) == AF_INET6) {
-    return true;
-  }
-
-  uint32_t length = GET_FIELD(mGateways).Length();
-  for (uint32_t i = 0; i < length; i++) {
-    NS_ConvertUTF16toUTF8 autoGateway(GET_FIELD(mGateways)[i]);
-    if(getIpType(autoGateway.get()) == AF_INET6) {
-      return true;
-    }
-  }
-
-  // Check by external inteface address
-  FILE *file = fopen("/proc/net/if_inet6", "r");
-  if (!file) {
-    return false;
-  }
-
-  bool isIPv6 = false;
-  char interface[32];
-  while(fscanf(file, "%*s %*s %*s %*s %*s %32s", interface)) {
-    if (strcmp(interface, externalInterface) == 0) {
-      isIPv6 = true;
-      break;
-    }
-  }
-
-  fclose(file);
-  return isIPv6;
-}
-
-void NetworkUtils::addUpstreamInterface(CommandChain* aChain,
-                                        CommandCallback aCallback,
-                                        NetworkResultOptions& aResult)
-{
-  nsCString interface(GET_CHAR(mExternalIfname));
-  if (!interface.get()[0]) {
-    interface = GET_CHAR(mCurExternalIfname);
-  }
-
-  if (SUPPORT_IPV6_TETHERING == 0 || !isCommandChainIPv6(aChain, interface.get())) {
-    aCallback(aChain, false, aResult);
-    return;
-  }
-
-  char command[MAX_COMMAND_SIZE];
-  snprintf(command, MAX_COMMAND_SIZE - 1, "tether interface add_upstream %s",
-           interface.get());
-  doCommand(command, aChain, aCallback);
-}
-
-void NetworkUtils::removeUpstreamInterface(CommandChain* aChain,
-                                           CommandCallback aCallback,
-                                           NetworkResultOptions& aResult)
-{
-  nsCString interface(GET_CHAR(mExternalIfname));
-  if (!interface.get()[0]) {
-    interface = GET_CHAR(mPreExternalIfname);
-  }
-
-  if (SUPPORT_IPV6_TETHERING == 0 || !isCommandChainIPv6(aChain, interface.get())) {
-    aCallback(aChain, false, aResult);
-    return;
-  }
-
-  char command[MAX_COMMAND_SIZE];
-  snprintf(command, MAX_COMMAND_SIZE - 1, "tether interface remove_upstream %s",
-           interface.get());
   doCommand(command, aChain, aCallback);
 }
 
@@ -2216,9 +2133,6 @@ NetworkUtils::NetworkUtils(MessageCallback aCallback)
   char value[Property::VALUE_MAX_LENGTH];
   Property::Get("ro.build.version.sdk", value, nullptr);
   SDK_VERSION = atoi(value);
-
-  Property::Get(IPV6_TETHERING, value, "0");
-  SUPPORT_IPV6_TETHERING = atoi(value);
 
   SUPPORT_IPV6_ROUTER_MODE = Preferences::GetBool("dom.b2g_ipv6_router_mode", false);
 

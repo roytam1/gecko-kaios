@@ -395,8 +395,6 @@ private:
   static void addRouteToLocalNetwork(PARAMS);
   static void preTetherInterfaceList(PARAMS);
   static void postTetherInterfaceList(PARAMS);
-  static void addUpstreamInterface(PARAMS);
-  static void removeUpstreamInterface(PARAMS);
   static void setIpForwardingEnabled(PARAMS);
   static void setInterfaceForwardingEnabled(PARAMS);
   static void setInterfaceForwardingDisabled(PARAMS);
