@@ -124,7 +124,7 @@ dnl = Enable Nuance XT9 Library Support
 dnl ========================================================
 MOZ_ARG_ENABLE_BOOL(nuance-xt9,
 [  --enable-nuance-xt9        Enable Nuance's XT9 Library Support for IME],
-    ENABLE_NUANCE_XT9=1,
+    ENABLE_NUANCE_XT9=1 && NUM_IME_ENABLED=$((NUM_IME_ENABLED+1)),
     ENABLE_NUANCE_XT9= )
 if test -n "$ENABLE_NUANCE_XT9"; then
    AC_DEFINE(ENABLE_NUANCE_XT9)
@@ -136,15 +136,21 @@ dnl = Enable Reverie RT9 Library Support
 dnl ========================================================
 MOZ_ARG_ENABLE_BOOL(reverie-rt9,
 [  --enable-reverie-rt9        Enable Reverie's RT9 Library Support for IME],
-    ENABLE_REVERIE_RT9=1,
+    ENABLE_REVERIE_RT9=1 && NUM_IME_ENABLED=$((NUM_IME_ENABLED+1)),
     ENABLE_REVERIE_RT9= )
 if test -n "$ENABLE_REVERIE_RT9"; then
    AC_DEFINE(ENABLE_REVERIE_RT9)
 fi
 AC_SUBST(ENABLE_REVERIE_RT9)
 
-if test -n "$ENABLE_NUANCE_XT9" -a -n "$ENABLE_REVERIE_RT9" ; then
-  AC_MSG_ERROR([Cannot enable ENABLE_REVERIE_RT9 and ENABLE_NUANCE_XT9 at the same time])
+if test "$NUM_IME_ENABLED" -gt 1 ; then
+  if test -n "$ENABLE_NUANCE_XT9" ; then
+    AC_MSG_CHECKING([nuance-xt9 IME engine is enabled])
+  fi
+  if test -n "$ENABLE_REVERIE_RT9" ; then
+    AC_MSG_CHECKING([reverie-rt9 IME engine is enabled])
+  fi
+  AC_MSG_ERROR([It's invalid to enable more than one ($NUM_IME_ENABLED) IME engine at the same time])
 fi
 
 if test -n "$gonkdir" ; then
