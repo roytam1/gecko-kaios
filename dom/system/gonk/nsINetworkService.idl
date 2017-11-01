@@ -201,7 +201,7 @@ interface nsISetInterfaceConfigCallback : nsISupports
 /**
  * Provide network services.
  */
-[scriptable, uuid(adec3ded-6191-4bf6-826e-6fa2061d51bd)]
+[scriptable, uuid(b0d57de1-d12b-b7f6-0263-53a2ab1d5b9d)]
 interface nsINetworkService : nsISupports
 {
   const long MODIFY_ROUTE_ADD    = 0;
@@ -341,8 +341,6 @@ interface nsINetworkService : nsISupports
   void setDNS(in DOMString interfaceName,
               in unsigned long dnsesCount,
               [array, size_is(dnsesCount)] in wstring dnses,
-              in unsigned long gatewaysCount,
-              [array, size_is(gatewaysCount)] in wstring gateways,
               in nsISetDnsCallback callback);
 
   /**
@@ -355,12 +353,15 @@ interface nsINetworkService : nsISupports
    * @param gateways
    *        Default gateways for setting default route.
    *
+   * @param isDefault
+   *        Set it as default channel or not.
    * @param callback
    *        Callback to notify the result of setting default route.
    */
   void setDefaultRoute(in DOMString interfaceName,
                        in unsigned long count,
                        [array, size_is(count)] in wstring gateways,
+                       in boolean isDefault,
                        in nsINativeCommandCallback callback);
 
   /**

@@ -466,9 +466,6 @@ NetworkManager.prototype = {
           // Remove pre-created default route and let setAndConfigureActive()
           // to set default route only on preferred network
           .then(() => {
-            if (extNetworkInfo.type == Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_IMS) {
-              return Promise.resolve();
-            }
             return this._removeDefaultRoute(extNetworkInfo);
           })
           // Set DNS server as early as possible to prevent from
@@ -478,6 +475,10 @@ NetworkManager.prototype = {
               return Promise.resolve();
             }
             return this._setDNS(extNetworkInfo);
+          })
+          // Config the default route for each interface.
+          .then(() => {
+            return this._setDefaultRoute(extNetworkInfo);
           })
           .then(() => {
             // Add host route for data calls
@@ -1146,9 +1147,7 @@ NetworkManager.prototype = {
   _setDNS: function(aNetworkInfo) {
     return new Promise((aResolve, aReject) => {
       let dnses = aNetworkInfo.getDnses();
-      let gateways = aNetworkInfo.getGateways();
-      gNetworkService.setDNS(aNetworkInfo.name, dnses.length, dnses,
-                             gateways.length, gateways, (aError) => {
+      gNetworkService.setDNS(aNetworkInfo.name, dnses.length, dnses, (aError) => {
         if (aError) {
           aReject("setDNS failed");
           return;
@@ -1220,6 +1219,23 @@ NetworkManager.prototype = {
     });
   },
 
+  _setDefaultRoute: function(aNetworkInfo) {
+    debug("_setDefaultRoute for Iface=" + aNetworkInfo.name);
+    return new Promise((aResolve, aReject) => {
+      let networkInfo = aNetworkInfo;
+      let gateways = networkInfo.getGateways();
+
+      gNetworkService.setDefaultRoute(networkInfo.name, gateways.length, gateways,
+                                      false, (aSuccess) => {
+        if (!aSuccess) {
+          debug("setDefaultRoute failed");
+        }
+        // Always resolve.
+        aResolve();
+      });
+    });
+  },
+
   _setDefaultRouteAndProxy: function(aNetwork, aOldNetwork) {
     if (aOldNetwork) {
       return this._removeDefaultRoute(aOldNetwork.info)
@@ -1231,7 +1247,7 @@ NetworkManager.prototype = {
       let gateways = networkInfo.getGateways();
 
       gNetworkService.setDefaultRoute(networkInfo.name, gateways.length, gateways,
-                                      () => {
+                                      true, () => {
         this.setNetworkProxy(aNetwork);
         aResolve();
       });

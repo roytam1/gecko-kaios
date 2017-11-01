@@ -448,8 +448,7 @@ NetworkService.prototype = {
     });
   },
 
-  setDNS: function(aInterfaceName, aDnsesCount, aDnses, aGatewaysCount,
-                   aGateways, aCallback) {
+  setDNS: function(aInterfaceName, aDnsesCount, aDnses, aCallback) {
     debug("Going to set DNS to " + aInterfaceName);
     let options = {
       cmd: "setDNS",
@@ -463,20 +462,25 @@ NetworkService.prototype = {
       */
       // domain: "mozilla." + aInterfaceName + ".domain",
       domain: null,
-      dnses: aDnses,
-      gateways: aGateways
+      dnses: aDnses
     };
     this.controlMessage(options, function(aResult) {
       aCallback.setDnsResult(aResult.success ? null : aResult.reason);
     });
   },
 
-  setDefaultRoute: function(aInterfaceName, aCount, aGateways, aCallback) {
+  /*
+  * boolean aIsDefault
+  * true:   process the addDefaultRouteToNetwork and setDefaultNetwork in the NetworkUtils.cpp
+  * false:  process the addDefaultRouteToNetwork only in the NetworkUtils.cpp
+  */
+  setDefaultRoute: function(aInterfaceName, aCount, aGateways, aIsDefault, aCallback) {
     debug("Going to change default route to " + aInterfaceName);
     let options = {
       cmd: "setDefaultRoute",
       ifname: aInterfaceName,
-      gateways: aGateways
+      gateways: aGateways,
+      isDefault: aIsDefault
     };
     this.controlMessage(options, function(aResult) {
       aCallback.nativeCommandResult(!aResult.error);

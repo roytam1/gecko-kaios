@@ -2372,7 +2372,6 @@ CommandResult NetworkUtils::setDNS(NetworkParams& aOptions)
     // Lollipop.
     static CommandFunc COMMAND_CHAIN[] = {
       setInterfaceDns,
-      addDefaultRouteToNetwork,
       defaultAsyncSuccessHandler
     };
     NetIdManager::NetIdInfo netIdInfo;
@@ -2501,7 +2500,7 @@ CommandResult NetworkUtils::resetConnections(NetworkParams& aOptions) {
 }
 
 /**
- * Set default route and DNS servers for given network interface.
+ * Set default route for given network interface..
  */
 CommandResult NetworkUtils::setDefaultRoute(NetworkParams& aOptions)
 {
@@ -2509,10 +2508,16 @@ CommandResult NetworkUtils::setDefaultRoute(NetworkParams& aOptions)
     return setDefaultRouteLegacy(aOptions);
   }
 
-  static CommandFunc COMMAND_CHAIN[] = {
+  static CommandFunc COMMAND_CHAIN_FOR_DEFAULT[] = {
     addDefaultRouteToNetwork,
     setDefaultNetwork,
-    defaultAsyncSuccessHandler,
+    defaultAsyncSuccessHandler
+  };
+
+
+  static CommandFunc COMMAND_CHAIN[] = {
+    addDefaultRouteToNetwork,
+    defaultAsyncSuccessHandler
   };
 
   NetIdManager::NetIdInfo netIdInfo;
@@ -2521,9 +2526,17 @@ CommandResult NetworkUtils::setDefaultRoute(NetworkParams& aOptions)
     return -1;
   }
 
+  NU_DBG("Calling NetworkUtils::setDefaultRoute mIfname= %s" , GET_CHAR(mIfname));
+
   aOptions.mNetId = netIdInfo.mNetId;
   aOptions.mLoopIndex = 0;
-  runChain(aOptions, COMMAND_CHAIN, defaultAsyncFailureHandler);
+  if (aOptions.mIsDefault) {
+    NU_DBG("NetworkUtils::setDefaultRoute default" );
+    runChain(aOptions, COMMAND_CHAIN_FOR_DEFAULT, defaultAsyncFailureHandler);
+  } else {
+    NU_DBG("NetworkUtils::setDefaultRoute none default" );
+    runChain(aOptions, COMMAND_CHAIN, defaultAsyncFailureHandler);
+  }
 
   return CommandResult::Pending();
 }

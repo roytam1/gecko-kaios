@@ -150,6 +150,7 @@ public:
     COPY_OPT_FIELD(mPrivacyExtensions, false)
     COPY_SEQUENCE_FIELD(mIPv6Routes, nsString)
     COPY_OPT_STRING_FIELD(mIPv6Prefix, EmptyString())
+    COPY_OPT_FIELD(mIsDefault, false)
 
     mLoopIndex = 0;
 
@@ -208,6 +209,7 @@ public:
   long mMtu;
   nsTArray<nsString> mIPv6Routes;
   nsString mIPv6Prefix;
+  bool mIsDefault;
 
   // Auxiliary information required to carry accros command chain.
   int mNetId; // A locally defined id per interface.

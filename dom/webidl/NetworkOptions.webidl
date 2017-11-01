@@ -61,6 +61,7 @@ dictionary NetworkCommandOptions
   boolean privacyExtensions;          // for "setIpv6PrivacyExtensions".
   sequence<DOMString> IPv6Routes;     // for "addIPv6RouteToLocalNetwork"
   DOMString IPv6Prefix;               // for "startIPv6Tethering"
+  boolean isDefault;                  // for "setDefaultRoute"
 };
 
 /**
