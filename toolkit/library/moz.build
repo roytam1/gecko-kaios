@@ -386,5 +386,10 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk' and CONFIG['ENABLE_REVERIE_RT9']:
          'rt9',
     ]
 
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk' and CONFIG['ENABLE_KIKA_IQQI']:
+    OS_LIBS += [
+         'IQQILib',
+    ]
+
 # This needs to be last
 USE_LIBS += ['StaticXULComponentsEnd']

@@ -202,6 +202,7 @@ def old_configure_options(*options):
     '--enable-ipdl-tests',
     '--enable-jitspew',
     '--enable-kai-geoloc',
+    '--enable-kika-iqqi',
     '--enable-libjpeg-turbo',
     '--enable-libproxy',
     '--enable-llvm-hacks',

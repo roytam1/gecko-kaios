@@ -168,6 +168,9 @@ if CONFIG['ENABLE_NUANCE_XT9']:
 if CONFIG['ENABLE_REVERIE_RT9']:
     DIRS += ['rt9connect']
 
+if CONFIG['ENABLE_KIKA_IQQI']:
+    DIRS += ['kikaconnect']
+
 if CONFIG['ENABLE_U2F']:
     DIRS += ['u2f']
 

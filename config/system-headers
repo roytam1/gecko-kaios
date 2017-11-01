@@ -1356,3 +1356,6 @@ xxet9oem.h
 #ifdef ENABLE_REVERIE_RT9
 keypad_R9.h
 #endif
+#ifdef ENABLE_KIKA_IQQI
+iqqilib.h
+#endif

@@ -143,12 +143,27 @@ if test -n "$ENABLE_REVERIE_RT9"; then
 fi
 AC_SUBST(ENABLE_REVERIE_RT9)
 
+dnl ========================================================
+dnl = Enable Kika IQQI Library Support
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(kika-iqqi,
+[  --enable-kika-iqqi        Enable Kika's IQQI Library Support for IME],
+    ENABLE_KIKA_IQQI=1 && NUM_IME_ENABLED=$((NUM_IME_ENABLED+1)),
+    ENABLE_KIKA_IQQI= )
+if test -n "$ENABLE_KIKA_IQQI"; then
+   AC_DEFINE(ENABLE_KIKA_IQQI)
+fi
+AC_SUBST(ENABLE_KIKA_IQQI)
+
 if test "$NUM_IME_ENABLED" -gt 1 ; then
   if test -n "$ENABLE_NUANCE_XT9" ; then
     AC_MSG_CHECKING([nuance-xt9 IME engine is enabled])
   fi
   if test -n "$ENABLE_REVERIE_RT9" ; then
     AC_MSG_CHECKING([reverie-rt9 IME engine is enabled])
+  fi
+  if test -n "$ENABLE_KIKA_IQQI" ; then
+    AC_MSG_CHECKING([kika-iqqi IME engine is enabled])
   fi
   AC_MSG_ERROR([It's invalid to enable more than one ($NUM_IME_ENABLED) IME engine at the same time])
 fi
@@ -293,6 +308,11 @@ if test -n "$gonkdir" ; then
     if test -n "$ENABLE_REVERIE_RT9" ; then
       if test -d "$gonkdir/external/librt9" ; then
         CPPFLAGS="$CPPFLAGS -I$gonkdir/external/librt9"
+      fi
+    fi
+    if test -n "$ENABLE_KIKA_IQQI" ; then
+      if test -d "$gonkdir/external/libkika" ; then
+        CPPFLAGS="$CPPFLAGS -I$gonkdir/external/libkika"
       fi
     fi
 
