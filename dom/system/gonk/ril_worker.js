@@ -14583,7 +14583,14 @@ ICCContactHelperObject.prototype = {
             this.findUSimFreeADNRecordId(pbrs, onsuccess, onerror);
           }.bind(this);
 
-          ICCRecordHelper.readPBR(gotPbrCb, onerror);
+          let gotPbrErrCb = function gotPbrErrCb() {
+            if (DEBUG) {
+              this.context.debug("findFreeICCContact gotPbrErrCb");
+            }
+            ICCRecordHelper.findFreeRecordId(ICC_EF_ADN, onsuccess.bind(null, 0), onerror);
+          }.bind(this);
+
+          ICCRecordHelper.readPBR(gotPbrCb, gotPbrErrCb);
         }
         break;
       case GECKO_CARDCONTACT_TYPE_FDN:
@@ -14737,7 +14744,16 @@ ICCContactHelperObject.prototype = {
       this.readAllPhonebookSets(pbrs, onsuccess, onerror);
     }.bind(this);
 
-    this.context.ICCRecordHelper.readPBR(gotPbrCb, onerror);
+    let gotPbrErrCb = function gotPbrErrCb() {
+      if (DEBUG) {
+        this.context.debug("readUSimContacts gotPbrErrCb");
+      }
+      this.context.ICCRecordHelper.readADNLike(ICC_EF_ADN,
+        this.context.ICCUtilsHelper.isICCServiceAvailable("EXT1")
+          ? ICC_EF_EXT1 : null, onsuccess, onerror);
+    }.bind(this);
+
+    this.context.ICCRecordHelper.readPBR(gotPbrCb, gotPbrErrCb);
   },
 
   /**
@@ -14954,6 +14970,12 @@ ICCContactHelperObject.prototype = {
    * @param onerror       Callback to be called when error.
    */
   updateUSimContact: function(contact, onsuccess, onerror) {
+    let updateContactCb = (updatedContact) => {
+      updatedContact.pbrIndex = contact.pbrIndex;
+      updatedContact.recordId = contact.recordId;
+      onsuccess(updatedContact);
+    }
+
     let gotPbrCb = function gotPbrCb(pbrs) {
       let pbr = pbrs[contact.pbrIndex];
       if (!pbr) {
@@ -14966,7 +14988,22 @@ ICCContactHelperObject.prototype = {
       this.updatePhonebookSet(pbr, contact, onsuccess, onerror);
     }.bind(this);
 
-    this.context.ICCRecordHelper.readPBR(gotPbrCb, onerror);
+    let gotPbrErrCb = function gotPbrErrCb() {
+      if (DEBUG) {
+        this.context.debug("updateUSimContact gotPbrErrCb");
+      }
+      if (this.context.ICCUtilsHelper.isICCServiceAvailable("EXT1")) {
+        this.updateADNLikeWithExtension(ICC_EF_ADN, ICC_EF_EXT1,
+                                        contact, null,
+                                        updateContactCb, onerror);
+      } else {
+        this.context.ICCRecordHelper.updateADNLike(ICC_EF_ADN, 0xff,
+                                                   contact, null,
+                                                   updateContactCb, onerror);
+      }
+    }.bind(this);
+
+    this.context.ICCRecordHelper.readPBR(gotPbrCb, gotPbrErrCb);
   },
 
   /**
