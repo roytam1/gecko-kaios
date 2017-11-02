@@ -589,6 +589,17 @@ this.DOMApplicationRegistry = {
     app.cachePath = app.basePath;
     app.basePath = OS.Path.dirname(this.appsFile);
 
+    // when install prelaod app from system, need to clear updateManifest,
+    // reset store version and package hash.
+    // As it will confuse the update status and update won't happen.
+    if (app.updateManifest) {
+      delete app.updateManifest;
+      app.storeVersion = 0;
+    }
+    if (app.packageHash) {
+      delete app.packageHash;
+    }
+
     if (!isPackage) {
       return isPreinstalled;
     }
