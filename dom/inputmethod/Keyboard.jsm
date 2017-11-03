@@ -67,7 +67,7 @@ this.Keyboard = {
     'SendKey', 'GetContext',
     'SetComposition', 'EndComposition',
     'RegisterSync', 'Unregister',
-    'ReplyHardwareKeyEvent'
+    'ReplyHardwareKeyEvent', 'DeleteBackward'
   ],
 
   get formMM() {
@@ -197,6 +197,8 @@ this.Keyboard = {
     mm.addMessageListener('Forms:GetContext:Result:OK', this);
     mm.addMessageListener('Forms:SetComposition:Result:OK', this);
     mm.addMessageListener('Forms:EndComposition:Result:OK', this);
+    mm.addMessageListener('Forms:DeleteBackward:Result:OK', this);
+    mm.addMessageListener('Forms:DeleteBackward:Result:Error', this);
   },
 
   receiveMessage: function keyboardReceiveMessage(msg) {
@@ -268,6 +270,8 @@ this.Keyboard = {
       case 'Forms:EndComposition:Result:OK':
       case 'Forms:SetSelectionRange:Result:Error':
       case 'Forms:ReplaceSurroundingText:Result:Error':
+      case 'Forms:DeleteBackward:Result:OK':
+      case 'Forms:DeleteBackward:Result:Error':
         let name = msg.name.replace(/^Forms/, 'Keyboard');
         this.forwardEvent(name, msg).then(() => {
         }, (reason) => {
@@ -337,6 +341,9 @@ this.Keyboard = {
         break;
       case 'Keyboard:EndComposition':
         this.endComposition(msg);
+        break;
+      case 'Keyboard:DeleteBackward':
+        this.deleteBackward(msg);
         break;
       case 'Keyboard:RegisterSync':
         KeyboardAppProxy.isIMEActive = true;
@@ -477,6 +484,10 @@ this.Keyboard = {
 
   clearAll: function keyboardClearAll(msg) {
     this.sendToForm('Forms:ClearAll', msg.data);
+  },
+
+  deleteBackward: function keyboardDeleteBackward(msg) {
+    this.sendToForm('Forms:DeleteBackward', msg.data);
   },
 
   showInputMethodPicker: function keyboardShowInputMethodPicker() {

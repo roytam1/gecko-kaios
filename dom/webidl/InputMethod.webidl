@@ -544,6 +544,11 @@ interface MozInputContext: EventTarget {
    */
   Promise<boolean> endComposition(optional DOMString text,
                                   optional MozInputMethodKeyboardEventDict dict);
+
+  /**
+   * Delete a text/node/selection before the cursor
+   */
+  Promise<boolean> deleteBackward();
 };
 
 /**

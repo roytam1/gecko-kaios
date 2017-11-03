@@ -428,6 +428,7 @@ var FormAssistant = {
     addMessageListener("Forms:SetComposition", this);
     addMessageListener("Forms:EndComposition", this);
     addMessageListener("Forms:ClearAll", this);
+    addMessageListener("Forms:DeleteBackward", this);
   },
 
   ignoredInputTypes: new Set([
@@ -956,6 +957,12 @@ var FormAssistant = {
         clearAll(target);
         break;
       }
+
+      case "Forms:DeleteBackward": {
+        CompositionManager.endComposition('');
+        deleteBackward(target);
+        break;
+      }
     }
     this._editing = false;
 
@@ -1473,6 +1480,22 @@ function clearAll(element) {
     //For number type only
     element.value = null;
   }
+  //fire event to notify change
+  let event = element.ownerDocument.createEvent('HTMLEvents');
+  event.initEvent('change', true, true);
+  element.dispatchEvent(event);
+
+  return true;
+}
+
+function deleteBackward(element) {
+  let editor = FormAssistant.editor;
+  if (!editor) {
+    return false;
+  }
+
+  editor.deleteSelection(Ci.nsIEditor.ePrevious, Ci.nsIEditor.eStrip);
+
   //fire event to notify change
   let event = element.ownerDocument.createEvent('HTMLEvents');
   event.initEvent('change', true, true);

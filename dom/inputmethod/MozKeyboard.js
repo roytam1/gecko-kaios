@@ -726,7 +726,8 @@ function InputContextDOMRequestIpcHelper(win) {
      "Keyboard:SendKey:Result:Error",
      "Keyboard:SetComposition:Result:OK",
      "Keyboard:EndComposition:Result:OK",
-     "Keyboard:SequenceError"]);
+     "Keyboard:SequenceError",
+     "Keyboard:DeleteBackward:Result:OK"]);
 }
 
 InputContextDOMRequestIpcHelper.prototype = {
@@ -912,6 +913,7 @@ MozInputContext.prototype = {
         break;
       case "Keyboard:SetComposition:Result:OK": // Fall through.
       case "Keyboard:EndComposition:Result:OK":
+      case "Keyboard:DeleteBackward:Result:OK":
         resolver.resolve(true);
         break;
       default:
@@ -1090,6 +1092,15 @@ MozInputContext.prototype = {
 
   deleteSurroundingText: function ic_deleteSurrText(offset, length) {
     return this.replaceSurroundingText(null, offset, length);
+  },
+
+  deleteBackward: function ic_deleteBackward() {
+    return this._sendPromise((resolverId) => {
+      cpmmSendAsyncMessageWithKbID(this, 'Keyboard:DeleteBackward', {
+        contextId: this._contextId,
+        requestId: resolverId
+      });
+    });
   },
 
   sendKey: function ic_sendKey(dictOrKeyCode, charCode, modifiers, repeat) {
