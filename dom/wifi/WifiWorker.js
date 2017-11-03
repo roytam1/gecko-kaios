@@ -3014,7 +3014,7 @@ function WifiWorker() {
 
     // router subnet change, clear all config and notify ip changed.
     if (WifiNetworkInterface.info.ips.length !== 0 &&
-      WifiNetworkInterface.info.ips.indexOf(addr) === -1) {
+      WifiNetworkInterface.info.ips.indexOf(this.info.ipaddr_str) === -1) {
       gNetworkService.configureInterface( { ifname: WifiManager.ifname,
                                             ipaddr: 0,
                                             mask: 0,
