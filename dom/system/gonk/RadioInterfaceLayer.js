@@ -498,7 +498,7 @@ WorkerMessenger.prototype = {
     let appCbListConfigurationEnabled = false;
     try {
       appCbListConfigurationEnabled =
-          Services.prefs.getBoolPref(kPrefAppCBConfigurationEnabled) || false,
+          Services.prefs.getBoolPref(kPrefAppCBConfigurationEnabled) || false;
     } catch (e) {}
 
     let options = {
