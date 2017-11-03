@@ -168,7 +168,7 @@ BluetoothUUID::GetTable(GattAttribute aAttr, const nsAString& aString,
   // If we're in shutdown, don't create a new instance.
   NS_ENSURE_FALSE(sInShutdown, false);
 
-  nsDataHashtable<nsStringHashKey, uint32_t>** tableSlot;
+  nsDataHashtable<nsStringHashKey, uint32_t>** tableSlot = nullptr;
 
   if (aAttr == SERVICE) {
     tableSlot = &sUUIDServiceTable;
@@ -177,6 +177,8 @@ BluetoothUUID::GetTable(GattAttribute aAttr, const nsAString& aString,
   } else if (aAttr == DESCRIPTOR) {
     tableSlot = &sUUIDDescriptorTable;
   }
+
+  NS_ENSURE_TRUE(!tableSlot, false);
 
   if (!*tableSlot) {
     (*tableSlot) = new nsDataHashtable<nsStringHashKey, uint32_t>;
