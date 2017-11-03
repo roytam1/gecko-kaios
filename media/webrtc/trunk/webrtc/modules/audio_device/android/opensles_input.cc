@@ -413,7 +413,9 @@ void OpenSlesInput::SetupVoiceMode() {
   WEBRTC_TRACE(kTraceError, kTraceAudioDevice, 0, "OpenSL GetInterface: %d", res);
 
   if (res == SL_RESULT_SUCCESS) {
-    SLuint32 voiceMode = SL_ANDROID_RECORDING_PRESET_VOICE_COMMUNICATION;
+    // changing from SL_ANDROID_RECORDING_PRESET_VOICE_COMMUNICATION to
+    // SL_ANDROID_RECORDING_PRESET_GENERIC for preventing the volume of microphone is too low.
+    SLuint32 voiceMode = SL_ANDROID_RECORDING_PRESET_GENERIC;
     SLuint32 voiceSize = sizeof(voiceMode);
 
     res = (*configItf)->SetConfiguration(configItf,
