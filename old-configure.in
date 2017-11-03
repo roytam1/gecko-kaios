@@ -6034,6 +6034,19 @@ if test -n "KAIOS_MIDI"; then
 fi
 AC_SUBST(KAIOS_MIDI)
 
+KAIOS_DISABLE_GMP_FAKE_LIBS=
+dnl ========================================================
+dnl = Disable GMP fake libraries
+dnl ========================================================
+MOZ_ARG_DISABLE_BOOL(gmp-fake-libs,
+[  --disable-gmp-fake-libs       Do not compile GMP fake libraries],
+    KAIOS_DISABLE_GMP_FAKE_LIBS=1,
+    KAIOS_DISABLE_GMP_FAKE_LIBS=)
+
+
+AC_SUBST(KAIOS_DISABLE_GMP_FAKE_LIBS)
+
+
 dnl ========================================================
 dnl = Enable Support for Time Manager API
 dnl ========================================================

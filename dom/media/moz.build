@@ -22,8 +22,6 @@ with Files('GetUserMedia*'):
 DIRS += [
     'encoder',
     'gmp',
-    'gmp-plugin',
-    'gmp-plugin-openh264',
     'imagecapture',
     'mediasink',
     'mediasource',
@@ -38,6 +36,12 @@ DIRS += [
     'webvtt',
     'standalone',
 ]
+
+if not CONFIG['KAIOS_DISABLE_GMP_FAKE_LIBS']:
+    DIRS += [
+        'gmp-plugin',
+        'gmp-plugin-openh264',
+    ]
 
 if CONFIG['MOZ_RAW']:
     DIRS += ['raw']

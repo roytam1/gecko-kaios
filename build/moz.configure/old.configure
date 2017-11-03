@@ -189,6 +189,7 @@ def old_configure_options(*options):
     '--enable-gconf',
     '--enable-gczeal',
     '--enable-gio',
+    '--enable-gmp-fake-libs',
     '--enable-gnomeui',
     '--enable-gold',
     '--enable-gps-debug',
