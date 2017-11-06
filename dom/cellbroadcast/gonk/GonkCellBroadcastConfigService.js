@@ -230,27 +230,27 @@ GonkCellBroadcastConfigHandler.prototype = {
 
   _getCellBroadcastConfig: function() {
     let enableEmergencyAlerts =
-        gCustomizationInfo.getCustomizedValue(this._clientId, SMSCB.KEY_ENABLE_EMERGENCY_ALERTS) || true;
+        gCustomizationInfo.getCustomizedValue(this._clientId, SMSCB.KEY_ENABLE_EMERGENCY_ALERTS, true);
 
     let enableEtwsAlerts = enableEmergencyAlerts;
 
     let enableCmasExtremeAlerts = enableEmergencyAlerts &&
-        gCustomizationInfo.getCustomizedValue(this._clientId, SMSCB.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS) || true;
+        gCustomizationInfo.getCustomizedValue(this._clientId, SMSCB.KEY_ENABLE_CMAS_EXTREME_THREAT_ALERTS, true);
 
     let enableCmasSevereAlerts = enableEmergencyAlerts &&
-        gCustomizationInfo.getCustomizedValue(this._clientId, SMSCB.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS) || true;
+        gCustomizationInfo.getCustomizedValue(this._clientId, SMSCB.KEY_ENABLE_CMAS_SEVERE_THREAT_ALERTS, true);
 
     let enableCmasAmberAlerts = enableEmergencyAlerts &&
-        gCustomizationInfo.getCustomizedValue(this._clientId, SMSCB.KEY_ENABLE_CMAS_AMBER_ALERTS) || true;
+        gCustomizationInfo.getCustomizedValue(this._clientId, SMSCB.KEY_ENABLE_CMAS_AMBER_ALERTS, true);
 
     let forceDisableEtwsCmasTest =
-        gCustomizationInfo.getCustomizedValue(this._clientId, SMSCB.KEY_CARRIER_FORCE_DISABLE_ETWS_CMAS_TEST_BOOL) || false;
+        gCustomizationInfo.getCustomizedValue(this._clientId, SMSCB.KEY_CARRIER_FORCE_DISABLE_ETWS_CMAS_TEST_BOOL, false);
 
     let enableEtwsTestAlerts = !forceDisableEtwsCmasTest && enableEmergencyAlerts &&
-        gCustomizationInfo.getCustomizedValue(this._clientId, SMSCB.KEY_ENABLE_ETWS_TEST_ALERTS) || false;
+        gCustomizationInfo.getCustomizedValue(this._clientId, SMSCB.KEY_ENABLE_ETWS_TEST_ALERTS, false);
 
     let enableCmasTestAlerts = !forceDisableEtwsCmasTest && enableEmergencyAlerts &&
-        gCustomizationInfo.getCustomizedValue(this._clientId, SMSCB.KEY_ENABLE_CMAS_TEST_ALERTS) || false;
+        gCustomizationInfo.getCustomizedValue(this._clientId, SMSCB.KEY_ENABLE_CMAS_TEST_ALERTS, false);
 
     let config = {cdma: [], gsm: []};
 

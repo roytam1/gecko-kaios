@@ -285,7 +285,7 @@ DataCallManager.prototype = {
           let handler = this._connectionHandlers[clientId];
           let apnSetting = aResult[clientId];
           if (handler && apnSetting) {
-            if (gCustomizationInfo.getCustomizedValue(clientId, "xcap") != null) {
+            if (gCustomizationInfo.getCustomizedValue(clientId, "xcap", null) != null) {
               apnSetting.push(gCustomizationInfo.getCustomizedValue(clientId, "xcap"));
             }
             handler.updateApnSettings(apnSetting);
