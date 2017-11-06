@@ -65,6 +65,15 @@ struct FileSystemRemoveParams
   bool recursive;
 };
 
+struct FileSystemCopyOrMoveToParams
+{
+  nsString filesystem;
+  nsString directory;
+  nsString srcRealPath;
+  nsString dstRealPath;
+  bool isCopy;
+};
+
 union FileSystemParams
 {
   FileSystemCreateDirectoryParams;
@@ -73,6 +82,7 @@ union FileSystemParams
   FileSystemGetFilesParams;
   FileSystemGetFileOrDirectoryParams;
   FileSystemRemoveParams;
+  FileSystemCopyOrMoveToParams;
 };
 
 } // dom namespace

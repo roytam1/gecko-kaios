@@ -92,6 +92,26 @@ interface Directory {
    */
   [Func="mozilla::dom::Directory::DeviceStorageEnabled", NewObject]
   Promise<boolean> removeDeep((DOMString or File or Directory) path);
+
+  /*
+   * Copy a file or a directory to a dst directory. Both src and dst should
+   * be descendents of current directory. Dst shouldn't be a File, will check
+   * in implementation.
+   *
+   * It may better to remove parameter src as the object is current Directory.
+   * Keep API as this now to copy or move its sub files or directories.
+   */
+  [Func="mozilla::dom::Directory::DeviceStorageEnabled", NewObject]
+  Promise<boolean> copyTo((DOMString or File or Directory) source,
+                          (DOMString or Directory) target);
+
+  /*
+   * Move a file or a directory to a dst directory. Both src and dst should
+   * be descendents of current directory.
+   */
+  [Func="mozilla::dom::Directory::DeviceStorageEnabled", NewObject]
+  Promise<boolean> moveTo((DOMString or File or Directory) source,
+                          (DOMString or Directory) target);
 };
 
 [Exposed=(Window,Worker)]

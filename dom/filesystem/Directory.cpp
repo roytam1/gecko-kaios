@@ -13,6 +13,7 @@
 #include "GetFileOrDirectoryTask.h"
 #include "GetFilesTask.h"
 #include "RemoveTask.h"
+#include "CopyOrMoveToTask.h"
 
 #include "nsCharSeparatedTokenizer.h"
 #include "nsString.h"
@@ -372,6 +373,86 @@ Directory::RemoveInternal(const StringOrFileOrDirectory& aPath, bool aRecursive,
 
   RefPtr<RemoveTaskChild> task =
     RemoveTaskChild::Create(fs, mFile, realPath, aRecursive, aRv);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return nullptr;
+  }
+
+  task->SetError(error);
+  FileSystemPermissionRequest::RequestForTask(task);
+  return task->GetPromise();
+}
+
+already_AddRefed<Promise>
+Directory::CopyTo(const StringOrFileOrDirectory& aSource,
+                  const StringOrDirectory& aTarget,
+                  ErrorResult& aRv)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  return CopyOrMoveToInternal(aSource, aTarget, true, aRv);
+}
+
+already_AddRefed<Promise>
+Directory::MoveTo(const StringOrFileOrDirectory& aSource,
+                  const StringOrDirectory& aTarget,
+                  ErrorResult& aRv)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  return CopyOrMoveToInternal(aSource, aTarget, false, aRv);
+}
+
+already_AddRefed<Promise>
+Directory::CopyOrMoveToInternal(const StringOrFileOrDirectory& aSource,
+                                const StringOrDirectory& aTarget,
+                                bool isCopy, ErrorResult& aRv)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  nsresult error = NS_OK;
+  nsCOMPtr<nsIFile> srcRealPath;
+  nsCOMPtr<nsIFile> dstRealPath;
+
+  // Check and get the src and dst path.
+  RefPtr<FileSystemBase> fs = GetFileSystem(aRv);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return nullptr;
+  }
+
+  if (aSource.IsFile()) {
+    if (!fs->GetRealPath(aSource.GetAsFile().Impl(),
+                         getter_AddRefs(srcRealPath))) {
+      error = NS_ERROR_DOM_SECURITY_ERR;
+    }
+  } else if (aSource.IsString()) {
+    error = DOMPathToRealPath(aSource.GetAsString(), getter_AddRefs(srcRealPath));
+  } else {
+    MOZ_ASSERT(aSource.IsDirectory());
+    if (!fs->IsSafeDirectory(&aSource.GetAsDirectory())) {
+      error = NS_ERROR_DOM_SECURITY_ERR;
+    } else {
+      srcRealPath = aSource.GetAsDirectory().mFile;
+    }
+  }
+
+  if (aTarget.IsString()) {
+    error = DOMPathToRealPath(aTarget.GetAsString(), getter_AddRefs(dstRealPath));
+  } else {
+    MOZ_ASSERT(aTarget.IsDirectory());
+    if (!fs->IsSafeDirectory(&aTarget.GetAsDirectory())) {
+      error = NS_ERROR_DOM_SECURITY_ERR;
+    } else {
+      dstRealPath = aTarget.GetAsDirectory().mFile;
+    }
+  }
+
+  // both src and dst must be a descendant of this directory.
+  if (!FileSystemUtils::IsDescendantPath(mFile, srcRealPath) ||
+      !FileSystemUtils::IsDescendantPath(mFile, dstRealPath)) {
+    error = NS_ERROR_DOM_FILESYSTEM_NO_MODIFICATION_ALLOWED_ERR;
+  }
+
+  RefPtr<CopyOrMoveToTaskChild> task =
+    CopyOrMoveToTaskChild::Create(fs, mFile, srcRealPath, dstRealPath,
+                                  isCopy, aRv);
   if (NS_WARN_IF(aRv.Failed())) {
     return nullptr;
   }

@@ -17,6 +17,7 @@ EXPORTS.mozilla.dom += [
 ]
 
 UNIFIED_SOURCES += [
+    'CopyOrMoveToTask.cpp',
     'CreateDirectoryTask.cpp',
     'CreateFileTask.cpp',
     'DeviceStorageFileSystem.cpp',
