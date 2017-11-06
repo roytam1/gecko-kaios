@@ -142,9 +142,12 @@
 #endif
 
 #include "DeviceCapability.h"
+#include "mozilla/dom/fota/FotaEngine.h"
 
 namespace mozilla {
 namespace dom {
+
+using namespace fota;
 
 static bool sDoNotTrackEnabled = false;
 static bool sVibratorEnabled   = false;
@@ -242,6 +245,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Navigator)
 #ifdef HAS_KOOST_MODULES
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mVolumeManager)
 #endif
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFotaEngine)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE_SCRIPT_OBJECTS
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
@@ -405,6 +409,10 @@ Navigator::Invalidate()
 
   if (mDeviceStorageAreaListener) {
     mDeviceStorageAreaListener = nullptr;
+  }
+
+  if (mFotaEngine) {
+    mFotaEngine = nullptr;
   }
 
   mVRGetDevicesPromises.Clear();
@@ -1203,6 +1211,17 @@ Navigator::GetGeolocation(ErrorResult& aRv)
   }
 
   return mGeolocation;
+}
+
+FotaEngine*
+Navigator::GetFota(ErrorResult& aRv)
+{
+  if(mFotaEngine){
+    return mFotaEngine;
+  }
+
+  mFotaEngine = new FotaEngine(mWindow);
+  return mFotaEngine;
 }
 
 class BeaconStreamListener final : public nsIStreamListener

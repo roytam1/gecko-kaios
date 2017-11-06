@@ -542,3 +542,8 @@ partial interface Navigator {
   readonly attribute VolumeManager volumeManager;
 };
 #endif
+
+partial interface Navigator {
+  [Throws]
+  readonly attribute FotaEngine fota;
+};

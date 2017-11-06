@@ -59,6 +59,7 @@ include protocol PWebrtcGlobal;
 include protocol PPresentation;
 include protocol PVRManager;
 include protocol PTV;
+include protocol PFota;
 include DOMTypes;
 include JavaScriptTypes;
 include InputStreamParams;
@@ -444,6 +445,7 @@ prio(normal upto urgent) sync protocol PContent
     manages PWebrtcGlobal;
     manages PPresentation;
     manages PTV;
+    manages PFota;
 
 both:
     // Depending on exactly how the new browser is being created, it might be
@@ -887,6 +889,8 @@ parent:
     async PPresentation();
 
     async PTV();
+
+    async PFota();
 
     // Services remoting
 

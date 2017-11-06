@@ -276,6 +276,7 @@ using namespace mozilla::system;
 
 // For VP9Benchmark::sBenchmarkFpsPref
 #include "Benchmark.h"
+#include "mozilla/dom/fota/FotaParentProxy.h"
 
 static NS_DEFINE_CID(kCClipboardCID, NS_CLIPBOARD_CID);
 
@@ -313,6 +314,7 @@ using namespace mozilla::net;
 using namespace mozilla::jsipc;
 using namespace mozilla::psm;
 using namespace mozilla::widget;
+using namespace mozilla::dom::fota;
 
 // XXX Workaround for bug 986973 to maintain the existing broken semantics
 template<>
@@ -5350,6 +5352,19 @@ ContentParent::DeallocPWebrtcGlobalParent(PWebrtcGlobalParent *aActor)
 #else
   return false;
 #endif
+}
+
+PFotaParent*
+ContentParent::AllocPFotaParent()
+{
+  return new FotaParentProxy();
+}
+
+bool
+ContentParent::DeallocPFotaParent(PFotaParent* aFota)
+{
+  delete aFota;
+  return true;
 }
 
 bool

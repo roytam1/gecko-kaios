@@ -209,6 +209,7 @@
 #include "nscore.h" // for NS_FREE_PERMANENT_DATA
 #include "VRManagerChild.h"
 #include "mozilla/dom/workers/ServiceWorkerManager.h"
+#include "mozilla/dom/fota/FotaChildProxy.h"
 
 using namespace mozilla;
 using namespace mozilla::docshell;
@@ -236,6 +237,7 @@ using namespace mozilla::widget;
 using namespace mozilla::system;
 #endif
 using namespace mozilla::widget;
+using namespace mozilla::dom::fota;
 
 namespace mozilla {
 namespace dom {
@@ -2220,6 +2222,18 @@ ContentChild::DeallocPWebrtcGlobalChild(PWebrtcGlobalChild *aActor)
 #endif
 }
 
+PFotaChild*
+ContentChild::AllocPFotaChild()
+{
+  return new FotaChildProxy();
+}
+
+bool
+ContentChild::DeallocPFotaChild(PFotaChild* aFota)
+{
+  delete aFota;
+  return true;
+}
 
 bool
 ContentChild::RecvRegisterChrome(InfallibleTArray<ChromePackage>&& packages,

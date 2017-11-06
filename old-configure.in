@@ -315,6 +315,10 @@ if test -n "$gonkdir" ; then
         CPPFLAGS="$CPPFLAGS -I$gonkdir/external/libkika"
       fi
     fi
+    if test -d "$gonkdir/external/jsoncpp" ; then
+      CPPFLAGS="$CPPFLAGS -I$gonkdir/external/jsoncpp/include"
+      LDFLAGS="-L$gonkdir/out/target/product/$GONK_PRODUCT/obj/STATIC_LIBRARIES/libjsoncpp_intermediates $LDFLAGS"
+    fi
 
     CFLAGS="-mandroid -fno-short-enums -fno-exceptions $CFLAGS"
     CXXFLAGS="-mandroid -fno-short-enums -fno-exceptions $CXXFLAGS $STLPORT_CPPFLAGS"

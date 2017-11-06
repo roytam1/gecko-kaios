@@ -125,6 +125,10 @@ class AudioChannelManager;
 #endif
 } // namespace system
 
+namespace fota {
+class FotaEngine;
+}
+
 class Navigator final : public nsIDOMNavigator
                       , public nsIMozNavigatorNetwork
                       , public nsWrapperCache
@@ -313,6 +317,8 @@ public:
 
   Presentation* GetPresentation(ErrorResult& aRv);
 
+  fota::FotaEngine* GetFota(ErrorResult& aRv);
+
   bool SendBeacon(const nsAString& aUrl,
                   const Nullable<ArrayBufferViewOrBlobOrStringOrFormData>& aData,
                   ErrorResult& aRv);
@@ -439,6 +445,7 @@ private:
   nsCOMPtr<nsPIDOMWindowInner> mWindow;
   RefPtr<DeviceStorageAreaListener> mDeviceStorageAreaListener;
   RefPtr<Presentation> mPresentation;
+  RefPtr<fota::FotaEngine> mFotaEngine;
 
   nsTArray<RefPtr<Promise> > mVRGetDevicesPromises;
 #ifdef HAS_KOOST_MODULES

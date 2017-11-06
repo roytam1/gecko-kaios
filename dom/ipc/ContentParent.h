@@ -424,6 +424,9 @@ public:
     return PContentParent::RecvPStorageConstructor(aActor);
   }
 
+  virtual PFotaParent* AllocPFotaParent();
+  virtual bool DeallocPFotaParent(PFotaParent*);
+
   virtual PJavaScriptParent*
   AllocPJavaScriptParent() override;
 

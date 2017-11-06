@@ -212,6 +212,9 @@ public:
   virtual bool
   DeallocPHeapSnapshotTempFileHelperChild(PHeapSnapshotTempFileHelperChild*) override;
 
+  virtual PFotaChild* AllocPFotaChild();
+  virtual bool DeallocPFotaChild(PFotaChild*);
+
   PIccChild*
   SendPIccConstructor(PIccChild* aActor, const uint32_t& aServiceId);
 
