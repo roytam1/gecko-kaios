@@ -10,6 +10,7 @@ const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
+Cu.import("resource://services-crypto/utils.js");
 
 XPCOMUtils.defineLazyModuleGetter(this, "DOMApplicationRegistry",
                                   "resource://gre/modules/Webapps.jsm");
@@ -22,6 +23,8 @@ XPCOMUtils.defineLazyGetter(this, "SE", function() {
   Cu.import("resource://gre/modules/se_consts.js", obj);
   return obj;
 });
+
+const APP_HASH_LEN = 20;
 
 var DEBUG = SE.DEBUG_ACE;
 function debug(msg) {
@@ -55,8 +58,156 @@ GPAccessDecision.prototype = {
     //
     // NOTE: This implementation may change with the introduction of APDU
     //       filters.
-    let decision = this.rules.some(this._decideAppAccess.bind(this));
-    return decision;
+    let apduHeader = [];
+    return this.isApduAccessAllowed(apduHeader);
+  },
+
+  isApduAccessAllowed: function isApduAccessAllowed(apduHeader) {
+    let rule = this._findSpecificRule(this.aid, this.certHash);
+    if (rule) {
+      debug("Matched rule:" + JSON.stringify(rule));
+      return this._apduAllowed(rule.apduRules, apduHeader);
+    }
+
+    rule = this._findSpecificAidRule(this.aid);
+    if (rule) {
+      debug("Matched rule:" + JSON.stringify(rule));
+      return false;
+    }
+
+    rule = this._findGenericAidRule(this.aid)
+    if (rule) {
+      debug("Matched rule:" + JSON.stringify(rule));
+      return this._apduAllowed(rule.apduRules, apduHeader);
+    }
+
+    rule = this._findGenericHashRule(this.certHash);
+    if (rule) {
+      debug("Matched rule:" + JSON.stringify(rule));
+      return this._apduAllowed(rule.apduRules, apduHeader);
+    }
+
+    rule = this._findGenericRule();
+    if (rule) {
+      debug("Matched rule:" + JSON.stringify(rule));
+      return this._apduAllowed(rule.apduRules, apduHeader);
+    }
+    debug("Can't find matched rule, access denied");
+    return false;
+  },
+
+  _apduAllowed: function _apduAllowed(apduRules, apduHeader) {
+    //
+    // rule.apduRules contains a generic APDU access rule:
+    // NEVER (0): APDU access is not allowed
+    // ALWAYS(1): APDU access is allowed
+    // or contains a specific APDU access rule based on one or more APDU filter(s):
+    //
+    // APDU filter: 8-byte APDU filter consists of:
+    // 4-byte APDU filter header (defines the header of allowed APDUs, i.e. CLA, INS, P1, and P2 as defined in [7816-4])
+    // 4-byte APDU filter mask (bit set defines the bits which shall be considered for the APDU header comparison)
+    // An APDU filter shall be applied to the header of the APDU being checked, as follows:
+    // if((APDU_header & APDU_filter_mask) == APDU_filter_header)
+    // then allow APDU
+    //
+    debug("rule apdu fileter:" + apduRules + " apduHeader:" + apduHeader);
+    if (apduRules && apduRules.length == 1) {
+      return apduRules[0] ? true : false;
+    }
+
+    let apduFilters = this._parseApduFilter(apduRules);
+    let length = apduFilters.length;
+
+    for (let i = 0; i < length; i++) {
+      let filter = apduFilters[i];
+      debug("apduHeader:" + apduHeader + " mask:" + filter.mask + " header:" + filter.header);
+      if (((apduHeader[0] & filter.mask[0]) == filter.header[0]) &&
+          ((apduHeader[1] & filter.mask[1]) == filter.header[1]) &&
+          ((apduHeader[2] & filter.mask[2]) == filter.header[2]) &&
+          ((apduHeader[3] & filter.mask[3]) == filter.header[3])) {
+        return true;
+      }
+    }
+    return false;
+  },
+
+  _parseApduFilter: function _parseApduFilter(apduArdo) {
+    function chunk(arr, chunkSize) {
+      var R = [];
+      for (var i=0,len=arr.length; i<len; i+=chunkSize)
+        R.push(arr.slice(i,i+chunkSize));
+      return R;
+    }
+
+    let apduFilters = chunk(apduArdo, 8);
+    let apduFilterRules = [];
+
+    apduFilters.forEach(filter => {
+      let slice = chunk(filter, 4);
+      let rule = {
+        header: slice[0],
+        mask: slice[1]
+      };
+      apduFilterRules.push(rule);
+    });
+
+    return apduFilterRules;
+  },
+
+  _findSpecificRule: function _findSpecificRule(aid, hash) {
+    return this.rules.find(rule => {
+      if (rule.hash.length != hash.length) return false;
+      if (rule.aid.length != aid.length) return false;
+      if (SEUtils.arraysEqual(rule.hash, hash) && SEUtils.arraysEqual(rule.aid, aid)) {
+        debug("Found the rule that matches aid:" + aid + " App hash:" + hash);
+        return true;
+      }
+      return false;
+    });
+  },
+
+  _findSpecificAidRule: function _findSpecificAidRule(aid) {
+    return this.rules.find(rule => {
+      if (rule.aid.length != aid.length) return false;
+      if (rule.hash.length != APP_HASH_LEN) return false;
+      if (SEUtils.arraysEqual(rule.aid, aid)) {
+        debug("Found the rule that matches aid:" + aid);
+        return true;
+      }
+      return false
+    });
+  },
+
+  _findGenericAidRule: function _findGenericAidRule(aid) {
+    return this.rules.find(rule => {
+      if (rule.aid.length != aid.length) return false;
+      if (rule.hash.length) return false;
+      if (SEUtils.arraysEqual(rule.aid, aid)) {
+        debug("Found the generic rule that matches aid:" + aid);
+        return true;
+      }
+      return false;
+    });
+  },
+
+  _findGenericHashRule: function _findGenericHashRule(hash) {
+    return this.rules.find(rule => {
+      if (rule.hash.length != hash.length) return false;
+      if (rule.aid.length) return false;
+      if (SEUtils.arraysEqual(rule.hash, hash)) {
+        debug("Found the generic rule that matches App hash:" + hash);
+        return true;
+      }
+      return false;
+    });
+  },
+
+  _findGenericRule: function _findGenericRule() {
+    return this.rules.find(rule => {
+      if (rule.hash.length || rule.aid.length) return false;
+      debug("Found the generic rule, aid:" + rule.aid + " hash:" + rule.hash);
+      return true;
+    });
   },
 
   _decideAppAccess: function _decideAppAccess(rule) {
@@ -109,16 +260,56 @@ GPAccessDecision.prototype = {
 };
 
 function ACEService() {
-  this._rulesManagers = new Map();
-
-  this._rulesManagers.set(
-    SE.TYPE_UICC,
-    Cc["@mozilla.org/secureelement/access-control/rules-manager;1"]
-      .createInstance(Ci.nsIAccessRulesManager));
+  this._rulesManagers = Cc["@mozilla.org/secureelement/access-control/rules-manager;1"]
+                          .createInstance(Ci.nsIAccessRulesManager);
+  if (!this._rulesManagers) {
+    debug("Can't find rules manager");
+  }
 }
 
 ACEService.prototype = {
   _rulesManagers: null,
+
+  isAPDUAccessAllowed: function isAPDUAccessAllowed(localId, seType, aid, apduHeader) {
+    if(!Services.prefs.getBoolPref("dom.secureelement.ace.enabled")) {
+      debug("Access control enforcer is disabled, allowing access");
+      return Promise.resolve(true);
+    }
+
+    let manifestURL = DOMApplicationRegistry.getManifestURLByLocalId(localId);
+    if (!manifestURL) {
+      return Promise.reject(Error("Missing manifest for app: " + localId));
+    }
+
+    return new Promise((resolve, reject) => {
+      debug("isAPDUAccessAllowed for " + manifestURL + " to " + aid + " apduHeader:" + apduHeader);
+
+      let certHash = this._getDevCertHashForApp(manifestURL);
+      debug(manifestURL + " is requesting for access " + certHash);
+      if (!certHash) {
+        debug("App " + manifestURL + " tried to access SE, but no developer" +
+              " certificate present");
+        reject(Error("No developer certificate found"));
+        return;
+      }
+
+      this._rulesManagers.getAccessRules(seType).then((rules) => {
+        let decision = new GPAccessDecision(rules,
+          SEUtils.hexStringToByteArray(certHash), SEUtils.hexStringToByteArray(aid));
+
+        if (seType == SE.TYPE_ESE && rules.length <= 0) {
+          // Allow access when there is no access rule in the ARAM.
+          debug("No rule in the ARAM. Access allowed !!!");
+          resolve(true);
+          return;
+        }
+
+        resolve(decision.isApduAccessAllowed(SEUtils.hexStringToByteArray(apduHeader)));
+      }).catch(()=>{
+        reject(Error("Failed to get access rules"));
+      });
+    });
+  },
 
   isAccessAllowed: function isAccessAllowed(localId, seType, aid) {
     if(!Services.prefs.getBoolPref("dom.secureelement.ace.enabled")) {
@@ -131,53 +322,77 @@ ACEService.prototype = {
       return Promise.reject(Error("Missing manifest for app: " + localId));
     }
 
-    let rulesManager = this._rulesManagers.get(seType);
-    if (!rulesManager) {
-      debug("App " + manifestURL + " tried to access '" + seType + "' SE" +
-            " which is not supported.");
-      return Promise.reject(Error("SE type '" + seType + "' not supported"));
-    }
-
     return new Promise((resolve, reject) => {
       debug("isAccessAllowed for " + manifestURL + " to " + aid);
 
-      // Bug 1132749: Implement ACE crypto signature verification
-      this._getDevCertHashForApp(manifestURL).then((certHash) => {
-        if (!certHash) {
-          debug("App " + manifestURL + " tried to access SE, but no developer" +
-                " certificate present");
-          reject(Error("No developer certificate found"));
+      let certHash = this._getDevCertHashForApp(manifestURL);
+      debug(manifestURL + " is requesting for access " + certHash);
+      if (!certHash) {
+        debug("App " + manifestURL + " tried to access SE, but no developer" +
+              " certificate present");
+        reject(Error("No developer certificate found"));
+        return;
+      }
+
+      this._rulesManagers.getAccessRules(seType).then((rules) => {
+        let decision = new GPAccessDecision(rules,
+          SEUtils.hexStringToByteArray(certHash), aid);
+
+        if (seType == SE.TYPE_ESE && rules.length <= 0) {
+          // Allow access when there is no access rule in the ARAM.
+          debug("No rule in the ARAM. Access allowed !!!");
+          resolve(true);
           return;
         }
+        resolve(decision.isAccessAllowed());
+      }).catch(()=>{
+        reject(Error("Failed to get access rules"));
+      });
+    });
+  },
 
-        rulesManager.getAccessRules().then((rules) => {
-          let decision = new GPAccessDecision(rules,
-            SEUtils.hexStringToByteArray(certHash), aid);
+  isHCIEventAccessAllowed: function isHCIEventAccessAllowed(localId, seType, aid) {
+    if(!Services.prefs.getBoolPref("dom.secureelement.ace.enabled")) {
+      debug("Access control enforcer is disabled, allowing access");
+      return Promise.resolve(true);
+    }
 
-          resolve(decision.isAccessAllowed());
-        });
+    let manifestURL = DOMApplicationRegistry.getManifestURLByLocalId(localId);
+    if (!manifestURL) {
+      return Promise.reject(Error("Missing manifest for app: " + localId));
+    }
+
+    return new Promise((resolve, reject) => {
+      debug("isHCIEventAccessAllowed for " + manifestURL + " to " + aid);
+
+      let certHash = this._getDevCertHashForApp(manifestURL);
+      debug(manifestURL + " is requesting for access " + certHash);
+      if (!certHash) {
+        debug("App " + manifestURL + " tried to access SE, but no developer" +
+              " certificate present");
+        reject(Error("No developer certificate found"));
+        return;
+      }
+
+      this._rulesManagers.getAccessRules(seType).then((rules) => {
+        let decision = new GPAccessDecision(rules,
+          SEUtils.hexStringToByteArray(certHash), SEUtils.hexStringToByteArray(aid));
+
+        if (seType == SE.TYPE_ESE && rules.length <= 0) {
+          // Allow access when there is no access rule in the ARAM.
+          debug("No rule in the ARAM. Access allowed !!!");
+          resolve(true);
+          return;
+        }
+        resolve(decision.isAccessAllowed());
+      }).catch(()=>{
+        reject(Error("Failed to get access rules"));
       });
     });
   },
 
   _getDevCertHashForApp: function getDevCertHashForApp(manifestURL) {
-    return DOMApplicationRegistry.getManifestFor(manifestURL)
-    .then((manifest) => {
-      DEBUG && debug("manifest retrieved: " + JSON.stringify(manifest));
-
-      // TODO: Bug 973823
-      //  - retrieve the cert from the app
-      //  - verify GUID signature
-      //  - compute the hash of the cert and possibly store it for future use
-      //    (right now we have the cert hash included in manifest file)
-      //  - remove this once we have fixed all the todos
-      let certHash = manifest.dev_cert_hash || "";
-      return Promise.resolve(certHash);
-    })
-    .catch((error) => {
-      return Promise.reject(Error("Not able to retrieve certificate hash: " +
-                                  error));
-    });
+    return CryptoUtils.sha1(manifestURL);
   },
 
   classID: Components.ID("{882a7463-2ca7-4d61-a89a-10eb6fd70478}"),

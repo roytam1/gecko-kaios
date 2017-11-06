@@ -22,6 +22,8 @@ interface nsIAccessControlEnforcer : nsISupports
    *         Type of the SE.
    * @param  aid
    *         AID of a SE applet
+   * @param  apduHeader
+   *         Header of the transmit APDU, including => CLA INS P1 P2
    * @return Promise which is resolved to true if access should be allowed,
    *         false otherwise, and rejected if the application contains
    *         no developer certificate.
@@ -29,4 +31,46 @@ interface nsIAccessControlEnforcer : nsISupports
   jsval isAccessAllowed(in unsigned long localId,
                         in DOMString seType,
                         in DOMString aid);
+  /**
+   * Determines whether application identified by its ID should be allowed
+   * to access Secure Element's applet identified by its AID. Decision
+   * is made according to the GPD specification.
+   *
+   * @param  localId
+   *         ID of an application accessing SE
+   * @param  seType
+   *         Type of the SE.
+   * @param  aid
+   *         AID of a SE applet
+   * @param  apduHeader
+   *         Header of the transmit APDU, including => CLA INS P1 P2
+   * @return Promise which is resolved to true if access should be allowed,
+   *         false otherwise, and rejected if the application contains
+   *         no developer certificate.
+   */
+  jsval isAPDUAccessAllowed(in unsigned long localId,
+                            in DOMString seType,
+                            in DOMString aid,
+                            in DOMString apduHeader);
+
+  /**
+   * Determines whether application identified by its ID should be allowed
+   * to receive Secure Element's HCI transaction event from applet identified
+   * by its AID. Decision is made according to the GPD specification.
+   *
+   * @param  localIds
+   *         ID of an application accessing SE
+   * @param  seType
+   *         Type of the SE.
+   * @param  aid
+   *         AID of a SE applet
+   * @param  apduHeader
+   *         Header of the transmit APDU, including => CLA INS P1 P2
+   * @return Promise which is resolved to true if access should be allowed,
+   *         false otherwise, and rejected if the application contains
+   *         no developer certificate.
+   */
+  jsval isHCIEventAccessAllowed(in unsigned long localId,
+                                in DOMString seType,
+                                in DOMString aid);
 };

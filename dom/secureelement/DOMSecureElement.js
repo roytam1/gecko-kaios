@@ -455,6 +455,7 @@ SEChannelImpl.prototype = {
       cpmm.sendAsyncMessage("SE:TransmitAPDU", {
         resolverId: resolverId,
         apdu: command,
+        type: this._session.reader.type,
         channelToken: this._channelToken,
         appId: this._window.document.nodePrincipal.appId
       });

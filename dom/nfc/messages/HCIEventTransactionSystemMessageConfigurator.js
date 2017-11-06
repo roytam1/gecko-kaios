@@ -71,7 +71,7 @@ HCIEventTransactionSystemMessageConfigurator.prototype = {
     return new Promise((resolve, reject) => {
       appsService.getManifestFor(aManifestURL)
       .then((aManifest) => this._checkAppManifest(aMessage.origin, aMessage.aid, aManifest))
-      .then(() => aceService.isAccessAllowed(appId, aMessage.origin, aMessage.aid))
+      .then(() => aceService.isHCIEventAccessAllowed(appId, aMessage.origin, SEUtils.byteArrayToHexString(aMessage.aid)))
       .then((allowed) => {
         debug("dispatching message: " + allowed);
         resolve(allowed);

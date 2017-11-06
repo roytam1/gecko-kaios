@@ -46,5 +46,5 @@ interface nsIAccessRulesManager : nsISupports
    *
    * @return Promise which resolves with Array containing parsed access rules
    */
-  jsval getAccessRules();
+  jsval getAccessRules(in DOMString seType);
 };

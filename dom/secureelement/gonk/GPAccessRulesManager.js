@@ -6,8 +6,7 @@
 
 "use strict";
 
-const Ci = Components.interfaces;
-const Cu = Components.utils;
+const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
@@ -33,10 +32,68 @@ XPCOMUtils.defineLazyGetter(this, "GP", function() {
   return obj;
 });
 
+XPCOMUtils.defineLazyGetter(this, "UiccConnector", () => {
+  let uiccClass = Cc["@mozilla.org/secureelement/connector/uicc;1"];
+  return uiccClass ? uiccClass.getService(Ci.nsISecureElementConnector) : null;
+});
+
+XPCOMUtils.defineLazyGetter(this, "EseConnector", () => {
+  let eseClass = Cc["@mozilla.org/secureelement/connector/ese;1"];
+  return eseClass ? eseClass.getService(Ci.nsISecureElementConnector) : null;
+});
+
+// Ref: Secure Element Access Control – Public Release v1.1
+//
+// Command and response for obtaining ARAM access rules,
+//
+// Request to obtain all access rules,
+//
+// CLA INS P1 P2 Lc Data Le                Response-ALL-REF-AR-DO
+//  80  CA FF 40         00   => case 1,    FF 40 7F REF-AR-DO
+//                            => case 2,    FF 40 83 LEN LEN REF-AR-DO
+//
+// Response-ALL-REF-AR-DO: FF 40 length REF-AR-DO REF-AR-DO REF-AR-DO ....
+//
+// REF-AR-DO             : E2 length REF-DO AR-DO
+// REF-DO                : E1 length AID-REF-DO DeviceAppID-REF-DO
+// AR-DO                 : E3 length APDU-AR-DO or NFC-AR-DO or APDU-AR-DO NFC-AR-DO
+// AID-REF-DO            : 4F length(5~16) AID
+// DeviceAppID-REF-DO    : C1 length(20 or 0) "HASH_ORIGIN"
+// APDU-AR-DO            : D0 length 00 or 01 or "APDU_FILTER" "APDU_FILTER" ....
+// NFC-AR-DO             : D1 length 00 or 01
+
+const APDU_STATUS_LEN = 2;
+const GET_ALL_DATA_COMMAND_LENGTH = 2;
+const RESPONSE_STATUS_LENGTH = 2;
+const GET_REFRESH_DATA_CMD_LEN = 2;
+const GET_REFRESH_DATA_TAG_LEN = 1;
+const GET_REFRESH_TAG_LEN = 8;
+
+// Data Object Tags
+const REF_AR_DO      = 0xE2;
+const REF_DO         = 0xE1;
+const AR_DO          = 0xE3;
+const HASH_REF_DO    = 0xC1;
+const AID_REF_DO     = 0x4F;
+const APDU_AR_DO     = 0xD0;
+const NFC_AR_DO      = 0xD1;
+
 var DEBUG = SE.DEBUG_ACE;
 function debug(msg) {
   if (DEBUG) {
     dump("-*- GPAccessRulesManager " + msg);
+  }
+}
+
+function getConnector(type) {
+  switch (type) {
+    case SE.TYPE_UICC:
+      return UiccConnector;
+    case SE.TYPE_ESE:
+      return EseConnector;
+    default:
+      debug("Unsupported SEConnector : " + type);
+      return null;
   }
 }
 
@@ -54,6 +111,8 @@ function GPAccessRulesManager() {}
 GPAccessRulesManager.prototype = {
   // source [1] section 7.1.3 PKCS#15 Selection
   PKCS_AID: "a000000063504b43532d3135",
+
+  ARAM_AID: "A00000015141434C00",
 
   // APDUs (ISO 7816-4) for accessing rules on SE file system
   // see for more details: http://www.cardwerk.com/smartcards/
@@ -73,12 +132,402 @@ GPAccessRulesManager.prototype = {
   // Contains rules as read from the SE
   rules: [],
 
-  // Returns the latest rules. Results are cached.
-  getAccessRules: function getAccessRules() {
-    debug("getAccessRules");
+  seType: SE.TYPE_ESE,
 
+  // Returns the latest rules. Results are cached.
+  getAccessRules: function getAccessRules(seType) {
+    debug("getAccessRules: seType:" + seType);
+
+    this.seType = seType;
     return new Promise((resolve, reject) => {
-      this._readAccessRules(() => resolve(this.rules));
+      if (seType == SE.TYPE_ESE) {
+        this._readARAMAccessRules(() => resolve(this.rules));
+      } else {
+        this._readAccessRules(() => resolve(this.rules));
+      }
+    });
+  },
+
+  _updateAccessRules: Task.async(function*(done) {
+    try {
+      yield this._openChannel(this.ARAM_AID);
+      yield this._updateAllGPData();
+      yield this._closeChannel();
+      done();
+    } catch (error) {
+      debug("_updateAccessRules: " + error);
+      yield this._closeChannel();
+      done();
+    }
+  }),
+
+  _updateAllGPData: function _updateAllGPData() {
+    let apdu = this._bytesToAPDU(GP.UPDATE_ALL_GP_DATA);
+    return new Promise((resolve, reject) => {
+      getConnector(this.seType).exchangeAPDU(this.channel, apdu.cla,
+        apdu.ins, apdu.p1, apdu.p2, apdu.data, apdu.le,
+        {
+          notifyExchangeAPDUResponse: (sw1, sw2, data) => {
+            debug("Update all data command response is " + sw1.toString(16) + sw2.toString(16) +
+                  " data: " + data + " length:" + (data.length/2));
+
+            // 90 00 is "success"
+            if (sw1 !== 0x90 && sw2 !== 0x00) {
+              debug("rejecting APDU response");
+              reject(new Error("Response " + sw1 + "," + sw2));
+              return;
+            }
+
+            resolve();
+          },
+
+          notifyError: (error) => {
+            debug("_exchangeAPDU/notifyError " + error);
+            reject(error);
+          }
+        }
+      );
+    });
+  },
+
+  _readARAMAccessRules: Task.async(function*(done) {
+    try {
+      yield this._openChannel(this.ARAM_AID);
+      // We have obtained access rules, check if we need to update the access rules.
+      if (this.rules) {
+        let refreshTag = yield this._readRefreshGPData();
+        debug("New refresh tag is " + refreshTag + " old refresh tag is " + this.refreshTag);
+        // Update cached rules based on refreshTag.
+        if (SEUtils.arraysEqual(this.refreshTag, refreshTag)) {
+          debug("Refresh tag equals to the one saved.");
+          yield this._closeChannel();
+          return done();
+        }
+
+        // Update the tag.
+        this.refreshTag = refreshTag;
+      }
+
+      this.rules = yield this._readAllGPData();
+
+      DEBUG && debug("_readAccessRules: " + JSON.stringify(this.rules).toString(16));
+
+      yield this._closeChannel();
+      done();
+    } catch (error) {
+      debug("_readARAMAccessRules: " + error);
+      this.rules = [];
+      yield this._closeChannel();
+      done();
+    }
+  }),
+
+  _getRulesLength: function _getRulesLength(apdu, rulesLength) {
+    if (apdu.length < 3)
+      return -1;
+
+    let length;
+    length = apdu[2];
+    rulesLength.numBytes = 1;
+    //
+    // BER: If length bit 8 is one, bit [0..7] is the number
+    // of bytes used for encoding the length.
+    //
+    if (length & 0x80) {
+      let _length = length & 0x7f;
+      debug("Length:" + _length);
+
+      if (apdu.length < 3 + _length)
+        return -1;
+
+      length = 0;
+      let base
+      base = 1 << 8 * _length;
+      for (let i = 0; i < _length; i++) {
+        base >>= 8;
+        length += apdu[3 + i] * base;
+      }
+
+      rulesLength.numBytes = _length + 1;
+    }
+
+    rulesLength.length = length;
+  },
+
+  _parseArDo: function _parseArDo(bytes) {
+    let result = {};
+    result[APDU_AR_DO] = [];
+    result[NFC_AR_DO] = [];
+    debug("Parse AR_DO:")
+    for (let pos = 0; pos < bytes.length; ) {
+      let tag = bytes[pos],
+          length = bytes[pos + 1],
+          parsed = null;
+
+      switch(tag) {
+      case APDU_AR_DO:
+        let apduRuleValue = bytes.slice(pos + 2,  pos + 2 + length);
+        debug("apdu rule:" + apduRuleValue);
+        result[APDU_AR_DO] = apduRuleValue;
+        break;
+      case NFC_AR_DO:
+        let nfcRuleValue = bytes.slice(pos + 2, pos + 2 + length);
+        debug("nfc event rule:" + nfcRuleValue);
+        result[NFC_AR_DO] = nfcRuleValue;
+        break;
+      default:
+        break;
+      }
+
+      pos = pos + 2 + length;
+    }
+    return result;
+  },
+
+  _parseRefDo: function _parseRefDo(bytes) {
+    let result = {};
+    result[HASH_REF_DO] = [];
+    result[AID_REF_DO] = [];
+    debug("Parse REF_DO:")
+    for (let pos = 0; pos < bytes.length; ) {
+      let tag = bytes[pos],
+          length = bytes[pos + 1],
+          parsed = null;
+
+      switch(tag) {
+      case HASH_REF_DO:
+        let hashRefValue = bytes.slice(pos + 2, pos + 2 + length);
+        debug("application hash:" + hashRefValue);
+        result[HASH_REF_DO] = hashRefValue;
+        break;
+      case AID_REF_DO:
+        let aidRefValue = bytes.slice(pos + 2, pos + 2 + length);
+        debug("aid hash:" + aidRefValue);
+        result[AID_REF_DO] = aidRefValue;
+        break;
+      default:
+        break;
+      }
+
+      pos = pos + 2 + length;
+    }
+    return result;
+  },
+
+  _parseARRule: function _parseARRule(rule) {
+    let result = {};
+    result[REF_DO] = [];
+    result[AR_DO] = [];
+    debug("Parse Rule:")
+    for (let pos = 0; pos < rule.length; ) {
+      let tag = rule[pos],
+          length = rule[pos + 1],
+          value = rule.slice(pos + 2, pos + 2 + length),
+          parsed = null;
+
+      switch(tag) {
+      case REF_DO:
+        result[REF_DO] = this._parseRefDo(value);
+        break;
+      case AR_DO:
+        result[AR_DO] = this._parseArDo(value);
+        break;
+      default:
+        break;
+      }
+
+      pos = pos + 2 + length;
+    }
+
+    return {
+      hash: result[REF_DO][HASH_REF_DO],
+      aid:  result[REF_DO][AID_REF_DO],
+      apduRules: result[AR_DO][APDU_AR_DO],
+      nfcRule: result[AR_DO][NFC_AR_DO]
+    }
+  },
+
+  _parseARRules: function _parseARRules(payload) {
+    let rules = [];
+    let containerTags = [
+      REF_DO,
+      AR_DO,
+    ];
+    debug("Parse Rules:")
+    let rule;
+    for (let pos = 0; pos < payload.length;) {
+      if (payload[pos] != REF_AR_DO) {
+        pos++;
+        continue;
+      }
+
+      let refArDoLength = payload[pos + 1];
+
+      let refArDo = payload.slice(pos + 2, pos + 2 + refArDoLength);
+      rule = this._parseARRule(refArDo);
+      debug("rule:" + JSON.stringify(rule));
+      pos += 2 + refArDoLength;
+      rules.push(rule);
+    }
+
+    return rules;
+  },
+
+  _parseResponse: function _parseResponse(apdu) {
+    let rulesLength = {
+      numBytes: 0,
+      length: 0
+    };
+
+    this._getRulesLength(apdu, rulesLength);
+    debug("Total rules length: " + rulesLength.length + " number of bytes to represent length:" +
+             rulesLength.numBytes);
+
+    if (rulesLength.length < 0) {
+      debug("Invalid total rules length");
+      return [];
+    }
+
+    if (apdu.length > GET_ALL_DATA_COMMAND_LENGTH + rulesLength.numBytes +
+          rulesLength.length + RESPONSE_STATUS_LENGTH) {
+      debug("Invalid apdu length");
+      return [];
+    }
+
+    let payloadLength = apdu.length - GET_ALL_DATA_COMMAND_LENGTH -
+          rulesLength.numBytes - RESPONSE_STATUS_LENGTH;
+
+    if (payloadLength < rulesLength.length) {
+      // send get next command
+      debug("Should send get next data command, received data length " +
+            payloadLength + " expected length " + rulesLength.length);
+      let headerLength = GET_ALL_DATA_COMMAND_LENGTH + rulesLength.numBytes;
+      let payload = apdu.slice(headerLength, headerLength + payloadLength);
+      return this._readNextGPData(payload, rulesLength.length);
+    }
+
+    let headerLength = GET_ALL_DATA_COMMAND_LENGTH + rulesLength.numBytes;
+    let payload = apdu.slice(headerLength, headerLength + payloadLength);
+    return this._parseARRules(payload);
+  },
+
+  _readNextGPData: function _readNextGPData(prevPayload, totalRulesLength) {
+    let apdu = this._bytesToAPDU(GP.GET_NEXT_GP_DATA);
+    return new Promise((resolve, reject) => {
+      getConnector(this.seType).exchangeAPDU(this.channel, apdu.cla,
+        apdu.ins, apdu.p1, apdu.p2, apdu.data, apdu.le,
+        {
+          notifyExchangeAPDUResponse: (sw1, sw2, data) => {
+            debug("Read next data command response is " + sw1.toString(16) + sw2.toString(16) +
+                  " data: " + data + " length:" + (data.length/2));
+
+            // 90 00 is "success"
+            if (sw1 !== 0x90 && sw2 !== 0x00) {
+              debug("rejecting APDU response");
+              reject(new Error("Response " + sw1 + "," + sw2));
+              return;
+            }
+
+            let raw = SEUtils.hexStringToByteArray(data);
+            // Slice sw1 and sw2 bytes.
+            let resp = raw.slice(0, (raw.length - 2));
+            // Concat previous payload.
+            let accumulated = prevPayload.concat(resp);
+            if (accumulated.length < totalRulesLength) {
+              debug("Get next data command current length:" + accumulated.length + " expected length:" + totalRulesLength);
+              this._readNextGPData(accumulated, totalRulesLength);
+            } else {
+              debug("Get all access rules");
+              let rules = this._parseARRules(accumulated);
+              resolve(rules);
+            }
+          },
+
+          notifyError: (error) => {
+            debug("_exchangeAPDU/notifyError " + error);
+            reject(error);
+          }
+        }
+      );
+    });
+  },
+
+  _readAllGPData: function _readAllGPData() {
+    let apdu = this._bytesToAPDU(GP.GET_ALL_GP_DATA);
+    return new Promise((resolve, reject) => {
+      getConnector(this.seType).exchangeAPDU(this.channel, apdu.cla,
+        apdu.ins, apdu.p1, apdu.p2, apdu.data, apdu.le,
+        {
+          notifyExchangeAPDUResponse: (sw1, sw2, data) => {
+            debug("Read all data command response is " + sw1.toString(16) + sw2.toString(16) +
+                  " data: " + data + " length:" + (data.length/2));
+
+            // 90 00 is "success"
+            if (sw1 !== 0x90 && sw2 !== 0x00) {
+              debug("rejecting APDU response");
+              reject(new Error("Response " + sw1 + "," + sw2));
+              return;
+            }
+
+            let resp = SEUtils.hexStringToByteArray(data);
+            let rules = this._parseResponse(resp);
+            resolve(rules);
+          },
+
+          notifyError: (error) => {
+            debug("_exchangeAPDU/notifyError " + error);
+            reject(error);
+          }
+        }
+      );
+    });
+  },
+
+  _readRefreshGPData: function _readRefreshGPData() {
+    let apdu = this._bytesToAPDU(GP.GET_REFRESH_GP_DATA);
+    return new Promise((resolve, reject) => {
+      getConnector(this.seType).exchangeAPDU(this.channel, apdu.cla,
+        apdu.ins, apdu.p1, apdu.p2, apdu.data, apdu.le,
+        {
+          notifyExchangeAPDUResponse: (sw1, sw2, data) => {
+            debug("Read refresh tag command response is " + sw1.toString(16) + sw2.toString(16) +
+                  " data: " + data);
+
+            // 90 00 is "success"
+            if (sw1 !== 0x90 && sw2 !== 0x00) {
+              debug("rejecting APDU response");
+              reject(new Error("Response " + sw1 + "," + sw2));
+              return;
+            }
+
+            let resp = SEUtils.hexStringToByteArray(data);
+
+            if (resp.length != (GET_REFRESH_DATA_CMD_LEN + GET_REFRESH_DATA_TAG_LEN +
+                  GET_REFRESH_TAG_LEN + APDU_STATUS_LEN)) {
+              reject(new Error("Incorrect data length"));
+              return;
+            }
+
+            // Should be refresh tag and length of the tag is 8.
+            if (resp[0] != 0xDF || resp[1] != 0x20 || resp[2] != 0x08) {
+              reject(new Error("Invalid refersh tag"));
+              return;
+            }
+
+            let refreshTag = resp.slice(GET_REFRESH_DATA_CMD_LEN +
+                                          GET_REFRESH_DATA_TAG_LEN,
+                                          GET_REFRESH_DATA_CMD_LEN +
+                                          GET_REFRESH_DATA_TAG_LEN +
+                                          GET_REFRESH_TAG_LEN);
+            resolve(refreshTag);
+          },
+
+          notifyError: (error) => {
+            debug("_exchangeAPDU/notifyError " + error);
+            reject(error);
+          }
+        }
+      );
     });
   },
 
@@ -126,7 +575,7 @@ GPAccessRulesManager.prototype = {
     }
 
     return new Promise((resolve, reject) => {
-      UiccConnector.openChannel(aid, {
+      getConnector(this.seType).openChannel(aid, {
         notifyOpenChannelSuccess: (channel, openResponse) => {
           debug("_openChannel/notifyOpenChannelSuccess: Channel " + channel +
                 " opened, open response: " + openResponse);
@@ -149,7 +598,7 @@ GPAccessRulesManager.prototype = {
     }
 
     return new Promise((resolve, reject) => {
-      UiccConnector.closeChannel(this.channel, {
+      getConnector(this.seType).closeChannel(this.channel, {
         notifyCloseChannelSuccess: () => {
           debug("_closeChannel/notifyCloseChannelSuccess: chanel " +
                 this.channel + " closed");
@@ -170,7 +619,7 @@ GPAccessRulesManager.prototype = {
 
     let apdu = this._bytesToAPDU(bytes);
     return new Promise((resolve, reject) => {
-      UiccConnector.exchangeAPDU(this.channel, apdu.cla,
+      getConnector(this.seType).exchangeAPDU(this.channel, apdu.cla,
         apdu.ins, apdu.p1, apdu.p2, apdu.data, apdu.le,
         {
           notifyExchangeAPDUResponse: (sw1, sw2, data) => {
@@ -414,17 +863,28 @@ GPAccessRulesManager.prototype = {
   // TODO consider removing if better format for storing
   // APDU consts will be introduced
   _bytesToAPDU: function _bytesToAPDU(arr) {
-    let apdu = {
-      cla: arr[0] & 0xFF,
-      ins: arr[1] & 0xFF,
-      p1: arr[2] & 0xFF,
-      p2: arr[3] & 0xFF,
-      p3: arr[4] & 0xFF,
-      le: 0
-    };
+    let apdu;
+    if (arr.length > 4) {
+      apdu = {
+        cla: arr[0] & 0xFF,
+        ins: arr[1] & 0xFF,
+        p1: arr[2] & 0xFF,
+        p2: arr[3] & 0xFF,
+        le: -1
+      };
 
-    let data = (apdu.p3 > 0) ? (arr.slice(5)) : [];
-    apdu.data = (data.length) ? SEUtils.byteArrayToHexString(data) : null;
+      let data = arr.slice(4);
+      apdu.data = (data.length) ? SEUtils.byteArrayToHexString(data) : "";
+    } else {
+      apdu = {
+        cla: arr[0] & 0xFF,
+        ins: arr[1] & 0xFF,
+        p1: arr[2] & 0xFF,
+        p2: arr[3] & 0xFF,
+        data: "",
+        le: -1
+      };
+    }
     return apdu;
   },
 
