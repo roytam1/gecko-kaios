@@ -362,19 +362,38 @@ NetworkManager.prototype = {
     debug("Network '" + networkId + "' registered.");
   },
 
-  _addSubnetRoutes: function(network) {
+  _addSubnetRoutes: function(aNetworkInfo) {
     let ips = {};
     let prefixLengths = {};
-    let length = network.getAddresses(ips, prefixLengths);
+    let length = aNetworkInfo.getAddresses(ips, prefixLengths);
     let promises = [];
 
     for (let i = 0; i < length; i++) {
       debug('Adding subnet routes: ' + ips.value[i] + '/' + prefixLengths.value[i]);
       promises.push(
         gNetworkService.modifyRoute(Ci.nsINetworkService.MODIFY_ROUTE_ADD,
-                                    network.name, ips.value[i], prefixLengths.value[i])
+                                    aNetworkInfo.name, ips.value[i], prefixLengths.value[i])
         .catch(aError => {
           debug("_addSubnetRoutes error: " + aError);
+        }));
+    }
+
+    return Promise.all(promises);
+  },
+
+  _removeSubnetRoutes: function(aNetworkInfo) {
+    let ips = {};
+    let prefixLengths = {};
+    let length = aNetworkInfo.getAddresses(ips, prefixLengths);
+    let promises = [];
+
+    for (let i = 0; i < length; i++) {
+      debug('Removing subnet routes: ' + ips.value[i] + '/' + prefixLengths.value[i]);
+      promises.push(
+        gNetworkService.modifyRoute(Ci.nsINetworkService.MODIFY_ROUTE_REMOVE,
+                                    aNetworkInfo.name, ips.value[i], prefixLengths.value[i])
+        .catch(aError => {
+          debug("_removeSubnetRoutes error: " + aError);
         }));
     }
 
@@ -572,6 +591,7 @@ NetworkManager.prototype = {
               return this._removeDefaultRoute(extNetworkInfo)
             }
           })
+          .then(() => this._removeSubnetRoutes(extNetworkInfo))
           .then(() => {
             // Clear http proxy on active network.
             if (this.activeNetworkInfo &&
