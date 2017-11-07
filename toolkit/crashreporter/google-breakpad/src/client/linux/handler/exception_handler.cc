@@ -198,7 +198,14 @@ void InstallDefaultHandler(int sig) {
   struct kernel_sigaction sa;
   memset(&sa, 0, sizeof(sa));
   sys_sigemptyset(&sa.sa_mask);
-  sa.sa_handler_ = SIG_DFL;
+  // Reset the signal handler to previous one rather than the default. Then
+  // debuggerd can receive the crash information and dump it.
+  for (int i = 0; i < kNumHandledSignals; i++) {
+    if (kExceptionSignals[i] == sig) {
+      sa.sa_sigaction_ = old_handlers[i].sa_sigaction;
+      break;
+    }
+  }
   sa.sa_flags = SA_RESTART;
   sys_rt_sigaction(sig, &sa, NULL, sizeof(kernel_sigset_t));
 #else
