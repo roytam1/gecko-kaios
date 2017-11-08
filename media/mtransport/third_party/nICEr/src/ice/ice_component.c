@@ -994,8 +994,6 @@ int nr_ice_component_can_candidate_tcptype_pair(nr_socket_tcp_type left, nr_sock
 /* filter out pairings which won't work. */
 int nr_ice_component_can_candidate_addr_pair(nr_transport_addr *local, nr_transport_addr *remote)
   {
-    int remote_range;
-
     if(local->ip_version != remote->ip_version)
       return(0);
     if(nr_transport_addr_is_link_local(local) !=
