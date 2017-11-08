@@ -1786,6 +1786,12 @@ Navigator::HasFeature(const nsAString& aName, ErrorResult& aRv)
     return p.forget();
   }
 
+  // Flag to decide if device support primay SIM switch.
+  if (aName.EqualsLiteral("ril.support.primarysim.switch")) {
+    p->MaybeResolve(Preferences::GetBool("ril.support.primarysim.switch", false));
+    return p.forget();
+  }
+
   NS_NAMED_LITERAL_STRING(apiWindowPrefix, "api.window.");
   if (StringBeginsWith(aName, apiWindowPrefix)) {
     const nsAString& featureName = Substring(aName, apiWindowPrefix.Length());
