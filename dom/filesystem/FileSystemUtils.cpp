@@ -13,6 +13,10 @@ namespace dom {
 FileSystemUtils::IsDescendantPath(nsIFile* aFile,
                                   nsIFile* aDescendantFile)
 {
+  if (!aFile || !aDescendantFile) {
+    return false;
+  }
+
   nsAutoString path;
   nsresult rv = aFile->GetPath(path);
   if (NS_WARN_IF(NS_FAILED(rv))) {

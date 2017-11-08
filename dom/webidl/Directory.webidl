@@ -94,21 +94,31 @@ interface Directory {
   Promise<boolean> removeDeep((DOMString or File or Directory) path);
 
   /*
-   * Copy a file or a directory to a dst directory. Both src and dst should
-   * be descendents of current directory. Dst shouldn't be a File, will check
-   * in implementation.
-   *
-   * It may better to remove parameter src as the object is current Directory.
-   * Keep API as this now to copy or move its sub files or directories.
+   * Copy files to the target directory. If source is a directory, will also
+   * copy all its descendants to the target directory. Both source and target
+   * (destination) must be descendants of caller, if DOMString is passed, it is
+   * the relative path of caller.
+   * @return If source and target exists, but copy has failed, the promise is
+   * rejected with a DOM error(invalid path, target is not a directory...etc).
+   * If source and target did not exist, the promise is resolved with boolean
+   * false. If the target did exist and was successfully copied, the promise is
+   * resolved with boolean true.
    */
   [Func="mozilla::dom::Directory::DeviceStorageEnabled", NewObject]
   Promise<boolean> copyTo((DOMString or File or Directory) source,
                           (DOMString or Directory) target);
 
-  /*
-   * Move a file or a directory to a dst directory. Both src and dst should
-   * be descendents of current directory.
-   */
+   /*
+    * Move files to the target directory. If source is a directory, will also
+    * move all its descendants to the target directory. Both source and target
+    * (destination) must be descendants of caller, if DOMString is passed, it is
+    * the relative path of caller.
+    * @return If source and target exists, but move failed, the promise is
+    * rejected with a DOM error(invalid path, target is not a directory...etc).
+    * If source and target did not exist, the promise is resolved with boolean
+    * false. If the target did exist and was successfully moved, the promise is
+    * resolved with boolean true.
+    */
   [Func="mozilla::dom::Directory::DeviceStorageEnabled", NewObject]
   Promise<boolean> moveTo((DOMString or File or Directory) source,
                           (DOMString or Directory) target);
