@@ -4,8 +4,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MOCHITEST_MANIFESTS += ['tests/mochitest/mochitest.ini']
-MOCHITEST_CHROME_MANIFESTS += ['tests/mochitest/chrome.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['tests/mochitest/mochitest.ini']
+    MOCHITEST_CHROME_MANIFESTS += ['tests/mochitest/chrome.ini']
+
 XPCSHELL_TESTS_MANIFESTS += ['tests/unit/xpcshell.ini']
 
 # Hack to make this file available as a resource:// URI.

@@ -69,13 +69,15 @@ TEST_DIRS += [
     'gtest',
 ]
 
-MOCHITEST_MANIFESTS += [
-    'test/mochitest.ini',
-    'tests/mochitest/identity/mochitest.ini',
-]
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += [
+        'test/mochitest.ini',
+        'tests/mochitest/identity/mochitest.ini',
+    ]
 
 if CONFIG['MOZ_WEBRTC']:
-    MOCHITEST_MANIFESTS += ['tests/mochitest/mochitest.ini']
+    if CONFIG['MOZ_BUILD_APP'] == 'browser':
+        MOCHITEST_MANIFESTS += ['tests/mochitest/mochitest.ini']
     WEBRTC_SIGNALLING_TEST_MANIFESTS += ['tests/mochitest/steeplechase.ini']
     WEBRTC_SIGNALLING_TEST_MANIFESTS += ['tests/mochitest/steeplechase_long/steeplechase_long.ini']
 

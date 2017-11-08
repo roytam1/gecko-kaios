@@ -7,7 +7,7 @@
 with Files('**'):
     BUG_COMPONENT = ('Core', 'MathML')
 
-if CONFIG['ENABLE_TESTS']:
+if CONFIG['ENABLE_TESTS'] and CONFIG['MOZ_BUILD_APP'] == 'browser':
     MOCHITEST_MANIFESTS += [
         'imptests/mochitest.ini',
         'tests/mochitest.ini',

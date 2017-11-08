@@ -6,7 +6,8 @@
 
 DIRS += ['resources']
 
-MOCHITEST_MANIFESTS += ['test/mochitest.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['test/mochitest.ini']
 
 EXPORTS += [
     'nsIXMLContentSink.h',

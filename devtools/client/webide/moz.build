@@ -11,12 +11,10 @@ DIRS += [
     'themes',
 ]
 
-BROWSER_CHROME_MANIFESTS += [
-    'test/browser.ini'
-]
-MOCHITEST_CHROME_MANIFESTS += [
-    'test/chrome.ini'
-]
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_CHROME_MANIFESTS += [
+        'test/chrome.ini'
+    ]
 
 JS_PREFERENCE_PP_FILES += [
     'webide-prefs.js',

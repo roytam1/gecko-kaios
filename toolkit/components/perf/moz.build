@@ -18,7 +18,8 @@ LOCAL_INCLUDES += [
     '/js/xpconnect/loader',
 ]
 
-MOCHITEST_CHROME_MANIFESTS += ['chrome.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_CHROME_MANIFESTS += ['chrome.ini']
 
 if CONFIG['GNU_CXX']:
     CXXFLAGS += ['-Wshadow']

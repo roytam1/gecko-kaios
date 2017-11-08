@@ -9,5 +9,3 @@ DevToolsModules(
     'scratchpad-manager.jsm',
     'scratchpad-panel.js',
 )
-
-BROWSER_CHROME_MANIFESTS += ['test/browser.ini']

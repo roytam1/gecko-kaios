@@ -6,6 +6,7 @@
 
 DIRS += ['src']
 
-MOCHITEST_MANIFESTS += ['test/mochitest.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['test/mochitest.ini']
 
 JAR_MANIFESTS += ['jar.mn']

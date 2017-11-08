@@ -198,10 +198,11 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
 
 FINAL_LIBRARY = 'xul'
 
-BROWSER_CHROME_MANIFESTS += ['tests/browser.ini']
 MARIONETTE_LAYOUT_MANIFESTS += ['tests/marionette/manifest.ini']
-MOCHITEST_MANIFESTS += ['tests/mochitest.ini']
-MOCHITEST_CHROME_MANIFESTS += ['tests/chrome/chrome.ini']
+
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['tests/mochitest.ini']
+    MOCHITEST_CHROME_MANIFESTS += ['tests/chrome/chrome.ini']
 
 CXXFLAGS += CONFIG['MOZ_CAIRO_CFLAGS']
 

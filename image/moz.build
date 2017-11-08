@@ -11,11 +11,9 @@ if CONFIG['ENABLE_TESTS']:
 with Files('**'):
     BUG_COMPONENT = ('Core', 'ImageLib')
 
-BROWSER_CHROME_MANIFESTS += ['test/browser/browser.ini']
-
-MOCHITEST_MANIFESTS += ['test/mochitest/mochitest.ini']
-
-MOCHITEST_CHROME_MANIFESTS += ['test/mochitest/chrome.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['test/mochitest/mochitest.ini']
+    MOCHITEST_CHROME_MANIFESTS += ['test/mochitest/chrome.ini']
 
 XPCSHELL_TESTS_MANIFESTS += ['test/unit/xpcshell.ini']
 

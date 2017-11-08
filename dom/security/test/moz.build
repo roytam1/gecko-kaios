@@ -12,18 +12,14 @@ GeckoCppUnitTests([
      'TestCSPParser',
 ])
 
-MOCHITEST_MANIFESTS += [
-    'cors/mochitest.ini',
-    'csp/mochitest.ini',
-    'mixedcontentblocker/mochitest.ini',
-    'sri/mochitest.ini',
-]
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += [
+        'cors/mochitest.ini',
+        'csp/mochitest.ini',
+        'mixedcontentblocker/mochitest.ini',
+        'sri/mochitest.ini',
+    ]
 
-MOCHITEST_CHROME_MANIFESTS += [
-    'csp/chrome.ini',
-]
-
-BROWSER_CHROME_MANIFESTS += [
-    'contentverifier/browser.ini',
-    'csp/browser.ini',
-]
+    MOCHITEST_CHROME_MANIFESTS += [
+        'csp/chrome.ini',
+    ]

@@ -205,8 +205,9 @@ RESOURCE_FILES.html = [
     'folder.png',
 ]
 
-MOCHITEST_MANIFESTS += ['test/mochitest.ini']
-MOCHITEST_CHROME_MANIFESTS += ['test/chrome.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['test/mochitest.ini']
+    MOCHITEST_CHROME_MANIFESTS += ['test/chrome.ini']
 
 CXXFLAGS += CONFIG['MOZ_CAIRO_CFLAGS']
 

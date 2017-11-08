@@ -7,7 +7,8 @@
 if CONFIG['OS_ARCH'] == 'WINNT':
     TEST_DIRS += ['test/win']
 
-MOCHITEST_MANIFESTS += ['test/mochitest.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['test/mochitest.ini']
 
 XPIDL_SOURCES += [
     'nsINativeAppSupport.idl',

@@ -17,5 +17,3 @@ DevToolsModules(
     'inspector-panel.js',
     'inspector-search.js'
 )
-
-BROWSER_CHROME_MANIFESTS += ['test/browser.ini']

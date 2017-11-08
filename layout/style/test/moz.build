@@ -25,12 +25,13 @@ HostSimplePrograms([
     'host_ListCSSProperties',
 ])
 
-MOCHITEST_MANIFESTS += [
-    'mochitest.ini',
-]
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += [
+        'mochitest.ini',
+    ]
+    MOCHITEST_CHROME_MANIFESTS += ['chrome/chrome.ini']
+
 XPCSHELL_TESTS_MANIFESTS += ['xpcshell.ini']
-BROWSER_CHROME_MANIFESTS += ['browser.ini']
-MOCHITEST_CHROME_MANIFESTS += ['chrome/chrome.ini']
 
 TEST_HARNESS_FILES.testing.mochitest.tests.layout.style.test.chrome += [
     'chrome/moz_document_helper.html',

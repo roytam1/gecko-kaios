@@ -46,5 +46,6 @@ LOCAL_INCLUDES += [
 
 FINAL_LIBRARY = 'xul'
 
-MOCHITEST_MANIFESTS += ['test/mochitest.ini']
-MOCHITEST_CHROME_MANIFESTS += ['test/chrome.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['test/mochitest.ini']
+    MOCHITEST_CHROME_MANIFESTS += ['test/chrome.ini']

@@ -28,4 +28,5 @@ DIRS += [
 
 if CONFIG['ENABLE_TESTS']:
     JAR_MANIFESTS += ['tests/buster/jar.mn']
-    MOCHITEST_MANIFESTS += ['tests/mochitest/mochitest.ini']
+    if CONFIG['MOZ_BUILD_APP'] == 'browser':
+        MOCHITEST_MANIFESTS += ['tests/mochitest/mochitest.ini']

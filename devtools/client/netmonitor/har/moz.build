@@ -11,5 +11,3 @@ DevToolsModules(
     'har-utils.js',
     'toolbox-overlay.js',
 )
-
-BROWSER_CHROME_MANIFESTS += ['test/browser.ini']

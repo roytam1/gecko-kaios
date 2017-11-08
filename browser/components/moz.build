@@ -48,16 +48,9 @@ EXTRA_JS_MODULES += [
     'distribution.js',
 ]
 
-BROWSER_CHROME_MANIFESTS += [
-    'tests/browser/browser.ini'
-]
-
 XPCSHELL_TESTS_MANIFESTS += [
     'tests/unit/xpcshell.ini'
 ]
-
-if CONFIG['MOZ_SAFE_BROWSING']:
-    BROWSER_CHROME_MANIFESTS += ['safebrowsing/content/test/browser.ini']
 
 with Files('safebrowsing/*'):
     BUG_COMPONENT = ('Toolkit', 'Phishing Protection')

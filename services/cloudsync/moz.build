@@ -18,4 +18,3 @@ EXTRA_JS_MODULES += [
 ]
 
 XPCSHELL_TESTS_MANIFESTS += ['tests/xpcshell/xpcshell.ini']
-BROWSER_CHROME_MANIFESTS += ['tests/mochitest/browser.ini']

@@ -5,8 +5,10 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 if CONFIG['OS_TARGET'] != 'Android':
-    MOCHITEST_CHROME_MANIFESTS += ['test/chrome.ini']
     XPCSHELL_TESTS_MANIFESTS += ['test/unit/xpcshell.ini']
+
+if CONFIG['OS_TARGET'] != 'Android' and CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_CHROME_MANIFESTS += ['test/chrome.ini']
 
 DevToolsModules(
     'client.js',

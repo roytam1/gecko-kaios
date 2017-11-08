@@ -10,10 +10,9 @@ with Files('**'):
 with Files('*Menu*'):
     BUG_COMPONENT = ('Core', 'XP Toolkit/Widgets: Menus')
 
-if CONFIG['ENABLE_TESTS']:
+if CONFIG['ENABLE_TESTS'] and CONFIG['MOZ_BUILD_APP'] == 'browser':
     MOCHITEST_MANIFESTS += ['test/mochitest.ini']
     MOCHITEST_CHROME_MANIFESTS += ['test/chrome.ini']
-    BROWSER_CHROME_MANIFESTS += ['test/browser.ini']
 
 XPIDL_SOURCES += [
     'nsIBoxObject.idl',

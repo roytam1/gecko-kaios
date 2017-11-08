@@ -6,7 +6,9 @@
 
 DIRS += ['interfaces']
 
-MOCHITEST_MANIFESTS += ['tests/mochitest/mochitest.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['tests/mochitest/mochitest.ini']
+
 XPCSHELL_TESTS_MANIFESTS += ['tests/xpcshell/xpcshell.ini']
 
 EXPORTS.mozilla.dom.mobilemessage += [

@@ -8,8 +8,9 @@ DIRS += [
     'modules',
 ]
 
-MOCHITEST_CHROME_MANIFESTS += ['tests/mochi/chrome.ini']
-XPCSHELL_TESTS_MANIFESTS += ['tests/xpcshell/xpcshell.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_CHROME_MANIFESTS += ['tests/mochi/chrome.ini']
+    XPCSHELL_TESTS_MANIFESTS += ['tests/xpcshell/xpcshell.ini']
 
 SOURCES += [
     'NativeOSFileInternals.cpp',

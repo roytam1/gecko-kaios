@@ -9,13 +9,14 @@ TEST_DIRS += ['compiledtest']
 # Number changes to this file to avoid bug 1081323 (clobber after changing a manifest):
 # 12
 
-MOCHITEST_MANIFESTS += [
-    'test/crossorigin/mochitest.ini',
-    'test/mochitest-subsuite-webgl.ini',
-    'test/mochitest.ini',
-]
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += [
+        'test/crossorigin/mochitest.ini',
+        'test/mochitest-subsuite-webgl.ini',
+        'test/mochitest.ini',
+    ]
 
-MOCHITEST_CHROME_MANIFESTS += ['test/chrome/chrome.ini']
+    MOCHITEST_CHROME_MANIFESTS += ['test/chrome/chrome.ini']
 
 EXPORTS += [
     'nsICanvasRenderingContextInternal.h',

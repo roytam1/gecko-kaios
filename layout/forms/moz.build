@@ -7,8 +7,9 @@
 with Files('**'):
     BUG_COMPONENT = ('Core', 'Layout: Form Controls')
 
-MOCHITEST_MANIFESTS += ['test/mochitest.ini']
-MOCHITEST_CHROME_MANIFESTS += ['test/chrome.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['test/mochitest.ini']
+    MOCHITEST_CHROME_MANIFESTS += ['test/chrome.ini']
 
 EXPORTS += [
     'nsIComboboxControlFrame.h',

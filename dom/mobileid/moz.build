@@ -6,8 +6,6 @@
 
 DIRS += ['interfaces']
 
-MOCHITEST_MANIFESTS += ['test/mochitest.ini']
-
 EXTRA_COMPONENTS += [
     'MobileIdentity.js',
     'MobileIdentity.manifest',

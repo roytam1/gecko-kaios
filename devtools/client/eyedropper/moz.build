@@ -9,5 +9,3 @@ DevToolsModules(
     'eyedropper-child.js',
     'eyedropper.js'
 )
-
-BROWSER_CHROME_MANIFESTS += ['test/browser.ini']

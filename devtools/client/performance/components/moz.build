@@ -8,4 +8,5 @@ DevToolsModules(
     'jit-optimizations.js',
 )
 
-MOCHITEST_CHROME_MANIFESTS += ['test/chrome.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_CHROME_MANIFESTS += ['test/chrome.ini']

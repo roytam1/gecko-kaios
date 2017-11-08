@@ -89,13 +89,10 @@ LOCAL_INCLUDES += [
 
 FINAL_LIBRARY = 'xul'
 
-MOCHITEST_MANIFESTS += [
-    'test/mochitest/mochitest.ini',
-]
-
-BROWSER_CHROME_MANIFESTS += [
-    'test/mochitest/browser.ini',
-]
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += [
+        'test/mochitest/mochitest.ini',
+    ]
 
 XPCSHELL_TESTS_MANIFESTS += [
     'test/xpcshell/xpcshell.ini',

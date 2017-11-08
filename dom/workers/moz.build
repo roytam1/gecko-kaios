@@ -121,22 +121,17 @@ TEST_DIRS += [
     'test/extensions/traditional',
 ]
 
-MOCHITEST_MANIFESTS += [
-    'test/mochitest.ini',
-    'test/serviceworkers/mochitest.ini',
-]
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += [
+        'test/mochitest.ini',
+        'test/serviceworkers/mochitest.ini',
+    ]
 
-MOCHITEST_CHROME_MANIFESTS += [
-    'test/chrome.ini',
-    'test/serviceworkers/chrome.ini'
-]
-
-BROWSER_CHROME_MANIFESTS += [
-    'test/serviceworkers/browser.ini',
-]
+    MOCHITEST_CHROME_MANIFESTS += [
+        'test/chrome.ini',
+        'test/serviceworkers/chrome.ini'
+    ]
 
 XPCSHELL_TESTS_MANIFESTS += ['test/xpcshell/xpcshell.ini']
-
-BROWSER_CHROME_MANIFESTS += ['test/browser.ini']
 
 TEST_DIRS += ['test/gtest']

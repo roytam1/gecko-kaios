@@ -11,9 +11,10 @@ DIRS += ['blink']
 
 TEST_DIRS += ['compiledtest']
 
-MOCHITEST_MANIFESTS += [
-    'test/mochitest.ini',
-]
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += [
+        'test/mochitest.ini',
+    ]
 
 TEST_HARNESS_FILES.testing.mochitest.tests.dom.media.webaudio.test.blink += [
     'test/blink/audio-testing.js',

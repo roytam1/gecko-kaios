@@ -37,7 +37,8 @@ XPIDL_SOURCES += [
 
 XPIDL_MODULE = 'dom_inputport'
 
-MOCHITEST_MANIFESTS += ['test/mochitest/mochitest.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['test/mochitest/mochitest.ini']
 
 XPCSHELL_TESTS_MANIFESTS += ['test/xpcshell/xpcshell.ini']
 

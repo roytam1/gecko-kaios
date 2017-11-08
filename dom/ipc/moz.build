@@ -178,8 +178,8 @@ if CONFIG['MOZ_TOOLKIT_SEARCH']:
 
 JAR_MANIFESTS += ['jar.mn']
 
-BROWSER_CHROME_MANIFESTS += ['tests/browser.ini']
-MOCHITEST_CHROME_MANIFESTS += ['tests/chrome.ini']
-MOCHITEST_MANIFESTS += ['tests/mochitest.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_CHROME_MANIFESTS += ['tests/chrome.ini']
+    MOCHITEST_MANIFESTS += ['tests/mochitest.ini']
 
 CXXFLAGS += CONFIG['TK_CFLAGS']

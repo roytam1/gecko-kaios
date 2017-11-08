@@ -14,5 +14,3 @@ DevToolsModules(
     'debugger.js',
     'editor.js'
 )
-
-BROWSER_CHROME_MANIFESTS += ['test/browser.ini']

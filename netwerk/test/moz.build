@@ -6,8 +6,8 @@
 
 TEST_DIRS += ['httpserver']
 
-BROWSER_CHROME_MANIFESTS += ['browser/browser.ini']
-MOCHITEST_MANIFESTS += ['mochitests/mochitest.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['mochitests/mochitest.ini']
 
 XPCSHELL_TESTS_MANIFESTS += [
     'unit/xpcshell.ini',

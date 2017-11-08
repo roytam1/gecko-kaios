@@ -19,4 +19,5 @@ FINAL_LIBRARY = 'xul'
 if CONFIG['MOZ_B2G_RIL']:
     XPCSHELL_TESTS_MANIFESTS += ['tests/xpcshell/xpcshell.ini']
 
-MOCHITEST_MANIFESTS += ['tests/mochitest/mochitest.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['tests/mochitest/mochitest.ini']

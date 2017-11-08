@@ -8,7 +8,3 @@ DIRS += [
     'components',
     'modules',
 ]
-
-BROWSER_CHROME_MANIFESTS += [
-    'test/browser.ini'
-]

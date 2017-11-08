@@ -6,19 +6,17 @@
 
 TEST_DIRS += ['test/extensions']
 
-MOCHITEST_MANIFESTS += ['test/mochitest.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['test/mochitest.ini']
+    MOCHITEST_CHROME_MANIFESTS += ['test/chrome.ini']
 
-BROWSER_CHROME_MANIFESTS += ['test/browser.ini']
-
-MOCHITEST_CHROME_MANIFESTS += ['test/chrome.ini']
+    if CONFIG['ENABLE_INTL_API']:
+        MOCHITEST_MANIFESTS += ['test/mochitest-intl-api.ini']
 
 XPCSHELL_TESTS_MANIFESTS += [
     'test/unit/xpcshell-child-process.ini',
     'test/unit/xpcshell-parent-process.ini'
 ]
-
-if CONFIG['ENABLE_INTL_API']:
-    MOCHITEST_MANIFESTS += ['test/mochitest-intl-api.ini']
 
 EXPORTS.mozilla.dom += [
     'IDBCursor.h',

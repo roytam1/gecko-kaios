@@ -8,7 +8,8 @@ HAS_MISC_RULE = True
 
 FINAL_TARGET = '_tests/xpcshell/toolkit/mozapps/update/tests/data'
 
-MOCHITEST_CHROME_MANIFESTS += ['chrome/chrome.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_CHROME_MANIFESTS += ['chrome/chrome.ini']
 
 XPCSHELL_TESTS_MANIFESTS += [
     'unit_aus_update/xpcshell.ini',

@@ -25,4 +25,5 @@ LOCAL_INCLUDES += [
     '/security/pkix/include',
 ]
 
-MOCHITEST_MANIFESTS += ['tests/mochitest.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['tests/mochitest.ini']

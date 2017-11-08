@@ -23,8 +23,8 @@ LOCAL_INCLUDES += [
     '../workers',
 ]
 
-MOCHITEST_MANIFESTS += ['tests/mochitest.ini']
-BROWSER_CHROME_MANIFESTS += ['tests/browser.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['tests/mochitest.ini']
 
 include('/ipc/chromium/chromium-config.mozbuild')
 

@@ -457,8 +457,9 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
 if CONFIG['ENABLE_TESTS']:
     DIRS += ['apz/test/gtest']
 
-MOCHITEST_MANIFESTS += ['apz/test/mochitest/mochitest.ini']
-MOCHITEST_CHROME_MANIFESTS += ['apz/test/mochitest/chrome.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_MANIFESTS += ['apz/test/mochitest/mochitest.ini']
+    MOCHITEST_CHROME_MANIFESTS += ['apz/test/mochitest/chrome.ini']
 
 CXXFLAGS += CONFIG['MOZ_CAIRO_CFLAGS']
 CXXFLAGS += CONFIG['TK_CFLAGS']

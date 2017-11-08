@@ -9,4 +9,5 @@ DIRS += ['global', 'mozapps']
 if CONFIG['MOZ_HELP_VIEWER']:
     DIRS += ['help']
 
-MOCHITEST_CHROME_MANIFESTS += ['mochitests/chrome.ini']
+if CONFIG['MOZ_BUILD_APP'] == 'browser':
+    MOCHITEST_CHROME_MANIFESTS += ['mochitests/chrome.ini']
