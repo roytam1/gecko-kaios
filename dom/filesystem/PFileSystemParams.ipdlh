@@ -74,6 +74,14 @@ struct FileSystemCopyOrMoveToParams
   bool isCopy;
 };
 
+struct FileSystemRenameToParams
+{
+  nsString filesystem;
+  nsString directory;
+  nsString oldRealPath;
+  nsString newName;
+};
+
 union FileSystemParams
 {
   FileSystemCreateDirectoryParams;
@@ -83,6 +91,7 @@ union FileSystemParams
   FileSystemGetFileOrDirectoryParams;
   FileSystemRemoveParams;
   FileSystemCopyOrMoveToParams;
+  FileSystemRenameToParams;
 };
 
 } // dom namespace

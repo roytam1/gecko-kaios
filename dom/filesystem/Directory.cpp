@@ -14,6 +14,7 @@
 #include "GetFilesTask.h"
 #include "RemoveTask.h"
 #include "CopyOrMoveToTask.h"
+#include "RenameToTask.h"
 
 #include "nsCharSeparatedTokenizer.h"
 #include "nsString.h"
@@ -454,6 +455,54 @@ Directory::CopyOrMoveToInternal(const StringOrFileOrDirectory& aSource,
   RefPtr<CopyOrMoveToTaskChild> task =
     CopyOrMoveToTaskChild::Create(fs, mFile, srcRealPath, dstRealPath,
                                   aIsCopy, aRv);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return nullptr;
+  }
+
+  task->SetError(error);
+  FileSystemPermissionRequest::RequestForTask(task);
+  return task->GetPromise();
+}
+
+already_AddRefed<Promise>
+Directory::RenameTo(const StringOrFileOrDirectory& aOldName,
+                    const nsAString& aNewName,
+                    ErrorResult& aRv)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  nsresult error = NS_OK;
+  nsCOMPtr<nsIFile> oldRealPath;
+
+  // Check and get the aOldName path.
+  RefPtr<FileSystemBase> fs = GetFileSystem(aRv);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return nullptr;
+  }
+
+  if (aOldName.IsFile()) {
+    if (!fs->GetRealPath(aOldName.GetAsFile().Impl(),
+                         getter_AddRefs(oldRealPath))) {
+      error = NS_ERROR_DOM_SECURITY_ERR;
+    }
+  } else if (aOldName.IsString()) {
+    error = DOMPathToRealPath(aOldName.GetAsString(), getter_AddRefs(oldRealPath));
+  } else {
+    MOZ_ASSERT(aOldName.IsDirectory());
+    if (!fs->IsSafeDirectory(&aOldName.GetAsDirectory())) {
+      error = NS_ERROR_DOM_SECURITY_ERR;
+    } else {
+      oldRealPath = aOldName.GetAsDirectory().mFile;
+    }
+  }
+
+  // oldRealPath must be a descendant of this directory.
+  if (!FileSystemUtils::IsDescendantPath(mFile, oldRealPath)) {
+    error = NS_ERROR_DOM_FILESYSTEM_NO_MODIFICATION_ALLOWED_ERR;
+  }
+
+  RefPtr<RenameToTaskChild> task =
+    RenameToTaskChild::Create(fs, mFile, oldRealPath, aNewName, aRv);
   if (NS_WARN_IF(aRv.Failed())) {
     return nullptr;
   }

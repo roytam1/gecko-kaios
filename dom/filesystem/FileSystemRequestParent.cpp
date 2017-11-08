@@ -11,6 +11,7 @@
 #include "GetFileOrDirectoryTask.h"
 #include "RemoveTask.h"
 #include "CopyOrMoveToTask.h"
+#include "RenameToTask.h"
 
 #include "mozilla/AppProcessChecker.h"
 #include "mozilla/dom/FileSystemBase.h"
@@ -57,6 +58,7 @@ FileSystemRequestParent::Initialize(const FileSystemParams& aParams)
     FILESYSTEM_REQUEST_PARENT_DISPATCH_ENTRY(GetFileOrDirectory)
     FILESYSTEM_REQUEST_PARENT_DISPATCH_ENTRY(GetFiles)
     FILESYSTEM_REQUEST_PARENT_DISPATCH_ENTRY(Remove)
+    FILESYSTEM_REQUEST_PARENT_DISPATCH_ENTRY(RenameTo)
 
     default: {
       NS_RUNTIMEABORT("not reached");

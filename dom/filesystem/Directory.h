@@ -101,6 +101,11 @@ public:
          const StringOrDirectory& aTarget,
          ErrorResult& aRv);
 
+  already_AddRefed<Promise>
+  RenameTo(const StringOrFileOrDirectory& aOldName,
+           const nsAString& aNewName,
+           ErrorResult& aRv);
+
   // From https://microsoftedge.github.io/directory-upload/proposal.html#directory-interface :
 
   void

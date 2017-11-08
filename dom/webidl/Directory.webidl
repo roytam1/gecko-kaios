@@ -122,6 +122,14 @@ interface Directory {
   [Func="mozilla::dom::Directory::DeviceStorageEnabled", NewObject]
   Promise<boolean> moveTo((DOMString or File or Directory) source,
                           (DOMString or Directory) target);
+
+  /*
+   * Rename a file or a directory. The oldName should
+   * be descendents of current directory.
+   */
+  [Func="mozilla::dom::Directory::DeviceStorageEnabled", NewObject]
+  Promise<boolean> renameTo((DOMString or File or Directory) oldName,
+                             DOMString newName);
 };
 
 [Exposed=(Window,Worker)]
