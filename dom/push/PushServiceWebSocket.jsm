@@ -395,6 +395,8 @@ this.PushServiceWebSocket = {
   /** Indicates whether the server supports Web Push-style message delivery. */
   _dataEnabled: false,
 
+  _socketWakeLock: {},
+
   /**
    * Sends a message to the Push Server through an open websocket.
    * typeof(msg) shall be an object
@@ -495,6 +497,10 @@ this.PushServiceWebSocket = {
     // shouldn't have any applications performing registration/unregistration
     // or receiving notifications.
     this._shutdownWS();
+    // Release all wakeLocks.
+    for (var index in this._socketWakeLock) {
+      this._releaseWakeLock(index);
+    }
 
     if (this._requestTimeoutTimer) {
       this._requestTimeoutTimer.cancel();
@@ -804,7 +810,7 @@ this.PushServiceWebSocket = {
         // Grab a wakelock before we open the socket to ensure we don't go to
         // sleep before connection the is opened.
         this._ws.asyncOpen(uri, uri.spec, 0, this._wsListener, null);
-        this._acquireWakeLock();
+        this._acquireWakeLock('WebSocketSetup');
         this._currentState = STATE_WAITING_FOR_WS_START;
       } catch(e) {
         console.error("beginWSSetup: Error opening websocket.",
@@ -855,25 +861,35 @@ this.PushServiceWebSocket = {
     return !!this._ws;
   },
 
-  _acquireWakeLock: function() {
+  _acquireWakeLock: function (reason) {
     if (!AppConstants.MOZ_B2G) {
       return;
     }
 
-    // Disable the wake lock on non-B2G platforms to work around bug 1154492.
-    if (!this._socketWakeLock) {
-      console.debug("acquireWakeLock: Acquiring Socket Wakelock");
-      this._socketWakeLock = gPowerManagerService.newWakeLock("cpu");
-    }
-    if (!this._socketWakeLockTimer) {
-      console.debug("acquireWakeLock: Creating Socket WakeLock Timer");
-      this._socketWakeLockTimer = Cc["@mozilla.org/timer;1"]
-                                    .createInstance(Ci.nsITimer);
+    if (!this._socketWakeLock[reason]) {
+      this._socketWakeLock[reason] = {
+        wakeLock: null,
+        timer: null
+      };
+      console.debug("acquireWakeLock: Acquiring " + reason + " Wakelock and Creating Timer");
+      this._socketWakeLock[reason].wakeLock = gPowerManagerService.newWakeLock("cpu");
+      this._socketWakeLock[reason].timer = Cc["@mozilla.org/timer;1"]
+                                             .createInstance(Ci.nsITimer);
+    } else {
+      if (!this._socketWakeLock[reason].wakeLock) {
+        console.debug("acquireWakeLock: Acquiring " + reason + " Wakelock");
+        this._socketWakeLock[reason].wakeLock = gPowerManagerService.newWakeLock("cpu");
+      }
+      if (!this._socketWakeLock[reason].timer) {
+        console.debug("acquireWakeLock: Creating " + reason + " WakeLock Timer");
+        this._socketWakeLock[reason].timer = Cc["@mozilla.org/timer;1"]
+                                               .createInstance(Ci.nsITimer);
+      }
     }
 
-    console.debug("acquireWakeLock: Setting Socket WakeLock Timer");
-    this._socketWakeLockTimer
-      .initWithCallback(this._releaseWakeLock.bind(this),
+    console.debug("acquireWakeLock: Setting  " + reason + "  WakeLock Timer");
+    this._socketWakeLock[reason].timer
+      .initWithCallback(this._releaseWakeLock.bind(this, reason),
                         // Allow the same time for socket setup as we do for
                         // requests after the setup. Fudge it a bit since
                         // timers can be a little off and we don't want to go
@@ -882,18 +898,22 @@ this.PushServiceWebSocket = {
                         Ci.nsITimer.TYPE_ONE_SHOT);
   },
 
-  _releaseWakeLock: function() {
+  _releaseWakeLock: function (reason) {
     if (!AppConstants.MOZ_B2G) {
       return;
     }
-
-    console.debug("releaseWakeLock: Releasing Socket WakeLock");
-    if (this._socketWakeLockTimer) {
-      this._socketWakeLockTimer.cancel();
+    if (!this._socketWakeLock[reason]) {
+      console.warn("Drop releasing " + reason + " wakeLock due to nonexistent!");
+      return;
     }
-    if (this._socketWakeLock) {
-      this._socketWakeLock.unlock();
-      this._socketWakeLock = null;
+
+    console.debug("releaseWakeLock: Releasing " + reason + " WakeLock");
+    if (this._socketWakeLock[reason].timer) {
+      this._socketWakeLock[reason].timer.cancel();
+    }
+    if (this._socketWakeLock[reason].wakeLock) {
+      this._socketWakeLock[reason].wakeLock.unlock();
+      this._socketWakeLock[reason].wakeLock = null;
     }
   },
 
@@ -1039,17 +1059,28 @@ this.PushServiceWebSocket = {
 
   _queueUpdateStart: Promise.resolve(),
   _queueUpdate: null,
+  _enqueueUpdateCount: 0,
   _enqueueUpdate: function(op) {
     console.debug("enqueueUpdate()");
     if (!this._queueUpdate) {
       this._queueUpdate = this._queueUpdateStart;
+      this._enqueueUpdateCount = 0;
     }
+    this._enqueueUpdateCount++;
     this._queueUpdate = this._queueUpdate
                           .then(op)
-                          .catch(_ => {});
+                          .catch(_ => {})
+                          .then(_ => {
+                            this._enqueueUpdateCount--;
+                            if (this._enqueueUpdateCount == 0) {
+                              this._releaseWakeLock('DataUpdate');
+                            }
+                          });
   },
 
   _handleDataUpdate: function(update) {
+    this._acquireWakeLock('DataUpdate');
+
     let promise;
     if (typeof update.channelID != "string") {
       console.warn("handleDataUpdate: Discarding update without channel ID",
@@ -1331,7 +1362,7 @@ this.PushServiceWebSocket = {
   // begin Push protocol handshake
   _wsOnStart: function(context) {
     console.debug("wsOnStart()");
-    this._releaseWakeLock();
+    this._releaseWakeLock('WebSocketSetup');
 
     if (this._currentState != STATE_WAITING_FOR_WS_START) {
       console.error("wsOnStart: NOT in STATE_WAITING_FOR_WS_START. Current",
@@ -1389,7 +1420,7 @@ this.PushServiceWebSocket = {
    */
   _wsOnStop: function(context, statusCode) {
     console.debug("wsOnStop()");
-    this._releaseWakeLock();
+    this._releaseWakeLock('WebSocketSetup');
 
     if (statusCode != Cr.NS_OK &&
         !(statusCode == Cr.NS_BASE_STREAM_CLOSED && this._willBeWokenUpByUDP)) {
