@@ -552,12 +552,12 @@ this.DOMApplicationRegistry = {
     let isPackage;
 
     let updateFile = baseDir.clone();
+    let appFile = baseDir.clone();
     updateFile.append("update.webapp");
+    appFile.append("application.zip");
     if (!updateFile.exists()) {
       // The update manifest is missing, this is a hosted app only if there is
       // no application.zip
-      let appFile = baseDir.clone();
-      appFile.append("application.zip");
       if (appFile.exists()) {
         return isPreinstalled;
       }
@@ -572,8 +572,69 @@ this.DOMApplicationRegistry = {
     debug("Installing 3rd party app : " + aId +
           " from " + baseDir.path + " to " + destId);
 
+    let getVersion = function(aZipFile) {
+      let version = "";
+      let appManifest;
+
+      if (!aZipFile.exists()) {
+        return version;
+      }
+
+      let zipReader = Cc["@mozilla.org/libjar/zip-reader;1"]
+                        .createInstance(Ci.nsIZipReader);
+      try {
+        zipReader.open(aZipFile);
+        if (zipReader.hasEntry("manifest.webapp")) {
+          let istream = zipReader.getInputStream("manifest.webapp");
+          let converter = Cc["@mozilla.org/intl/scriptableunicodeconverter"]
+                            .createInstance(Ci.nsIScriptableUnicodeConverter);
+          converter.charset = "UTF-8";
+          appManifest = JSON.parse(converter.ConvertToUnicode(
+                        NetUtil.readInputStreamToString(istream, istream.available()) || ""));
+          if (appManifest.version) {
+            version = appManifest.version;
+          }
+        }
+      } catch(e) {
+        debug("Error in read manifest from application: " + e );
+      } finally {
+        if (zipReader) {
+           zipReader.close();
+        }
+      }
+
+      return version;
+    };
+
     // We copy this app to DIRECTORY_NAME/$destId, and set the base path as needed.
     let destDir = FileUtils.getDir(DIRECTORY_NAME, ["webapps", destId], true, true);
+
+    if (isPackage) {
+      let destZip = destDir.clone();
+      destZip.append("application.zip");
+      let destVersion = getVersion(destZip);
+      let baseVersion = getVersion(appFile);
+      let vc = Cc["@mozilla.org/xpcom/version-comparator;1"]
+                 .getService(Ci.nsIVersionComparator);
+
+      // Bug 25482: in case of package and updateManifest version is inconsistent,
+      // need to clear updateManifest, reset store version and package hash.
+      // As it will confuse the update status and update won't happen.
+      if (app.updateManifest &&
+          vc.compare(destVersion, app.updateManifest.version) !== 0) {
+        debug("Update version inconsistent reset it.");
+        delete app.updateManifest;
+        app.storeVersion = 0;
+        if (app.packageHash) {
+          delete app.packageHash;
+        }
+      }
+
+      if (vc.compare(destVersion, baseVersion) >= 0) {
+        // If installed version is newer than or same as preloaded one.
+        return isPreinstalled;
+      };
+    }
 
     filesToMove.forEach(function(aFile) {
         let file = baseDir.clone();
@@ -588,17 +649,6 @@ this.DOMApplicationRegistry = {
     app.installState = "installed";
     app.cachePath = app.basePath;
     app.basePath = OS.Path.dirname(this.appsFile);
-
-    // when install prelaod app from system, need to clear updateManifest,
-    // reset store version and package hash.
-    // As it will confuse the update status and update won't happen.
-    if (app.updateManifest) {
-      delete app.updateManifest;
-      app.storeVersion = 0;
-    }
-    if (app.packageHash) {
-      delete app.packageHash;
-    }
 
     if (!isPackage) {
       return isPreinstalled;
