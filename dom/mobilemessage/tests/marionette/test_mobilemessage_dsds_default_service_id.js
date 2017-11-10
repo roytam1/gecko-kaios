@@ -10,7 +10,9 @@ const MMS_SERVICE_CONTRACTID = "@mozilla.org/mms/mmsservice;1";
 const SMS_SERVICE_CONTRACTID = "@mozilla.org/sms/smsservice;1";
 
 const PREF_RIL_NUM_RADIO_INTERFACES = "ril.numRadioInterfaces";
-const PREF_MMS_DEFAULT_SERVICE_ID = "dom.mms.defaultServiceId";
+// Data and MMS share the same key - dom.data.defaultServiceId for now.
+// In case of needed, we will merge the different types into single key.
+const PREF_MMS_DEFAULT_SERVICE_ID = "dom.data.defaultServiceId";
 const PREF_SMS_DEFAULT_SERVICE_ID = "dom.sms.defaultServiceId";
 
 function setPrefAndVerify(prefKey, setVal, service, attrName, expectedVal, deferred) {

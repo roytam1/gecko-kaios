@@ -128,7 +128,9 @@ const PREF_RETRIEVAL_RETRY_INTERVALS = (function() {
 })();
 
 const kPrefRilNumRadioInterfaces = "ril.numRadioInterfaces";
-const kPrefDefaultServiceId = "dom.mms.defaultServiceId";
+// Data and MMS share the same key - dom.data.defaultServiceId for now.
+// In case of needed, we will merge the different types into single key.
+const kPrefDefaultServiceId = "dom.data.defaultServiceId";
 
 XPCOMUtils.defineLazyServiceGetter(this, "gpps",
                                    "@mozilla.org/network/protocol-proxy-service;1",

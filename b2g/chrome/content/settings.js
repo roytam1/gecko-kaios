@@ -173,7 +173,9 @@ function delayed_start() {
 // =================== RIL ====================
 (function RILSettingsToPrefs() {
   // DSDS default service IDs
-  ['mms', 'sms', 'telephony', 'voicemail'].forEach(function(key) {
+  // Data and MMS share the same key - ril.data.defaultServiceId for now.
+  // In case of needed, we will merge the different types into single key.
+  ['data', 'sms', 'telephony', 'voicemail'].forEach(function(key) {
     SettingsListener.observe('ril.' + key + '.defaultServiceId', 0,
                              function(value) {
       if (value != null) {

@@ -21,7 +21,9 @@ using namespace mozilla::dom::mobilemessage;
 
 namespace {
 
-#define kPrefMmsDefaultServiceId "dom.mms.defaultServiceId"
+// Data and MMS share the same key - dom.data.defaultServiceId for now.
+// In case of needed, we will merge the different types into single key.
+#define kPrefMmsDefaultServiceId "dom.data.defaultServiceId"
 #define kPrefSmsDefaultServiceId "dom.sms.defaultServiceId"
 
 // TODO: Bug 767082 - WebSMS: sSmsChild leaks at shutdown
