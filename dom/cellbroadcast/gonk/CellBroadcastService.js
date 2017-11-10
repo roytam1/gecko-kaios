@@ -68,7 +68,7 @@ function CellBroadcastService() {
 
   try {
     CB_SEARCH_LIST_GECKO_CONFIG =
-        Services.prefs.getBoolPref(kPrefAppCBConfigurationEnabled) || false,
+        Services.prefs.getBoolPref(kPrefAppCBConfigurationEnabled) || false;
   } catch (e) {}
 
   if (CB_SEARCH_LIST_GECKO_CONFIG) {
