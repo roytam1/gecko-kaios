@@ -14,6 +14,7 @@
 
 // Support for Notification API extension.
 #include "mozilla/dom/NotificationBinding.h"
+#include "nsContentUtils.h" // Required for nsContentUtils::PushEnabled
 
 class nsPIDOMWindowInner;
 
