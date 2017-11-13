@@ -94,11 +94,13 @@ public:
   already_AddRefed<Promise>
   CopyTo(const StringOrFileOrDirectory& aSource,
          const StringOrDirectory& aTarget,
+         bool akeepBoth,
          ErrorResult& aRv);
 
   already_AddRefed<Promise>
   MoveTo(const StringOrFileOrDirectory& aSource,
          const StringOrDirectory& aTarget,
+         bool akeepBoth,
          ErrorResult& aRv);
 
   already_AddRefed<Promise>
@@ -172,6 +174,7 @@ private:
   already_AddRefed<Promise>
   CopyOrMoveToInternal(const StringOrFileOrDirectory& aSource,
                        const StringOrDirectory& aTarget,
+                       bool aKeepBoth,
                        bool aIsCopy, ErrorResult& aRv);
 
   nsCOMPtr<nsISupports> mParent;

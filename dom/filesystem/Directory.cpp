@@ -386,24 +386,27 @@ Directory::RemoveInternal(const StringOrFileOrDirectory& aPath, bool aRecursive,
 already_AddRefed<Promise>
 Directory::CopyTo(const StringOrFileOrDirectory& aSource,
                   const StringOrDirectory& aTarget,
+                  bool akeepBoth,
                   ErrorResult& aRv)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  return CopyOrMoveToInternal(aSource, aTarget, true, aRv);
+  return CopyOrMoveToInternal(aSource, aTarget, akeepBoth, true, aRv);
 }
 
 already_AddRefed<Promise>
 Directory::MoveTo(const StringOrFileOrDirectory& aSource,
                   const StringOrDirectory& aTarget,
+                  bool akeepBoth,
                   ErrorResult& aRv)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  return CopyOrMoveToInternal(aSource, aTarget, false, aRv);
+  return CopyOrMoveToInternal(aSource, aTarget, akeepBoth, false, aRv);
 }
 
 already_AddRefed<Promise>
 Directory::CopyOrMoveToInternal(const StringOrFileOrDirectory& aSource,
                                 const StringOrDirectory& aTarget,
+                                bool aKeepBoth,
                                 bool aIsCopy, ErrorResult& aRv)
 {
   MOZ_ASSERT(NS_IsMainThread());
@@ -454,7 +457,7 @@ Directory::CopyOrMoveToInternal(const StringOrFileOrDirectory& aSource,
 
   RefPtr<CopyOrMoveToTaskChild> task =
     CopyOrMoveToTaskChild::Create(fs, mFile, srcRealPath, dstRealPath,
-                                  aIsCopy, aRv);
+                                  aKeepBoth, aIsCopy, aRv);
   if (NS_WARN_IF(aRv.Failed())) {
     return nullptr;
   }

@@ -16,6 +16,7 @@
 #include "mozilla/ipc/BackgroundParent.h"
 #include "nsIFile.h"
 #include "nsStringGlue.h"
+#include "nsPrintfCString.h"
 
 namespace mozilla {
 namespace dom {
@@ -29,6 +30,7 @@ CopyOrMoveToTaskChild::Create(FileSystemBase* aFileSystem,
                               nsIFile* aDirPath,
                               nsIFile* aSrcPath,
                               nsIFile* aDstPath,
+                              bool aKeepBoth,
                               bool aIsCopy,
                               ErrorResult& aRv)
 
@@ -40,7 +42,7 @@ CopyOrMoveToTaskChild::Create(FileSystemBase* aFileSystem,
   MOZ_ASSERT(aDstPath);
 
   RefPtr<CopyOrMoveToTaskChild> task =
-    new CopyOrMoveToTaskChild(aFileSystem, aDirPath, aSrcPath, aDstPath, aIsCopy);
+    new CopyOrMoveToTaskChild(aFileSystem, aDirPath, aSrcPath, aDstPath, aKeepBoth, aIsCopy);
 
   nsCOMPtr<nsIGlobalObject> globalObject =
     do_QueryInterface(aFileSystem->GetParentObject());
@@ -61,11 +63,13 @@ CopyOrMoveToTaskChild::CopyOrMoveToTaskChild(FileSystemBase* aFileSystem,
                                             nsIFile* aDirPath,
                                             nsIFile* aSrcPath,
                                             nsIFile* aDstPath,
+                                            bool aKeepBoth,
                                             bool aIsCopy)
   : FileSystemTaskChildBase(aFileSystem)
   , mDirPath(aDirPath)
   , mSrcPath(aSrcPath)
   , mDstPath(aDstPath)
+  , mKeepBoth(aKeepBoth)
   , mIsCopy(aIsCopy)
   , mReturnValue(false)
 {
@@ -101,6 +105,7 @@ CopyOrMoveToTaskChild::GetRequestParams(const nsString& aSerializedDOMPath,
     return param;
   }
 
+  param.keepBoth() = mKeepBoth;
   param.isCopy() = mIsCopy;
 
   nsAutoString srcPath;
@@ -182,6 +187,7 @@ CopyOrMoveToTaskParent::Create(FileSystemBase* aFileSystem,
     return nullptr;
   }
 
+  task->mKeepBoth = aParam.keepBoth();
   task->mIsCopy = aParam.isCopy();
 
   NS_ConvertUTF16toUTF8 srcPath(aParam.srcRealPath());
@@ -210,6 +216,7 @@ CopyOrMoveToTaskParent::CopyOrMoveToTaskParent(
         const FileSystemCopyOrMoveToParams& aParam,
         FileSystemRequestParent* aParent)
   : FileSystemTaskParentBase(aFileSystem, aParam, aParent)
+  , mKeepBoth(false)
   , mIsCopy(false)
   , mReturnValue(false)
 {
@@ -284,6 +291,59 @@ CopyOrMoveToTaskParent::IOWork()
   rv = mSrcPath->GetLeafName(fileName);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
+  }
+
+  if (mKeepBoth) {
+    nsString destPathStr;
+    nsString predictPathStr;
+    nsCOMPtr<nsIFile> predictPath;
+
+    rv = mDstPath->GetPath(destPathStr);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
+
+    predictPathStr = destPathStr + NS_ConvertASCIItoUTF16("/") + fileName;
+    rv = NS_NewLocalFile(predictPathStr, false, getter_AddRefs(predictPath));
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
+
+    rv = predictPath->Exists(&exists);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
+
+    if (exists) {
+      nsString rootName, suffix;
+      const int32_t lastDot = fileName.RFindChar('.');
+      if (lastDot == kNotFound || lastDot == 0) {
+        rootName = fileName;
+      } else {
+        suffix = Substring(fileName, lastDot);
+        rootName = Substring(fileName, 0, lastDot);
+      }
+
+      for (int indx = 1; indx < 10000; indx++) {
+        predictPathStr = destPathStr + NS_ConvertASCIItoUTF16("/") + rootName +
+          NS_ConvertASCIItoUTF16(nsPrintfCString("(%d)", indx)) + suffix;
+        rv = NS_NewLocalFile(predictPathStr, false, getter_AddRefs(predictPath));
+        if (NS_WARN_IF(NS_FAILED(rv))) {
+          return rv;
+        }
+
+        rv = predictPath->Exists(&exists);
+        if (NS_WARN_IF(NS_FAILED(rv))) {
+          return rv;
+        }
+
+        if (!exists) {
+          fileName = rootName +
+            NS_ConvertASCIItoUTF16(nsPrintfCString("(%d)", indx)) + suffix;
+          break;
+        }
+      }
+    }
   }
 
   if (mIsCopy) {

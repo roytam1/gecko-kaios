@@ -71,6 +71,7 @@ struct FileSystemCopyOrMoveToParams
   nsString directory;
   nsString srcRealPath;
   nsString dstRealPath;
+  bool keepBoth;
   bool isCopy;
 };
 

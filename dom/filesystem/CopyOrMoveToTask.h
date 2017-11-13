@@ -26,6 +26,7 @@ public:
          nsIFile* aDirPath,
          nsIFile* aSrcPath,
          nsIFile* aDstPath,
+         bool aKeepBoth,
          bool aIsCopy,
          ErrorResult& aRv);
 
@@ -55,6 +56,7 @@ private:
                         nsIFile* aDirPath,
                         nsIFile* aSrcPath,
                         nsIFile* aDstPath,
+                        bool aKeepBoth,
                         bool aIsCopy);
 
   RefPtr<Promise> mPromise;
@@ -64,6 +66,7 @@ private:
   nsCOMPtr<nsIFile> mSrcPath;
   nsCOMPtr<nsIFile> mDstPath;
 
+  bool mKeepBoth;
   bool mIsCopy;
   bool mReturnValue;
 };
@@ -98,6 +101,7 @@ private:
   nsCOMPtr<nsIFile> mSrcPath;
   nsCOMPtr<nsIFile> mDstPath;
 
+  bool mKeepBoth;
   bool mIsCopy;
   bool mReturnValue;
 };
