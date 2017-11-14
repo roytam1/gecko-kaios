@@ -314,7 +314,7 @@ public:
 #undef COPY_FIELD
 #undef COPY_OPT_FIELD
 
-    mNfcService->DispatchNfcEvent(event);
+    mNfcService->DispatchNfcEvent(cx, event);
     return NS_OK;
   }
 
@@ -748,7 +748,7 @@ NfcService::SendCommand(JS::HandleValue aOptions, JSContext* aCx)
 }
 
 void
-NfcService::DispatchNfcEvent(const mozilla::dom::NfcEventOptions& aOptions)
+NfcService::DispatchNfcEvent(JSContext* cx, const mozilla::dom::NfcEventOptions& aOptions)
 {
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(mListener);
@@ -757,7 +757,6 @@ NfcService::DispatchNfcEvent(const mozilla::dom::NfcEventOptions& aOptions)
     return; // NFC has been shutdown meanwhile; not en error
   }
 
-  mozilla::AutoSafeJSContext cx;
   JS::RootedValue val(cx);
 
   if (!ToJSValue(cx, aOptions, &val)) {
