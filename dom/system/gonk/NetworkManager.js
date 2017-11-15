@@ -1058,7 +1058,7 @@ NetworkManager.prototype = {
 
       // Compare the prioriy between two network types. If found incoming
       // network with higher priority, replace the active network.
-      if (this.getPriority(this._activeNetwork.type) < this.getPriority(network.type)) {
+      if (this.getPriority(this._activeNetwork.info.type) < this.getPriority(network.info.type)) {
         this._activeNetwork = network;
       }
     }
