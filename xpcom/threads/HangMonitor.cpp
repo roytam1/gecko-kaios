@@ -45,6 +45,7 @@ namespace HangMonitor {
 volatile bool gDebugDisableHangMonitor = false;
 
 const char kHangMonitorPrefName[] = "hangmonitor.timeout";
+const char kHangMonitorLogLevelPrefName[] = "hangmonitor.log.level";
 
 #ifdef REPORT_CHROME_HANGS
 const char kTelemetryPrefName[] = "toolkit.telemetry.enabled";
@@ -67,6 +68,20 @@ bool gShutdown;
 // we're currently not processing events.
 Atomic<PRIntervalTime> gTimestamp(PR_INTERVAL_NO_WAIT);
 
+static int sLogLevel = 1;
+
+#ifdef MOZ_WIDGET_GONK
+#include <android/log.h>
+#define HMLOG(level, args...) \
+  do { \
+    if (level <= sLogLevel) { \
+      __android_log_print(ANDROID_LOG_INFO, "HangMonitor", ## args); \
+    } \
+  } while(0)
+#else
+#define HMLOG(level, args...)
+#endif
+
 #ifdef REPORT_CHROME_HANGS
 // Main thread ID used in reporting chrome hangs under Windows
 static HANDLE winMainThreadHandle = nullptr;
@@ -83,6 +98,9 @@ void
 PrefChanged(const char*, void*)
 {
   int32_t newval = Preferences::GetInt(kHangMonitorPrefName);
+  sLogLevel = Preferences::GetInt(kHangMonitorLogLevelPrefName, 1);
+
+  HMLOG(1, "PrefChanged, timeout: %d, log level: %d\n", newval, sLogLevel);
 #ifdef REPORT_CHROME_HANGS
   // Monitor chrome hangs on the profiling branch if Telemetry enabled
   if (newval == 0) {
@@ -240,6 +258,7 @@ ThreadMain(void*)
           int32_t(PR_IntervalToSeconds(now - timestamp));
         if (delay >= gTimeout) {
           MonitorAutoUnlock unlock(*gMonitor);
+          HMLOG(1, "Hang is detected\n");
           Crash();
         }
       }
@@ -263,6 +282,7 @@ ThreadMain(void*)
     } else {
       timeout = PR_MillisecondsToInterval(gTimeout * 500);
     }
+    HMLOG(2, "Hang monitor is working with timeout, %d ms\n", timeout);
     lock.Wait(timeout);
   }
 }
@@ -276,9 +296,13 @@ Startup()
   }
 
   MOZ_ASSERT(!gMonitor, "Hang monitor already initialized");
+
+  HMLOG(2, "Hang monitor starts up\n");
   gMonitor = new Monitor("HangMonitor");
 
   Preferences::RegisterCallback(PrefChanged, kHangMonitorPrefName, nullptr);
+  Preferences::RegisterCallback(PrefChanged, kHangMonitorLogLevelPrefName,
+                                nullptr);
   PrefChanged(nullptr, nullptr);
 
 #ifdef REPORT_CHROME_HANGS
@@ -325,6 +349,7 @@ Shutdown()
     gThread = nullptr;
   }
 
+  HMLOG(2, "Hang monitor shutdowns\n");
   delete gMonitor;
   gMonitor = nullptr;
 }

@@ -1279,6 +1279,9 @@ pref('dom.battery.test.dummy_battery_level', false);
 // Disable hang monitor, see bug 24699
 pref("hangmonitor.timeout", 0);
 
+// level 0 means disable log
+pref("hangmonitor.log.level", 1);
+
 #ifdef DISABLE_WIFI
 // Disable Gecko wifi
 pref("device.capability.wifi", false);
