@@ -904,11 +904,6 @@ IMEConnect::Init(uint32_t aLID)
 }
 
 void
-IMEConnect::SetLetterMultiTap(const unsigned long keyCode,const unsigned long tapCount, unsigned short prevUnichar)
-{
-}
-
-void
 IMEConnect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLetter, ErrorResult& aRv)
 {
   int nInputPrefix(aHexPrefix);

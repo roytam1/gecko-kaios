@@ -987,7 +987,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
     ]
 
 if CONFIG['ENABLE_NUANCE_XT9'] or CONFIG['ENABLE_REVERIE_RT9'] or CONFIG['ENABLE_KIKA_IQQI']:
-    WEBIDL_FILES += [
+    PREPROCESSED_WEBIDL_FILES += [
         'IMEConnect.webidl'
     ]
 

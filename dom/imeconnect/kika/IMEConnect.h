@@ -293,23 +293,6 @@ public:
   static already_AddRefed<IMEConnect>
   Constructor(const GlobalObject& aGlobal, uint32_t aLid, ErrorResult& aRv);
 
-  bool InitEmptyWord() const
-  {
-    return true;
-  }
-
-  void SetInitEmptyWord(const bool aResult)
-  {
-  }
-
-  void GetWholeWord(nsAString& aResult)
-  {
-  }
-
-  void SetWholeWord(const nsAString& aResult)
-  {
-  }
-
   void GetCandidateWord(nsAString& aResult)
   {
     aResult = mCandidateWord;
@@ -318,15 +301,6 @@ public:
   uint16_t TotalWord() const
   {
     return mTotalWord;
-  }
-
-  uint32_t CursorPosition() const
-  {
-    return 0;
-  }
-
-  void SetCursorPosition(const uint32_t aResult)
-  {
   }
 
   uint32_t CurrentLID() const

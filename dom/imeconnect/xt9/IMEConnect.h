@@ -262,7 +262,6 @@ public:
   nsresult Init(uint32_t aLID);
 
   static void SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLetter, ErrorResult& aRv);
-  static void SetLetterMultiTap(const unsigned long keyCode,const unsigned long tapCount, unsigned short prevUnichar);
   static uint32_t SetLanguage(const uint32_t lid);
 
   static bool mEmptyWord;

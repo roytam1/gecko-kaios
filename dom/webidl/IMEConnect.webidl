@@ -10,21 +10,27 @@ interface IMEConnect {
   [Throws]
   void setLetter (unsigned long hexPrefix, unsigned long hexLetter);
 
-  void setLetterMultiTap(unsigned long keyCode, unsigned long tapCount, unsigned short prevUnichar);
-
   unsigned long setLanguage(unsigned long lid);
-
-  attribute boolean initEmptyWord;
-
-  attribute DOMString wholeWord;
 
   readonly attribute DOMString candidateWord;
 
   readonly attribute short totalWord;
 
-  attribute long cursorPosition;
-
   readonly attribute unsigned long currentLID;
 
   readonly attribute DOMString name;
 };
+
+#ifdef ENABLE_KIKA_IQQI
+partial interface IMEConnect {
+  void setLetterMultiTap(unsigned long keyCode, unsigned long tapCount, unsigned short prevUnichar);
+};
+#endif
+
+#ifdef ENABLE_NUANCE_XT9
+partial interface IMEConnect {
+  attribute boolean initEmptyWord;
+  attribute DOMString wholeWord;
+  attribute long cursorPosition;
+};
+#endif
