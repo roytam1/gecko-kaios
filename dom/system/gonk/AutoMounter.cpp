@@ -130,16 +130,26 @@ IsUsbCablePluggedIn()
   return GetCurrentSwitchEvent(SWITCH_USB) == hal::SWITCH_STATE_ON;
 #else
   // Until then, just go read the file directly
-  if (access(ICS_SYS_USB_STATE, F_OK) == 0) {
+  char usbStateNode[PROPERTY_VALUE_MAX];
+
+  // Get usb state node from system property,
+  // e.g. /sys/class/android_usb/android0/state
+  if (property_get("ro.kaios.usb.state_node", usbStateNode, NULL) <= 0) {
+    strcpy(usbStateNode, ICS_SYS_USB_STATE);
+    LOG("Failed to get property, ro.kaios.usb.state_node, use default value.");
+  }
+
+  if (access(usbStateNode, F_OK) == 0) {
     char usbState[20];
-    if (ReadSysFile(ICS_SYS_USB_STATE, usbState, sizeof(usbState))) {
+    if (ReadSysFile(usbStateNode, usbState, sizeof(usbState))) {
       DBG("IsUsbCablePluggedIn: state = '%s'", usbState);
       return strcmp(usbState, "CONFIGURED") == 0 ||
              strcmp(usbState, "CONNECTED") == 0;
     }
-    ERR("Error reading file '%s': %s", ICS_SYS_USB_STATE, strerror(errno));
+    ERR("Error reading file '%s': %s", usbStateNode, strerror(errno));
     return false;
   }
+
   bool configured;
   if (ReadSysFile(GB_SYS_USB_CONFIGURED, &configured)) {
     return configured;
@@ -152,15 +162,25 @@ IsUsbCablePluggedIn()
 bool
 IsUsbConfigured()
 {
-  if (access(ICS_SYS_USB_STATE, F_OK) == 0) {
+  char usbStateNode[PROPERTY_VALUE_MAX];
+
+  // Get usb state node from system property,
+  // e.g. /sys/class/android_usb/android0/state
+  if (property_get("ro.kaios.usb.state_node", usbStateNode, NULL) <= 0) {
+    strcpy(usbStateNode, ICS_SYS_USB_STATE);
+    LOG("Failed to get property, ro.kaios.usb.state_node, use default value.");
+  }
+
+  if (access(usbStateNode, F_OK) == 0) {
     char usbState[20];
-    if (ReadSysFile(ICS_SYS_USB_STATE, usbState, sizeof(usbState))) {
+    if (ReadSysFile(usbStateNode, usbState, sizeof(usbState))) {
       DBG("IsUsbConfigured: state = '%s'", usbState);
       return strcmp(usbState, "CONFIGURED") == 0;
     }
-    ERR("Error reading file '%s': %s", ICS_SYS_USB_STATE, strerror(errno));
+    ERR("Error reading file '%s': %s", usbStateNode, strerror(errno));
     return false;
   }
+
   bool configured;
   if (ReadSysFile(GB_SYS_USB_CONFIGURED, &configured)) {
     return configured;
@@ -1131,15 +1151,25 @@ void AutoMounter::GetStatus(bool& umsAvail, bool& umsConfigured, bool& umsEnable
   mtpEnabled = false;
   rndisConfigured = false;
 
-  if (access(ICS_SYS_USB_FUNCTIONS, F_OK) != 0) {
+  char usbFunctionsNode[PROPERTY_VALUE_MAX];
+
+  // Get usb function node from system property,
+  // e.g. /config/usb_gadget/g1/configs/b.1/strings/0x409/configuration
+  if (property_get("ro.kaios.usb.functions_node", usbFunctionsNode, NULL) <= 0) {
+    strcpy(usbFunctionsNode, ICS_SYS_USB_FUNCTIONS);
+    LOG("Failed to get property, ro.kaios.usb.functions_node, use default value.");
+  }
+
+  if (access(usbFunctionsNode, F_OK) != 0) {
     return;
   }
 
   char functionsStr[60];
-  if (!ReadSysFile(ICS_SYS_USB_FUNCTIONS, functionsStr, sizeof(functionsStr))) {
-    ERR("Error reading file '%s': %s", ICS_SYS_USB_FUNCTIONS, strerror(errno));
+  if (!ReadSysFile(usbFunctionsNode, functionsStr, sizeof(functionsStr))) {
+    ERR("Error reading file '%s': %s", usbFunctionsNode, strerror(errno));
     functionsStr[0] = '\0';
   }
+
   DBG("GetStatus: USB functions: '%s'", functionsStr);
 
   bool  usbConfigured = IsUsbConfigured();
@@ -1149,9 +1179,20 @@ void AutoMounter::GetStatus(bool& umsAvail, bool& umsConfigured, bool& umsEnable
   // persist.sys.usb.config property.
   char persistSysUsbConfig[PROPERTY_VALUE_MAX];
   property_get(PERSIST_SYS_USB_CONFIG, persistSysUsbConfig, "");
-  if (IsUsbFunctionEnabled(persistSysUsbConfig, USB_FUNC_UMS)) {
-    umsAvail = (access(ICS_SYS_UMS_DIRECTORY, F_OK) == 0);
+
+  char umsDirectoryNode[PROPERTY_VALUE_MAX];
+
+  // Get ums directory node from system property,
+  // e.g. /config/usb_gadget/g1/functions/mass_storage.gs6
+  if (property_get("ro.kaios.ums.directory_node", umsDirectoryNode, NULL) <= 0) {
+    strcpy(umsDirectoryNode, ICS_SYS_UMS_DIRECTORY);
+    LOG("Failed to get property, ro.kaios.ums.directory_node, use default value.");
   }
+
+  if (IsUsbFunctionEnabled(persistSysUsbConfig, USB_FUNC_UMS)) {
+    umsAvail = (access(umsDirectoryNode, F_OK) == 0);
+  }
+
   if (umsAvail) {
     umsConfigured = usbConfigured && strstr(functionsStr, USB_FUNC_UMS) != nullptr;
     umsEnabled = (mMode == AUTOMOUNTER_ENABLE_UMS) ||
@@ -1161,7 +1202,17 @@ void AutoMounter::GetStatus(bool& umsAvail, bool& umsConfigured, bool& umsEnable
     umsEnabled = false;
   }
 
-  mtpAvail = (access(ICS_SYS_MTP_DIRECTORY, F_OK) == 0);
+  char mtpDirectoryNode[PROPERTY_VALUE_MAX];
+
+  // Get mtp directory  node from system property,
+  // e.g. /config/usb_gadget/g1/functions/mtp.gs0
+  if (property_get("ro.kaios.mtp.directory_node", mtpDirectoryNode, NULL) <= 0) {
+    strcpy(mtpDirectoryNode, ICS_SYS_MTP_DIRECTORY);
+    LOG("Failed to get property, ro.kaios.mtp.directory_node, use default value.");
+  }
+
+  mtpAvail = (access(mtpDirectoryNode, F_OK) == 0);
+
   if (mtpAvail) {
     mtpConfigured = usbConfigured && strstr(functionsStr, USB_FUNC_MTP) != nullptr;
     mtpEnabled = (mMode == AUTOMOUNTER_ENABLE_MTP) ||
