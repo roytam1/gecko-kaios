@@ -476,6 +476,9 @@ nsGeolocationRequest::GetElement(nsIDOMElement * *aRequestingElement)
 NS_IMETHODIMP
 nsGeolocationRequest::Cancel()
 {
+  // Cancel the rest of requests since they share the same permission.
+  mLocator->CancelRestPermissionRequests(this);
+
   if (mRequester) {
     // Record the number of denied requests for regular web content.
     // This method is only called when the user explicitly denies the request,
@@ -495,6 +498,9 @@ NS_IMETHODIMP
 nsGeolocationRequest::Allow(JS::HandleValue aChoices)
 {
   MOZ_ASSERT(aChoices.isUndefined());
+
+  // Allow the rest of requests since they share the same permission.
+  mLocator->AllowRestPermissionRequests(this);
 
   if (mRequester) {
     // Record the number of granted requests for regular web content.
@@ -1247,7 +1253,8 @@ NS_IMPL_CYCLE_COLLECTING_RELEASE(Geolocation)
 NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(Geolocation,
                                       mPendingCallbacks,
                                       mWatchingCallbacks,
-                                      mPendingRequests)
+                                      mPendingRequests,
+                                      mUnconfirmedRequests)
 
 Geolocation::Geolocation()
 : mProtocolType(ProtocolType::OTHER)
@@ -1383,6 +1390,8 @@ Geolocation::Shutdown()
   // Release all callbacks
   mPendingCallbacks.Clear();
   mWatchingCallbacks.Clear();
+  // Release unconfirmed permission requests
+  mUnconfirmedRequests.Clear();
 
   if (Preferences::GetBool("dom.wakelock.enabled") &&
       XRE_IsContentProcess()) {
@@ -1764,6 +1773,34 @@ Geolocation::ServiceReady()
   }
 }
 
+void
+Geolocation::AllowRestPermissionRequests(nsGeolocationRequest* request)
+{
+  mUnconfirmedRequests.RemoveElement(request);
+
+  nsTArray<RefPtr<nsGeolocationRequest> > restRequests;
+  restRequests.AppendElements(mUnconfirmedRequests);
+  mUnconfirmedRequests.Clear();
+
+  for (uint32_t i = 0; i < restRequests.Length(); ++i) {
+    restRequests[i]->Allow(JS::UndefinedHandleValue);
+  }
+}
+
+void
+Geolocation::CancelRestPermissionRequests(nsGeolocationRequest* request)
+{
+  mUnconfirmedRequests.RemoveElement(request);
+
+  nsTArray<RefPtr<nsGeolocationRequest> > restRequests;
+  restRequests.AppendElements(mUnconfirmedRequests);
+  mUnconfirmedRequests.Clear();
+
+  for (uint32_t i = 0; i < restRequests.Length(); ++i) {
+    restRequests[i]->Cancel();
+  }
+}
+
 bool
 Geolocation::WindowOwnerStillExists()
 {
@@ -1809,6 +1846,10 @@ Geolocation::RegisterRequestWithPrompt(nsGeolocationRequest* request)
 
   nsCOMPtr<nsIRunnable> ev  = new RequestPromptEvent(request, mOwner);
   NS_DispatchToMainThread(ev);
+
+  // Save the request during the permission evaluation
+  mUnconfirmedRequests.AppendElement(request);
+
   return true;
 }
 

@@ -186,6 +186,11 @@ public:
   // Notification from the service:
   void ServiceReady();
 
+  // Allow the rest of unconfirmed permission requests
+  void AllowRestPermissionRequests(nsGeolocationRequest* request);
+
+  // Cancel the rest of unconfirmed permission requests
+  void CancelRestPermissionRequests(nsGeolocationRequest* request);
 private:
 
   ~Geolocation();
@@ -231,6 +236,9 @@ private:
 
   // Pending requests are used when the service is not ready
   nsTArray<RefPtr<nsGeolocationRequest> > mPendingRequests;
+
+  // Unconfirmed requests, which are under permission review
+  nsTArray<RefPtr<nsGeolocationRequest> > mUnconfirmedRequests;
 
   // Array containing already cleared watch IDs
   nsTArray<int32_t> mClearedWatchIDs;
