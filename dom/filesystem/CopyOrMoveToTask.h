@@ -23,7 +23,8 @@ class CopyOrMoveToTaskChild final : public FileSystemTaskChildBase
 public:
   static already_AddRefed<CopyOrMoveToTaskChild>
   Create(FileSystemBase* aFileSystem,
-         nsIFile* aDirPath,
+         nsIFile* aSrcDir,
+         nsIFile* aDstDir,
          nsIFile* aSrcPath,
          nsIFile* aDstPath,
          bool aKeepBoth,
@@ -53,7 +54,8 @@ protected:
 
 private:
   CopyOrMoveToTaskChild(FileSystemBase* aFileSystem,
-                        nsIFile* aDirPath,
+                        nsIFile* aSrcDir,
+                        nsIFile* aDstDir,
                         nsIFile* aSrcPath,
                         nsIFile* aDstPath,
                         bool aKeepBoth,
@@ -62,7 +64,11 @@ private:
   RefPtr<Promise> mPromise;
 
   // This path is the Directory::mFile.
-  nsCOMPtr<nsIFile> mDirPath;
+  nsCOMPtr<nsIFile> mSrcDir;
+
+  // Directory::mFile, or the root directory of given DeviceStorage
+  nsCOMPtr<nsIFile> mDstDir;
+
   nsCOMPtr<nsIFile> mSrcPath;
   nsCOMPtr<nsIFile> mDstPath;
 
@@ -96,7 +102,10 @@ private:
                          FileSystemRequestParent* aParent);
 
   // This path is the Directory::mFile.
-  nsCOMPtr<nsIFile> mDirPath;
+  nsCOMPtr<nsIFile> mSrcDir;
+
+  // Directory::mFile, or the root directory of given DeviceStorage
+  nsCOMPtr<nsIFile> mDstDir;
 
   nsCOMPtr<nsIFile> mSrcPath;
   nsCOMPtr<nsIFile> mDstPath;

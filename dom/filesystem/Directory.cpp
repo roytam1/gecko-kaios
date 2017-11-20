@@ -386,27 +386,27 @@ Directory::RemoveInternal(const StringOrFileOrDirectory& aPath, bool aRecursive,
 already_AddRefed<Promise>
 Directory::CopyTo(const StringOrFileOrDirectory& aSource,
                   const StringOrDirectory& aTarget,
-                  bool akeepBoth,
+                  const CopyMoveOptions& aOptions,
                   ErrorResult& aRv)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  return CopyOrMoveToInternal(aSource, aTarget, akeepBoth, true, aRv);
+  return CopyOrMoveToInternal(aSource, aTarget, aOptions, true, aRv);
 }
 
 already_AddRefed<Promise>
 Directory::MoveTo(const StringOrFileOrDirectory& aSource,
                   const StringOrDirectory& aTarget,
-                  bool akeepBoth,
+                  const CopyMoveOptions& aOptions,
                   ErrorResult& aRv)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  return CopyOrMoveToInternal(aSource, aTarget, akeepBoth, false, aRv);
+  return CopyOrMoveToInternal(aSource, aTarget, aOptions, false, aRv);
 }
 
 already_AddRefed<Promise>
 Directory::CopyOrMoveToInternal(const StringOrFileOrDirectory& aSource,
                                 const StringOrDirectory& aTarget,
-                                bool aKeepBoth,
+                                const CopyMoveOptions& aOptions,
                                 bool aIsCopy, ErrorResult& aRv)
 {
   MOZ_ASSERT(NS_IsMainThread());
@@ -437,27 +437,41 @@ Directory::CopyOrMoveToInternal(const StringOrFileOrDirectory& aSource,
     }
   }
 
+  // Check whether the source is a descendant of this directory.
+  if (NS_SUCCEEDED(error) &&
+      !FileSystemUtils::IsDescendantPath(mFile, srcRealPath)) {
+    error = NS_ERROR_DOM_FILESYSTEM_NO_MODIFICATION_ALLOWED_ERR;
+  }
+
+  // If target storage is specified, target should be a descendant of this
+  // device storage, otherwise target should be a descendant of this directory.
+  nsCOMPtr<nsIFile> dstDir = mFile;
+  RefPtr<FileSystemBase> dstFs = fs;
+  if (aOptions.mTargetStorage) {
+    dstDir = aOptions.mTargetStorage->mRootDirectory;
+    dstFs = aOptions.mTargetStorage->mFileSystem;
+  }
+
   if (aTarget.IsString()) {
-    error = DOMPathToRealPath(aTarget.GetAsString(), getter_AddRefs(dstRealPath));
+    error = DOMPathToRealPath(dstDir, aTarget.GetAsString(),
+                              getter_AddRefs(dstRealPath));
   } else {
     MOZ_ASSERT(aTarget.IsDirectory());
-    if (!fs->IsSafeDirectory(&aTarget.GetAsDirectory())) {
+    if (!dstFs->IsSafeDirectory(&aTarget.GetAsDirectory())) {
       error = NS_ERROR_DOM_SECURITY_ERR;
     } else {
       dstRealPath = aTarget.GetAsDirectory().mFile;
     }
   }
 
-  // both src and dst must be a descendant of this directory.
   if (NS_SUCCEEDED(error) &&
-      (!FileSystemUtils::IsDescendantPath(mFile, srcRealPath) ||
-       !FileSystemUtils::IsDescendantPath(mFile, dstRealPath))) {
+      !FileSystemUtils::IsDescendantPath(dstDir, dstRealPath)) {
     error = NS_ERROR_DOM_FILESYSTEM_NO_MODIFICATION_ALLOWED_ERR;
   }
 
   RefPtr<CopyOrMoveToTaskChild> task =
-    CopyOrMoveToTaskChild::Create(fs, mFile, srcRealPath, dstRealPath,
-                                  aKeepBoth, aIsCopy, aRv);
+    CopyOrMoveToTaskChild::Create(fs, mFile, dstDir, srcRealPath, dstRealPath,
+                                  aOptions.mKeepBoth, aIsCopy, aRv);
   if (NS_WARN_IF(aRv.Failed())) {
     return nullptr;
   }
@@ -612,6 +626,17 @@ Directory::GetFileSystem(ErrorResult& aRv)
 nsresult
 Directory::DOMPathToRealPath(const nsAString& aPath, nsIFile** aFile) const
 {
+  return DOMPathToRealPath(mFile, aPath, aFile);
+}
+
+nsresult
+Directory::DOMPathToRealPath(nsIFile* aDirectory, const nsAString& aPath,
+                             nsIFile** aFile) const
+{
+  if (!aDirectory) {
+    return NS_ERROR_DOM_FILESYSTEM_INVALID_PATH_ERR;
+  }
+
   nsString relativePath;
   relativePath = aPath;
 
@@ -625,7 +650,7 @@ Directory::DOMPathToRealPath(const nsAString& aPath, nsIFile** aFile) const
   }
 
   nsCOMPtr<nsIFile> file;
-  nsresult rv = mFile->Clone(getter_AddRefs(file));
+  nsresult rv = aDirectory->Clone(getter_AddRefs(file));
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }

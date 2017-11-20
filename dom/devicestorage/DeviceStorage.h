@@ -13,6 +13,7 @@
 #include "mozilla/RefPtr.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/dom/DOMRequest.h"
+#include "mozilla/dom/Directory.h"
 #include "nsWeakReference.h"
 
 #define DEVICESTORAGE_PICTURES   "pictures"
@@ -361,6 +362,7 @@ private:
 
   friend class WatchFileEvent;
   friend class DeviceStorageRequest;
+  friend class mozilla::dom::Directory;
 
   static mozilla::StaticAutoPtr<nsTArray<nsString>> sVolumeNameCache;
 

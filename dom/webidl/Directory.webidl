@@ -95,9 +95,13 @@ interface Directory {
 
   /*
    * Copy files to the target directory. If source is a directory, will also
-   * copy all its descendants to the target directory. Both source and target
-   * (destination) must be descendants of caller, if DOMString is passed, it is
-   * the relative path of caller.
+   * copy all its descendants to the target directory.
+   * For default (targetStorage is unspecified or null in options), both source
+   * and target(destination) must be descendants of caller, if DOMString is
+   * passed, it is the relative path of caller.
+   * If options.targetStorage is defined, target should be descendants of
+   * options.targetStorage, if DOMString is passed, it is the relative path to
+   * root of options.targetStorage.
    * @return If source and target exists, but copy has failed, the promise is
    * rejected with a DOM error(invalid path, target is not a directory...etc).
    * If source and target did not exist, the promise is resolved with boolean
@@ -107,27 +111,31 @@ interface Directory {
   [Func="mozilla::dom::Directory::DeviceStorageEnabled", NewObject]
   Promise<boolean> copyTo((DOMString or File or Directory) source,
                           (DOMString or Directory) target,
-                          optional boolean keepBoth = false);
+                          optional CopyMoveOptions options);
 
-   /*
-    * Move files to the target directory. If source is a directory, will also
-    * move all its descendants to the target directory. Both source and target
-    * (destination) must be descendants of caller, if DOMString is passed, it is
-    * the relative path of caller.
-    * @return If source and target exists, but move failed, the promise is
-    * rejected with a DOM error(invalid path, target is not a directory...etc).
-    * If source and target did not exist, the promise is resolved with boolean
-    * false. If the target did exist and was successfully moved, the promise is
-    * resolved with boolean true.
-    */
+  /*
+   * Move files to the target directory. If source is a directory, will also
+   * copy all its descendants to the target directory.
+   * For default (targetStorage is unspecified or null in options), both source
+   * and target(destination) must be descendants of caller, if DOMString is
+   * passed, it is the relative path of caller.
+   * If options.targetStorage is defined, target should be descendants of
+   * options.targetStorage, if DOMString is passed, it is the relative path to
+   * root of options.targetStorage.
+   * @return If source and target exists, but move failed, the promise is
+   * rejected with a DOM error(invalid path, target is not a directory...etc).
+   * If source and target did not exist, the promise is resolved with boolean
+   * false. If the target did exist and was successfully moved, the promise is
+   * resolved with boolean true.
+   */
   [Func="mozilla::dom::Directory::DeviceStorageEnabled", NewObject]
   Promise<boolean> moveTo((DOMString or File or Directory) source,
                           (DOMString or Directory) target,
-                          optional boolean keepBoth = false);
+                          optional CopyMoveOptions options);
 
   /*
    * Rename a file or a directory. The oldName should
-   * be descendents of current directory.
+   * be descendants of current directory.
    */
   [Func="mozilla::dom::Directory::DeviceStorageEnabled", NewObject]
   Promise<boolean> renameTo((DOMString or File or Directory) oldName,
@@ -164,4 +172,14 @@ enum CreateIfExistsMode { "replace", "fail" };
 dictionary CreateFileOptions {
   CreateIfExistsMode ifExists = "fail";
   (DOMString or Blob or ArrayBuffer or ArrayBufferView) data;
+};
+
+dictionary CopyMoveOptions {
+  // See copyTo, moveTo for more information.
+  DeviceStorage? targetStorage = null;
+
+  // If true, and if file of same name already exists in target folder, will
+  // keep both and auto append a suffix to source file. ex: xxx(1).txt, and
+  // xxx(2).txt if xxx(1).txt exists...etc.
+  boolean keepBoth = false;
 };

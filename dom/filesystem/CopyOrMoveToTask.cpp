@@ -27,7 +27,8 @@ namespace dom {
 
 /* static */ already_AddRefed<CopyOrMoveToTaskChild>
 CopyOrMoveToTaskChild::Create(FileSystemBase* aFileSystem,
-                              nsIFile* aDirPath,
+                              nsIFile* aSrcDir,
+                              nsIFile* aDirDir,
                               nsIFile* aSrcPath,
                               nsIFile* aDstPath,
                               bool aKeepBoth,
@@ -37,12 +38,14 @@ CopyOrMoveToTaskChild::Create(FileSystemBase* aFileSystem,
 {
   MOZ_ASSERT(NS_IsMainThread(), "Only call on main thread!");
   MOZ_ASSERT(aFileSystem);
-  MOZ_ASSERT(aDirPath);
+  MOZ_ASSERT(aSrcDir);
+  MOZ_ASSERT(aDirDir);
   MOZ_ASSERT(aSrcPath);
   MOZ_ASSERT(aDstPath);
 
   RefPtr<CopyOrMoveToTaskChild> task =
-    new CopyOrMoveToTaskChild(aFileSystem, aDirPath, aSrcPath, aDstPath, aKeepBoth, aIsCopy);
+    new CopyOrMoveToTaskChild(aFileSystem, aSrcDir, aDirDir, aSrcPath, aDstPath,
+                              aKeepBoth, aIsCopy);
 
   nsCOMPtr<nsIGlobalObject> globalObject =
     do_QueryInterface(aFileSystem->GetParentObject());
@@ -60,13 +63,15 @@ CopyOrMoveToTaskChild::Create(FileSystemBase* aFileSystem,
 }
 
 CopyOrMoveToTaskChild::CopyOrMoveToTaskChild(FileSystemBase* aFileSystem,
-                                            nsIFile* aDirPath,
+                                            nsIFile* aSrcDir,
+                                            nsIFile* aDstDir,
                                             nsIFile* aSrcPath,
                                             nsIFile* aDstPath,
                                             bool aKeepBoth,
                                             bool aIsCopy)
   : FileSystemTaskChildBase(aFileSystem)
-  , mDirPath(aDirPath)
+  , mSrcDir(aSrcDir)
+  , mDstDir(aDstDir)
   , mSrcPath(aSrcPath)
   , mDstPath(aDstPath)
   , mKeepBoth(aKeepBoth)
@@ -75,7 +80,8 @@ CopyOrMoveToTaskChild::CopyOrMoveToTaskChild(FileSystemBase* aFileSystem,
 {
   MOZ_ASSERT(NS_IsMainThread(), "Only call on main thread!");
   MOZ_ASSERT(aFileSystem);
-  MOZ_ASSERT(aDirPath);
+  MOZ_ASSERT(aSrcDir);
+  MOZ_ASSERT(aDstDir);
   MOZ_ASSERT(aSrcPath);
   MOZ_ASSERT(aDstPath);
 }
@@ -100,7 +106,12 @@ CopyOrMoveToTaskChild::GetRequestParams(const nsString& aSerializedDOMPath,
   FileSystemCopyOrMoveToParams param;
   param.filesystem() = aSerializedDOMPath;
 
-  aRv = mDirPath->GetPath(param.directory());
+  aRv = mSrcDir->GetPath(param.srcDirectory());
+  if (NS_WARN_IF(aRv.Failed())) {
+    return param;
+  }
+
+  aRv = mDstDir->GetPath(param.dstDirectory());
   if (NS_WARN_IF(aRv.Failed())) {
     return param;
   }
@@ -180,9 +191,16 @@ CopyOrMoveToTaskParent::Create(FileSystemBase* aFileSystem,
   RefPtr<CopyOrMoveToTaskParent> task =
     new CopyOrMoveToTaskParent(aFileSystem, aParam, aParent);
 
-  NS_ConvertUTF16toUTF8 directoryPath(aParam.directory());
-  aRv = NS_NewNativeLocalFile(directoryPath, true,
-                              getter_AddRefs(task->mDirPath));
+  NS_ConvertUTF16toUTF8 srcDirectoryPath(aParam.srcDirectory());
+  aRv = NS_NewNativeLocalFile(srcDirectoryPath, true,
+                              getter_AddRefs(task->mSrcDir));
+  if (NS_WARN_IF(aRv.Failed())) {
+    return nullptr;
+  }
+
+  NS_ConvertUTF16toUTF8 dstDirectoryPath(aParam.dstDirectory());
+  aRv = NS_NewNativeLocalFile(dstDirectoryPath, true,
+                              getter_AddRefs(task->mDstDir));
   if (NS_WARN_IF(aRv.Failed())) {
     return nullptr;
   }
@@ -202,8 +220,8 @@ CopyOrMoveToTaskParent::Create(FileSystemBase* aFileSystem,
     return nullptr;
   }
 
-  if (!FileSystemUtils::IsDescendantPath(task->mDirPath, task->mSrcPath) ||
-      !FileSystemUtils::IsDescendantPath(task->mDirPath, task->mDstPath) ) {
+  if (!FileSystemUtils::IsDescendantPath(task->mSrcDir, task->mSrcPath) ||
+      !FileSystemUtils::IsDescendantPath(task->mDstDir, task->mDstPath) ) {
     aRv.Throw(NS_ERROR_DOM_FILESYSTEM_NO_MODIFICATION_ALLOWED_ERR);
     return nullptr;
   }
@@ -244,8 +262,8 @@ CopyOrMoveToTaskParent::IOWork()
     return NS_ERROR_FAILURE;
   }
 
-  MOZ_ASSERT(FileSystemUtils::IsDescendantPath(mDirPath, mSrcPath));
-  MOZ_ASSERT(FileSystemUtils::IsDescendantPath(mDirPath, mDstPath));
+  MOZ_ASSERT(FileSystemUtils::IsDescendantPath(mSrcDir, mSrcPath));
+  MOZ_ASSERT(FileSystemUtils::IsDescendantPath(mDstDir, mDstPath));
 
   nsString fileName;
 
