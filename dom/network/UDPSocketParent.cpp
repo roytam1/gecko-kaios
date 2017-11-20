@@ -209,8 +209,8 @@ UDPSocketParent::BindInternal(const nsCString& aHost, const uint16_t& aPort,
   }
 
   if (aHost.IsEmpty()) {
-    rv = sock->Init(aPort, false, mPrincipal, aAddressReuse,
-                    /* optional_argc = */ 1);
+    rv = sock->Init(aPort, false, mPrincipal, aAddressReuse, false,
+                    /* optional_argc = */ 2);
   } else {
     PRNetAddr prAddr;
     PR_InitializeNetAddr(PR_IpAddrAny, aPort, &prAddr);

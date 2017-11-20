@@ -411,8 +411,10 @@ UDPSocket::InitLocal(const nsAString& aLocalAddress,
   }
 
   if (aLocalAddress.IsEmpty()) {
+    bool isIPv6 = (!mRemoteAddress.IsVoid() && mRemoteAddress.Find(":") != -1) ?
+                   true : false;
     rv = sock->Init(aLocalPort, /* loopback = */ false, principal,
-                    mAddressReuse, /* optionalArgc = */ 1);
+                    mAddressReuse, /* inet6type */ isIPv6, /* optionalArgc = */ 2);
   } else {
     PRNetAddr prAddr;
     PR_InitializeNetAddr(PR_IpAddrAny, aLocalPort, &prAddr);

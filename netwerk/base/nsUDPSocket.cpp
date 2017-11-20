@@ -39,6 +39,13 @@ using namespace mozilla::net;
 using namespace mozilla;
 
 static const uint32_t UDP_PACKET_CHUNK_SIZE = 1400;
+
+const IPv6Addr _in6addr_any = {{ 0, 0, 0, 0, 0, 0, 0, 0,
+                                 0, 0, 0, 0, 0, 0, 0, 0 }};
+
+const IPv6Addr _in6addr_loopback = {{ 0, 0, 0, 0, 0, 0, 0, 0,
+                                      0, 0, 0, 0, 0, 0, 0, 0x1U }};
+
 static NS_DEFINE_CID(kSocketTransportServiceCID2, NS_SOCKETTRANSPORTSERVICE_CID);
 
 //-----------------------------------------------------------------------------
@@ -556,20 +563,24 @@ NS_IMPL_ISUPPORTS(nsUDPSocket, nsIUDPSocket)
 
 NS_IMETHODIMP
 nsUDPSocket::Init(int32_t aPort, bool aLoopbackOnly, nsIPrincipal *aPrincipal,
-                  bool aAddressReuse, uint8_t aOptionalArgc)
+                  bool aAddressReuse, bool aInet6Type, uint8_t aOptionalArgc)
 {
   NetAddr addr;
+  bool inet6Type = (aOptionalArgc == 2) ? aInet6Type : false;
 
   if (aPort < 0)
     aPort = 0;
 
-  addr.raw.family = AF_INET;
-  addr.inet.port = htons(aPort);
-
-  if (aLoopbackOnly)
-    addr.inet.ip = htonl(INADDR_LOOPBACK);
-  else
-    addr.inet.ip = htonl(INADDR_ANY);
+  if (inet6Type) {
+    addr.raw.family = AF_INET6;
+    addr.inet6.port = htons(aPort);
+    addr.inet6.ip = (aLoopbackOnly) ? _in6addr_loopback : _in6addr_any;
+  } else {
+    addr.raw.family = AF_INET;
+    addr.inet.port = htons(aPort);
+    addr.inet.ip = (aLoopbackOnly) ? htonl(INADDR_LOOPBACK) : htonl(INADDR_ANY);
+  }
+  aOptionalArgc = (aOptionalArgc > 0) ? 1 : 0;
 
   return InitWithAddress(&addr, aPrincipal, aAddressReuse, aOptionalArgc);
 }
