@@ -302,7 +302,7 @@ function TelephonyCallInfo(aCall) {
 
   this.isVt = aCall.isVt || false;
   this.capabilities = aCall.capabilities || Ci.nsITelephonyCallInfo.CAPABILITY_SUPPORTS_NONE;
-  this.videoCallState = aCall.videoCallState || Ci.nsITelephonCallInfo.STATE_AUDIO_ONLY;
+  this.videoCallState = aCall.videoCallState || Ci.nsITelephonyCallInfo.STATE_AUDIO_ONLY;
   this.radioTech = aCall.radioTech || Ci.nsITelephonyCallInfo.RADIO_TECH_CS;
   this.vowifiCallQuality = aCall.vowifiCallQuality || nsITelephonyCallInfo.VOWIFI_QUALITY_NONE;
 }
