@@ -435,6 +435,8 @@ public:
   virtual bool RecvRequestVolumeChange(const bool& aUp) override;
   virtual bool RecvRequestVolumeShow() override;
 
+  virtual bool RecvHangMonitorNotify() override;
+
   void SendMouseEvent(const nsAString& aType, float aX, float aY,
                       int32_t aButton, int32_t aClickCount,
                       int32_t aModifiers, bool aIgnoreRootScrollFrame);

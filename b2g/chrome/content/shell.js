@@ -428,6 +428,7 @@ var shell = {
     WebappsHelper.init();
     CaptivePortalLoginHelper.init();
     VolumeRequestHelper.init();
+    HangMonitorHelper.init();
     Services.spatialNavigationService.init(window);
 
     this.contentBrowser.src = homeURL;
@@ -1092,6 +1093,17 @@ var VolumeRequestHelper = {
     Services.obs.addObserver(this, 'request-volume-up', false);
     Services.obs.addObserver(this, 'request-volume-down', false);
     Services.obs.addObserver(this, 'request-volume-show', false);
+  },
+  observe: function observe(subject, topic, data) {
+    shell.sendChromeEvent({
+      type: topic
+    });
+  }
+}
+
+var HangMonitorHelper = {
+  init: function init() {
+    Services.obs.addObserver(this, 'process-no-response', false);
   },
   observe: function observe(subject, topic, data) {
     shell.sendChromeEvent({

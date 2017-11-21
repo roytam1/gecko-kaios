@@ -28,6 +28,15 @@ enum ActivityType
   kGeneralActivity
 };
 
+/*
+ * The actions to handle hang is detected by hang monitor
+ */
+enum HangActionType
+{
+  CRASH = 0,
+  NOTIFY_HANG
+};
+
 /**
  * Start monitoring hangs. Should be called by the XPCOM startup process only.
  */
@@ -51,6 +60,16 @@ void NotifyActivity(ActivityType activityType = kGeneralActivity);
  * be done.
  */
 void Suspend();
+
+/*
+ * Notify someone who cares about process is no response.
+ */
+bool Notify();
+
+/*
+ * Execute the corresponding action when hang is detected.
+ */
+void Action(HangActionType aAction);
 
 } // namespace HangMonitor
 } // namespace mozilla

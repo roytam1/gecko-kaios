@@ -527,6 +527,8 @@ parent:
 
     async RequestVolumeChange(bool up);
     async RequestVolumeShow();
+
+    async HangMonitorNotify();
 child:
     /**
      * Notify the remote browser that it has been Show()n on this

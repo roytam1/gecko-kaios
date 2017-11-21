@@ -27,6 +27,7 @@
 #include "mozilla/EventStateManager.h"
 #include "mozilla/gfx/2D.h"
 #include "mozilla/Hal.h"
+#include "mozilla/HangMonitor.h"
 #include "mozilla/IMEStateManager.h"
 #include "mozilla/ipc/DocumentRendererParent.h"
 #include "mozilla/jsipc/CrossProcessObjectWrappers.h"
@@ -3382,6 +3383,13 @@ bool
 TabParent::RecvRequestVolumeShow()
 {
   VolumeManager::Notify(VolumeManager::VOLUME_SHOW);
+  return true;
+}
+
+bool
+TabParent::RecvHangMonitorNotify()
+{
+  HangMonitor::Notify();
   return true;
 }
 

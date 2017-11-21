@@ -635,6 +635,8 @@ TabChild::TabChild(nsIContentChild* aManager,
 
       observerService->AddObserver(this, topic.get(), false);
     }
+
+    observerService->AddObserver(this, "content-process-no-response" , false);
   }
 
   for (uint32_t idx = 0; idx < NUMBER_OF_AUDIO_CHANNELS; idx++) {
@@ -661,6 +663,10 @@ TabChild::Observe(nsISupports *aSubject,
         APZCCallbackHelper::InitializeRootDisplayport(shell);
       }
     }
+  }
+
+  if (!strcmp(aTopic, "content-process-no-response")) {
+    SendHangMonitorNotify();
   }
 
   const nsAttrValue::EnumTable* table =
@@ -2468,6 +2474,8 @@ TabChild::RecvDestroy()
 
     observerService->RemoveObserver(this, topic.get());
   }
+
+  observerService->RemoveObserver(this, "content-process-no-response");
 
   // XXX what other code in ~TabChild() should we be running here?
   DestroyWindow();

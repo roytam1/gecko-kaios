@@ -14,8 +14,10 @@
 #include "mozilla/Telemetry.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/UniquePtr.h"
-#include "nsReadableUtils.h"
 #include "mozilla/StackWalk.h"
+#include "mozilla/dom/TabChild.h"
+#include "nsIObserverService.h"
+#include "nsReadableUtils.h"
 #include "nsThreadUtils.h"
 #include "nsXULAppAPI.h"
 
@@ -259,7 +261,7 @@ ThreadMain(void*)
         if (delay >= gTimeout) {
           MonitorAutoUnlock unlock(*gMonitor);
           HMLOG(1, "Hang is detected\n");
-          Crash();
+          Action(NOTIFY_HANG);
         }
       }
 #endif
@@ -431,6 +433,53 @@ Suspend()
 
   if (gThread && !gShutdown) {
     mozilla::BackgroundHangMonitor().NotifyWait();
+  }
+}
+
+namespace {
+class HangDetectedEvent : public nsRunnable {
+public:
+  HangDetectedEvent()
+  {
+  }
+
+  NS_IMETHOD Run()
+  {
+    if (XRE_IsParentProcess()) {
+      HangMonitor::Notify();
+    } else {
+      nsCOMPtr<nsIObserverService> obs = mozilla::services::GetObserverService();
+      if (obs) {
+        obs->NotifyObservers(nullptr, "content-process-no-response", nullptr);
+      }
+    }
+    return NS_OK;
+  }
+};
+}
+
+bool
+Notify()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  nsCOMPtr<nsIObserverService> obs = mozilla::services::GetObserverService();
+  if (obs) {
+    obs->NotifyObservers(nullptr, "process-no-response", nullptr);
+  }
+
+  return true;
+}
+
+void
+Action(HangActionType aAction)
+{
+  if (aAction == CRASH) {
+    Crash();
+  } else if (aAction == NOTIFY_HANG) {
+    NS_DispatchToMainThread(new HangDetectedEvent());
+  } else {
+    MOZ_ASSERT(false, "HangMonitor::Unknown action type!");
   }
 }
 
