@@ -269,10 +269,9 @@ IMEConnect::SetLanguage(const uint32_t aLid)
   IQQI_SetOption(eOptionKeyboardMode, keyboardId);
 
   dictPath += DICT_TABLE[imeId];
-  ret = IQQI_Initial(imeId, (char*)dictPath.c_str(), NULL, IME_ErrorList);
+  ret = IQQI_Initial(imeId, (char*)dictPath.c_str(), NULL, NULL, IME_ErrorList);
   if (ret != KIKA_OK) {
-    KIKA_LOGE("SetLanguage::IQQI_initial() dictPath = %s, ret = %d", dictPath.c_str(), ret);
-    return mCurrentLID;
+    KIKA_LOGW("SetLanguage::IQQI_initial() dictPath = %s, ret = %d", dictPath.c_str(), ret);
   }
 
   mCandidateWord.AssignLiteral("");
