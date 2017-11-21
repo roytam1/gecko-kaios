@@ -158,8 +158,8 @@ private:
 
   RefPtr<nsDOMSurfaceControl> mDisplayControl;
   RefPtr<nsDOMSurfaceControl> mPreviewControl;
-  SurfaceControlBack* mDisplayCallback;
-  SurfaceControlBack* mPreviewCallback;
+  RefPtr<SurfaceControlBack> mDisplayCallback;
+  RefPtr<SurfaceControlBack> mPreviewCallback;
 };
 
 } // namespace dom

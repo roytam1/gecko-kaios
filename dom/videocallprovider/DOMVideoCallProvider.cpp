@@ -11,6 +11,7 @@
 #include "mozilla/dom/DOMVideoCallProvider.h"
 #include "mozilla/dom/DOMVideoCallProfile.h"
 #include "mozilla/dom/DOMVideoCallCameraCapabilities.h"
+#include "nsISupportsImpl.h"
 #include "nsPIDOMWindow.h"
 #include "mozilla/dom/VideoCallCameraCapabilitiesChangeEvent.h"
 #include "mozilla/dom/VideoCallPeerDimensionsEvent.h"
@@ -42,22 +43,32 @@ const int16_t ROTATE_ANGLE = 90;
 class SurfaceControlBack : public IDOMSurfaceControlCallback
 {
 public:
+  NS_INLINE_DECL_REFCOUNTING(SurfaceControlBack)
+
   SurfaceControlBack(RefPtr<DOMVideoCallProvider> aProvider, int16_t aType,
       const SurfaceConfiguration& aConfig);
-  ~SurfaceControlBack() { }
+
   virtual void OnProducerCreated(
     android::sp<android::IGraphicBufferProducer> aProducer) override;
   virtual void OnProducerDestroyed() override;
   void Shutdown();
+  android::sp<android::IGraphicBufferProducer> getProducer();
+
+protected:
+  ~SurfaceControlBack() {
+    LOG("%s", __FUNCTION__);
+    Shutdown();
+  }
 
 private:
+
   android::sp<android::IGraphicBufferProducer> mProducer;
   RefPtr<DOMVideoCallProvider> mProvider;
   int16_t mType;
   uint16_t mWidth;
   uint16_t mHeight;
 
-  void setProducer(android::sp<android::IGraphicBufferProducer> aProducer);
+  void SetProducer(android::sp<android::IGraphicBufferProducer> aProducer);
 };
 
 SurfaceControlBack::SurfaceControlBack(RefPtr<DOMVideoCallProvider> aProvider, int16_t aType,
@@ -68,28 +79,28 @@ SurfaceControlBack::SurfaceControlBack(RefPtr<DOMVideoCallProvider> aProvider, i
     mWidth(aConfig.mPreviewSize.mWidth),
     mHeight(aConfig.mPreviewSize.mHeight)
 {
+  LOG("%s", __FUNCTION__);
 }
 
 void
 SurfaceControlBack::OnProducerCreated(android::sp<android::IGraphicBufferProducer> aProducer)
 {
   LOG("OnProducerCreated: %p", aProducer.get());
-  mProducer = aProducer;
-  setProducer(mProducer);
+  SetProducer(aProducer);
 }
 
 void
 SurfaceControlBack::OnProducerDestroyed()
 {
   LOG("OnProducerDestroyed");
-  mProducer = nullptr;
-  setProducer(nullptr);
+  SetProducer(nullptr);
 }
 
 void
-SurfaceControlBack::setProducer(android::sp<android::IGraphicBufferProducer> aProducer)
+SurfaceControlBack::SetProducer(android::sp<android::IGraphicBufferProducer> aProducer)
 {
   LOG("%s, mType: %d", __FUNCTION__, mType);
+  mProducer = aProducer;
   mProvider->SetSurface(mType, aProducer, mWidth, mHeight);
 }
 
@@ -97,6 +108,13 @@ void
 SurfaceControlBack::Shutdown()
 {
 }
+
+android::sp<android::IGraphicBufferProducer>
+SurfaceControlBack::getProducer()
+{
+  return mProducer;
+}
+
 
 class DOMVideoCallProvider::Listener final : public nsIVideoCallCallback
 {
@@ -192,13 +210,11 @@ DOMVideoCallProvider::Shutdown()
 
   if (mDisplayCallback) {
     mDisplayCallback->Shutdown();
-    delete mDisplayCallback;
     mDisplayCallback = nullptr;
   }
 
   if (mPreviewCallback) {
     mPreviewCallback->Shutdown();
-    delete mPreviewCallback;
     mPreviewCallback = nullptr;
   }
 
@@ -315,7 +331,7 @@ DOMVideoCallProvider::GetStream(const int16_t aType, const SurfaceConfiguration&
   }
 
   RefPtr<DOMVideoCallProvider> provider = this;
-  SurfaceControlBack* callback = new SurfaceControlBack(provider, aType, aOptions);
+  RefPtr<SurfaceControlBack> callback = new SurfaceControlBack(provider, aType, aOptions);
   RefPtr<nsDOMSurfaceControl> control = new nsDOMSurfaceControl(aOptions, promise, GetOwner(), callback);
 
 
@@ -722,6 +738,13 @@ DOMVideoCallProvider::OnChangePeerDimensions(uint16_t aWidth, uint16_t aHeight)
 {
   LOG("%s, width: %d, height: %d", __FUNCTION__, aWidth, aHeight);
   DispatchChangePeerDimensionsEvent(NS_LITERAL_STRING("changepeerdimensions"), aWidth, aHeight);
+
+  android::sp<android::IGraphicBufferProducer> producer = mDisplayCallback->getProducer();
+  if (producer != nullptr) {
+    LOG("%s setDisplaySurface with new width: %u, height: %u", __FUNCTION__, aWidth, aHeight);
+      SetSurface(TYPE_DISPLAY, producer, aWidth, aWidth);
+  }
+
   SetDataSourceSize(TYPE_DISPLAY, aWidth, aHeight);
   return NS_OK;
 }
@@ -736,6 +759,13 @@ DOMVideoCallProvider::OnChangeCameraCapabilities(nsIVideoCallCameraCapabilities 
     capabilities->GetWidth(&width);
     capabilities->GetHeight(&height);
     LOG("%s width: %u, height: %u", __FUNCTION__, width, height);
+
+    android::sp<android::IGraphicBufferProducer> producer = mPreviewCallback->getProducer();
+    if (producer != nullptr) {
+      LOG("%s setPreviewSurface with new width: %u, height: %u", __FUNCTION__, width, height);
+      SetSurface(TYPE_PREVIEW, producer, width, height);
+    }
+
     // Bug-16836. To swap width/height as a temporary solution.
     SetDataSourceSize(TYPE_PREVIEW, height, width);
   }
