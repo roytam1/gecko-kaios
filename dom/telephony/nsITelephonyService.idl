@@ -145,8 +145,6 @@ interface nsITelephonyDialCallback : nsITelephonyCallback
    *        Indicate video call state.
    *
    */
-  // TODO : We need to add extra parameter(s) for
-  // voiceQuality/videoCallState/capabilities/radioTech.
   void notifyDialCallSuccess(in unsigned long cliendId,
                              in unsigned long callIndex,
                              in AString number,
