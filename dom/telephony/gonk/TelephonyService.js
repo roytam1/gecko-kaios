@@ -2482,7 +2482,10 @@ TelephonyService.prototype = {
           this._ongoingDial.callback.notifyDialCallSuccess(aClientId, i,
                                                            call.number,
                                                            this._ongoingDial.isEmergency,
-                                                           nsITelephonyService.CALL_VOICE_QUALITY_NORMAL);
+                                                           nsITelephonyService.CALL_VOICE_QUALITY_NORMAL,
+                                                           nsITelephonyCallInfo.STATE_AUDIO_ONLY,
+                                                           nsITelephonyCallInfo.CAPABILITY_SUPPORTS_NONE,
+                                                           nsITelephonyCallInfo.RADIO_TECH_CS);
           this._ongoingDial = null;
         }
       }
