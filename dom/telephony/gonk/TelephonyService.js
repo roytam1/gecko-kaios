@@ -2479,16 +2479,14 @@ TelephonyService.prototype = {
         // Handle ongoingDial.
         if (this._ongoingDial && this._ongoingDial.clientId === aClientId &&
             call.state !== nsITelephonyService.CALL_STATE_INCOMING) {
-          this._ongoingDial.callback.notifyDialCallSucces(
-            aClientId,
-            i,
-            call.number,
-            this._ongoingDial.isEmergency,
-            nsITelephonyService.CALL_VOICE_QUALITY_NORMAL,
-            nsITelephonyCallInfo.STATE_AUDIO_ONLY,
-            nsITelephonyCallInfo.CAPABILITY_SUPPORTS_NONE,
-            nsITelephonyCallInfo.RADIO_TECH_CS
-          );
+          this._ongoingDial.callback.notifyDialCallSucces(aClientId,
+                                                          i,
+                                                          call.number,
+                                                          this._ongoingDial.isEmergency,
+                                                          call.voiceQuality,
+                                                          call.capabilities,
+                                                          call.videoCallState,
+                                                          call.radioTech);
           this._ongoingDial = null;
         }
       }
