@@ -858,31 +858,6 @@ Telephony::WindowVolumeChanged(float aVolume, bool aMuted)
     return NS_ERROR_FAILURE;
   }
 
-  ErrorResult rv;
-  nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetOwner());
-  RefPtr<Promise> promise = Promise::Create(global, rv);
-  if (NS_WARN_IF(rv.Failed())) {
-    return rv.StealNSResult();
-  }
-
-  bool isSingleCall = mCalls.Length();
-  if (isSingleCall && mCalls[0]->Switchable()) {
-    if (aMuted && (mCalls[0]->State() == TelephonyCallState::Connected)) {
-      Unused << mCalls[0]->Hold(rv);
-    } else if (!aMuted && (mCalls[0]->State() == TelephonyCallState::Held)) {
-      Unused << mCalls[0]->Resume(rv);
-    }
-  } else {
-    if (aMuted && (mGroup->State() == TelephonyCallGroupState::Connected)) {
-      Unused << mGroup->Hold(rv);
-    } else if (!aMuted && (mGroup->State() == TelephonyCallGroupState::Held)) {
-      Unused << mGroup->Resume(rv);
-    }
-  }
-  if (NS_WARN_IF(rv.Failed())) {
-    return rv.StealNSResult();
-  }
-
   // These events will be triggered when the telephony is interrupted by other
   // audio channel.
   if (mMuted != aMuted) {
