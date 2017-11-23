@@ -5058,7 +5058,7 @@ pref("layout.accessiblecaret.hapticfeedback", false);
 pref("dom.wakelock.enabled", false);
 
 // The URL of the KaiOS Accounts auth server backend
-pref("identity.kaiaccounts.auth.uri", "https://auth.kaiostech.com/v2.0");
+pref("identity.kaiaccounts.auth.uri", "https://auth.kaiostech.com/v3.0");
 
 // disable mozsample size for now
 pref("image.mozsamplesize.enabled", false);
