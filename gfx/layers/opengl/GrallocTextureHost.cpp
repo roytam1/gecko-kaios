@@ -41,6 +41,7 @@ SurfaceFormatForAndroidPixelFormat(android::PixelFormat aFormat,
   case HAL_PIXEL_FORMAT_YCbCr_422_I:
   case GrallocImage::HAL_PIXEL_FORMAT_YCbCr_420_SP_TILED:
   case GrallocImage::HAL_PIXEL_FORMAT_YCbCr_420_SP_VENUS:
+  case GrallocImage::HAL_PIXEL_FORMAT_YCbCr_420_SP:
   case GrallocImage::HAL_PIXEL_FORMAT_NV12_VED:
   case GrallocImage::HAL_PIXEL_FORMAT_NV12_VEDT:
   case HAL_PIXEL_FORMAT_YV12:
