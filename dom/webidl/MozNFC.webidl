@@ -35,8 +35,17 @@ enum StopPollPowerMode {
 };
 
 enum NfcSelfTestType {
-  "test_rf_on",
-  "test_rf_off"
+  // Turn RF on.
+  "carrier_on",
+
+  // Turn RF off.
+  "carrier_off",
+
+  // Verify Type-A analog parameter.
+  "type-a_transaction",
+
+  // Verify Type-B analog parameter.
+  "type-b_transaction"
 };
 
 [NoInterfaceObject]
