@@ -152,7 +152,7 @@ SystemMessageInternal.prototype = {
       debug("Releasing the CPU wake lock because the system messages " +
             "were not handled by its registered page before time out.");
       this._cancelCpuWakeLock(aPageKey);
-    }.bind(this), 30000, Ci.nsITimer.TYPE_ONE_SHOT);
+    }.bind(this), 5000, Ci.nsITimer.TYPE_ONE_SHOT);
   },
 
   _releaseCpuWakeLock: function _releaseCpuWakeLock(aPageKey, aHandledCount) {
