@@ -137,6 +137,8 @@ MobileConnectionChild::GetSupportedNetworkTypes(int32_t** aTypes,
   NS_ENSURE_ARG(aTypes);
   NS_ENSURE_ARG(aLength);
 
+  SendGetSupportedNetworkTypes(&mSupportedNetworkTypes);
+
   *aLength = mSupportedNetworkTypes.Length();
   *aTypes =
     static_cast<int32_t*>(moz_xmalloc((*aLength) * sizeof(int32_t)));

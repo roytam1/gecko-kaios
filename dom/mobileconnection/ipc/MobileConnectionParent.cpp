@@ -160,6 +160,26 @@ MobileConnectionParent::RecvInit(nsMobileConnectionInfo* aVoice,
   return true;
 }
 
+bool
+MobileConnectionParent::RecvGetSupportedNetworkTypes(nsTArray<int32_t>* aSupportedNetworkTypes)
+{
+  NS_ENSURE_TRUE(mMobileConnection, false);
+
+  int32_t* types = nullptr;
+  uint32_t length = 0;
+
+  nsresult rv = mMobileConnection->GetSupportedNetworkTypes(&types, &length);
+  NS_ENSURE_SUCCESS(rv, false);
+
+  for (uint32_t i = 0; i < length; ++i) {
+    aSupportedNetworkTypes->AppendElement(types[i]);
+  }
+
+  free(types);
+
+  return true;
+}
+
 // nsIMobileConnectionListener
 
 NS_IMPL_ISUPPORTS(MobileConnectionParent, nsIMobileConnectionListener)

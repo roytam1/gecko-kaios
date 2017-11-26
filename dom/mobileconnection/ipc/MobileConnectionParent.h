@@ -58,6 +58,9 @@ protected:
            nsTArray<int32_t>* aSupportedNetworkTypes, bool* aEmergencyCbMode,
            nsMobileSignalStrength* aSingalStrength) override;
 
+  virtual bool
+  RecvGetSupportedNetworkTypes(nsTArray<int32_t>* aSupportedNetworkTypes) override;
+
 private:
   nsCOMPtr<nsIMobileConnection> mMobileConnection;
   bool mLive;

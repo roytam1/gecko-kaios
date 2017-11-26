@@ -52,6 +52,9 @@ parent:
              int32_t aNetworkSelectionMode, int32_t aRadioState,
              int32_t[] aSupportedNetworkTypes, bool aEmergencyCbMode,
              nsMobileSignalStrength aSignalStrength);
+
+  sync GetSupportedNetworkTypes()
+    returns (int32_t[] aSupportedNetworkTypes);
 };
 
 /**

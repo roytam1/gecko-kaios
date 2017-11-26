@@ -13,6 +13,7 @@
 #include "mozilla/dom/MobileNetworkInfo.h"
 #include "mozilla/dom/MobileSignalStrength.h"
 #include "mozilla/dom/MozMobileConnectionBinding.h"
+#include "mozilla/dom/Promise.h"
 #include "nsCycleCollectionParticipant.h"
 #include "nsIIccService.h"
 #include "nsIMobileConnectionService.h"
@@ -96,6 +97,9 @@ public:
 
   void
   GetSupportedNetworkTypes(nsTArray<MobileNetworkType>& aTypes) const;
+
+  already_AddRefed<Promise>
+  GetSupportedNetworkTypes(ErrorResult& aRv);
 
   already_AddRefed<ImsRegHandler>
   GetImsHandler() const;

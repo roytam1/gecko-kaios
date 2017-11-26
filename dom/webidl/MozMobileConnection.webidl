@@ -138,9 +138,17 @@ interface MozMobileConnection : EventTarget
 
   /**
    * Array of network types that are supported by this radio.
+   *
+   * Plan to deprecated.
    */
   [Cached, Pure, CheckAnyPermissions="mobileconnection"]
   readonly attribute sequence<MobileNetworkType> supportedNetworkTypes;
+
+  /**
+   * Array of network types that are supported by this radio.
+   */
+  [Throws, CheckAnyPermissions="mobileconnection"]
+  Promise<sequence<MobileNetworkType>> getSupportedNetworkTypes();
 
   /**
    * The mobile device identities.

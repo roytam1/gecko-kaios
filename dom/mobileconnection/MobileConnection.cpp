@@ -544,6 +544,43 @@ MobileConnection::GetSupportedNetworkTypes(nsTArray<MobileNetworkType>& aTypes) 
   free(types);
 }
 
+already_AddRefed<Promise>
+MobileConnection::GetSupportedNetworkTypes(ErrorResult& aRv) {
+  nsTArray<MobileNetworkType> result;
+
+  if (!mMobileConnection) {
+    aRv.Throw(NS_ERROR_UNEXPECTED);
+    return nullptr;
+  }
+
+  nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetOwner());
+  MOZ_ASSERT(global);
+
+  RefPtr<Promise> promise = Promise::Create(global, aRv);
+  if (!promise) {
+    aRv.Throw(NS_ERROR_UNEXPECTED);
+    return nullptr;
+  }
+
+  int32_t* types = nullptr;
+  uint32_t length = 0;
+
+  aRv = mMobileConnection->GetSupportedNetworkTypes(&types, &length);
+  MOZ_ASSERT(!aRv.Failed());
+
+  for (uint32_t i = 0; i < length; ++i) {
+    int32_t type = types[i];
+
+    MOZ_ASSERT(type < static_cast<int32_t>(MobileNetworkType::EndGuard_));
+    result.AppendElement(static_cast<MobileNetworkType>(type));
+  }
+
+  promise->MaybeResolve(result);
+  free(types);
+
+  return promise.forget();
+}
+
 already_AddRefed<ImsRegHandler>
 MobileConnection::GetImsHandler() const
 {
