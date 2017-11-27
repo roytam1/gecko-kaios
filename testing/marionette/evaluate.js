@@ -160,6 +160,10 @@ evaluate.sandbox = function(sb, script, args = [], opts = {}) {
     sb.window.clearTimeout(timeoutId);
     sb.window.removeEventListener("unload", unloadHandler);
     return res;
+  }, rej => {
+    sb.window.clearTimeout(timeoutId);
+    sb.window.removeEventListener("unload", unloadHandler);
+    return rej;
   });
 };
 
