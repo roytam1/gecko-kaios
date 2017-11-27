@@ -823,6 +823,11 @@ bool IsFlipOpened();
  */
 double GetBatteryTemperature();
 
+/**
+ * Determine the battery is present or not
+ */
+bool IsBatteryPresent();
+
 } // namespace MOZ_HAL_NAMESPACE
 } // namespace mozilla
 

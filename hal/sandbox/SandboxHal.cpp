@@ -93,6 +93,14 @@ GetBatteryTemperature()
   return temperature;
 }
 
+bool
+IsBatteryPresent()
+{
+  bool present;
+  Hal()->SendIsBatteryPresent(&present);
+  return present;
+}
+
 void
 EnablePowerSupplyNotifications()
 {
@@ -782,6 +790,13 @@ public:
   RecvGetBatteryTemperature(double* aTemperature) override
   {
     *aTemperature = hal::GetBatteryTemperature();
+    return true;
+  }
+
+  virtual bool
+  RecvIsBatteryPresent(bool* aPresent) override
+  {
+    *aPresent = hal::IsBatteryPresent();
     return true;
   }
 

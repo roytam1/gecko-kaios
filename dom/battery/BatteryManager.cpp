@@ -154,6 +154,14 @@ BatteryManager::Health() const
   return mHealth;
 }
 
+bool
+BatteryManager::Present() const
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  return hal::IsBatteryPresent();
+}
+
 void
 BatteryManager::UpdateFromBatteryInfo(const hal::BatteryInformation& aBatteryInfo)
 {

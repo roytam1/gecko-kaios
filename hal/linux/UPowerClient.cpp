@@ -49,6 +49,7 @@ public:
   double GetRemainingTime();
   double GetBatteryTemperature();
   BatteryHealth GetHealth();
+  bool IsBatteryPresent();
 
   ~UPowerClient();
 
@@ -117,6 +118,7 @@ private:
   double mRemainingTime;
   double mTemperature;
   BatteryHealth mHealth;
+  bool mPresent;
 
   static UPowerClient* sInstance;
 
@@ -152,6 +154,7 @@ GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo)
   aBatteryInfo->remainingTime() = upowerClient->GetRemainingTime();
   aBatteryInfo->temperature() = upowerClient->GetBatteryTemperature();
   aBatteryInfo->health() = upowerClient->GetHealth();
+  aBatteryInfo->present() = upowerClient->IsBatteryPresent();
 }
 
 double
@@ -161,6 +164,12 @@ GetBatteryTemperature()
   return upowerClient->GetBatteryTemperature();
 }
 
+bool
+IsBatteryPresent()
+{
+  UPowerClient* upowerClient = UPowerClient::GetInstance();
+  return upowerClient->IsBatteryPresent();
+}
 /*
  * Following is the implementation of UPowerClient.
  */
@@ -272,6 +281,7 @@ UPowerClient::StopListening()
   mRemainingTime = kDefaultRemainingTime;
   mTemperature = kDefaultTemperature;
   mHealth = kDefaultHealth;
+  mPresent = kDefaultPresent;
 }
 
 void
@@ -394,7 +404,8 @@ UPowerClient::GetDevicePropertiesCallback(DBusGProxy* aProxy,
                                                      sInstance->mCharging,
                                                      sInstance->mRemainingTime,
                                                      sInstance->mTemperature,
-                                                     sInstance->mHealth));
+                                                     sInstance->mHealth,
+						     sInstance->mPresent));
     g_hash_table_unref(hashTable);
   }
 }
@@ -502,5 +513,10 @@ UPowerClient::GetHealth()
   return mHealth;
 }
 
+bool
+UPowerClient::IsBatteryPresent()
+{
+  return mPresent;
+}
 } // namespace hal_impl
 } // namespace mozilla

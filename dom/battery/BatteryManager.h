@@ -57,6 +57,8 @@ public:
 
   BatteryHealth Health() const;
 
+  bool Present() const;
+
   IMPL_EVENT_HANDLER(chargingchange)
   IMPL_EVENT_HANDLER(chargingtimechange)
   IMPL_EVENT_HANDLER(dischargingtimechange)

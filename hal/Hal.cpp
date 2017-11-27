@@ -1506,5 +1506,12 @@ double GetBatteryTemperature()
   RETURN_PROXY_IF_SANDBOXED(GetBatteryTemperature(), 20.0);
 }
 
+bool IsBatteryPresent()
+{
+  AssertMainThread();
+  RETURN_PROXY_IF_SANDBOXED(IsBatteryPresent(), true);
+
+}
+
 } // namespace hal
 } // namespace mozilla

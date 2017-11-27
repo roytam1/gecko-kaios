@@ -660,6 +660,15 @@ GetBatteryTemperature()
   return success ? (double) temperature / 10.0 : dom::battery::kDefaultTemperature;;
 }
 
+bool
+IsBatteryPresent()
+{
+  bool present;
+  bool success = ReadSysFile("/sys/class/power_supply/battery/present", &present);
+
+  return success ? present : dom::battery::kDefaultPresent;
+}
+
 void
 GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo)
 {
@@ -677,8 +686,8 @@ GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo)
   }
 
   aBatteryInfo->temperature() = GetBatteryTemperature();
-
   aBatteryInfo->health() = GetCurrentBatteryHealth();
+  aBatteryInfo->present() = IsBatteryPresent();
 
   int charging;
 

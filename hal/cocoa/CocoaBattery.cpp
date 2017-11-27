@@ -59,6 +59,7 @@ private:
   double mRemainingTime;
   double mTemperature;
   BatteryHealth mHealth;
+  bool mPresent;
   bool mShouldNotify;
 
   friend void GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo);
@@ -105,12 +106,19 @@ GetCurrentBatteryInformation(hal::BatteryInformation* aBatteryInfo)
   aBatteryInfo->remainingTime() = powerService->mRemainingTime;
   aBatteryInfo->temperature() = powerService->mTemperature;
   aBatteryInfo->health() = powerService->mHealth;
+  aBatteryInfo->present() = powerService->mPresent;
 }
 
 double
 GetBatteryTemperature()
 {
   return kDefaultTemperature;
+}
+
+bool
+IsBatteryPresent()
+{
+  return kDefaultPresent;
 }
 
 bool MacPowerInformationService::sShuttingDown = false;
@@ -180,6 +188,7 @@ MacPowerInformationService::MacPowerInformationService()
   , mRemainingTime(kDefaultRemainingTime)
   , mTemperature(kDefaultTemperature)
   , mHealth(kDefaultHealth)
+  , mPresent(kDefaultPresent)
   , mShouldNotify(false)
 {
   // IOPSGetTimeRemainingEstimate (and the related constants) are only available
@@ -324,6 +333,7 @@ MacPowerInformationService::HandleChange(void* aContext) {
   power->mLevel = level;
   power->mTemperature = kDefaultTemperature;
   power->mHealth = kDefaultHealth;
+  power->mPresent = kDefaultPresent;
 
   // Notify the observers if stuff changed.
   if (power->mShouldNotify && isNewData) {
@@ -331,7 +341,8 @@ MacPowerInformationService::HandleChange(void* aContext) {
                                                      power->mCharging,
                                                      power->mRemainingTime,
                                                      power->mTemperature,
-                                                     power->mHealth));
+                                                     power->mHealth,
+						     power->mPresent));
   }
 
   ::CFRelease(data);

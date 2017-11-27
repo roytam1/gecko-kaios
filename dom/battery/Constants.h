@@ -23,6 +23,7 @@ namespace battery {
   static const double kUnknownRemainingTime = -1;
   static const double kDefaultTemperature   = 20.0;
   static const BatteryHealth kDefaultHealth = BatteryHealth::Unknown;
+  static const bool   kDefaultPresent       = true;
 
 } // namespace battery
 } // namespace dom

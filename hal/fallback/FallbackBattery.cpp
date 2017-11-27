@@ -33,5 +33,11 @@ GetBatteryTemperature()
   return dom::battery::kDefaultTemperature;
 }
 
+bool
+IsBatteryPresent()
+{
+  return dom::battery::kDefaultPresent;
+}
+
 } // hal_impl
 } // namespace mozilla
