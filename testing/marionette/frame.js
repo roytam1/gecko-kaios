@@ -261,6 +261,9 @@ frame.Manager = class {
     mm.removeWeakMessageListener("Marionette:getFiles", this.driver);
     mm.removeWeakMessageListener("MarionetteFrame:handleModal", this);
     mm.removeWeakMessageListener("MarionetteFrame:getCurrentFrameId", this);
+    mm.removeWeakMessageListener("Marionette:emitTouchEvent", this.driver);
+    mm.removeWeakMessageListener("MarionetteFrame:getInterruptedState", this);
+    mm.removeWeakMessageListener("Marionette:switchToModalOrigin", this.driver);
   }
 };
 
