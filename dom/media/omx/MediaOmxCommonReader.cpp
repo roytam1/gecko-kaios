@@ -79,6 +79,10 @@ void MediaOmxCommonReader::CheckAudioOffload()
     return;
   }
 
+  if (IsMonoAudioEnabled()) {
+    return;
+  }
+
   if (!canOffloadStream(meta, false, false, AUDIO_STREAM_MUSIC)) {
     return;
   }
