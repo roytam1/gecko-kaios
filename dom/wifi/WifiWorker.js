@@ -2816,9 +2816,11 @@ function WifiWorker() {
       case "DISABLED_DHCP_FAILURE":
         WifiManager.getSecurity(configNetwork.netId, function(security) {
           if (security == "WEP") {
-            self.handleWrongPassword(configNetwork.netId);
-            self._fireEvent("onauthenticationfailed",
-              {network: netToDOM(configNetwork)});
+            self.handleNetworkConnectionFailure(configNetwork.netId, function() {
+              self.handleWrongPassword(configNetwork.netId);
+              self._fireEvent("onauthenticationfailed",
+                {network: netToDOM(configNetwork)});
+            });
           } else {
             WifiManager.dhcpFailuresCount++;
             if (WifiManager.dhcpFailuresCount >= MAX_RETRIES_ON_DHCP_FAILURE) {
@@ -2839,18 +2841,22 @@ function WifiWorker() {
         WifiManager.authenticationFailuresCount++;
         if (WifiManager.authenticationFailuresCount >= MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
           WifiManager.clearDisableReasonCounter(function(){});
-          self.handleWrongPassword(configNetwork.netId);
-          self._fireEvent("onauthenticationfailed",
-            {network: netToDOM(configNetwork)});
+          self.handleNetworkConnectionFailure(configNetwork.netId, function() {
+            self.handleWrongPassword(configNetwork.netId);
+            self._fireEvent("onauthenticationfailed",
+              {network: netToDOM(configNetwork)});
+          });
         }
         break;
       case "DISABLED_ASSOCIATION_REJECTION":
         self.bssidToNetwork(this.bssid, function(network) {
           WifiManager.getSecurity(network.netId, function(security) {
             if (security == "WEP") {
-               self.handleWrongPassword(network.netId);
-               self._fireEvent("onauthenticationfailed",
-                 {network: netToDOM(configNetwork)});
+               self.handleNetworkConnectionFailure(network.netId, function() {
+                 self.handleWrongPassword(network.netId);
+                 self._fireEvent("onauthenticationfailed",
+                   {network: netToDOM(configNetwork)});
+               });
             } else {
               WifiManager.associationRejectCount++;
               if (WifiManager.associationRejectCount >= MAX_RETRIES_ON_ASSOCIATION_REJECT) {
