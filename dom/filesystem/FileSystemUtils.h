@@ -26,7 +26,8 @@ public:
    * Return true if aDescendantPath is a descendant of aPath.
    */
   static bool
-  IsDescendantPath(nsIFile* aPath, nsIFile* aDescendantPath);
+  IsDescendantPath(nsIFile* aPath, nsIFile* aDescendantPath,
+                   bool aAllowSamePath = false);
 };
 
 } // namespace dom

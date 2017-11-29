@@ -11,7 +11,8 @@ namespace dom {
 
 /* static */ bool
 FileSystemUtils::IsDescendantPath(nsIFile* aFile,
-                                  nsIFile* aDescendantFile)
+                                  nsIFile* aDescendantFile,
+                                  bool aAllowSamePath)
 {
   if (!aFile || !aDescendantFile) {
     return false;
@@ -27,6 +28,10 @@ FileSystemUtils::IsDescendantPath(nsIFile* aFile,
   rv = aDescendantFile->GetPath(descendantPath);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return false;
+  }
+
+  if (aAllowSamePath && path.Equals(descendantPath)) {
+    return true;
   }
 
   // Check the sub-directory path to see if it has the parent path as prefix.
