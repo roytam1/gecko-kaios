@@ -846,7 +846,7 @@ var Input = {
         if (this.editState.editing) {
           return;
         }
-        this.activateCurrent();
+        this.activateCurrent(null, true);
         break;
     default:
       return;
