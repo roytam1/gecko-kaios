@@ -2479,7 +2479,7 @@ TelephonyService.prototype = {
         // Handle ongoingDial.
         if (this._ongoingDial && this._ongoingDial.clientId === aClientId &&
             call.state !== nsITelephonyService.CALL_STATE_INCOMING) {
-          this._ongoingDial.callback.notifyDialCallSucces(aClientId,
+          this._ongoingDial.callback.notifyDialCallSuccess(aClientId,
                                                           i,
                                                           call.number,
                                                           this._ongoingDial.isEmergency,
