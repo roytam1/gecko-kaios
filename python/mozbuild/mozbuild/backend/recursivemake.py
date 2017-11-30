@@ -1433,18 +1433,33 @@ class RecursiveMakeBackend(CommonBackend):
         backend_file.write('RS_STATICLIB_CRATE_SRC := %s\n' % extern_crate_file)
         backend_file.write('STATIC_LIBS += librul.$(LIB_SUFFIX)\n')
 
-    def _handle_ipdl_sources(self, ipdl_dir, sorted_ipdl_sources,
+    def _handle_ipdl_sources(self, ipdl_dir, sorted_ipdl_sources, sorted_nonstatic_ipdl_sources,
                              unified_ipdl_cppsrcs_mapping):
         # Write out a master list of all IPDL source files.
         mk = Makefile()
+
+        # Preprocessed ipdl files still need to be in the correct order.
+        # Replace the preprocessed file into sorted_ipdl_sources in same order.
+        for idx, ipdl in enumerate(sorted_ipdl_sources):
+            if ipdl in sorted_nonstatic_ipdl_sources:
+                ipdl_basename = os.path.basename(ipdl)
+                sorted_ipdl_sources[idx] = ipdl_basename
+                rule = mk.create_rule([ipdl_basename])
+                rule.add_dependencies([ipdl])
+                rule.add_commands([
+                    '$(RM) $@',
+                    '$(call py_action,preprocessor,$(DEFINES) $(ACDEFINES) '
+                    '$< -o $@)'
+                ])
 
         mk.add_statement('ALL_IPDLSRCS := %s' % ' '.join(sorted_ipdl_sources))
 
         self._add_unified_build_rules(mk, unified_ipdl_cppsrcs_mapping,
                                       unified_files_makefile_variable='CPPSRCS')
 
-        mk.add_statement('IPDLDIRS := %s' % ' '.join(sorted(set(mozpath.dirname(p)
-            for p in self._ipdl_sources))))
+        # Preprocessed ipdl files are generated in ipdl_dir.
+        mk.add_statement('IPDLDIRS := %s %s' % (ipdl_dir, ' '.join(sorted(set(mozpath.dirname(p)
+            for p in self._ipdls.all_regular_sources())))))
 
         with self._write_file(mozpath.join(ipdl_dir, 'ipdlsrcs.mk')) as ipdls:
             mk.dump(ipdls, removal_guard=False)

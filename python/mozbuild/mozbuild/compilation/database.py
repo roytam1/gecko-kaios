@@ -188,7 +188,7 @@ class CompileDBBackend(CommonBackend):
         pass
 
     def _handle_ipdl_sources(self, ipdl_dir, sorted_ipdl_sources,
-                             unified_ipdl_cppsrcs_mapping):
+                             sorted_nonstatic_ipdl_sources, unified_ipdl_cppsrcs_mapping):
         for f in unified_ipdl_cppsrcs_mapping:
             self._build_db_line(ipdl_dir, None, self.environment, f[0],
                                 '.cpp')
