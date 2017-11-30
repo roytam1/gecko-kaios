@@ -34,12 +34,15 @@
 #include "Volume.h"
 
 #define DEFAULT_THREAD_TIMEOUT_MS 30000
+#define MTP_STATE_STARTED     MOZ_UTF16("started")
+#define MTP_STATE_FINISHED    MOZ_UTF16("finished")
 
 using namespace android;
 using namespace mozilla;
 BEGIN_MTP_NAMESPACE
 
 static const char* kMtpWatcherUpdate = "mtp-watcher-update";
+static const char* kMtpStateChanged  = "mtp-state-changed";
 
 class MtpWatcherUpdateRunnable final : public nsRunnable
 {
@@ -178,6 +181,25 @@ private:
   RefPtr<MozMtpServer> mMozMtpServer;
 };
 
+class MtpStateChangedRunnable final : public nsRunnable
+{
+public:
+  MtpStateChangedRunnable(const char16_t* aData)
+    : mData(aData)
+  {}
+
+  NS_IMETHOD Run()
+  {
+    MOZ_ASSERT(NS_IsMainThread());
+
+    nsCOMPtr<nsIObserverService> obs = mozilla::services::GetObserverService();
+    obs->NotifyObservers(nullptr, kMtpStateChanged, mData);
+    return NS_OK;
+  }
+private:
+  const char16_t* mData;
+};
+
 class MtpServerRunnable : public nsRunnable
 {
 public:
@@ -195,6 +217,9 @@ public:
       NS_DispatchToMainThread(new AllocMtpWatcherUpdateRunnable(mMozMtpServer));
     MOZ_ASSERT(NS_SUCCEEDED(rv));
 
+    rv = NS_DispatchToMainThread(new MtpStateChangedRunnable(MTP_STATE_STARTED));
+    MOZ_ASSERT(NS_SUCCEEDED(rv));
+
     MTP_LOG("MozMtpServer started");
     server->run();
     MTP_LOG("MozMtpServer finished");
@@ -203,6 +228,9 @@ public:
     mMtpUsbFd.forget();
 
     rv = NS_DispatchToMainThread(new FreeMtpWatcherUpdateRunnable(mMozMtpServer));
+    MOZ_ASSERT(NS_SUCCEEDED(rv));
+
+    rv = NS_DispatchToMainThread(new MtpStateChangedRunnable(MTP_STATE_FINISHED));
     MOZ_ASSERT(NS_SUCCEEDED(rv));
 
     return NS_OK;

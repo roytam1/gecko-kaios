@@ -1377,6 +1377,15 @@ window.addEventListener('ContentStart', function update_onContentStart() {
 }, 'volume-state-changed', false);
 })();
 
+(function mtpStateTracker() {
+  Services.obs.addObserver(function(aSubject, aTopic, aData) {
+    shell.sendChromeEvent({
+      type: 'mtp-state-changed',
+      active: (aData == 'started')
+    });
+}, 'mtp-state-changed', false);
+})();
+
 if (isGonk) {
   // Devices don't have all the same partition size for /cache where we
   // store the http cache.
