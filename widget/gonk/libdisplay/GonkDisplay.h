@@ -89,7 +89,7 @@ public:
     /**
      * Only GonkDisplayICS uses arguments.
      */
-    virtual bool SwapBuffers(EGLDisplay dpy, EGLSurface sur, DisplayType aDisplayType) = 0;
+    virtual bool SwapBuffers(DisplayType aDisplayType) = 0;
 
     virtual ANativeWindowBuffer* DequeueBuffer(DisplayType dpy) = 0;
 
@@ -107,6 +107,12 @@ public:
         GonkDisplay::DisplayType aDisplayType) {
         return mDispNativeData[aDisplayType];
     }
+
+    virtual int TryLockScreen() = 0;
+
+    virtual void UnlockScreen() = 0;
+
+    virtual android::sp<ANativeWindow> GetSurface() = 0;
 
 protected:
     DisplayNativeData mDispNativeData[NUM_DISPLAY_TYPES];

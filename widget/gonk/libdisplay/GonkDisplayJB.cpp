@@ -287,6 +287,16 @@ GonkDisplayJB::SetEnabled(bool enabled)
     }
 }
 
+int GonkDisplayJB::TryLockScreen()
+{
+    int ret = mPrimaryScreenLock.tryLock();
+}
+
+void GonkDisplayJB::UnlockScreen()
+{
+    mPrimaryScreenLock.unlock();
+}
+
 void
 GonkDisplayJB::SetExtEnabled(bool enabled)
 {
@@ -326,7 +336,7 @@ GonkDisplayJB::IsExtFBDeviceEnabled()
 }
 
 bool
-GonkDisplayJB::SwapBuffers(EGLDisplay dpy, EGLSurface sur, DisplayType aDisplayType)
+GonkDisplayJB::SwapBuffers(DisplayType aDisplayType)
 {
     if (aDisplayType == DISPLAY_PRIMARY) {
         // Should be called when composition rendering is complete for a frame.

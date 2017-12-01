@@ -22,6 +22,7 @@
 #include "hardware/power.h"
 #include "NativeFramebufferDevice.h"
 #include "ui/Fence.h"
+#include "utils/Mutex.h"
 #include "utils/RefBase.h"
 
 namespace mozilla {
@@ -41,7 +42,7 @@ public:
 
     virtual bool IsExtFBDeviceEnabled();
 
-    virtual bool SwapBuffers(EGLDisplay dpy, EGLSurface sur, DisplayType aDisplayType);
+    virtual bool SwapBuffers(DisplayType aDisplayType);
 
     virtual ANativeWindowBuffer* DequeueBuffer(DisplayType aDisplayType);
 
@@ -56,6 +57,12 @@ public:
         android::IGraphicBufferProducer* aSink = nullptr);
 
     virtual void NotifyBootAnimationStopped();
+
+    virtual int TryLockScreen();
+
+    virtual void UnlockScreen();
+
+    virtual android::sp<ANativeWindow> GetSurface() {return mSTClient;};
 
 private:
     void CreateFramebufferSurface(android::sp<ANativeWindow>& aNativeWindow,
@@ -87,6 +94,7 @@ private:
     OnEnabledCallbackType mEnabledCallback;
     bool mFBEnabled;
     bool mExtFBEnabled;
+    android::Mutex mPrimaryScreenLock;
 };
 
 }
