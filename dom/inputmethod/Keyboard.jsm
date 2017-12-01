@@ -373,6 +373,11 @@ this.Keyboard = {
     // Set the formMM to the new message manager received.
     let mm = msg.target.QueryInterface(Ci.nsIFrameLoaderOwner)
                 .frameLoader.messageManager;
+    // Prevent sending focus event to keyboard if input context is currently
+    // focused.
+    if (mm === this.formMM) {
+      return;
+    }
     this.formMM = mm;
 
     // Since focus element is changed, to check whether this element
