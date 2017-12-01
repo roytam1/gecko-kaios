@@ -773,8 +773,6 @@ ContactDB.prototype = {
             next();
           }
         };
-
-        next();
       },
       function upgrade22to23() {
         if (DEBUG) debug("Adding the telFuzzy index");
