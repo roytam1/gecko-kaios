@@ -557,6 +557,24 @@ DOMVideoCallProvider::DispatchSessionModifyResponseEvent(const nsAString& aType,
                                                          DOMVideoCallProfile* aResponse)
 {
   LOG("DispatchSessionModifyResponseEvent: %d", aStatus);
+  uint16_t requestQuality = 0;
+  uint16_t requestState = 0;
+  if (aRequest) {
+    aRequest->GetQuality(&requestQuality);
+    aRequest->GetState(&requestState);
+  }
+
+  uint16_t responseQuality = 0;
+  uint16_t responseState = 0;
+  if (aResponse) {
+    aResponse->GetQuality(&responseQuality);
+    aResponse->GetState(&responseState);
+  }
+
+  // TODO: Remove me, debug info.
+  LOG("DispatchSessionModifyResponseEvent, status: %d, request {quality: %d, state: %d}, response {quality: %d, state: %d}",
+    aStatus, requestQuality, requestState, responseQuality, responseState);
+
   AutoJSAPI jsapi;
   if (NS_WARN_IF(!jsapi.Init(GetOwner()))) {
     LOG("%s, return due to fail to initiate jsapi", __FUNCTION__);
@@ -579,18 +597,6 @@ DOMVideoCallProvider::DispatchSessionModifyResponseEvent(const nsAString& aType,
   RefPtr<VideoCallSessionModifyResponseEvent> event =
       VideoCallSessionModifyResponseEvent::Constructor(this, aType, init);
 
-  uint16_t requestQuality;
-  uint16_t requestState;
-  aRequest->GetQuality(&requestQuality);
-  aRequest->GetState(&requestState);
-
-  uint16_t responseQuality;
-  uint16_t responseState;
-  aResponse->GetQuality(&responseQuality);
-  aResponse->GetState(&responseState);
-
-  LOG("DispatchSessionModifyResponseEvent, status: %d, request {quality: %d, state: %d}, response {quality: %d, state: %d}",
-    aStatus, requestQuality, requestState, responseQuality, responseState);
   return DispatchTrustedEvent(event);
 }
 
@@ -599,10 +605,12 @@ DOMVideoCallProvider::ConvertToJsValue(nsIVideoCallProfile *aProfile,
                                        JS::Rooted<JS::Value>* jsResult)
 {
   LOG("%s", __FUNCTION__);
-  uint16_t quality;
-  uint16_t state;
-  aProfile->GetQuality(&quality);
-  aProfile->GetState(&state);
+  uint16_t quality = 0;
+  uint16_t state = 0;
+  if (aProfile) {
+    aProfile->GetQuality(&quality);
+    aProfile->GetState(&state);
+  }
 
   VideoCallProfile requestParams;
   VideoCallQuality& resultQuality = requestParams.mQuality.Construct();
@@ -715,14 +723,10 @@ DOMVideoCallProvider::OnReceiveSessionModifyResponse(uint16_t status,
     nsIVideoCallProfile *request, nsIVideoCallProfile *response)
 {
   LOG("%s, status: %d", __FUNCTION__, status);
-  if (!request || !response) {
-    LOG("%s, request or response is invalid", __FUNCTION__);
-    return NS_ERROR_FAILURE;
-  }
 
   DispatchSessionModifyResponseEvent(NS_LITERAL_STRING("sessionmodifyresponse"), status,
-      static_cast<DOMVideoCallProfile*>(request),
-      static_cast<DOMVideoCallProfile*>(response));
+      (request? static_cast<DOMVideoCallProfile*>(request) : nullptr),
+      (response? static_cast<DOMVideoCallProfile*>(response) : nullptr));
   return NS_OK;
 }
 
