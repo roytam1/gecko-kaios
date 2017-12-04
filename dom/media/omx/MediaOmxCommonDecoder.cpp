@@ -109,7 +109,7 @@ MediaOmxCommonDecoder::FirstFrameLoaded(nsAutoPtr<MediaInfo> aInfo,
   }
   PauseStateMachine();
   if (mLogicallySeeking) {
-    SeekTarget target = SeekTarget(mLogicalPosition,
+    SeekTarget target = SeekTarget(mLogicalPosition*1000000, //Convert time unit from second to micro second
                                    SeekTarget::Accurate,
                                    MediaDecoderEventVisibility::Observable);
     mSeekRequest.DisconnectIfExists();
@@ -150,7 +150,7 @@ MediaOmxCommonDecoder::ResumeStateMachine()
 
   mFallbackToStateMachine = true;
   mAudioOffloadPlayer = nullptr;
-  SeekTarget target = SeekTarget(mLogicalPosition,
+  SeekTarget target = SeekTarget(mLogicalPosition*1000000, //Convert time unit from second to micro second
                                  SeekTarget::Accurate,
                                  MediaDecoderEventVisibility::Suppressed);
   // Call Seek of MediaDecoderStateMachine to suppress seek events.
