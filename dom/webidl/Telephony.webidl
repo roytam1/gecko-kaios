@@ -105,6 +105,7 @@ interface Telephony : EventTarget {
    * To test loopback mode, please setup preference telephony.vt.loopback.enabled properly.
    */
 #ifdef MOZ_WIDGET_GONK
+  [Pref="telephony.vt.loopback.enabled"]
   readonly attribute VideoCallProvider? loopbackProvider;
 #endif
 
