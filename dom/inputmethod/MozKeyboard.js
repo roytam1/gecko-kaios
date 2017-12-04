@@ -482,6 +482,15 @@ MozInputMethod.prototype = {
   },
 
   receiveMessage: function mozInputMethodReceiveMsg(msg) {
+    // Some app (ex: System App) call navigator.mozInputMethod and that initialize
+    // MozInputMethod, result in adding all those message listeners. However,
+    // it should not deal with any keyboard related messages since itself is not
+    // a Keyboard App. By checking the KbID, we can determine if it is a real
+    // Keyboard App, and skip if not.
+    if (WindowMap.getKbID(this._window) === undefined) {
+      return;
+    }
+
     let forceHandleMessage = msg.name === 'Keyboard:SendHardwareKeyEvent';
     if (msg.name.startsWith('Keyboard') &&
         !WindowMap.isActive(this._window) &&
