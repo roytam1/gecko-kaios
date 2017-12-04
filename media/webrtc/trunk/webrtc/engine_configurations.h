@@ -42,10 +42,12 @@
 
 // iLBC and Redundancy coding are excluded from Chromium and Mozilla
 // builds to reduce binary size.
-#if !defined(WEBRTC_CHROMIUM_BUILD) && !defined(WEBRTC_MOZILLA_BUILD)
+#if !defined(WEBRTC_CHROMIUM_BUILD)
 #define WEBRTC_CODEC_ILBC
+#if !defined(WEBRTC_MOZILLA_BUILD)
 #define WEBRTC_CODEC_RED
-#endif  // !WEBRTC_CHROMIUM_BUILD && !WEBRTC_MOZILLA_BUILD
+#endif  // !WEBRTC_MOZILLA_BUILD
+#endif  // !WEBRTC_CHROMIUM_BUILD
 
 // ----------------------------------------------------------------------------
 //  [Video] Codec settings

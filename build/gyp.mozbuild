@@ -64,7 +64,7 @@ gyp_vars = {
     'include_g711': 1,
     'include_opus': 1,
     'include_g722': 1,
-    'include_ilbc': 0,
+    'include_ilbc': 1,
     # We turn on ISAC because the AGC uses parts of it, and depend on the
     # linker to throw away uneeded bits.
     'include_isac': 1,

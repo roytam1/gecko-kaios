@@ -2082,6 +2082,15 @@ void
 JsepSessionImpl::SetupDefaultCodecs()
 {
   // Supported audio codecs.
+  mSupportedCodecs.values.push_back(new JsepAudioCodecDescription(
+      "102",
+      "ILBC",
+      8000,
+      1,
+      480, // 60 ms at 8kHz
+      13300
+      ));
+
   // Per jmspeex on IRC:
   // For 32KHz sampling, 28 is ok, 32 is good, 40 should be really good
   // quality.  Note that 1-2Kbps will be wasted on a stereo Opus channel
