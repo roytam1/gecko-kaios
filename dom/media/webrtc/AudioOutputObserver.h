@@ -5,6 +5,7 @@
 #ifndef AUDIOOUTPUTOBSERVER_H_
 #define AUDIOOUTPUTOBSERVER_H_
 
+#include "mozilla/Atomics.h"
 #include "mozilla/StaticPtr.h"
 #include "AudioMixer.h"
 
@@ -43,6 +44,9 @@ public:
   FarEndAudioChunk *Pop();
   uint32_t Size();
 
+  // Enable this setting to skip future data sent into InsertFarEnd().
+  void SetSkipping(bool aEnable) { mSkipping = aEnable; }
+
 private:
   virtual ~AudioOutputObserver();
   uint32_t mPlayoutFreq;
@@ -54,6 +58,8 @@ private:
   // chunking to 10ms support
   FarEndAudioChunk *mSaved; // can't be nsAutoPtr since we need to use free(), not delete
   uint32_t mSamplesSaved;
+
+  Atomic<bool> mSkipping;
 };
 
 extern StaticRefPtr<AudioOutputObserver> gFarendObserver;

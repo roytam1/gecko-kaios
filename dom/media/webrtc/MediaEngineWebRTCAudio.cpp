@@ -54,6 +54,7 @@ AudioOutputObserver::AudioOutputObserver()
   , mChunkSize(0)
   , mSaved(nullptr)
   , mSamplesSaved(0)
+  , mSkipping(false)
 {
   // Buffers of 10ms chunks
   mPlayoutFifo = new webrtc::SingleRwFifo(MAX_AEC_FIFO_DEPTH/10);
@@ -105,6 +106,10 @@ void
 AudioOutputObserver::InsertFarEnd(const AudioDataValue *aBuffer, uint32_t aFrames, bool aOverran,
                                   int aFreq, int aChannels, AudioSampleFormat aFormat)
 {
+  if (mSkipping) {
+    mSamplesSaved = 0; // clear saved data since we no longer need it
+    return;
+  }
   if (mPlayoutChannels != 0) {
     if (mPlayoutChannels != static_cast<uint32_t>(aChannels)) {
       MOZ_CRASH();
@@ -326,6 +331,16 @@ MediaEngineWebRTCMicrophoneSource::Restart(const dom::MediaTrackConstraints& aCo
       LOG(("%s Error setting NoiseSuppression Status: %d ",__FUNCTION__, error));
     }
   }
+
+  // Only AEC and AGC modules may analyze the playout data. When both modules are
+  // disabled, notify far end observer to skip future data to reduce CPU usage.
+  // No need to consider noise suppression here.
+  // When skipping is enabled, the old chunks inside the observer will still be
+  // popped out later in Process() and then sent to the voice engine. Since AEC
+  // and AGC are disabled, these chunks will be simply ignored by the engine.
+  bool skipFarend = !mEchoOn && !mAgcOn;
+  MOZ_ASSERT(gFarendObserver);
+  gFarendObserver->SetSkipping(skipFarend);
   return NS_OK;
 }
 
