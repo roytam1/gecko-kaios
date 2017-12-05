@@ -201,7 +201,7 @@ interface nsISetInterfaceConfigCallback : nsISupports
 /**
  * Provide network services.
  */
-[scriptable, uuid(b0d57de1-d12b-b7f6-0263-53a2ab1d5b9d)]
+[scriptable, uuid(69ba5c59-848d-4345-8fc9-5c9119207803)]
 interface nsINetworkService : nsISupports
 {
   const long MODIFY_ROUTE_ADD    = 0;
@@ -444,6 +444,17 @@ interface nsINetworkService : nsISupports
    */
   void enableUsbRndis(in boolean enable,
                       in nsIEnableUsbRndisCallback callback);
+
+  /**
+   * Remove upstream.
+   *
+   * @param config
+   *        The internal and external interface info..
+   * @param callback
+   *        Callback function to report the result.
+   */
+  void removeUpStream(in jsval config,
+                      in nsINativeCommandCallback callback);
 
   /**
    * Update upstream.

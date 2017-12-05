@@ -537,6 +537,7 @@ NetworkManager.prototype = {
             return this._setMtu(extNetworkInfo);
           })
           .then(() => this.setAndConfigureActive())
+          .then(() => gTetheringService.onExternalConnectionChanged(extNetworkInfo))
           .then(() => this.updateClat(network))
           .then(() => {
             // Update data connection when Wifi connected/disconnected
@@ -603,6 +604,7 @@ NetworkManager.prototype = {
             CaptivePortalDetectionHelper
               .notify(CaptivePortalDetectionHelper.EVENT_DISCONNECT, extNetworkInfo);
           })
+          .then(() => gTetheringService.onExternalConnectionChanged(extNetworkInfo))
           .then(() => this.setAndConfigureActive())
           .then(() => {
             // Update data connection when Wifi connected/disconnected

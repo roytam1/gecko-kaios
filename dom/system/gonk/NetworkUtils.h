@@ -323,6 +323,7 @@ private:
   CommandResult setUSBTethering(NetworkParams& aOptions);
   CommandResult enableUsbRndis(NetworkParams& aOptions);
   CommandResult updateUpStream(NetworkParams& aOptions);
+  CommandResult removeUpStream(NetworkParams& aOptions);
   CommandResult createNetwork(NetworkParams& aOptions);
   CommandResult destroyNetwork(NetworkParams& aOptions);
   CommandResult getNetId(NetworkParams& aOptions);

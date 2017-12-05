@@ -687,6 +687,17 @@ NetworkService.prototype = {
     });
   },
 
+  removeUpStream: function(aConfig, aCallback) {
+    let params = {
+      cmd: "removeUpStream",
+      preInternalIfname: aConfig.internalIfname,
+      preExternalIfname: aConfig.externalIfname
+    };
+    this.controlMessage(params, function(aResult) {
+      aCallback.nativeCommandResult(!aResult.error);
+    });
+  },
+
   updateUpStream: function(type, aPrevious, aCurrent, aCallback) {
     let params = {
       cmd: "updateUpStream",

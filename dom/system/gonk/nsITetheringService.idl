@@ -3,11 +3,12 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "nsISupports.idl"
+#include "nsINetworkInterface.idl"
 
 interface nsINetworkInterface;
 interface nsIWifiTetheringCallback;
 
-[scriptable, uuid(779de2d3-6d29-4ee6-b069-6251839f757a)]
+[scriptable, uuid(497af0f3-2f0f-400b-b3e1-d50b39c1d263)]
 interface nsITetheringService : nsISupports
 {
   const long TETHERING_STATE_INACTIVE = 0;
@@ -18,6 +19,14 @@ interface nsITetheringService : nsISupports
    * Current tethering state. One of the TETHERING_STATE_* constants.
    */
   readonly attribute long state;
+
+  /**
+   * Handle external interface change for Tethering.
+   *
+   * @param networkInfo
+   *        The network info with network interface status.
+   */
+  void onExternalConnectionChanged(in nsINetworkInfo networkInfo);
 
   /**
    * Enable or disable Wifi Tethering.

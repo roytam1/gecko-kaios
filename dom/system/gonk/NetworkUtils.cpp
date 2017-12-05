@@ -714,7 +714,22 @@ void NetworkUtils::cleanUpStream(CommandChain* aChain,
   char command[MAX_COMMAND_SIZE];
   snprintf(command, MAX_COMMAND_SIZE - 1, "nat disable %s %s 0", GET_CHAR(mPreInternalIfname), GET_CHAR(mPreExternalIfname));
 
-  doCommand(command, aChain, aCallback);
+  struct MyCallback {
+    static void callback(CommandCallback::CallbackType aOriginalCallback,
+                         CommandChain* aChain,
+                         bool aError,
+                         mozilla::dom::NetworkResultOptions& aResult)
+    {
+      NS_ConvertUTF16toUTF8 reason(aResult.mResultReason);
+      NU_DBG("%s: reason %s", __FUNCTION__, reason.get());
+      // We don't care about remove upstream result
+      // since it might not exist tethering rule.
+      aOriginalCallback(aChain, false, aResult);
+    }
+  };
+
+  CommandCallback wrappedCallback(MyCallback::callback, aCallback);
+  doCommand(command, aChain, wrappedCallback);
 }
 
 void NetworkUtils::createUpStream(CommandChain* aChain,
@@ -741,7 +756,22 @@ void NetworkUtils::cleanUpStreamInterfaceForwarding(CommandChain* aChain,
   snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd remove %s %s",
     GET_CHAR(mPreInternalIfname), GET_CHAR(mPreExternalIfname));
 
-  doCommand(command, aChain, aCallback);
+  struct MyCallback {
+    static void callback(CommandCallback::CallbackType aOriginalCallback,
+                         CommandChain* aChain,
+                         bool aError,
+                         mozilla::dom::NetworkResultOptions& aResult)
+    {
+      NS_ConvertUTF16toUTF8 reason(aResult.mResultReason);
+      NU_DBG("%s: reason %s", __FUNCTION__, reason.get());
+      // We don't care about remove forwarding result
+      // since rule might already removed from table list.
+      aOriginalCallback(aChain, false, aResult);
+    }
+  };
+
+  CommandCallback wrappedCallback(MyCallback::callback, aCallback);
+  doCommand(command, aChain, wrappedCallback);
 }
 
 void NetworkUtils::createUpStreamInterfaceForwarding(CommandChain* aChain,
@@ -1085,7 +1115,23 @@ void NetworkUtils::setInterfaceForwardingDisabled(CommandChain* aChain,
   // for ipfwd remove internal external.
   snprintf(command, MAX_COMMAND_SIZE - 1, "ipfwd remove %s %s",
     GET_CHAR(mInternalIfname), GET_CHAR(mExternalIfname));
-  doCommand(command, aChain, aCallback);
+
+  struct MyCallback {
+    static void callback(CommandCallback::CallbackType aOriginalCallback,
+                         CommandChain* aChain,
+                         bool aError,
+                         mozilla::dom::NetworkResultOptions& aResult)
+    {
+      NS_ConvertUTF16toUTF8 reason(aResult.mResultReason);
+      NU_DBG("%s: reason %s", __FUNCTION__, reason.get());
+      // We don't care about remove forwarding result
+      // since rule might already removed from table list.
+      aOriginalCallback(aChain, false, aResult);
+    }
+  };
+
+  CommandCallback wrappedCallback(MyCallback::callback, aCallback);
+  doCommand(command, aChain, wrappedCallback);
 }
 
 void NetworkUtils::tetheringStatus(CommandChain* aChain,
@@ -2186,6 +2232,7 @@ void NetworkUtils::ExecuteCommand(NetworkParams aOptions)
     BUILD_ENTRY(setUSBTethering),
     BUILD_ENTRY(enableUsbRndis),
     BUILD_ENTRY(updateUpStream),
+    BUILD_ENTRY(removeUpStream),
     BUILD_ENTRY(configureInterface),
     BUILD_ENTRY(dhcpRequest),
     BUILD_ENTRY(stopDhcp),
@@ -3004,16 +3051,17 @@ CommandResult NetworkUtils::setWifiTethering(NetworkParams& aOptions)
   }
   aOptions.mLoopIndex = 0;
 
-  dumpParams(aOptions, "WIFI");
-
   if (SDK_VERSION >= 20) {
     NetIdManager::NetIdInfo netIdInfo;
-    if (!mNetIdManager.lookup(aOptions.mExternalIfname, &netIdInfo)) {
-      ERROR("No such interface: %s", GET_CHAR(mExternalIfname));
+    aOptions.mNetId = mNetIdManager.lookup(aOptions.mExternalIfname, &netIdInfo) ?
+                      netIdInfo.mNetId : -1;
+    if (enable && aOptions.mNetId < 0) {
+      ERROR("No such interface to enable: %s", GET_CHAR(mExternalIfname));
       return -1;
     }
-    aOptions.mNetId = netIdInfo.mNetId;
   }
+
+  dumpParams(aOptions, "WIFI");
 
   if (enable) {
     NU_DBG("Starting Wifi Tethering on %s <-> %s",
@@ -3049,11 +3097,12 @@ CommandResult NetworkUtils::setUSBTethering(NetworkParams& aOptions)
   }
   if (SDK_VERSION >= 20) {
     NetIdManager::NetIdInfo netIdInfo;
-    if (!mNetIdManager.lookup(aOptions.mExternalIfname, &netIdInfo)) {
-      ERROR("No such interface: %s", GET_CHAR(mExternalIfname));
+    aOptions.mNetId = mNetIdManager.lookup(aOptions.mExternalIfname, &netIdInfo) ?
+                      netIdInfo.mNetId : -1;
+    if (enable && aOptions.mNetId < 0) {
+      ERROR("No such interface to enable: %s", GET_CHAR(mExternalIfname));
       return -1;
     }
-    aOptions.mNetId = netIdInfo.mNetId;
   }
   // Collect external interface IPv6 info.
   if (getIPv6IfaceInfo(externalIface.get(), network_prefix) > 0) {
@@ -3225,6 +3274,20 @@ CommandResult NetworkUtils::updateUpStream(NetworkParams& aOptions)
   dumpParams(aOptions, GET_CHAR(mType));
 
   runChain(aOptions, sUpdateUpStreamChain, updateUpStreamFail);
+  return CommandResult::Pending();
+}
+
+/**
+ * handling upstream interface change event.
+ */
+CommandResult NetworkUtils::removeUpStream(NetworkParams& aOptions)
+{
+  static CommandFunc COMMAND_CHAIN[] = {
+    cleanUpStreamInterfaceForwarding,
+    defaultAsyncSuccessHandler,
+  };
+
+  runChain(aOptions, COMMAND_CHAIN, defaultAsyncFailureHandler);
   return CommandResult::Pending();
 }
 
