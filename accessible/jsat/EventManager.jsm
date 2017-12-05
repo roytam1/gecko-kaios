@@ -475,7 +475,22 @@ this.EventManager.prototype = {
       }
     }
   },
-
+  symbolVoiceMap : new Map([
+    ['\n', 'enter'],
+    [' ' , 'space'],
+    ['.' , 'period'],
+    [',' , 'comma'],
+    ['?' , 'question mark'],
+    ['!' , 'exclamation mark'],
+    [';' , 'semi-colon'],
+    [':' , 'colon'],
+    ['(' , 'Parentheses'],
+    [')' , 'Parentheses'],
+    ['[' , 'square brackets'],
+    [']' , 'square brackets'],
+    ['{' , 'curly brackets'],
+    ['}' , 'curly brackets']
+  ]),
   _handleText: function _handleText(aEvent, aLiveRegion, aIsPolite) {
     let event = aEvent.QueryInterface(Ci.nsIAccessibleTextChangeEvent);
     let isInserted = event.isInserted;
@@ -513,6 +528,11 @@ this.EventManager.prototype = {
       // "clear" rather than the character that is going to be removed.
       if (aEvent.eventType === Events.TEXT_REMOVED) {
         modifiedText = 'clear';
+      } else if (aEvent.eventType === Events.TEXT_INSERTED) {
+        // When insert character from input field, need to replace the symbol to voice
+        if (this.symbolVoiceMap.has(modifiedText)) {
+          modifiedText = this.symbolVoiceMap.get(modifiedText);
+        }
       }
       this.present(Presentation.textChanged(aEvent.accessible, isInserted,
         event.start, event.length, text, modifiedText));
