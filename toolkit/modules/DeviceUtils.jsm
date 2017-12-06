@@ -99,6 +99,9 @@ this.DeviceUtils = {
         device_id => {
           if (isGonk) {
             let characteristics = libcutils.property_get("ro.build.characteristics");
+            if (!(characteristics in device_type_map)) {
+              characteristics = "default";
+            }
             let device_info = {
               device_id: device_id,
               reference: this.getRefNumber(),
