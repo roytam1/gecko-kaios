@@ -150,11 +150,12 @@ CSPService::ShouldLoad(uint32_t aContentType,
 
   if (status == nsIPrincipal::APP_STATUS_CERTIFIED) {
    // The CSP for certified apps is :
-   // "default-src * data: blob:; script-src 'self'; object-src 'none'; style-src 'self' app://theme.gaiamobile.org app://shared.gaiamobile.org"
+   // "default-src * data: blob:; script-src 'self' http://127.0.0.1:8081; object-src 'none'; style-src 'self' app://theme.gaiamobile.org app://shared.gaiamobile.org"
    // That means we can optimize for this case by:
    // - loading same origin scripts and stylesheets, and stylesheets from the
    //   theme url space.
    // - loading scripts and stylesheets from the shared url space.
+   // - loading scripts from local http server
    // - never loading objects.
    // - accepting everything else.
 
@@ -168,8 +169,10 @@ CSPService::ShouldLoad(uint32_t aContentType,
           aContentLocation->GetPrePath(contentOrigin);
 
           auto sharedOrigin = NS_LITERAL_CSTRING("app://shared.gaiamobile.org");
+          auto localOrigin = NS_LITERAL_CSTRING("http://127.0.0.1:8081");
 
           if (!(sourceOrigin.Equals(contentOrigin) ||
+                localOrigin.Equals(contentOrigin) ||
                 sharedOrigin.Equals(contentOrigin) ||
                 (themeOrigin && themeOrigin.Equals(contentOrigin)))) {
             *aDecision = nsIContentPolicy::REJECT_SERVER;
