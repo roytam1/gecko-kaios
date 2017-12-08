@@ -303,7 +303,7 @@ struct ParamTraits<mozilla::dom::BatteryHealth>:
   public ContiguousEnumSerializer<
            mozilla::dom::BatteryHealth,
            mozilla::dom::BatteryHealth::Good,
-           mozilla::dom::BatteryHealth::Unknown>
+           mozilla::dom::BatteryHealth::EndGuard_>
 {};
 
 } // namespace IPC
