@@ -1082,6 +1082,22 @@ AudioManager::SetFmRadioAudioEnabled(bool aFmRadioAudioEnabled)
   UpdateDeviceConnectionState(aFmRadioAudioEnabled,
                               AUDIO_DEVICE_OUT_FM,
                               NS_LITERAL_CSTRING(""));
+
+#ifdef PRODUCT_MANUFACTURER_MTK
+  if(aFmRadioAudioEnabled) {
+    String8 cmd;
+    uint32_t volIndex = mStreamStates[AUDIO_STREAM_MUSIC]->GetVolumeIndex();
+    cmd.appendFormat("SetFmVolume=%d", volIndex);
+    LOG("At %d,cmd %s,", __LINE__,cmd.string());
+    SetAudioSystemParameters(0, cmd);
+
+    LOG("At %d,setParameters FM_Volume=%d,add more here for FM?", __LINE__,volIndex);
+    cmd.clear();
+    cmd.appendFormat("AudioSetFmDigitalEnable=%d",1);
+    LOG("At %d,cmd %s,", __LINE__,cmd.string());
+    SetAudioSystemParameters(0, cmd);
+  }
+#endif
   // AUDIO_STREAM_FM is not used on recent gonk.
   // AUDIO_STREAM_MUSIC is used for FM radio volume control.
 #if ANDROID_VERSION < 19
