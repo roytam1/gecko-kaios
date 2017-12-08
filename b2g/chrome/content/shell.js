@@ -24,6 +24,8 @@ if (isGonk) {
 
 Cu.import('resource://gre/modules/KillSwitchMain.jsm');
 Cu.import('resource://gre/modules/KaiAccountsMgmtService.jsm');
+// import DownloadsAPI.jsm at the start to ensure download list cleanup.
+Cu.import('resource://gre/modules/DownloadsAPI.jsm');
 Cu.import('resource://gre/modules/MobileIdentityManager.jsm');
 
 XPCOMUtils.defineLazyModuleGetter(this, "SystemAppProxy",
@@ -803,7 +805,6 @@ var shell = {
     Cu.import('resource://gre/modules/UserAgentOverrides.jsm');
     // We don't preprocess this file so we can't #ifdef MOZ_PAY here...
     // Cu.import('resource://gre/modules/Payment.jsm');
-    Cu.import('resource://gre/modules/DownloadsAPI.jsm');
     Cu.import('resource://gre/modules/RequestSyncService.jsm');
     Cu.import('resource://gre/modules/SystemUpdateService.jsm');
     try {
