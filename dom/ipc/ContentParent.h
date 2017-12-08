@@ -990,10 +990,12 @@ private:
                                         const nsCString& aReason) override;
 
   virtual bool RecvAddGeolocationListener(const IPC::Principal& aPrincipal,
-                                          const bool& aHighAccuracy) override;
+                                          const bool& aHighAccuracy,
+                                          const uint16_t& aGpsMode) override;
+
   virtual bool RecvRemoveGeolocationListener() override;
 
-  virtual bool RecvSetGeolocationHigherAccuracy(const bool& aEnable) override;
+  virtual bool RecvSetGeolocationHigherAccuracy(const bool& aEnable, const uint16_t& aGpsMode) override;
 
   virtual bool RecvConsoleMessage(const nsString& aMessage) override;
 

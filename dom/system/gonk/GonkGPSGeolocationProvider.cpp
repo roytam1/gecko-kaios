@@ -83,9 +83,6 @@ static bool gDebug_isLoggingEnabled = false;
 static bool gDebug_isGPSLocationIgnored = false;
 static bool gHasAuthorizationKey = false;
 
-// Set the flag to 0 which wouldn't delete any aiding data
-static uint16_t gAidingDataDeleteFlag = 0;
-
 #ifdef MOZ_B2G_RIL
 static const char* kNetworkConnStateChangedTopic = "network-connection-state-changed";
 #endif
@@ -629,6 +626,7 @@ GonkGPSGeolocationProvider::GonkGPSGeolocationProvider()
   , mObservingSettingsChange(false)
   , mSupportsSingleShot(false)
   , mSupportsTimeInjection(false)
+  , mGpsMode(0)
   , mGpsInterface(nullptr)
 {
 }
@@ -1092,13 +1090,9 @@ GonkGPSGeolocationProvider::StartGPS()
 #if FLUSH_AIDE_DATA
   // Delete cached data
   mGpsInterface->delete_aiding_data(GPS_DELETE_ALL);
-#else
-  if (gAidingDataDeleteFlag != 0) {
-    mGpsInterface->delete_aiding_data(gAidingDataDeleteFlag);
-    gAidingDataDeleteFlag = 0;
-  }
 #endif
 
+  DeleteGpsData(mGpsMode);
   LOG("Starts GPS");
   mGpsInterface->start();
 }
@@ -1303,6 +1297,7 @@ GonkGPSGeolocationProvider::Shutdown()
     return NS_OK;
   }
 
+  mGpsMode = 0;
   mStarted = false;
   if (mNetworkLocationProvider) {
     mNetworkLocationProvider->Shutdown();
@@ -1338,27 +1333,35 @@ GonkGPSGeolocationProvider::ShutdownGPS()
   }
 }
 
+//Check if data needs to be deleted
 NS_IMETHODIMP
-GonkGPSGeolocationProvider::DeleteGpsData(uint16_t deleteType)
+GonkGPSGeolocationProvider::DeleteGpsData(uint16_t gpsMode)
 {
-  switch (deleteType) {
+  switch (gpsMode) {
     case GPS_DELETE_ALL:
-      gAidingDataDeleteFlag = GPS_DELETE_ALL;
+      mGpsMode = GPS_DELETE_ALL;
       break;
     case GPS_DELETE_EPHEMERIS:
-      gAidingDataDeleteFlag = GPS_DELETE_EPHEMERIS;
+      mGpsMode = GPS_DELETE_EPHEMERIS;
       break;
     default:
-      LOG("Received unsupported GPS data type 0x%x for deleting", deleteType);
-      gAidingDataDeleteFlag = 0;
+      LOG("Received unsupported GPS data type 0x%x for deleting", gpsMode);
+      mGpsMode = 0;
       break;
   }
 
-  if (mGpsInterface && mInitialized && gAidingDataDeleteFlag) {
-    mGpsInterface->delete_aiding_data(gAidingDataDeleteFlag);
-    gAidingDataDeleteFlag = 0;
+  if (mGpsInterface && mInitialized && mGpsMode) {
+    mGpsInterface->delete_aiding_data(mGpsMode);
+    mGpsMode = 0;
   }
 
+  return NS_OK;
+}
+
+ NS_IMETHODIMP
+GonkGPSGeolocationProvider::SetGpsDeleteType(uint16_t gpsMode)
+{
+  mGpsMode = gpsMode;
   return NS_OK;
 }
 
@@ -1482,6 +1485,7 @@ GonkGPSGeolocationProvider::Observe(nsISupports* aSubject,
         if (mInitialized && mGpsInterface &&
             Preferences::GetBool(kPrefOndemandCleanup)) {
           // Cleanup GPS HAL when Geolocation setting is turned off
+          mGpsInterface->stop();
           mGpsInterface->cleanup();
           mInitialized = false;
         }

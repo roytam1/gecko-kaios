@@ -14,6 +14,14 @@ dictionary PositionOptions {
   boolean enableHighAccuracy = false;
   [Clamp] unsigned long timeout = 0xffffffff;
   [Clamp] unsigned long maximumAge = 0;
+#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
+  // Delete  specified aiding data for GPS testing
+  // 0xFFFF is passed for a cold start.
+  // 0x0001 is passed for a warm start.
+  // The gpsMode can only be used by the app with "mmi-test" permission.
+  [Clamp] unsigned short gpsMode = 0;
+#endif
+
 };
 
 [NoInterfaceObject]
@@ -29,14 +37,6 @@ interface Geolocation {
                      optional PositionOptions options);
 
   void clearWatch(long watchId);
-
-#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
-  // Delete  specified aiding data for GPS testing
-  // 0xFFFF is passed for a cold start.
-  // 0x0001 is passed for a warm start.
-  [CheckAnyPermissions="mmi-test"]
-  void deleteGpsData(unsigned short deleteType);
-#endif
 
 #ifdef HAS_KOOST_MODULES
   // [Non-standard], an interface for monitoring status of Global Navigation Satellite System

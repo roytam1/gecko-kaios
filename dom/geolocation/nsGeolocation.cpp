@@ -22,6 +22,7 @@
 #include "nsIDocument.h"
 #include "nsIDOMEvent.h"
 #include "nsIObserverService.h"
+#include "nsIPermissionManager.h"
 #include "nsPIDOMWindow.h"
 #include "nsThreadUtils.h"
 #include "mozilla/HalWakeLock.h"
@@ -159,6 +160,9 @@ CreatePositionOptionsCopy(const PositionOptions& aOptions)
   geoOptions->mEnableHighAccuracy = aOptions.mEnableHighAccuracy;
   geoOptions->mMaximumAge = aOptions.mMaximumAge;
   geoOptions->mTimeout = aOptions.mTimeout;
+#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
+  geoOptions->mGpsMode = aOptions.mGpsMode;
+#endif
 
   return geoOptions.forget();
 }
@@ -565,6 +569,29 @@ nsGeolocationRequest::Allow(JS::HandleValue aChoices)
     }
 
   }
+
+#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
+  if (XRE_IsContentProcess()) {
+    nsCOMPtr<nsIPermissionManager> permMgr =
+      mozilla::services::GetPermissionManager();
+
+    if (!permMgr) {
+      GEO_LOGI("nsIPermissionManager permMgr == null, can not check permission");
+    } else {
+      uint32_t permission = nsIPermissionManager::DENY_ACTION;
+      permMgr->TestPermissionFromPrincipal(GetPrincipal(), "mmi-test", &permission);
+
+      if (mOptions && (permission == nsIPermissionManager::ALLOW_ACTION)) {
+        gs->SetGpsDeleteType(mOptions->mGpsMode);
+      }
+   }
+
+  } else {
+    if (mOptions) {
+      gs->SetGpsDeleteType(mOptions->mGpsMode);
+    }
+  }
+#endif
 
   // Kick off the geo device, if it isn't already running
   nsresult rv = gs->StartDevice(GetPrincipal());
@@ -1087,7 +1114,7 @@ nsGeolocationService::StartDevice(nsIPrincipal *aPrincipal)
   if (XRE_IsContentProcess()) {
     ContentChild* cpc = ContentChild::GetSingleton();
     cpc->SendAddGeolocationListener(IPC::Principal(aPrincipal),
-                                    HighAccuracyRequested());
+                                    HighAccuracyRequested(),GetGpsDeleteType());
     return NS_OK;
   }
 
@@ -1101,6 +1128,11 @@ nsGeolocationService::StartDevice(nsIPrincipal *aPrincipal)
     return NS_ERROR_FAILURE;
   }
 
+#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
+  if (GetGpsDeleteType() > 0) {
+    mProvider->SetGpsDeleteType(GetGpsDeleteType());
+  }
+#endif
   nsresult rv;
 
   if (NS_FAILED(rv = mProvider->Startup()) ||
@@ -1160,7 +1192,7 @@ nsGeolocationService::UpdateAccuracy(bool aForceHigh)
   if (XRE_IsContentProcess()) {
     ContentChild* cpc = ContentChild::GetSingleton();
     if (cpc->IsAlive()) {
-      cpc->SendSetGeolocationHigherAccuracy(highRequired);
+      cpc->SendSetGeolocationHigherAccuracy(highRequired, mGpsMode);
     }
     return;
   }
@@ -1208,7 +1240,7 @@ nsGeolocationService::StopDevice()
   if (!mProvider) {
     return;
   }
-
+  mGpsMode = 0;
   mHigherAccuracy = false;
 
   mProvider->Shutdown();
@@ -1237,16 +1269,17 @@ nsGeolocationService::GetGeolocationService()
   return result.forget();
 }
 
-#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
 void
-nsGeolocationService::DeleteGpsData(uint16_t deleteType)
+nsGeolocationService::SetGpsDeleteType(uint16_t gpsMode)
 {
-  if (!mProvider) {
-    mProvider = do_GetService(GONK_GPS_GEOLOCATION_PROVIDER_CONTRACTID);
-  }
-  mProvider->DeleteGpsData(deleteType);
+  mGpsMode = gpsMode;
 }
-#endif
+
+uint16_t
+nsGeolocationService::GetGpsDeleteType()
+{
+  return mGpsMode;
+}
 
 void
 nsGeolocationService::AddLocator(Geolocation* aLocator)
@@ -1863,14 +1896,6 @@ Geolocation::NotifyAllowedRequest(nsGeolocationRequest* aRequest)
     mPendingCallbacks.AppendElement(aRequest);
   }
 }
-
-#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
-void
-Geolocation::DeleteGpsData(uint16_t deleteType)
-{
-  mService->DeleteGpsData(deleteType);
-}
-#endif
 
 bool
 Geolocation::RegisterRequestWithPrompt(nsGeolocationRequest* request)

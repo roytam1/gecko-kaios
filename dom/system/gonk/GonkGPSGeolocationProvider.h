@@ -97,7 +97,8 @@ private:
   void SetReferenceLocation();
 #endif
 
-  NS_METHOD DeleteGpsData(uint16_t deleteType);
+  NS_METHOD DeleteGpsData(uint16_t gpsMode);
+  NS_METHOD SetGpsDeleteType(uint16_t gpsMode);
 
   const GpsInterface* GetGPSInterface();
 
@@ -122,6 +123,7 @@ private:
   bool mSupportsSingleShot;
   bool mSupportsTimeInjection;
 
+  uint16_t mGpsMode;
   const GpsInterface* mGpsInterface;
   const GpsNiInterface* mGpsNiInterface;
 #ifdef MOZ_B2G_RIL

@@ -4635,7 +4635,7 @@ ContentParent::RecvFilePathUpdateNotify(const nsString& aType,
 static int32_t
 AddGeolocationListener(nsIDOMGeoPositionCallback* watcher,
                        nsIDOMGeoPositionErrorCallback* errorCallBack,
-                       bool highAccuracy)
+                       bool highAccuracy, uint16_t aGpsMode)
 {
   nsCOMPtr<nsIDOMGeoGeolocation> geo = do_GetService("@mozilla.org/geolocation;1");
   if (!geo) {
@@ -4646,6 +4646,9 @@ AddGeolocationListener(nsIDOMGeoPositionCallback* watcher,
   options->mTimeout = 0;
   options->mMaximumAge = 0;
   options->mEnableHighAccuracy = highAccuracy;
+#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
+  options->mGpsMode = aGpsMode;
+#endif
   int32_t retval = 1;
   geo->WatchPosition(watcher, errorCallBack, options, &retval);
   return retval;
@@ -4653,7 +4656,7 @@ AddGeolocationListener(nsIDOMGeoPositionCallback* watcher,
 
 bool
 ContentParent::RecvAddGeolocationListener(const IPC::Principal& aPrincipal,
-                                          const bool& aHighAccuracy)
+                                          const bool& aHighAccuracy, const uint16_t& aGpsMode)
 {
 #ifdef MOZ_CHILD_PERMISSIONS
   if (!ContentParent::IgnoreIPCPrincipal()) {
@@ -4668,7 +4671,7 @@ ContentParent::RecvAddGeolocationListener(const IPC::Principal& aPrincipal,
   // To ensure no geolocation updates are skipped, we always force the
   // creation of a new listener.
   RecvRemoveGeolocationListener();
-  mGeolocationWatchID = AddGeolocationListener(this, this, aHighAccuracy);
+  mGeolocationWatchID = AddGeolocationListener(this, this, aHighAccuracy, aGpsMode);
 
   // let the the settings cache know the origin of the new listener
   nsAutoCString origin;
@@ -4705,7 +4708,7 @@ ContentParent::RecvRemoveGeolocationListener()
 }
 
 bool
-ContentParent::RecvSetGeolocationHigherAccuracy(const bool& aEnable)
+ContentParent::RecvSetGeolocationHigherAccuracy(const bool& aEnable, const uint16_t& aGpsMode)
 {
   // This should never be called without a listener already present,
   // so this check allows us to forgo securing privileges.
@@ -4716,10 +4719,9 @@ ContentParent::RecvSetGeolocationHigherAccuracy(const bool& aEnable)
     if (gs) {
       gs->GetWatchOrigin(mGeolocationWatchID, origin);
     }
-
     // remove and recreate a new, high-accuracy listener
     RecvRemoveGeolocationListener();
-    mGeolocationWatchID = AddGeolocationListener(this, this, aEnable);
+    mGeolocationWatchID = AddGeolocationListener(this, this, aEnable, aGpsMode);
 
     // map the new watch ID to the origin
     if (gs) {

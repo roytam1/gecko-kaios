@@ -74,8 +74,8 @@ interface nsIGeolocationProvider : nsISupports {
 
 %{C++
   #if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
-    /* void deleteGpsData (in unsigned short deleteType); */
-    NS_IMETHOD DeleteGpsData(uint16_t deleteType);
+    /* void SetGpsDeleteType (in unsigned short gpsMode); */
+    NS_IMETHOD SetGpsDeleteType(uint16_t gpsMode);
   #endif
 %}
 

@@ -957,9 +957,9 @@ parent:
 
     async PHandlerService();
 
-    async AddGeolocationListener(Principal principal, bool highAccuracy);
+    async AddGeolocationListener(Principal principal, bool highAccuracy, uint16_t gpsMode);
     async RemoveGeolocationListener();
-    async SetGeolocationHigherAccuracy(bool enable);
+    async SetGeolocationHigherAccuracy(bool enable, uint16_t gpsMode);
 
     async ConsoleMessage(nsString message);
     async ScriptError(nsString message, nsString sourceName, nsString sourceLine,
