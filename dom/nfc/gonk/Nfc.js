@@ -850,7 +850,7 @@ Nfc.prototype = {
           return;
         }
 
-        this.createRestartTimer(this.rfState, 1000);
+        this.createRestartTimer(NFC.NFC_RF_STATE_DISCOVERY, 1000);
         break;
       case NfcNotificationType.ENABLETIMEOUT:
         Services.obs.notifyObservers(event, TOPIC_NFCD_UNINITIALIZED, null);
