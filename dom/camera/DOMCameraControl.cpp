@@ -152,7 +152,6 @@ protected:
   virtual ~StartRecordingHelper()
   {
     MOZ_COUNT_DTOR(StartRecordingHelper);
-    mDOMCameraControl->OnCreatedFileDescriptor(mState);
   }
 
 protected:
@@ -166,6 +165,7 @@ StartRecordingHelper::HandleEvent(nsIDOMEvent* aEvent)
   nsString eventType;
   aEvent->GetType(eventType);
   mState = eventType.EqualsLiteral("success");
+  mDOMCameraControl->OnCreatedFileDescriptor(mState);
   return NS_OK;
 }
 
