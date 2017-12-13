@@ -1030,10 +1030,25 @@ AudioManager::SetForceForUse(int32_t aUsage, int32_t aForce)
   status_t status = AudioSystem::setForceUse(
                       (audio_policy_force_use_t)aUsage,
                       (audio_policy_forced_cfg_t)aForce);
-#if ANDROID_VERSION < 21
+
+  bool enableRadio = false;
+  GetFmRadioAudioEnabled(&enableRadio);
+#if ANDROID_VERSION >= 21
+  // AudioPortListUpdate will trigger only when there is a device change(adding or removing)
+  // SetForcespeaker() only switch between devices (ex: FM switch to speaker)
+  // so still have to manually call it.
+  if(enableRadio == true && aUsage == AUDIO_POLICY_FORCE_FOR_MEDIA){
+    android::sp<GonkAudioPortCallback> callback = new GonkAudioPortCallback();
+    callback->onAudioPortListUpdate();
+  }
+#else
   // Manually call it, since AudioPortCallback is not supported.
   // Current volumes might be changed by updating active devices in android
   // AudioPolicyManager.
+  // update cache incase there is a device change for FM
+  if(enableRadio == true && aUsage == AUDIO_POLICY_FORCE_FOR_MEDIA){
+    UpdateCachedActiveDevicesForStreams();
+  }
   MaybeUpdateVolumeSettingToDatabase();
 #endif
   return status ? NS_ERROR_FAILURE : NS_OK;
