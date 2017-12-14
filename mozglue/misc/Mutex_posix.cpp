@@ -27,7 +27,9 @@ mozilla::detail::MutexImpl::MutexImpl()
 {
   pthread_mutexattr_t* attrp = nullptr;
 
-#ifdef DEBUG
+  // When turning on Nuwa, do not use these check. For more information, see
+  // https://bugzilla.kaiostech.com/show_bug.cgi?id=29285
+#if defined(DEBUG) && !defined(MOZ_NUWA_PROCESS)
   pthread_mutexattr_t attr;
 
   TRY_CALL_PTHREADS(pthread_mutexattr_init(&attr),
@@ -42,7 +44,7 @@ mozilla::detail::MutexImpl::MutexImpl()
   TRY_CALL_PTHREADS(pthread_mutex_init(&platformData()->ptMutex, attrp),
                     "mozilla::detail::MutexImpl::MutexImpl: pthread_mutex_init failed");
 
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(MOZ_NUWA_PROCESS)
   TRY_CALL_PTHREADS(pthread_mutexattr_destroy(&attr),
                     "mozilla::detail::MutexImpl::MutexImpl: pthread_mutexattr_destroy failed");
 #endif
