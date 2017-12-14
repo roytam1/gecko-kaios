@@ -239,6 +239,7 @@ struct DeviceStorageLocationInfo {
   nsString sdcard;
   nsString apps;
   nsString crashes;
+  nsString appsstorage;
 };
 
 struct FMRadioRequestEnableParams

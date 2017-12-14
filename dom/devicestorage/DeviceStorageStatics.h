@@ -49,6 +49,7 @@ public:
   static already_AddRefed<nsIFile> GetVideosDir();
   static already_AddRefed<nsIFile> GetMusicDir();
   static already_AddRefed<nsIFile> GetSdcardDir();
+  static already_AddRefed<nsIFile> GetAppsStorageDir();
 
 private:
   enum DeviceStorageType {
@@ -59,6 +60,7 @@ private:
     TYPE_MUSIC,
     TYPE_SDCARD,
     TYPE_OVERRIDE,
+    TYPE_APPSSTORAGE,
     TYPE_COUNT
   };
 

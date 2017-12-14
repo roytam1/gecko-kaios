@@ -16,12 +16,13 @@
 #include "mozilla/dom/Directory.h"
 #include "nsWeakReference.h"
 
-#define DEVICESTORAGE_PICTURES   "pictures"
-#define DEVICESTORAGE_VIDEOS     "videos"
-#define DEVICESTORAGE_MUSIC      "music"
-#define DEVICESTORAGE_APPS       "apps"
-#define DEVICESTORAGE_SDCARD     "sdcard"
-#define DEVICESTORAGE_CRASHES    "crashes"
+#define DEVICESTORAGE_PICTURES     "pictures"
+#define DEVICESTORAGE_VIDEOS       "videos"
+#define DEVICESTORAGE_MUSIC        "music"
+#define DEVICESTORAGE_APPS         "apps"
+#define DEVICESTORAGE_SDCARD       "sdcard"
+#define DEVICESTORAGE_CRASHES      "crashes"
+#define DEVICESTORAGE_APPS_STORAGE "apps-storage"
 
 class nsIInputStream;
 class nsIOutputStream;
