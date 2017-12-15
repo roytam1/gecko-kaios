@@ -1248,6 +1248,9 @@ pref("apps.token.uri", "https://api.prod.kaiostech.com/v3.0/applications/g24GwOP
 // The secret API key of KaiOS apps service
 pref("apps.authorization.key", "%KAIOS_APPS_API_KEY%");
 
+// Enable navigator.kaiauth - the AuthorizationManager of KaiOS service
+pref("dom.kaiauth.enabled", true);
+
 // Disable Gecko Telemetry
 pref("toolkit.telemetry.enabled", false);
 

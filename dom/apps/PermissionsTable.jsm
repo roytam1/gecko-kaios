@@ -580,6 +580,11 @@ this.PermissionsTable =  { geolocation: {
                              app: DENY_ACTION,
                              privileged: DENY_ACTION,
                              certified: ALLOW_ACTION
+                           },
+                           "cloud-authorization": {
+                             app: DENY_ACTION,
+                             privileged: DENY_ACTION,
+                             certified: ALLOW_ACTION
                            }
                          };
 

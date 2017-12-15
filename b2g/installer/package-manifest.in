@@ -654,6 +654,9 @@
 @RESPATH@/components/nsIDService.js
 @RESPATH@/components/Identity.manifest
 
+@RESPATH@/components/AuthorizationManager.js
+@RESPATH@/components/AuthorizationManager.manifest
+
 @RESPATH@/components/SystemMessageInternal.js
 @RESPATH@/components/SystemMessageManager.js
 @RESPATH@/components/SystemMessageCache.js

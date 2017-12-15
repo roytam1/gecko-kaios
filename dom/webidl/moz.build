@@ -962,6 +962,7 @@ if CONFIG['MOZ_PAY']:
 if CONFIG['MOZ_B2G']:
     WEBIDL_FILES += [
         'Apps.webidl',
+        'AuthorizationManager.webidl',
         'Identity.webidl',
         'MozApplicationEvent.webidl'
     ]
