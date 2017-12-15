@@ -1276,8 +1276,8 @@ pref('dom.battery.test.dummy_thermal_status', false);
 // Turn off update of dummy battery level
 pref('dom.battery.test.dummy_battery_level', false);
 
-// Disable hang monitor, see bug 24699
-pref("hangmonitor.timeout", 0);
+// Enable hang monitor with timeout 30 seconds
+pref("hangmonitor.timeout", 30);
 
 // level 0 means disable log
 pref("hangmonitor.log.level", 1);
