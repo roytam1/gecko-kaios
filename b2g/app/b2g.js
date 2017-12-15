@@ -1242,6 +1242,12 @@ pref("apps.serviceCenter.allowedOrigins", "https://kaios-plus.kaiostech.com,app:
 pref("apps.serviceCenter.devOrigins", "https://api.test.kaiostech.com,https://api.stage.kaiostech.com,https://storage.test.kaiostech.com,https://storage.stage.kaiostech.com,http://storage.test.kaiostech.com,http://storage.stage.kaiostech.com");
 pref("apps.serviceCenter.serverURL", "https://api.kaiostech.com/v2.0/apps?cu=%DEVICE_REF%");
 
+// The end point to get a access token for KaiOS apps service
+pref("apps.token.uri", "https://api.prod.kaiostech.com/v3.0/applications/g24GwOPYdvXRypcIMAgS/tokens");
+
+// The secret API key of KaiOS apps service
+pref("apps.authorization.key", "%KAIOS_APPS_API_KEY%");
+
 // Disable Gecko Telemetry
 pref("toolkit.telemetry.enabled", false);
 

@@ -31,6 +31,12 @@ function buildIDToTime() {
 
 const PLATFORM_BUILD_ID_TIME = buildIDToTime();
 
+// Shift 25 seconds earlier as a buffer of expiration time
+const TOKEN_EXPIRATION_TIME_SHIFT_IN_MS = -25000;
+
+// Define a cooldown to avoid requesting for token in a short period of time
+const TOKEN_REFRESH_COOLDOWN_IN_MS = 4000;
+
 this.EXPORTED_SYMBOLS = ["DOMApplicationRegistry"];
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
@@ -44,6 +50,7 @@ Cu.import("resource://gre/modules/Task.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
 Cu.import("resource://gre/modules/MessageBroadcaster.jsm");
 Cu.import("resource://gre/modules/KaiAccounts.jsm");
+Cu.import("resource://gre/modules/DeviceUtils.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "TrustedRootCertificate",
   "resource://gre/modules/StoreTrustAnchor.jsm");
@@ -77,6 +84,9 @@ XPCOMUtils.defineLazyModuleGetter(this, "Messaging",
 
 XPCOMUtils.defineLazyModuleGetter(this, "CryptoUtils",
                                   "resource://services-crypto/utils.js");
+
+XPCOMUtils.defineLazyModuleGetter(this, 'setTimeout', // jshint ignore:line
+                                  'resource://gre/modules/Timer.jsm');
 
 #ifdef MOZ_WIDGET_GONK
 XPCOMUtils.defineLazyGetter(this, "libcutils", function() {
@@ -242,6 +252,19 @@ this.DOMApplicationRegistry = {
                                         this.getFullAppByManifestURL.bind(this));
 
     MessageBroadcaster.init(this.getAppByManifestURL);
+
+    // the cache of restricted access token
+    this.cachedRestrictedToken = null;
+
+    // whether the Hawk credential is available
+    this.hasHawkCredential = false;
+
+    // the expiration date of restricted access token
+    // the number of milliseconds elapsed since January 1, 1970 UTC
+    this.tokenExpirationDate = 0;
+
+    // whether this module is currently fetching for restricted access token
+    this.isFetchingToken = false;
   },
 
   // loads the current registry, that could be empty on first run.
@@ -2380,6 +2403,11 @@ this.DOMApplicationRegistry = {
   _hawkHeader: function(url){
     let deferred = Promise.defer();
     kaiAccounts.getAssertion().then( assertion => {
+      if (assertion == null) {
+        deferred.reject("no signed-in user");
+        return;
+      }
+
       let authHeader = [];
       let hawkCredentials = {
         id: assertion.kid,
@@ -2391,9 +2419,15 @@ this.DOMApplicationRegistry = {
       let hawkHeader = CryptoUtils.computeHAWK(uri, "GET", options);
       authHeader = { 'name' : 'Authorization', 'value' : hawkHeader.field };
       deferred.resolve(authHeader);
+    }, () => {
+      deferred.reject("no signed-in user");
     });
 
     return deferred.promise;
+  },
+
+  _postponePromise: function(time) {
+    return new Promise((resolve) => setTimeout(resolve, time));
   },
 
   _prepareKaiHeaders: function(url){
@@ -2427,8 +2461,53 @@ this.DOMApplicationRegistry = {
     kaiHeaders.push({ 'name' : KAIAPIDEVICEINFO, 'value' : formatDeviceInfoHeader(imei, curef) });
 
     this._hawkHeader(url).then( hawkHeader => {
+      this.hasHawkCredential = true;
       kaiHeaders.push(hawkHeader);
       deferred.resolve(kaiHeaders);
+    }, () => {
+      this.hasHawkCredential = false;
+      let delayPromise = Promise.resolve();
+      if (this.isFetchingToken) {
+        // avoid to send multiple token requests in a short period of time
+        delayPromise = this._postponePromise(TOKEN_REFRESH_COOLDOWN_IN_MS);
+      }
+
+      delayPromise.then(() => {
+        if (this.tokenExpirationDate > Date.now()) {
+          // use cached token
+          kaiHeaders.push({ 'name' : 'Authorization', 'value' : 'Bearer ' + this.cachedRestrictedToken });
+          deferred.resolve(kaiHeaders);
+        } else {
+          this.isFetchingToken = true;
+          let uri, apiKeyName;
+          try {
+            uri = Services.prefs.getCharPref("apps.token.uri");
+            apiKeyName = Services.prefs.getCharPref("apps.authorization.key");
+          } catch(e) {
+            debug("can't find apps.token.uri and apps.authorization.key");
+            deferred.resolve(kaiHeaders)
+            return;
+          }
+
+          DeviceUtils.fetchAccessToken(uri, apiKeyName).then((reponse) => {
+            let expires_in = 0;
+            if ('expires_in' in reponse) {
+              expires_in = reponse.expires_in * 1000;
+              expires_in += TOKEN_EXPIRATION_TIME_SHIFT_IN_MS;
+            }
+            this.tokenExpirationDate = expires_in + Date.now();
+            this.cachedRestrictedToken = reponse.access_token;
+
+            kaiHeaders.push({ 'name' : 'Authorization', 'value' : 'Bearer ' + reponse.access_token });
+            deferred.resolve(kaiHeaders);
+            this.isFetchingToken = false;
+          }, (errorStatus) => {
+            debug("fetchAccessToken failed with status: " + errorStatus);
+            deferred.resolve(kaiHeaders);
+            this.isFetchingToken = false;
+          }); // end of fetchAccessToken
+        }
+      }); // end of delayPromise
     });
 
     return deferred.promise;
@@ -3614,6 +3693,12 @@ this.DOMApplicationRegistry = {
       debug("Add If-None-Match header: " + aOldApp.packageEtag);
       requestChannel.setRequestHeader("If-None-Match", aOldApp.packageEtag,
                                       false);
+    }
+
+    // add Authorization header for restricted token
+    if (this.cachedRestrictedToken && !this.hasHawkCredential) {
+      requestChannel.setRequestHeader(
+        "Authorization", 'Bearer ' + this.cachedRestrictedToken, false);
     }
 
     let lastProgressTime = 0;
