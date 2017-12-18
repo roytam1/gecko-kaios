@@ -417,6 +417,10 @@ AudioManager::UpdateHeadsetConnectionState(hal::SwitchState aState)
     UpdateDeviceConnectionState(true,
                                 AUDIO_DEVICE_OUT_WIRED_HEADSET,
                                 NS_LITERAL_CSTRING(""));
+    UpdateDeviceConnectionState(true,
+                                AUDIO_DEVICE_IN_WIRED_HEADSET,
+                                NS_LITERAL_CSTRING(""));
+
   } else if (aState == hal::SWITCH_STATE_HEADPHONE) {
     UpdateDeviceConnectionState(true,
                                 AUDIO_DEVICE_OUT_WIRED_HEADPHONE,
@@ -425,6 +429,9 @@ AudioManager::UpdateHeadsetConnectionState(hal::SwitchState aState)
     if (headsetConnected) {
       UpdateDeviceConnectionState(false,
                                   AUDIO_DEVICE_OUT_WIRED_HEADSET,
+                                  NS_LITERAL_CSTRING(""));
+      UpdateDeviceConnectionState(false,
+                                  AUDIO_DEVICE_IN_WIRED_HEADSET,
                                   NS_LITERAL_CSTRING(""));
     }
     if (headphoneConnected) {
