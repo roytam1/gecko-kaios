@@ -26,7 +26,10 @@ static const uint8_t WAVE[4] = {'W', 'A', 'V', 'E'};
 static const uint16_t RIFF_CHUNK_SIZE = 12;
 static const uint16_t CHUNK_HEAD_SIZE = 8;
 static const uint16_t FMT_CHUNK_MIN_SIZE = 16;
-static const uint16_t DATA_CHUNK_SIZE = 768;
+// double the chunk size from 768.
+// When playing WAV with 4 or 6 channels, the small chunk size causes audio
+// buffer underrun.
+static const uint16_t DATA_CHUNK_SIZE = 1536;
 
 class WAVTrackDemuxer;
 
