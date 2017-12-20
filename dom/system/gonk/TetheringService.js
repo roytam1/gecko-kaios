@@ -799,6 +799,7 @@ TetheringService.prototype = {
   },
 
   usbTetheringResultReport: function(aEnable, aError) {
+    let self = this;
     this._usbTetheringRequestCount--;
 
     let settingsLock = gSettingsService.createLock();
@@ -808,6 +809,12 @@ TetheringService.prototype = {
 
     // Disable tethering settings when fail to enable it.
     if (aError) {
+      if (aError == "enableUsbRndisResult failure") {
+        gNetworkService.enableUsbRndis(false, function() {
+          self.setUSBTethering(false,
+                               self._tetheringInterface[TETHERING_TYPE_USB], null);
+        });
+      }
       this.tetheringSettings[SETTINGS_USB_ENABLED] = false;
       settingsLock.set("tethering.usb.enabled", false, null);
       // Skip others request when we found an error.
