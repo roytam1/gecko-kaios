@@ -6,8 +6,8 @@
  * All other trademarks are the property of their respective owners.
  */
 
-#ifndef mozilla_dom_xt9connect_IMEConnect_h
-#define mozilla_dom_xt9connect_IMEConnect_h
+#ifndef mozilla_dom_kikaconnect_IMEConnect_h
+#define mozilla_dom_kikaconnect_IMEConnect_h
 
 #include "nsCOMPtr.h"
 #include "nsPIDOMWindow.h"
@@ -67,8 +67,9 @@ extern "C" {
 
 #define KIKA_OK                   0
 #define KIKA_NOT_OK              -1
+#define CANDIDATE_MAX_COL        54
 #define CANDIDATE_MAX_ROW        20
-#define CANDIDATE_MAX_COL        40
+#define CANDIDATE_MAX_ROW_ZH     80
 
 #define IQQI_IME_ID_MASK       0xFF
 #define KEYBOARD_ID_MASK     0xFF00
@@ -259,6 +260,13 @@ const string DICT_TABLE[eImeEnd] = {
   ""
 };
 
+enum ESelectionBarId {
+  eSelectionBarStart = 0,
+  eSelectionBarWord,
+  eSelectionBarGroup,
+  eSelectionBarEnd
+};
+
 enum EKeyboardId {
   eKeyboardStart  = 0,
   eKeyboardT9     = 1,
@@ -352,10 +360,14 @@ public:
   static uint32_t SetLanguage(const uint32_t aLid);
   static nsString mCandidateWord;
   static uint16_t mTotalWord;
+  static uint16_t mTotalGroup;
   static uint16_t mActiveWordIndex;
+  static uint16_t mActiveGroupIndex;
+  static uint8_t  mActiveSelectionBar;
   static uint32_t mCurrentLID;
   static vector<wchar_t> mKeyBuff;
   static CandidateCH mCandVoca;
+  static CandidateCH mCandGroup;
 
 private:
   ~IMEConnect();
@@ -365,5 +377,5 @@ private:
 } // namespace dom
 } // namespace mozilla
 
-#endif // mozilla_dom_xt9connect_IMEConnect_h
+#endif // mozilla_dom_kikaconnect_IMEConnect_h
 
