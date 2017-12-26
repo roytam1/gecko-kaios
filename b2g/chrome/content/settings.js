@@ -185,43 +185,6 @@ function delayed_start() {
   });
 })();
 
-// ================ Hash device identifier ================
-(function setImeiHash() {
-  if (!('mozMobileConnections' in navigator)) {
-    dump('There is no mozMobileConnections!\n');
-    return;
-  }
-
-  let imei_hash;
-  try {
-    imei_hash = Services.prefs.getCharPref('app.update.imei_hash');
-  } catch(e) {}
-
-  function genHashID(imei) {
-    let hash_id = AppsUtils.computeHash(imei, "SHA1").substr(0,16);
-    Services.prefs.setCharPref("app.update.imei_hash", hash_id);
-    if (navigator.mozSettings) {
-      navigator.mozSettings.createLock().set({ "deviceinfo.hash_id": hash_id });
-    }
-  }
-
-  // If imei_hash does't exist, generate a new one.
-  if (!imei_hash) {
-    let mobile = gMobileConnectionService.getItemByServiceId(0);
-    if (mobile && mobile.deviceIdentities) {
-       genHashID(mobile.deviceIdentities.imei);
-    } else {
-      let conn = navigator.mozMobileConnections[0];
-      conn.addEventListener('radiostatechange', function onradiostatechange() {
-        if (mobile && mobile.deviceIdentities) {
-          conn.removeEventListener('radiostatechange', onradiostatechange);
-          genHashID(mobile.deviceIdentities.imei);
-        }
-      });
-    }
-  }
-})();
-
 //=================== DeviceInfo ====================
 Components.utils.import('resource://gre/modules/XPCOMUtils.jsm');
 Components.utils.import('resource://gre/modules/ctypes.jsm');
