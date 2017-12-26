@@ -765,18 +765,30 @@ pref("hal.processPriorityManager.gonk.FOREGROUND_HIGH.KillUnderKB", 5120);
 pref("hal.processPriorityManager.gonk.FOREGROUND_HIGH.cgroup", "apps/critical");
 
 pref("hal.processPriorityManager.gonk.FOREGROUND.OomScoreAdjust", 134);
+#ifdef KAIOS_256MB_SUPPORT
 pref("hal.processPriorityManager.gonk.FOREGROUND.KillUnderKB", 6144);
+#else
+pref("hal.processPriorityManager.gonk.FOREGROUND.KillUnderKB", 20480);
+#endif
 pref("hal.processPriorityManager.gonk.FOREGROUND.cgroup", "apps");
 
 pref("hal.processPriorityManager.gonk.FOREGROUND_KEYBOARD.OomScoreAdjust", 200);
 pref("hal.processPriorityManager.gonk.FOREGROUND_KEYBOARD.cgroup", "apps");
 
 pref("hal.processPriorityManager.gonk.BACKGROUND_PERCEIVABLE.OomScoreAdjust", 400);
+#ifdef KAIOS_256MB_SUPPORT
 pref("hal.processPriorityManager.gonk.BACKGROUND_PERCEIVABLE.KillUnderKB", 8192);
+#else
+pref("hal.processPriorityManager.gonk.BACKGROUND_PERCEIVABLE.KillUnderKB", 40960);
+#endif
 pref("hal.processPriorityManager.gonk.BACKGROUND_PERCEIVABLE.cgroup", "apps/bg_perceivable");
 
 pref("hal.processPriorityManager.gonk.BACKGROUND.OomScoreAdjust", 667);
+#ifdef KAIOS_256MB_SUPPORT
 pref("hal.processPriorityManager.gonk.BACKGROUND.KillUnderKB", 20480);
+#else
+pref("hal.processPriorityManager.gonk.BACKGROUND.KillUnderKB", 65536);
+#endif
 pref("hal.processPriorityManager.gonk.BACKGROUND.cgroup", "apps/bg_non_interactive");
 
 // Control group definitions (i.e., CPU priority groups) for B2G processes.
@@ -837,7 +849,7 @@ pref("gonk.notifyHardLowMemUnderKB", 14336);
 #ifdef KAIOS_256MB_SUPPORT
 pref("gonk.notifySoftLowMemUnderKB", 14336); //kilobytes
 #else
-pref("gonk.notifySoftLowMemUnderKB", 43008);
+pref("gonk.notifySoftLowMemUnderKB", 30720);
 #endif
 
 // We wait this long before polling the memory-pressure fd after seeing one
