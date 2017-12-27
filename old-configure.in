@@ -7531,14 +7531,6 @@ else if test "$PRODUCT_MANUFACTURER" = "SPRD" ; then
   fi
 fi
 
-if test "$HAVE_KAIOS_256MB_SUPPORT" = "true" ; then
-  KAIOS_256MB_SUPPORT=1
-else
-  KAIOS_256MB_SUPPORT=
-fi
-AC_SUBST(KAIOS_256MB_SUPPORT)
-AC_DEFINE(KAIOS_256MB_SUPPORT)
-
 # Avoid using obsolete NSPR features
 AC_DEFINE(NO_NSPR_10_SUPPORT)
 
