@@ -88,6 +88,8 @@ XPCOMUtils.defineLazyModuleGetter(this, "CryptoUtils",
 XPCOMUtils.defineLazyModuleGetter(this, 'setTimeout', // jshint ignore:line
                                   'resource://gre/modules/Timer.jsm');
 
+XPCOMUtils.defineLazyModuleGetter(this, "CommonUtils",
+                                  "resource://services-common/utils.js");
 #ifdef MOZ_WIDGET_GONK
 XPCOMUtils.defineLazyGetter(this, "libcutils", function() {
   Cu.import("resource://gre/modules/systemlibs.js");
@@ -253,11 +255,11 @@ this.DOMApplicationRegistry = {
 
     MessageBroadcaster.init(this.getAppByManifestURL);
 
+    // the cache of Hawk credentials
+    this.cachedHawkCredentials = null;
+
     // the cache of restricted access token
     this.cachedRestrictedToken = null;
-
-    // whether the Hawk credential is available
-    this.hasHawkCredential = false;
 
     // the expiration date of restricted access token
     // the number of milliseconds elapsed since January 1, 1970 UTC
@@ -2404,22 +2406,27 @@ this.DOMApplicationRegistry = {
     let deferred = Promise.defer();
     kaiAccounts.getAssertion().then( assertion => {
       if (assertion == null) {
+        this.cachedHawkCredentials = null;
         deferred.reject("no signed-in user");
         return;
       }
 
+      assertion = JSON.parse(assertion);
       let authHeader = [];
       let hawkCredentials = {
         id: assertion.kid,
-        key: assertion.mac_key,
+        key: CommonUtils.safeAtoB(assertion.mac_key),
         algorithm: 'sha256'
       };
+      this.cachedHawkCredentials = hawkCredentials;
+
       let options = { credentials : hawkCredentials };
       let uri = Services.io.newURI(url, null, null);
       let hawkHeader = CryptoUtils.computeHAWK(uri, "GET", options);
       authHeader = { 'name' : 'Authorization', 'value' : hawkHeader.field };
       deferred.resolve(authHeader);
     }, () => {
+      this.cachedHawkCredentials = null;
       deferred.reject("no signed-in user");
     });
 
@@ -2461,11 +2468,9 @@ this.DOMApplicationRegistry = {
     kaiHeaders.push({ 'name' : KAIAPIDEVICEINFO, 'value' : formatDeviceInfoHeader(imei, curef) });
 
     this._hawkHeader(url).then( hawkHeader => {
-      this.hasHawkCredential = true;
       kaiHeaders.push(hawkHeader);
       deferred.resolve(kaiHeaders);
     }, () => {
-      this.hasHawkCredential = false;
       let delayPromise = Promise.resolve();
       if (this.isFetchingToken) {
         // avoid to send multiple token requests in a short period of time
@@ -3695,8 +3700,14 @@ this.DOMApplicationRegistry = {
                                       false);
     }
 
-    // add Authorization header for restricted token
-    if (this.cachedRestrictedToken && !this.hasHawkCredential) {
+    if (this.cachedHawkCredentials) {
+      // add Authorization header for Hawk
+      let options = { credentials : this.cachedHawkCredentials };
+      let uri = Services.io.newURI(aFullPackagePath, null, null);
+      let hawkHeader = CryptoUtils.computeHAWK(uri, "GET", options);
+      requestChannel.setRequestHeader("Authorization", hawkHeader.field, false);
+    } else if (this.cachedRestrictedToken) {
+      // add Authorization header for restricted token
       requestChannel.setRequestHeader(
         "Authorization", 'Bearer ' + this.cachedRestrictedToken, false);
     }
