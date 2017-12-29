@@ -244,7 +244,9 @@ class SocketConnectClientFdTask final
   {
     MOZ_ASSERT(!GetIO()->IsConsumerThread());
 
-    GetIO()->ConnectClientFd();
+    if (!IsCanceled()) {
+      GetIO()->ConnectClientFd();
+    }
   }
 };
 
@@ -418,9 +420,15 @@ public:
 
   void Run() override
   {
-    MOZ_ASSERT(GetIO()->IsConsumerThread());
+    DroidSocketImpl* io = SocketTask<DroidSocketImpl>::GetIO();
 
-    GetIO()->mConsumer->Accept(mListenFd, new AcceptResultHandler(GetIO()));
+    MOZ_ASSERT(io->IsConsumerThread());
+
+    if (io->IsShutdownOnConsumerThread()) {
+      BT_LOGD("mConsumer is null, abort from Accept invoking!");
+      return;
+    }
+    io->mConsumer->Accept(mListenFd, new AcceptResultHandler(io));
   }
 
 private:
