@@ -1899,9 +1899,33 @@ BluetoothMapSmsManager::HandleSmsMmsMsgListing(const ObexHeaderSet& aHeader)
   BluetoothService* bs = BluetoothService::Get();
   NS_ENSURE_TRUE_VOID(bs);
 
-  InfallibleTArray<BluetoothNamedValue> data;
+  // Section 5.5.2 "Name", MAP 1.2:
+  // This property shall be used to indicate the folder from which the
+  // Messages-Listing object is to be retrieved. The property shall be
+  // empty in case the desired listing is that of the current folder or
+  // shall be the name of a child folder.
   nsString name;
   aHeader.GetName(name);
+
+  nsString currentFolderPath;
+  mCurrentFolder->GetPath(currentFolderPath);
+
+  // Sanity checks on folder path for enhancing fault tolerance.
+  if (!name.IsEmpty() && currentFolderPath.Find("telecom/msg/") != -1) {
+    BT_WARNING("The target folder of MAP-msg-listing is unsupproted.");
+    // Go up 1 level
+    BluetoothMapFolder* parent = mCurrentFolder->GetParentFolder();
+    if (parent) {
+      mCurrentFolder = parent;
+      mCurrentFolder->GetPath(currentFolderPath);
+    }
+  }
+
+  // Get the absolute path of the folder to be retrieved.
+  name = name.IsEmpty() ? currentFolderPath
+                        : currentFolderPath + NS_LITERAL_STRING("/") + name;
+
+  InfallibleTArray<BluetoothNamedValue> data;
   AppendNamedValue(data, "name", name);
 
   {
@@ -1960,30 +1984,8 @@ BluetoothMapSmsManager::HandleSmsMmsGetMessage(const ObexHeaderSet& aHeader)
   BluetoothService* bs = BluetoothService::Get();
   NS_ENSURE_TRUE_VOID(bs);
 
-  // Section 5.5.2 "Name", MAP 1.2:
-  // This property shall be used to indicate the folder from which the
-  // Messages-Listing object is to be retrieved. The property shall be
-  // empty in case the desired listing is that of the current folder or
-  // shall be the name of a child folder.
   nsString name;
   aHeader.GetName(name);
-  nsString currentFolderPath;
-  mCurrentFolder->GetPath(currentFolderPath);
-
-  // Sanity checks on folder path for enhancing fault tolerance.
-  if (!name.IsEmpty() && currentFolderPath.Find("telecom/msg/") != -1) {
-    BT_WARNING("The target folder of MAP-msg-listing is unsupproted.");
-    // Go up 1 level
-    BluetoothMapFolder* parent = mCurrentFolder->GetParentFolder();
-    if (parent) {
-      mCurrentFolder = parent;
-      mCurrentFolder->GetPath(currentFolderPath);
-    }
-  }
-
-  // Get the absolute path of the folder to be retrieved.
-  name = name.IsEmpty() ? currentFolderPath
-                        : currentFolderPath + NS_LITERAL_STRING("/") + name;
 
   InfallibleTArray<BluetoothNamedValue> data;
   AppendNamedValue(data, "name", name);
