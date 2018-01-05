@@ -7,6 +7,24 @@
  * All other trademarks are the property of their respective owners.
  */
 
+dictionary HawkRestrictedToken
+{
+  // restricted access token stored as JWT (JSON Web Token)
+  DOMString   accessToken = "";
+  // type of this token, e.g. "hawk", bearer"
+  DOMString   tokenType = "";
+  // scope of this token, e.g. "core"
+  DOMString   scope = "";
+  // the key id of Hawk
+  DOMString   kid = "";
+  // the key to be used and matching the kid above, usually encoded in base64.
+  DOMString   macKey = "";
+  // the message authentication code (MAC) algorithm of Hawk,
+  DOMString   macAlgorithm = "hmac-sha-256";
+  // time to live of the current credential (in seconds)
+  long long   expiresInSeconds = -1;
+};
+
 [JSImplementation="@mozilla.org/kaiauth/authorization-manager;1",
  NoInterfaceObject,
  NavigatorProperty="kaiAuth",
@@ -14,15 +32,15 @@
  Pref="dom.kaiauth.enabled"]
 interface AuthorizationManager {
   /**
-   * Get a restricted access token from cloud server via HTTPS.
+   * Get a Hawk restricted token from cloud server via HTTPS.
    *
    * @param type
    *        Specify the cloud service you're asking for authorization
    * @return A promise object.
-   *  Resolve params: a DOMString represents an access token
+   *  Resolve params: a HawkRestrictedToken object represents an access token
    *  Reject params:  a integer represents HTTP status code
    */
-  Promise<DOMString> getRestrictedToken(KaiServiceType type);
+  Promise<HawkRestrictedToken> getRestrictedToken(KaiServiceType type);
 };
 
 /**
