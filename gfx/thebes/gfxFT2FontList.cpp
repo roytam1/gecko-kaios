@@ -220,12 +220,10 @@ FT2FontEntry::~FT2FontEntry()
     // Do nothing for mFTFace here since FTFontDestroyFunc is called by cairo.
     mFTFace = nullptr;
 
-#ifndef ANDROID
     if (mFontFace) {
         cairo_font_face_destroy(mFontFace);
         mFontFace = nullptr;
     }
-#endif
 }
 
 gfxFont*

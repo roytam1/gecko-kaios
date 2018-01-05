@@ -338,7 +338,7 @@ slim_hidden_def (cairo_scaled_font_status);
 /* This defines the size of the holdover array ... that is, the number
  * of scaled fonts we keep around even when not otherwise referenced
  */
-#define CAIRO_SCALED_FONT_MAX_HOLDOVERS 256
+#define CAIRO_SCALED_FONT_MAX_HOLDOVERS 24
 
 typedef struct _cairo_scaled_font_map {
     cairo_scaled_font_t *mru_scaled_font;
