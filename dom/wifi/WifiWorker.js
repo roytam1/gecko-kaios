@@ -242,10 +242,10 @@ var WifiManager = (function() {
        ifname, defaultCountryCode, persistCountryCode} = getStartupPrefs();
 
   let capabilities = {
-    security: ["OPEN", "WEP", "WPA-PSK", "WPA2-PSK", "WPA-EAP"],
+    security: ["OPEN", "WEP", "WPA-PSK", "WPA-EAP", "WAPI-PSK", "WAPI-CERT"],
     eapMethod: ["PEAP", "TTLS", "TLS"],
-    eapPhase2: ["PAP", "MSCHAPV", "MSCHAPV2", "GTC"],
-    certificate: ["SERVER"],
+    eapPhase2: ["PAP", "MSCHAP", "MSCHAPV2", "GTC"],
+    certificate: ["SERVER", "USER"],
     mode: [MODE_ESS]
   };
   if (eapSimSupported) {
@@ -1775,7 +1775,12 @@ var WifiManager = (function() {
     {name: "key_id",        type: "string"},
     {name: "frequency",     type: "integer"},
     {name: "mode",          type: "integer"},
-    {name: "sim_num",       type: "integer"}
+    {name: "sim_num",       type: "integer"},
+    {name: "proto",         type: "string"},
+    {name: "wapi_psk",      type: "string"},
+    {name: "wapi_key_type", type: "integer"},
+    {name: "as_cert_file",  type: "string"},
+    {name: "user_cert_file", type: "string"}
   ];
   // These fields are only handled in IBSS (aka ad-hoc) mode
   var ibssNetworkConfigurationFields = [
@@ -1816,7 +1821,7 @@ var WifiManager = (function() {
     function hasValidProperty(name) {
       return ((name in config) &&
                config[name] != null &&
-               (["password", "psk"].indexOf(name) === -1 ||
+               (["password", "psk", "wapi_psk"].indexOf(name) === -1 ||
                 wepKeyList.indexOf(name) === -1 ||
                 config[name] !== '*'));
     }
@@ -2234,6 +2239,8 @@ function getNetworkKey(network)
     //   .security[]     : "WPA-PSK" for WPA-PSK
     //                     "WPA-EAP" for WPA-EAP
     //                     "WEP" for WEP
+    //                     "WAPI-PSK" for WAPI-PSK
+    //                     "WAPI-CERT" for WAPI-CERT
     //                     "" for OPEN
     //   other keys
     // }
@@ -2253,6 +2260,12 @@ function getNetworkKey(network)
       } else if (security[j] === "WEP") {
         encryption = "WEP";
         break;
+      } else if (security[j] === "WAPI-PSK") {
+        encryption = "WAPI-PSK";
+        break;
+      } else if (security[j] === "WAPI-CERT") {
+        encryption = "WAPI-CERT";
+        break;
       }
     }
   } else if ("key_mgmt" in network) {
@@ -2264,6 +2277,8 @@ function getNetworkKey(network)
     //                     "WPA-PSK" for WPA-PSK
     //                     "WPA-EAP" for WPA-EAP
     //                     "NONE" for WEP/OPEN
+    //                     "WAPI-PSK" for WAPI-PSK
+    //                     "WAPI-CERT" for WAPI-CERT
     //   .auth_alg       : Encryption algorithm(WEP mode only)
     //                     "OPEN_SHARED" for WEP
     //   other keys
@@ -2276,6 +2291,10 @@ function getNetworkKey(network)
       encryption = "WPA-PSK";
     } else if (key_mgmt.indexOf("WPA-EAP") != -1) {
       encryption = "WPA-EAP";
+    } else if (key_mgmt == "WAPI-PSK") {
+      encryption = "WAPI-PSK";
+    } else if (key_mgmt == "WAPI-CERT") {
+      encryption = "WAPI-CERT";
     } else if (key_mgmt == "NONE" && auth_alg === "OPEN SHARED") {
       encryption = "WEP";
     }
@@ -2283,7 +2302,7 @@ function getNetworkKey(network)
 
   // ssid here must be dequoted, and it's safer to esacpe it.
   // encryption won't be empty and always be assigned one of the followings :
-  // "OPEN"/"WEP"/"WPA-PSK"/"WPA-EAP".
+  // "OPEN"/"WEP"/"WPA-PSK"/"WPA-EAP"/"WAPI-PSK"/"WAPI-CERT".
   // So for a invalid network object, the returned key will be "OPEN".
   return escape(ssid) + encryption;
 }
@@ -2312,6 +2331,10 @@ function getKeyManagement(flags) {
     types.push("WPA-EAP");
   if (/\[WEP/.test(flags))
     types.push("WEP");
+  if (/\[WAPI-KEY/.test(flags))
+     types.push("WAPI-PSK");
+  if (/\[WAPI-CERT/.test(flags))
+    types.push("WAPI-CERT");
   return types;
 }
 
@@ -2399,7 +2422,11 @@ Network.api = {
   phase2: "rw",
   serverCertificate: "rw",
   userCertificate: "rw",
-  sim_num: "rw"
+  sim_num: "rw",
+  wapi_psk: "rw",
+  pskType: "rw",
+  wapiAsCertificate: "rw",
+  wapiUserCertificate: "rw"
 };
 
 // Note: We never use ScanResult.prototype, so the fact that it's unrelated to
@@ -2623,6 +2650,7 @@ function WifiWorker() {
     var password;
     if (("psk" in net && net.psk) ||
         ("password" in net && net.password) ||
+        ("wapi_psk" in net && net.wapi_psk) ||
         isInWepKeyList(net)) {
       password = "*";
     }
@@ -2647,6 +2675,17 @@ function WifiWorker() {
     if ("client_cert" in net && net.client_cert &&
         net.client_cert.indexOf("keystore://WIFI_USERCERT_" === 0)) {
       pub.userCertificate = net.client_cert.substr(25);
+    }
+    if ("wapi_key_type" in net && net.wapi_key_type) {
+      if (net.wapi_key_type == 1) {
+        pub.pskType = "HEX";
+      }
+    }
+    if ("as_cert_file" in net && net.as_cert_file) {
+      pub.wapiAsCertificate = net.as_cert_file;
+    }
+    if ("user_cert_file" in net && net.user_cert_file) {
+      pub.wapiUserCertificate = net.user_cert_file;
     }
     return pub;
   };
@@ -2703,6 +2742,25 @@ function WifiWorker() {
         }
       }
     }
+
+    if (net.key_mgmt == "WAPI-PSK") {
+      net.proto = configured.proto = "WAPI";
+      if (net.pskType == "HEX") {
+        net.wapi_key_type = 1;
+      }
+    }
+    if (net.key_mgmt == "WAPI-CERT") {
+      net.proto = configured.proto = "WAPI";
+      if (hasValidProperty("wapiAsCertificate")) {
+        net.as_cert_file = quote(net.wapiAsCertificate);
+        delete net.wapiAsCertificate;
+      }
+      if (hasValidProperty("wapiUserCertificate")) {
+        net.user_cert_file = quote(net.wapiUserCertificate);
+        delete net.wapiUserCertificate;
+      }
+    }
+    checkAssign("wapi_psk", true);
 
     checkAssign("psk", true);
     checkAssign("identity", false);
@@ -3934,6 +3992,10 @@ WifiWorker.prototype = {
               result[id] |= Ci.nsIWifiScanResult.WPA_EAP;
             } else if (security[j] === "WEP") {
               result[id] |= Ci.nsIWifiScanResult.WEP;
+            } else if (security[j] === "WAPI-PSK") {
+              result[id] |= Ci.nsIWifiScanResult.WAPI_PSK;
+            } else if (security[j] === "WAPI-CERT") {
+              result[id] |= Ci.nsIWifiScanResult.WAPI_CERT;
             } else {
              result[id] = 0;
             }

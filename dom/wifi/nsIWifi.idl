@@ -6,7 +6,7 @@
 
 interface nsIWifiInfo;
 
-[scriptable, uuid(cf1ac02b-1f39-446e-815b-651ac78d2233)]
+[scriptable, uuid(08bc44c9-76c2-4360-9555-707c9ade90e4)]
 interface nsIWifiScanResult : nsISupports {
     readonly attribute DOMString ssid;
     readonly attribute DOMString bssid;
@@ -14,6 +14,8 @@ interface nsIWifiScanResult : nsISupports {
     const int32_t WPA_PSK = 0x01;
     const int32_t WPA_EAP = 0x02;
     const int32_t WEP = 0x04;
+    const int32_t WAPI_PSK = 0x08;
+    const int32_t WAPI_CERT = 0x10;
     readonly attribute uint32_t capabilities;
 
     /**

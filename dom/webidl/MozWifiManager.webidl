@@ -63,6 +63,10 @@ dictionary NetworkProperties {
   DOMString subjectMatch;
   DOMString userCertificate;
   long sim_num;
+  DOMString wapi_psk;
+  DOMString pskType;
+  DOMString wapiAsCertificate;
+  DOMString wapiUserCertificate;
 };
 
 [Constructor(optional NetworkProperties properties),
@@ -104,6 +108,10 @@ interface MozWifiNetwork {
            attribute DOMString? subjectMatch;
            attribute DOMString? userCertificate;
            attribute long? sim_num;
+           attribute DOMString? wapi_psk;
+           attribute DOMString? pskType;
+           attribute DOMString? wapiAsCertificate;
+           attribute DOMString? wapiUserCertificate;
 };
 
 [JSImplementation="@mozilla.org/mozwificonnection;1",

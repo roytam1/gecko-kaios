@@ -13,8 +13,9 @@ enum WifiSecurityMethod {
   "OPEN",
   "WEP",
   "WPA-PSK",
-  "WPA2-PSK",
-  "WPA-EAP"
+  "WPA-EAP",
+  "WAPI-PSK",
+  "WAPI-CERT"
 };
 
 enum WifiWpaMethod {
