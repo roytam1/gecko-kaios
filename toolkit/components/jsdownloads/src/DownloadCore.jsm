@@ -509,6 +509,12 @@ this.Download.prototype = {
         this.progress = 100;
         this.succeeded = true;
         this.hasPartialData = false;
+        if (!this.totalBytes && this.target.size) {
+          // totalBytes is zero if Content-Length header is not provided.
+          // Some apps like settings app still need to know dowload size.
+          // Update target size to totalBytes in such cases when succeeded.
+          this.totalBytes = this.target.size;
+        }
       } catch (ex) {
         // Fail with a generic status code on cancellation, so that the caller
         // is forced to actually check the status properties to see if the
