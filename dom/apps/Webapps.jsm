@@ -2402,35 +2402,84 @@ this.DOMApplicationRegistry = {
     });
   },
 
-  _hawkHeader: function(url){
-    let deferred = Promise.defer();
-    kaiAccounts.getAssertion().then( assertion => {
-      if (assertion == null) {
-        this.cachedHawkCredentials = null;
-        deferred.reject("no signed-in user");
-        return;
+  _hawkHeader: function(url) {
+    return kaiAccounts.getAssertion()
+    .then((assertion) => {
+      if (assertion) {
+        debug("have signed-in user, use account assertion");
+        return JSON.parse(assertion);
+      } else {
+        debug("no signed-in user, use restricted token");
+        return this._getRestrictedToken();
       }
-
-      assertion = JSON.parse(assertion);
-      let authHeader = [];
-      let hawkCredentials = {
-        id: assertion.kid,
-        key: CommonUtils.safeAtoB(assertion.mac_key),
-        algorithm: 'sha256'
-      };
-      this.cachedHawkCredentials = hawkCredentials;
-
-      let options = { credentials : hawkCredentials };
-      let uri = Services.io.newURI(url, null, null);
-      let hawkHeader = CryptoUtils.computeHAWK(uri, "GET", options);
-      authHeader = { 'name' : 'Authorization', 'value' : hawkHeader.field };
-      deferred.resolve(authHeader);
-    }, () => {
-      this.cachedHawkCredentials = null;
-      deferred.reject("no signed-in user");
+    // failed to get account assertion, fallback to restricted token
+    }, () => this._getRestrictedToken())
+    .then((credential) => this._computeHawkHeader(credential, url),
+      () => {
+        debug("failed to get credential");
+        this.cachedHawkCredentials = null;
     });
+  },
 
+  _computeHawkHeader: function(credential, url) {
+    let deferred = Promise.defer();
+    let authHeader = [];
+    let hawkCredentials = {
+      id: credential.kid,
+      key: CommonUtils.safeAtoB(credential.mac_key),
+      algorithm: 'sha256'
+    };
+    this.cachedHawkCredentials = hawkCredentials;
+
+    let options = { credentials : hawkCredentials };
+    let uri = Services.io.newURI(url, null, null);
+    let hawkHeader = CryptoUtils.computeHAWK(uri, "GET", options);
+    authHeader = { 'name' : 'Authorization', 'value' : hawkHeader.field };
+    deferred.resolve(authHeader);
     return deferred.promise;
+  },
+
+  _getRestrictedToken: function() {
+    let delayPromise = Promise.resolve();
+    if (this.isFetchingToken) {
+      // avoid to send multiple token requests in a short period of time
+      delayPromise = this._postponePromise(TOKEN_REFRESH_COOLDOWN_IN_MS);
+    }
+
+    return delayPromise.then(() => {
+      if (this.cachedRestrictedToken && this.tokenExpirationDate > Date.now()) {
+        // use cached token
+        return Promise.resolve(this.cachedRestrictedToken);
+      }
+      // fetch restricted token
+      this.isFetchingToken = true;
+      let uri, apiKeyName;
+      try {
+        uri = Services.prefs.getCharPref("apps.token.uri");
+        apiKeyName = Services.prefs.getCharPref("apps.authorization.key");
+      } catch(e) {
+        debug("can't find apps.token.uri and apps.authorization.key");
+        return Promise.reject();
+      }
+      return DeviceUtils.fetchAccessToken(uri, apiKeyName)
+        .then((credential) => {
+          let expires_in = 0;
+          if ('expires_in' in credential) {
+            expires_in = credential.expires_in * 1000;
+            expires_in += TOKEN_EXPIRATION_TIME_SHIFT_IN_MS;
+          }
+          this.cachedRestrictedToken = credential;
+          this.tokenExpirationDate = expires_in + Date.now();
+          this.isFetchingToken = false;
+          return this.cachedRestrictedToken;
+        }, (errorStatus) => {
+          debug("_getRestrictedToken failed with status: " + errorStatus);
+          this.cachedRestrictedToken = null;
+          this.tokenExpirationDate = 0;
+          this.isFetchingToken = false;
+          return Promise.reject();
+        }); // end of fetchAccessToken
+    }); // end of delayPromise
   },
 
   _postponePromise: function(time) {
@@ -2470,50 +2519,7 @@ this.DOMApplicationRegistry = {
     this._hawkHeader(url).then( hawkHeader => {
       kaiHeaders.push(hawkHeader);
       deferred.resolve(kaiHeaders);
-    }, () => {
-      let delayPromise = Promise.resolve();
-      if (this.isFetchingToken) {
-        // avoid to send multiple token requests in a short period of time
-        delayPromise = this._postponePromise(TOKEN_REFRESH_COOLDOWN_IN_MS);
-      }
-
-      delayPromise.then(() => {
-        if (this.tokenExpirationDate > Date.now()) {
-          // use cached token
-          kaiHeaders.push({ 'name' : 'Authorization', 'value' : 'Bearer ' + this.cachedRestrictedToken });
-          deferred.resolve(kaiHeaders);
-        } else {
-          this.isFetchingToken = true;
-          let uri, apiKeyName;
-          try {
-            uri = Services.prefs.getCharPref("apps.token.uri");
-            apiKeyName = Services.prefs.getCharPref("apps.authorization.key");
-          } catch(e) {
-            debug("can't find apps.token.uri and apps.authorization.key");
-            deferred.resolve(kaiHeaders)
-            return;
-          }
-
-          DeviceUtils.fetchAccessToken(uri, apiKeyName).then((reponse) => {
-            let expires_in = 0;
-            if ('expires_in' in reponse) {
-              expires_in = reponse.expires_in * 1000;
-              expires_in += TOKEN_EXPIRATION_TIME_SHIFT_IN_MS;
-            }
-            this.tokenExpirationDate = expires_in + Date.now();
-            this.cachedRestrictedToken = reponse.access_token;
-
-            kaiHeaders.push({ 'name' : 'Authorization', 'value' : 'Bearer ' + reponse.access_token });
-            deferred.resolve(kaiHeaders);
-            this.isFetchingToken = false;
-          }, (errorStatus) => {
-            debug("fetchAccessToken failed with status: " + errorStatus);
-            deferred.resolve(kaiHeaders);
-            this.isFetchingToken = false;
-          }); // end of fetchAccessToken
-        }
-      }); // end of delayPromise
-    });
+    }, () => deferred.reject());
 
     return deferred.promise;
   },
@@ -3706,10 +3712,6 @@ this.DOMApplicationRegistry = {
       let uri = Services.io.newURI(aFullPackagePath, null, null);
       let hawkHeader = CryptoUtils.computeHAWK(uri, "GET", options);
       requestChannel.setRequestHeader("Authorization", hawkHeader.field, false);
-    } else if (this.cachedRestrictedToken) {
-      // add Authorization header for restricted token
-      requestChannel.setRequestHeader(
-        "Authorization", 'Bearer ' + this.cachedRestrictedToken, false);
     }
 
     let lastProgressTime = 0;
