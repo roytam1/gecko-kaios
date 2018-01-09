@@ -851,6 +851,14 @@ nsScreenManagerGonk::Initialize()
         property_get("ro.bootloader", propValue, NULL);
         SLOGI("Bootloader        = %s", propValue);
 
+        nsCString osVersion = NS_LITERAL_CSTRING(MOZ_B2G_OS_NAME " "
+                                                 MOZ_B2G_VERSION);
+        nsCString releaseTag = NS_LITERAL_CSTRING(KAI_RELEASE_TAG);
+        if (!releaseTag.IsEmpty()) {
+            osVersion += NS_LITERAL_CSTRING(" {" KAI_RELEASE_TAG "}");
+        }
+        SLOGI("OS Version        = %s", osVersion.get());
+
         SLOGI("==================================================");
     }
     mScreenOnEvent = new ScreenOnOffEvent(true);

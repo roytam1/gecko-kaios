@@ -342,6 +342,7 @@ def old_configure_options(*options):
     '--with-system-zlib',
     '--with-kaios-geo-api-keyfile',
     '--with-kaios-apps-api-keyfile',
+    '--with-kaios-release-tag',
     '--with-thumb',
     '--with-thumb-interwork',
     '--with-unify-dist',

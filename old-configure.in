@@ -3067,6 +3067,12 @@ if test -n "$WITH_APP_BASENAME" ; then
     MOZ_APP_BASENAME="$WITH_APP_BASENAME"
 fi
 
+# An optional release tag of KaiOS given by release engineer
+MOZ_ARG_WITH_STRING(kaios-release-tag,
+[  --with-kaios-release-tag=tag   sets tag to KAI_RELEASE_TAG],
+  KAI_RELEASE_TAG=$withval)
+AC_DEFINE_UNQUOTED(KAI_RELEASE_TAG,"$KAI_RELEASE_TAG")
+
 # Special cases where we need to AC_DEFINE something. Also a holdover for apps
 # that haven't made a confvars.sh yet. Don't add new stuff here, use
 # MOZ_BUILD_APP.
