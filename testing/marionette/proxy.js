@@ -8,11 +8,16 @@ const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("chrome://marionette/content/error.js");
 Cu.import("chrome://marionette/content/modal.js");
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 this.EXPORTED_SYMBOLS = ["proxy"];
 
 const uuidgen = Cc["@mozilla.org/uuid-generator;1"]
     .getService(Ci.nsIUUIDGenerator);
+
+XPCOMUtils.defineLazyServiceGetter(
+    this, "globalMessageManager", "@mozilla.org/globalmessagemanager;1",
+    "nsIMessageBroadcaster");
 
 // Proxy handler that traps requests to get a property.  Will prioritise
 // properties that exist on the object's own prototype.
@@ -39,13 +44,13 @@ this.proxy = {};
  * passed literally.  The latter specialisation is temporary to achieve
  * backwards compatibility with listener.js.
  *
- * @param {function(): (nsIMessageSender|nsIMessageBroadcaster)} mmFn
- *     Closure function returning the current message manager.
  * @param {function(string, Object, number)} sendAsyncFn
  *     Callback for sending async messages.
+ * @param {function(): browser.Context} browserFn
+ *     Closure that returns the current browsing context.
  */
-proxy.toListener = function(mmFn, sendAsyncFn) {
-  let sender = new proxy.AsyncMessageChannel(mmFn, sendAsyncFn);
+proxy.toListener = function(sendAsyncFn) {
+  let sender = new proxy.AsyncMessageChannel(sendAsyncFn);
   return new Proxy(sender, ownPriorityGetterTrap);
 };
 
@@ -58,18 +63,13 @@ proxy.toListener = function(mmFn, sendAsyncFn) {
  * that gets resolved when the message handler calls {@code .reply(...)}.
  */
 proxy.AsyncMessageChannel = class {
-  constructor(mmFn, sendAsyncFn) {
+  constructor(sendAsyncFn) {
     this.sendAsync = sendAsyncFn;
     // TODO(ato): Bug 1242595
     this.activeMessageId = null;
 
-    this.mmFn_ = mmFn;
     this.listeners_ = new Map();
     this.dialogueObserver_ = null;
-  }
-
-  get mm() {
-    return this.mmFn_();
   }
 
   /**
@@ -223,7 +223,7 @@ proxy.AsyncMessageChannel = class {
       callback(msg);
     };
 
-    this.mm.addMessageListener(path, autoRemover);
+    globalMessageManager.addMessageListener(path, autoRemover);
     this.listeners_.set(path, autoRemover);
   }
 
@@ -233,7 +233,7 @@ proxy.AsyncMessageChannel = class {
     }
 
     let l = this.listeners_.get(path);
-    this.mm.removeMessageListener(path, l);
+    globalMessageManager.removeMessageListener(path, l);
     return this.listeners_.delete(path);
   }
 

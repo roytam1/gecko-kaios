@@ -423,9 +423,7 @@ function deleteSession(msg) {
  *     an empty dictionary.
  */
 function sendToServer(uuid, data = undefined) {
-  let channel = new proxy.AsyncMessageChannel(
-      () => this,
-      sendAsyncMessage.bind(this));
+  let channel = new proxy.AsyncMessageChannel(sendAsyncMessage.bind(this));
   channel.reply(uuid, data);
 }
 

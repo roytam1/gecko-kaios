@@ -155,7 +155,7 @@ this.GeckoDriver = function(appName, device, stopSignal, emulator) {
   };
 
   this.mm = globalMessageManager;
-  this.listener = proxy.toListener(() => this.mm, this.sendAsync.bind(this));
+  this.listener = proxy.toListener(this.sendAsync.bind(this));
 
   // always keep weak reference to current dialogue
   this.dialog = null;
