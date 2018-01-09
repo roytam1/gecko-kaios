@@ -32,14 +32,14 @@ const kInterfaceAddressChangedTopic       = "interface-address-change";
 const kInterfaceDnsInfoTopic              = "interface-dns-info";
 const kRouteChangedTopic                  = "route-change";
 const kNetworkConnectionStateChangedTopic = "network-connection-state-changed";
+const kPrefDefaultServiceId               = "dom.telephony.defaultServiceId";
+const kPrefRilNumRadioInterfaces          = "ril.numRadioInterfaces";
+const NS_PREFBRANCH_PREFCHANGE_TOPIC_ID   = "nsPref:changed";
 
 const MAX_RETRIES_ON_AUTHENTICATION_FAILURE = 1;
 const MAX_SUPPLICANT_LOOP_ITERATIONS = 4;
 const MAX_RETRIES_ON_DHCP_FAILURE = 2;
 const MAX_RETRIES_ON_ASSOCIATION_REJECT = 5;
-
-// Setting DB path for telephony default service id.
-const SETTINGS_TELEPHONY_DEFAULT_SERVICE_ID = "ril.telephony.defaultServiceId";
 
 // Settings DB path for wifi
 const SETTINGS_WIFI_ENABLED            = "wifi.enabled";
@@ -2559,6 +2559,7 @@ function WifiWorker() {
   Services.obs.addObserver(this, kInterfaceDnsInfoTopic, false);
   Services.obs.addObserver(this, kRouteChangedTopic, false);
   Services.obs.addObserver(this, kNetworkConnectionStateChangedTopic, false);
+  Services.prefs.addObserver(kPrefDefaultServiceId, this, false);
 
   this.wantScanResults = [];
 
@@ -2584,6 +2585,10 @@ function WifiWorker() {
   this._reconnectOnDisconnect = false;
   this._listeners = [];
   this.wifiDisableDelayId = null;
+
+  WifiManager.telephonyServiceId = this._getDefaultServiceId();
+  gMobileConnectionService
+    .getItemByServiceId(WifiManager.telephonyServiceId).registerListener(this);
 
   // Create p2pObserver and assign to p2pManager.
   if (WifiManager.p2pSupported()) {
@@ -3243,23 +3248,6 @@ function WifiWorker() {
     }
   };
 
-  var initTelephonyDefaultServiceIdCb = {
-    handle: function handle(aName, aResult) {
-      if (aName !== SETTINGS_TELEPHONY_DEFAULT_SERVICE_ID) {
-        return;
-      }
-      WifiManager.telephonyServiceId = aResult || 0;
-      gMobileConnectionService
-        .getItemByServiceId(WifiManager.telephonyServiceId).registerListener(self);
-    },
-    handleError: function handleError(aErrorMessage) {
-      debug("Error reading the 'SETTINGS_TELEPHONY_DEFAULT_SERVICE_ID'.");
-      WifiManager.telephonyServiceId = 0;
-      gMobileConnectionService
-        .getItemByServiceId(WifiManager.telephonyServiceId).registerListener(self);
-    }
-  };
-
   var initWifiNotifycationCb = {
     handle: function handle(aName, aResult) {
       if (aName !== SETTINGS_WIFI_NOTIFYCATION)
@@ -3280,7 +3268,6 @@ function WifiWorker() {
   lock.get(SETTINGS_WIFI_ENABLED, initWifiEnabledCb);
   lock.get(SETTINGS_WIFI_DEBUG_ENABLED, initWifiDebuggingEnabledCb);
   lock.get(SETTINGS_AIRPLANE_MODE, initAirplaneModeCb);
-  lock.get(SETTINGS_TELEPHONY_DEFAULT_SERVICE_ID, initTelephonyDefaultServiceIdCb);
   lock.get(SETTINGS_WIFI_NOTIFYCATION, initWifiNotifycationCb);
 
   lock.get(SETTINGS_WIFI_SSID, this);
@@ -4671,6 +4658,7 @@ WifiWorker.prototype = {
     Services.obs.removeObserver(this, kInterfaceDnsInfoTopic);
     Services.obs.removeObserver(this, kRouteChangedTopic);
     Services.obs.removeObserver(this, kNetworkConnectionStateChangedTopic);
+    Services.prefs.removeObserver(kPrefDefaultServiceId, this, false);
   },
 
   // TODO: Remove command queue in Bug 1050147.
@@ -4826,6 +4814,17 @@ WifiWorker.prototype = {
     }
   },
 
+  _getDefaultServiceId: function() {
+    let id = Services.prefs.getIntPref(kPrefDefaultServiceId);
+    let numRil = Services.prefs.getIntPref(kPrefRilNumRadioInterfaces);
+
+    if (id >= numRil || id < 0) {
+      id = 0;
+    }
+
+    return id;
+  },
+
   // nsIObserver implementation
   observe: function observe(subject, topic, data) {
     switch (topic) {
@@ -4858,8 +4857,23 @@ WifiWorker.prototype = {
         Services.obs.removeObserver(this, kInterfaceDnsInfoTopic);
         Services.obs.removeObserver(this, kRouteChangedTopic);
         Services.obs.removeObserver(this, kNetworkConnectionStateChangedTopic);
+        Services.prefs.removeObserver(kPrefDefaultServiceId, this, false);
         gMobileConnectionService
           .getItemByServiceId(WifiManager.telephonyServiceId).unregisterListener(this);
+        break;
+
+      case NS_PREFBRANCH_PREFCHANGE_TOPIC_ID:
+        if (data === kPrefDefaultServiceId) {
+          let defaultServiceId = this._getDefaultServiceId();
+          if (defaultServiceId == WifiManager.telephonyServiceId) {
+            return;
+          }
+          gMobileConnectionService
+            .getItemByServiceId(WifiManager.telephonyServiceId).unregisterListener(this);
+          WifiManager.telephonyServiceId = defaultServiceId;
+          gMobileConnectionService
+            .getItemByServiceId(WifiManager.telephonyServiceId).registerListener(this);
+        }
         break;
 
       case kScreenStateChangedTopic:
@@ -4998,15 +5012,6 @@ WifiWorker.prototype = {
           aResult = false;
         DEBUG = aResult;
         updateDebug();
-        break;
-      case SETTINGS_TELEPHONY_DEFAULT_SERVICE_ID:
-        if (WifiManager.telephonyServiceId != aResult) {
-          gMobileConnectionService
-            .getItemByServiceId(WifiManager.telephonyServiceId).unregisterListener(this);
-          WifiManager.telephonyServiceId = aResult;
-          gMobileConnectionService
-            .getItemByServiceId(WifiManager.telephonyServiceId).registerListener(this);
-        }
         break;
       case SETTINGS_AIRPLANE_MODE:
         this._airplaneMode = aResult;
