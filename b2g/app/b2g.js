@@ -1255,7 +1255,7 @@ pref("apps.serviceCenter.devOrigins", "https://api.test.kaiostech.com,https://ap
 pref("apps.serviceCenter.serverURL", "https://api.kaiostech.com/v2.0/apps?cu=%DEVICE_REF%");
 
 // The end point to get a access token for KaiOS apps service
-pref("apps.token.uri", "https://api.prod.kaiostech.com/v3.0/applications/g24GwOPYdvXRypcIMAgS/tokens");
+pref("apps.token.uri", "https://api.kaiostech.com/v3.0/applications/ZW8svGSlaw1ZLCxWZPQA/tokens");
 
 // The secret API key of KaiOS apps service
 pref("apps.authorization.key", "%KAIOS_APPS_API_KEY%");
