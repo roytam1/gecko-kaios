@@ -11,6 +11,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/time.h> // for gettimeofday
 #include <unistd.h>
 
 #include "mozilla/PlatformConditionVariable.h"
