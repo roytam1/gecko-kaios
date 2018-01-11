@@ -4965,10 +4965,9 @@ pref("dom.datacall.enabled", true);
 pref("dom.datacall.enabled", false);
 #endif
 
-// Should be false by default, and enable it when necessary.
-// Besides, this API should be only for sim lock without sim inserted case.
-// Regarding normal sim lock, we still need to go through icc APIs.
-pref("dom.subsidylock.enabled", false);
+// For v2.5, we enable "dom.subsidylock.enabled to true" to support subsidy
+// lock w/o sim case.
+pref("dom.subsidylock.enabled", true);
 
 // DOM Inter-App Communication API.
 pref("dom.inter-app-communication-api.enabled", false);
