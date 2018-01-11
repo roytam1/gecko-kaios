@@ -96,6 +96,7 @@ class BluetoothManager;
 
 #ifdef MOZ_B2G_RIL
 class MobileConnectionArray;
+class SubsidyLockManager;
 #endif
 
 class PowerManager;
@@ -296,6 +297,7 @@ public:
 #endif
 #ifdef MOZ_B2G_RIL
   MobileConnectionArray* GetMozMobileConnections(ErrorResult& aRv);
+  SubsidyLockManager* GetSubsidyLockManager(ErrorResult& aRv);
 #endif // MOZ_B2G_RIL
 #ifdef MOZ_GAMEPAD
   void GetGamepads(nsTArray<RefPtr<Gamepad> >& aGamepads, ErrorResult& aRv);
@@ -429,6 +431,7 @@ private:
   RefPtr<network::Connection> mConnection;
 #ifdef MOZ_B2G_RIL
   RefPtr<MobileConnectionArray> mMobileConnections;
+  RefPtr<SubsidyLockManager> mSubsidyLocks;
 #endif
 #ifdef MOZ_B2G_BT
   RefPtr<bluetooth::BluetoothManager> mBluetooth;

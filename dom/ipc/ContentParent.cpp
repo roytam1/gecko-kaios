@@ -73,6 +73,7 @@
 #include "mozilla/dom/quota/QuotaManagerService.h"
 #include "mozilla/dom/telephony/TelephonyParent.h"
 #include "mozilla/dom/time/DateCacheCleaner.h"
+#include "mozilla/dom/subsidylock/SubsidyLockParent.h"
 #include "mozilla/dom/TVParent.h"
 #include "mozilla/dom/voicemail/VoicemailParent.h"
 #include "mozilla/embedding/printingui/PrintingParent.h"
@@ -304,6 +305,7 @@ using namespace mozilla::dom::mobileconnection;
 using namespace mozilla::dom::mobilemessage;
 using namespace mozilla::dom::telephony;
 using namespace mozilla::dom::voicemail;
+using namespace mozilla::dom::subsidylock;
 using namespace mozilla::media;
 using namespace mozilla::embedding;
 using namespace mozilla::gmp;
@@ -3799,6 +3801,33 @@ ContentParent::DeallocPTestShellParent(PTestShellParent* shell)
 {
   delete shell;
   return true;
+}
+
+PSubsidyLockParent*
+ContentParent::AllocPSubsidyLockParent(const uint32_t& aClientId)
+{
+#ifdef MOZ_B2G_RIL
+  RefPtr<SubsidyLockParent> parent = new SubsidyLockParent(aClientId);
+  // We release this ref in DeallocPSubsidyLockParent().
+  parent->AddRef();
+
+  return parent;
+#else
+  MOZ_CRASH("No support for subsidylock on this platform!");
+#endif
+}
+
+bool
+ContentParent::DeallocPSubsidyLockParent(PSubsidyLockParent* aActor)
+{
+#ifdef MOZ_B2G_RIL
+  // SubsidyLockParent is refcounted, must not be freed manually.
+  static_cast<SubsidyLockParent*>(aActor)->Release();
+  return true;
+#else
+  MOZ_CRASH("No support for subsidylock on this platform!");
+#endif
+
 }
 
 PMobileConnectionParent*

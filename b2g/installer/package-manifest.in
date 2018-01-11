@@ -510,6 +510,8 @@
 @RESPATH@/components/RadioInterfaceLayer.manifest
 @RESPATH@/components/SmsService.js
 @RESPATH@/components/SmsService.manifest
+@RESPATH@/components/SubsidyLockService.js
+@RESPATH@/components/SubsidyLockService.manifest
 #endif
 @RESPATH@/components/DOMDataCallManager.js
 @RESPATH@/components/DOMDataCallManager.manifest

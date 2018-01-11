@@ -103,6 +103,7 @@ DIRS += [
     'messagechannel',
     'promise',
     'smil',
+    'subsidylock',
     'telephony',
     'tv',
     'voicemail',

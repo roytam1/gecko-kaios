@@ -803,6 +803,10 @@ private:
 
   virtual bool DeallocPTestShellParent(PTestShellParent* shell) override;
 
+  virtual PSubsidyLockParent* AllocPSubsidyLockParent(const uint32_t& aClientId) override;
+
+  virtual bool DeallocPSubsidyLockParent(PSubsidyLockParent* aActor) override;
+
   virtual PMobileConnectionParent* AllocPMobileConnectionParent(const uint32_t& aClientId) override;
 
   virtual bool DeallocPMobileConnectionParent(PMobileConnectionParent* aActor) override;

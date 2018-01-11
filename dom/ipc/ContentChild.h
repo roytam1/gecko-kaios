@@ -352,6 +352,15 @@ public:
 
   virtual bool DeallocPTelephonyChild(PTelephonyChild*) override;
 
+  PSubsidyLockChild*
+  SendPSubsidyLockConstructor(PSubsidyLockChild* aActor,
+                              const uint32_t& aClientId);
+
+  virtual PSubsidyLockChild*
+  AllocPSubsidyLockChild(const uint32_t& aClientId) override;
+
+  virtual bool DeallocPSubsidyLockChild(PSubsidyLockChild* aActor) override;
+
   virtual PVoicemailChild* AllocPVoicemailChild() override;
 
   PVoicemailChild* SendPVoicemailConstructor(PVoicemailChild* aActor);

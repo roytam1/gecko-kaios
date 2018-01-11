@@ -49,6 +49,7 @@ include protocol PSharedBufferManager;
 include protocol PSms;
 include protocol PSpeechSynthesis;
 include protocol PStorage;
+include protocol PSubsidyLock;
 include protocol PTelephony;
 include protocol PTestShell;
 include protocol PVoicemail;
@@ -438,6 +439,7 @@ prio(normal upto urgent) sync protocol PContent
     manages PSms;
     manages PSpeechSynthesis;
     manages PStorage;
+    manages PSubsidyLock;
     manages PTelephony;
     manages PTestShell;
     manages PVoicemail;
@@ -876,6 +878,8 @@ parent:
     async PSpeechSynthesis();
 
     prio(urgent) async PStorage();
+
+    async PSubsidyLock(uint32_t clientId);
 
     async PTelephony();
 

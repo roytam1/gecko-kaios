@@ -443,6 +443,8 @@ WEBIDL_FILES = [
     'StorageType.webidl',
     'StyleSheet.webidl',
     'StyleSheetList.webidl',
+    'SubsidyLock.webidl',
+    'SubsidyLockManager.webidl',
     'SubtleCrypto.webidl',
     'SVGAElement.webidl',
     'SVGAltGlyphElement.webidl',

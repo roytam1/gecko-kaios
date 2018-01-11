@@ -1,3 +1,4 @@
+
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -234,6 +235,7 @@ static void Shutdown();
 #include "nsIMobileMessageService.h"
 #include "nsIMobileMessageDatabaseService.h"
 #include "nsIPowerManagerService.h"
+#include "nsISubsidyLockService.h"
 #include "nsIAlarmHalService.h"
 #include "nsIMediaManager.h"
 #include "mozilla/dom/nsMixedContentBlocker.h"
@@ -418,6 +420,8 @@ NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsITelephonyService,
                                          NS_CreateTelephonyService)
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsIVoicemailService,
                                          NS_CreateVoicemailService)
+NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsISubsidyLockService,
+                                         NS_CreateSubsidyLockService)
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsITVService,
                                          TVServiceFactory::AutoCreateTVService)
 NS_GENERIC_FACTORY_CONSTRUCTOR(TVTunerData)
@@ -875,6 +879,7 @@ NS_DEFINE_NAMED_CID(ICC_SERVICE_CID);
 NS_DEFINE_NAMED_CID(MMS_SERVICE_CID);
 NS_DEFINE_NAMED_CID(MOBILE_MESSAGE_SERVICE_CID);
 NS_DEFINE_NAMED_CID(MOBILE_MESSAGE_DATABASE_SERVICE_CID);
+NS_DEFINE_NAMED_CID(NS_SUBSIDY_LOCK_SERVICE_CID);
 NS_DEFINE_NAMED_CID(NS_POWERMANAGERSERVICE_CID);
 NS_DEFINE_NAMED_CID(OSFILECONSTANTSSERVICE_CID);
 NS_DEFINE_NAMED_CID(NS_ALARMHALSERVICE_CID);
@@ -1217,6 +1222,7 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
   { &kTELEPHONY_SERVICE_CID, false, nullptr, nsITelephonyServiceConstructor },
   { &kNS_MOBILE_CONNECTION_SERVICE_CID, false, NULL, nsIMobileConnectionServiceConstructor },
   { &kNS_VOICEMAIL_SERVICE_CID, false, nullptr, nsIVoicemailServiceConstructor },
+  { &kNS_SUBSIDY_LOCK_SERVICE_CID, false, nullptr, nsISubsidyLockServiceConstructor },
   { &kTV_SERVICE_CID, false, nullptr, nsITVServiceConstructor },
   { &kTV_TUNER_DATA_CID, false, nullptr, TVTunerDataConstructor },
   { &kTV_CHANNEL_DATA_CID, false, nullptr, TVChannelDataConstructor },
@@ -1401,6 +1407,7 @@ static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
   { "@mozilla.org/gecko-media-plugin-service;1",  &kGECKO_MEDIA_PLUGIN_SERVICE_CID },
   { NS_MOBILE_CONNECTION_SERVICE_CONTRACTID, &kNS_MOBILE_CONNECTION_SERVICE_CID },
   { NS_VOICEMAIL_SERVICE_CONTRACTID, &kNS_VOICEMAIL_SERVICE_CID },
+  { NS_SUBSIDY_LOCK_SERVICE_CONTRACTID, &kNS_SUBSIDY_LOCK_SERVICE_CID },
 #ifdef MOZ_PRESENTATION
   { PRESENTATION_SERVICE_CONTRACTID, &kPRESENTATION_SERVICE_CID },
   { PRESENTATION_DEVICE_MANAGER_CONTRACTID, &kPRESENTATION_DEVICE_MANAGER_CID },

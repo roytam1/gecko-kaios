@@ -363,6 +363,12 @@ partial interface Navigator {
   [Throws, Pref="dom.telephony.enabled", CheckAnyPermissions="telephony", UnsafeInPrerendering]
   readonly attribute Telephony? mozTelephony;
 };
+
+partial interface Navigator {
+  [Throws, Pref="dom.subsidylock.enabled", CheckAnyPermissions="mobileconnection",
+   AvailableIn="CertifiedApps", UnsafeInPrerendering]
+  readonly attribute SubsidyLockManager? subsidyLockManager;
+};
 #endif // MOZ_B2G_RIL
 
 #ifdef MOZ_GAMEPAD

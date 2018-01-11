@@ -70,6 +70,7 @@
 #endif
 #ifdef MOZ_B2G_RIL
 #include "mozilla/dom/MobileConnectionArray.h"
+#include "mozilla/dom/SubsidyLockManager.h"
 #endif
 #include "nsIIdleObserver.h"
 #include "nsIPermissionManager.h"
@@ -223,6 +224,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Navigator)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mConnection)
 #ifdef MOZ_B2G_RIL
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mMobileConnections)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mSubsidyLocks)
 #endif
 #ifdef MOZ_B2G_BT
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBluetooth)
@@ -362,6 +364,10 @@ Navigator::Invalidate()
 #ifdef MOZ_B2G_RIL
   if (mMobileConnections) {
     mMobileConnections = nullptr;
+  }
+
+  if (mSubsidyLocks) {
+    mSubsidyLocks = nullptr;
   }
 #endif
 
@@ -1830,6 +1836,11 @@ Navigator::HasFeature(const nsAString& aName, ErrorResult& aRv)
       return p.forget();
     }
 
+    if (featureName.EqualsLiteral("Navigator.subsidyLockManager")) {
+      p->MaybeResolve(Preferences::GetBool("dom.subsidylock.enabled"));
+      return p.forget();
+    }
+
     if (featureName.EqualsLiteral("Navigator.mozInputMethod")) {
       p->MaybeResolve(Preferences::GetBool("dom.mozInputMethod.enabled"));
       return p.forget();
@@ -2057,6 +2068,21 @@ Navigator::GetMozMobileConnections(ErrorResult& aRv)
   }
 
   return mMobileConnections;
+}
+
+SubsidyLockManager*
+Navigator::GetSubsidyLockManager(ErrorResult& aRv)
+{
+  if (!mSubsidyLocks) {
+    if (!mWindow) {
+      aRv.Throw(NS_ERROR_UNEXPECTED);
+      return nullptr;
+
+    }
+    mSubsidyLocks = new SubsidyLockManager(mWindow);
+  }
+
+  return mSubsidyLocks;
 }
 
 #endif // MOZ_B2G_RIL

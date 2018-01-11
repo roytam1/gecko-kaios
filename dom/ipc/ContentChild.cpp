@@ -182,6 +182,7 @@
 #include "mozilla/dom/PFMRadioChild.h"
 #include "mozilla/dom/PPresentationChild.h"
 #include "mozilla/dom/PresentationIPCService.h"
+#include "mozilla/dom/subsidylock/SubsidyLockChild.h"
 #include "mozilla/dom/PTVChild.h"
 #include "mozilla/ipc/InputStreamUtils.h"
 
@@ -223,6 +224,7 @@ using namespace mozilla::dom::mobileconnection;
 using namespace mozilla::dom::mobilemessage;
 using namespace mozilla::dom::telephony;
 using namespace mozilla::dom::voicemail;
+using namespace mozilla::dom::subsidylock;
 using namespace mozilla::media;
 using namespace mozilla::embedding;
 using namespace mozilla::gmp;
@@ -2083,6 +2085,43 @@ ContentChild::DeallocPTelephonyChild(PTelephonyChild* aActor)
 {
   delete aActor;
   return true;
+}
+
+PSubsidyLockChild*
+ContentChild::SendPSubsidyLockConstructor(PSubsidyLockChild* aActor,
+                                          const uint32_t& aClientId)
+{
+#ifdef MOZ_B2G_RIL
+  // Add an extra ref for IPDL. Will be released in
+  // ContentChild::DeallocPSubsidyLockChild().
+  static_cast<SubsidyLockChild*>(aActor)->AddRef();
+  return PContentChild::SendPSubsidyLockConstructor(aActor, aClientId);
+#else
+  MOZ_CRASH("No support for subsidylock on this platform!");
+#endif
+}
+
+PSubsidyLockChild*
+ContentChild::AllocPSubsidyLockChild(const uint32_t& aClientId)
+{
+#ifdef MOZ_B2G_RIL
+  MOZ_CRASH("No one should be allocating PSubsidyLockChild actors");
+  return nullptr;
+#else
+  MOZ_CRASH("No support for subsidylock on this platform!");
+#endif
+}
+
+bool
+ContentChild::DeallocPSubsidyLockChild(PSubsidyLockChild* aActor)
+{
+#ifdef MOZ_B2G_RIL
+  // SubsidyLockChild is refcounted, must not be freed manually.
+  static_cast<SubsidyLockChild*>(aActor)->Release();
+  return true;
+#else
+  MOZ_CRASH("No support for subsidylock on this platform!");
+#endif
 }
 
 PVoicemailChild*
