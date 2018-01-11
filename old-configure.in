@@ -6134,6 +6134,20 @@ fi
 AC_SUBST(MOZ_PAY)
 
 dnl ========================================================
+dnl Enable Support for KaiOS FOTA
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(fota,
+[  --enable-fota   Enable fota modules],
+ENABLE_FOTA=1,
+ENABLE_FOTA= )
+if test x"$MOZ_WIDGET_TOOLKIT" = x"gonk"; then
+    if test -n "$ENABLE_FOTA"; then
+        AC_DEFINE(ENABLE_FOTA)
+    fi
+    AC_SUBST(ENABLE_FOTA)
+fi
+
+dnl ========================================================
 dnl = Enable Browser Support for Activities
 dnl ========================================================
 if test -n "$MOZ_ACTIVITIES"; then

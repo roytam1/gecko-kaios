@@ -277,8 +277,9 @@ using namespace mozilla::system;
 
 // For VP9Benchmark::sBenchmarkFpsPref
 #include "Benchmark.h"
+#ifdef ENABLE_FOTA
 #include "mozilla/dom/fota/FotaParentProxy.h"
-
+#endif
 static NS_DEFINE_CID(kCClipboardCID, NS_CLIPBOARD_CID);
 
 #if defined(XP_WIN)
@@ -316,8 +317,9 @@ using namespace mozilla::net;
 using namespace mozilla::jsipc;
 using namespace mozilla::psm;
 using namespace mozilla::widget;
+#ifdef ENABLE_FOTA
 using namespace mozilla::dom::fota;
-
+#endif
 // XXX Workaround for bug 986973 to maintain the existing broken semantics
 template<>
 struct nsIConsoleService::COMTypeInfo<nsConsoleService, void> {
@@ -5382,7 +5384,7 @@ ContentParent::DeallocPWebrtcGlobalParent(PWebrtcGlobalParent *aActor)
   return false;
 #endif
 }
-
+#ifdef ENABLE_FOTA
 PFotaParent*
 ContentParent::AllocPFotaParent()
 {
@@ -5395,7 +5397,7 @@ ContentParent::DeallocPFotaParent(PFotaParent* aFota)
   delete aFota;
   return true;
 }
-
+#endif
 bool
 ContentParent::RecvSetOfflinePermission(const Principal& aPrincipal)
 {

@@ -548,8 +548,9 @@ partial interface Navigator {
   readonly attribute VolumeManager volumeManager;
 };
 #endif
-
+#ifdef ENABLE_FOTA
 partial interface Navigator {
   [Throws]
   readonly attribute FotaEngine fota;
 };
+#endif
