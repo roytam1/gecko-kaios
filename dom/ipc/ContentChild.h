@@ -211,10 +211,10 @@ public:
 
   virtual bool
   DeallocPHeapSnapshotTempFileHelperChild(PHeapSnapshotTempFileHelperChild*) override;
-
+#ifdef ENABLE_FOTA
   virtual PFotaChild* AllocPFotaChild();
   virtual bool DeallocPFotaChild(PFotaChild*);
-
+#endif
   PIccChild*
   SendPIccConstructor(PIccChild* aActor, const uint32_t& aServiceId);
 

@@ -59,7 +59,9 @@ include protocol PWebrtcGlobal;
 include protocol PPresentation;
 include protocol PVRManager;
 include protocol PTV;
+#ifdef ENABLE_FOTA
 include protocol PFota;
+#endif
 include DOMTypes;
 include JavaScriptTypes;
 include InputStreamParams;
@@ -445,8 +447,9 @@ prio(normal upto urgent) sync protocol PContent
     manages PWebrtcGlobal;
     manages PPresentation;
     manages PTV;
+#ifdef ENABLE_FOTA
     manages PFota;
-
+#endif
 both:
     // Depending on exactly how the new browser is being created, it might be
     // created from either the child or parent process!
@@ -889,9 +892,9 @@ parent:
     async PPresentation();
 
     async PTV();
-
+#ifdef ENABLE_FOTA
     async PFota();
-
+#endif
     // Services remoting
 
     async StartVisitedQuery(URIParams uri);

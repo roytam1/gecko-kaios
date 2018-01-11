@@ -175,7 +175,6 @@ WEBIDL_FILES = [
     'FontFaceSet.webidl',
     'FontFaceSource.webidl',
     'FormData.webidl',
-    'FotaEngine.webidl',
     'Function.webidl',
     'GainNode.webidl',
     'Geolocation.webidl',
@@ -632,6 +631,11 @@ WEBIDL_FILES = [
     'XULElement.webidl',
 ]
 
+if CONFIG['ENABLE_FOTA']:
+    WEBIDL_FILES += [
+        'FotaEngine.webidl',
+    ]
+
 if CONFIG['MOZ_AUDIO_CHANNEL_MANAGER']:
     WEBIDL_FILES += [
         'AudioChannelManager.webidl',
@@ -809,7 +813,6 @@ GENERATED_EVENTS_WEBIDL_FILES = [
     'DownloadEvent.webidl',
     'ErrorEvent.webidl',
     'FontFaceSetLoadEvent.webidl',
-    'FotaEvent.webidl',
     'HashChangeEvent.webidl',
     'IccChangeEvent.webidl',
     'ImageCaptureErrorEvent.webidl',
@@ -858,6 +861,10 @@ GENERATED_EVENTS_WEBIDL_FILES = [
     'UserProximityEvent.webidl',
     'USSDReceivedEvent.webidl',
 ]
+if CONFIG['ENABLE_FOTA']:
+    GENERATED_EVENTS_WEBIDL_FILES += [
+        'FotaEvent.webidl',
+    ]
 
 if CONFIG['MOZ_WEBRTC']:
     GENERATED_EVENTS_WEBIDL_FILES += [

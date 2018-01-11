@@ -209,8 +209,9 @@
 #include "nscore.h" // for NS_FREE_PERMANENT_DATA
 #include "VRManagerChild.h"
 #include "mozilla/dom/workers/ServiceWorkerManager.h"
+#ifdef ENABLE_FOTA
 #include "mozilla/dom/fota/FotaChildProxy.h"
-
+#endif
 using namespace mozilla;
 using namespace mozilla::docshell;
 using namespace mozilla::dom::bluetooth;
@@ -237,8 +238,9 @@ using namespace mozilla::widget;
 using namespace mozilla::system;
 #endif
 using namespace mozilla::widget;
+#ifdef ENABLE_FOTA
 using namespace mozilla::dom::fota;
-
+#endif
 namespace mozilla {
 namespace dom {
 
@@ -2221,7 +2223,7 @@ ContentChild::DeallocPWebrtcGlobalChild(PWebrtcGlobalChild *aActor)
   return false;
 #endif
 }
-
+#ifdef ENABLE_FOTA
 PFotaChild*
 ContentChild::AllocPFotaChild()
 {
@@ -2234,7 +2236,7 @@ ContentChild::DeallocPFotaChild(PFotaChild* aFota)
   delete aFota;
   return true;
 }
-
+#endif
 bool
 ContentChild::RecvRegisterChrome(InfallibleTArray<ChromePackage>&& packages,
                                  InfallibleTArray<SubstitutionMapping>&& resources,
