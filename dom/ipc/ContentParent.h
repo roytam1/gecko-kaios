@@ -423,10 +423,10 @@ public:
   {
     return PContentParent::RecvPStorageConstructor(aActor);
   }
-#ifdef ENABLE_FOTA
+
   virtual PFotaParent* AllocPFotaParent();
   virtual bool DeallocPFotaParent(PFotaParent*);
-#endif
+
   virtual PJavaScriptParent*
   AllocPJavaScriptParent() override;
 

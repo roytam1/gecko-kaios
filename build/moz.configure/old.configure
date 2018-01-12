@@ -184,7 +184,6 @@ def old_configure_options(*options):
     '--enable-extensions',
     '--enable-faststripe',
     '--enable-feeds',
-    '--enable-fota',
     '--enable-gamepad',
     '--enable-gc-trace',
     '--enable-gconf',
