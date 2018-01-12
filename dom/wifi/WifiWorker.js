@@ -4324,21 +4324,20 @@ WifiWorker.prototype = {
       // saveConfig now before we disable most of the other networks.
       function selectAndConnect() {
         WifiManager.clearDisableReasonCounter(function (ok) {
-          WifiManager.enableNetwork(privnet.netId, true, function (ok) {
-            if (ok) {
-              self._needToEnableNetworks = true;
-            }
-            let callback = (function (networks) {
-              for (let net in networks) {
-                if (networkKey == getNetworkKey(networks[net])) {
+          let callback = (function (networks) {
+            for (let net in networks) {
+              if (networkKey == getNetworkKey(networks[net])) {
+                WifiManager.enableNetwork(privnet.netId, true, function (ok) {
+                  self._needToEnableNetworks = true;
                   self._sendMessage(message, ok, ok, msg);
-                  return;
-                }
+                });
               }
-              self._sendMessage(message, false, "network not found", msg);
-            }).bind(self);
-            self.waitForScan(callback);
-          });
+              return;
+            }
+            self._sendMessage(message, false, "network not found", msg);
+          }).bind(self);
+          self.waitForScan(callback);
+          WifiManager.scan(true, function(){});
         });
       }
 
