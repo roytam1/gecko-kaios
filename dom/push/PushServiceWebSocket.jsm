@@ -458,21 +458,28 @@ this.PushServiceWebSocket = {
 
   _shutdownWS: function(shouldCancelPending = true) {
     console.debug("shutdownWS()");
-    this._currentState = STATE_SHUT_DOWN;
     this._willBeWokenUpByUDP = false;
 
     prefs.ignore("userAgentID", this);
 
-    if (this._wsListener) {
-      this._wsListener._pushService = null;
-    }
+    if (this._currentState >= STATE_WAITING_FOR_WS_START) {
+      if (this._wsListener) {
+        this._wsListener._pushService = null;
+      }
 
-    if (this._ws) {
-      try {
-        this._ws.close(0, null);
-      } catch (e) {}
+      if (this._ws) {
+        try {
+          this._ws.close(0, null);
+        } catch (e) {}
+        this._ws = null;
+      }
+    } else {
+      if (this._wsListener) {
+        this._wsListener._pushService = null;
+      }
       this._ws = null;
     }
+    this._currentState = STATE_SHUT_DOWN;
 
     if (shouldCancelPending) {
       this._cancelRegisterRequests();
@@ -825,22 +832,22 @@ this.PushServiceWebSocket = {
         .then(_ => {
           return tryOpenWS.bind(this)();
         }, errorStatus => {
-          if (errorStatus > 0) {
-            return this._mainPushService.getAllUnexpired()
-              .then(records => {
-                this._ws = null;
-                this._wsListener = null;
-                if (records.length > 0) {
-                  this._reconnect();
-                } else {
-                  this._shutdownWS();
-                }
-                return Promise.resolve();
-              });
+          if (!this._hasPendingRequests()) {
+            if (errorStatus > 0) {
+              return this._mainPushService.getAllUnexpired()
+                .then(records => {
+                  if (records.length > 0) {
+                    this._reconnect();
+                  } else {
+                    this._shutdownWS();
+                  }
+                  return Promise.resolve();
+                });
+            } else {
+              this._shutdownWS();
+              return Promise.resolve();
+            }
           } else {
-            this._ws = null;
-            this._wsListener = null;
-            this._shutdownWS();
             return Promise.resolve();
           }
         });
