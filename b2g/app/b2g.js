@@ -1339,6 +1339,9 @@ pref("hangmonitor.log.level", 1);
 pref("device.capability.wifi", false);
 #endif
 
+// Kai daemon ws url
+pref("kai.external-api.wsUrl", "ws://localhost:8081/");
+
 // Enable IPv6 tethering router mode in Gecko
 pref("dom.b2g_ipv6_router_mode", true);
 

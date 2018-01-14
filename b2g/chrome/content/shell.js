@@ -27,6 +27,7 @@ Cu.import('resource://gre/modules/KaiAccountsMgmtService.jsm');
 // import DownloadsAPI.jsm at the start to ensure download list cleanup.
 Cu.import('resource://gre/modules/DownloadsAPI.jsm');
 Cu.import('resource://gre/modules/MobileIdentityManager.jsm');
+Cu.import('resource://gre/modules/KaiExternalAPIService.jsm');
 
 XPCOMUtils.defineLazyModuleGetter(this, "SystemAppProxy",
                                   "resource://gre/modules/SystemAppProxy.jsm");
