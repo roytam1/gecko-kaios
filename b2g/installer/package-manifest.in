@@ -658,6 +658,7 @@
 
 @RESPATH@/components/AuthorizationManager.js
 @RESPATH@/components/AuthorizationManager.manifest
+@RESPATH@/components/AuthorizationService.js
 
 @RESPATH@/components/SystemMessageInternal.js
 @RESPATH@/components/SystemMessageManager.js
