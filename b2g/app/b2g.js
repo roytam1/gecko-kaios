@@ -229,6 +229,9 @@ pref("geo.authorization.key", "%KAIOS_GEO_API_KEY%");
 // "https://location.services.mozilla.com/v1/geosubmit?key=%MOZILLA_API_KEY%"
 pref("geo.stumbler.url", "https://lbs.kaiostech.com/v2.0/lbs/submit");
 
+// Whether to clean up location provider when Geolocation setting is turned off.
+pref("geo.provider.ondemand_cleanup", false);
+
 // enable geo
 pref("geo.enabled", true);
 

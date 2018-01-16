@@ -84,6 +84,9 @@ static const char* kPrefRilNumRadioInterfaces = "ril.numRadioInterfaces";
 static const char* kSettingRilDefaultServiceId = "ril.data.defaultServiceId";
 #endif
 
+// Clean up GPS HAL when Geolocation setting is turned off.
+static const char* kPrefOndemandCleanup = "geo.provider.ondemand_cleanup";
+
 // The geolocation enabled setting
 static const char* kSettingGeolocationEnabled = "geolocation.enabled";
 
@@ -1400,9 +1403,10 @@ GonkGPSGeolocationProvider::Observe(nsISupports* aSubject,
       bool isGeolocationEnabled =
         setting.mValue.isBoolean() ? setting.mValue.toBoolean() : false;
 
-      // Cleanup GPS HAL when Geolocation setting is turned off
       if (!isGeolocationEnabled) {
-        if (mInitialized && mGpsInterface) {
+        if (mInitialized && mGpsInterface &&
+            Preferences::GetBool(kPrefOndemandCleanup)) {
+          // Cleanup GPS HAL when Geolocation setting is turned off
           mGpsInterface->cleanup();
           mInitialized = false;
         }
