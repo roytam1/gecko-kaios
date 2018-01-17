@@ -31,11 +31,6 @@ bdi:-moz-dir(rtl), [dir="auto"]:-moz-dir(rtl) { direction: rtl; }
  * and the rules in http://dev.w3.org/html5/spec/rendering.html#rendering
  */
 
- :root {
-  /* A workaround to fix extra high layout for emoji char */
-  line-height: 1.2;
-}
-
 address,
 article,
 aside,
