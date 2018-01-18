@@ -393,7 +393,7 @@ public:
    */
   static bool IsFirstLetterPunctuation(uint32_t aChar);
   static bool IsFirstLetterPunctuationAt(const nsTextFragment* aFrag, uint32_t aOffset);
- 
+
   /**
    * Returns true if aChar is of class Lu, Ll, Lt, Lm, Lo, Nd, Nl or No
    */
@@ -636,7 +636,7 @@ public:
 
   /**
    * Method that gets the primary presContext for the node.
-   * 
+   *
    * @param aContent The content node.
    * @return the presContext, or nullptr if the content is not in a document
    *         (if GetCurrentDoc returns nullptr)
@@ -880,7 +880,6 @@ public:
     eSVG_PROPERTIES,
     eBRAND_PROPERTIES,
     eCOMMON_DIALOG_PROPERTIES,
-    eMATHML_PROPERTIES,
     eSECURITY_PROPERTIES,
     eNECKO_PROPERTIES,
     PropertiesFile_COUNT
@@ -933,7 +932,7 @@ private:
                                         const char16_t** aParams,
                                         uint32_t aParamsLength,
                                         nsXPIDLString& aResult);
-  
+
 public:
   template<uint32_t N>
   static nsresult FormatLocalizedString(PropertiesFile aFile,
@@ -1943,7 +1942,7 @@ public:
   {
     return sIsPerformanceTimingEnabled;
   }
-  
+
   /*
    * Returns true if user timing API should print to console.
    */
@@ -2254,11 +2253,11 @@ public:
 
   /**
    * Function checks if the user is idle.
-   * 
+   *
    * @param aRequestedIdleTimeInMS    The idle observer's requested idle time.
-   * @param aUserIsIdle               boolean indicating if the user 
+   * @param aUserIsIdle               boolean indicating if the user
    *                                  is currently idle or not.   *
-   * @return NS_OK                    NS_OK returned if the requested idle service and 
+   * @return NS_OK                    NS_OK returned if the requested idle service and
    *                                  the current idle time were successfully obtained.
    *                                  NS_ERROR_FAILURE returned if the the requested
    *                                  idle service or the current idle were not obtained.

@@ -37,11 +37,9 @@ protected:
     const char* kHTML40LATIN1 = "html40Latin1.properties";
     const char* kHTML40SYMBOLS = "html40Symbols.properties";
     const char* kHTML40SPECIAL = "html40Special.properties";
-    const char* kMATHML20 = "mathml20.properties";
     nsCOMPtr<nsIStringBundle> mHTML40Latin1Bundle;
     nsCOMPtr<nsIStringBundle> mHTML40SymbolsBundle;
     nsCOMPtr<nsIStringBundle> mHTML40SpecialBundle;
-    nsCOMPtr<nsIStringBundle> mMathML20Bundle;
 
     virtual ~nsEntityConverter();
 };

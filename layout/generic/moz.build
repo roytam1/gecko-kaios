@@ -24,9 +24,6 @@ with Files('nsBulletFrame.*'):
 with Files('nsFirstLetterFrame.*'):
     BUG_COMPONENT = ('Core', 'Layout: Block and Inline')
 
-with Files('MathML*'):
-    BUG_COMPONENT = ('Core', 'MathML')
-
 with Files('Text*'):
     BUG_COMPONENT = ('Core', 'Layout: Text')
 
@@ -117,7 +114,6 @@ UNIFIED_SOURCES += [
     'AsyncScrollBase.cpp',
     'DetailsFrame.cpp',
     'FrameChildList.cpp',
-    'MathMLTextRunFactory.cpp',
     'nsAbsoluteContainingBlock.cpp',
     'nsBackdropFrame.cpp',
     'nsBlockFrame.cpp',

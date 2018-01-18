@@ -16,7 +16,6 @@ DIRS += [
     'svg',
     'xul',
     'ipc',
-    'mathml',
     'inspector',
     'tools/recording',
     'reftests',

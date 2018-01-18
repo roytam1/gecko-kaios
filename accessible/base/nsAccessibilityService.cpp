@@ -1238,24 +1238,6 @@ nsAccessibilityService::CreateAccessible(nsINode* aNode,
       } else if (content->IsSVGElement(nsGkAtoms::svg)) {
         newAcc = new EnumRoleAccessible<roles::DIAGRAM>(content, document);
       }
-
-    } else if (content->IsMathMLElement()) {
-      const MarkupMapInfo* markupMap =
-        mMarkupMaps.Get(content->NodeInfo()->NameAtom());
-      if (markupMap && markupMap->new_func)
-        newAcc = markupMap->new_func(content, aContext);
-
-      // Fall back to text when encountering Content MathML.
-      if (!newAcc && !content->IsAnyOfMathMLElements(nsGkAtoms::annotation_,
-                                                     nsGkAtoms::annotation_xml_,
-                                                     nsGkAtoms::mpadded_,
-                                                     nsGkAtoms::mphantom_,
-                                                     nsGkAtoms::maligngroup_,
-                                                     nsGkAtoms::malignmark_,
-                                                     nsGkAtoms::mspace_,
-                                                     nsGkAtoms::semantics_)) {
-       newAcc = new HyperTextAccessible(content, document);
-      }
     }
   }
 
@@ -1274,7 +1256,7 @@ nsAccessibilityService::CreateAccessible(nsINode* aNode,
     if (content->IsHTMLElement()) {
       // Interesting HTML container which may have selectable text and/or embedded objects
       newAcc = new HyperTextAccessibleWrap(content, document);
-    } else {  // XUL, SVG, MathML etc.
+    } else {  // XUL, SVG etc.
       // Interesting generic non-HTML container
       newAcc = new AccessibleWrap(content, document);
     }

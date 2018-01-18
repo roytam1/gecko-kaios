@@ -176,7 +176,6 @@ include('/ipc/chromium/chromium-config.mozbuild')
 LOCAL_INCLUDES += [
     '../forms',
     '../generic',
-    '../mathml',
     '../printing',
     '../style',
     '../svg',
