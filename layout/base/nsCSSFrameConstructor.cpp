@@ -108,7 +108,6 @@
 
 #undef NOISY_FIRST_LETTER
 
-#include "nsMathMLParts.h"
 #include "mozilla/dom/SVGTests.h"
 #include "nsSVGUtils.h"
 
@@ -423,9 +422,7 @@ IsFrameForSVG(const nsIFrame* aFrame)
 static bool
 ShouldSuppressFloatingOfDescendants(nsIFrame* aFrame)
 {
-  return aFrame->IsFrameOfType(nsIFrame::eMathML) ||
-    aFrame->IsXULBoxFrame() ||
-    ::IsFlexOrGridContainer(aFrame);
+  return aFrame->IsXULBoxFrame() || ::IsFlexOrGridContainer(aFrame);
 }
 
 /**
@@ -1980,7 +1977,7 @@ nsCSSFrameConstructor::GetParentType(nsIAtom* aFrameType)
   }
   if (aFrameType == nsGkAtoms::rubyTextContainerFrame) {
     return eTypeRubyTextContainer;
-  } 
+  }
   if (aFrameType == nsGkAtoms::rubyFrame) {
     return eTypeRuby;
   }
@@ -2067,7 +2064,6 @@ nsCSSFrameConstructor::ConstructTable(nsFrameConstructorState& aState,
 
   nsIContent* const content = aItem.mContent;
   nsStyleContext* const styleContext = aItem.mStyleContext;
-  const uint32_t nameSpaceID = aItem.mNameSpaceID;
 
   // create the pseudo SC for the outer table as a child of the inner SC
   RefPtr<nsStyleContext> outerStyleContext;
@@ -2076,10 +2072,7 @@ nsCSSFrameConstructor::ConstructTable(nsFrameConstructorState& aState,
 
   // Create the outer table frame which holds the caption and inner table frame
   nsContainerFrame* newFrame;
-  if (kNameSpaceID_MathML == nameSpaceID)
-    newFrame = NS_NewMathMLmtableOuterFrame(mPresShell, outerStyleContext);
-  else
-    newFrame = NS_NewTableOuterFrame(mPresShell, outerStyleContext);
+  newFrame = NS_NewTableOuterFrame(mPresShell, outerStyleContext);
 
   nsContainerFrame* geometricParent =
     aState.GetGeometricParent(outerStyleContext->StyleDisplay(),
@@ -2090,10 +2083,7 @@ nsCSSFrameConstructor::ConstructTable(nsFrameConstructorState& aState,
 
   // Create the inner table frame
   nsContainerFrame* innerFrame;
-  if (kNameSpaceID_MathML == nameSpaceID)
-    innerFrame = NS_NewMathMLmtableFrame(mPresShell, styleContext);
-  else
-    innerFrame = NS_NewTableFrame(mPresShell, styleContext);
+  innerFrame = NS_NewTableFrame(mPresShell, styleContext);
 
   InitAndRestoreFrame(aState, content, newFrame, innerFrame);
 
@@ -2182,14 +2172,10 @@ nsCSSFrameConstructor::ConstructTableRowOrRowGroup(nsFrameConstructorState& aSta
              "Display style doesn't match style context");
   nsIContent* const content = aItem.mContent;
   nsStyleContext* const styleContext = aItem.mStyleContext;
-  const uint32_t nameSpaceID = aItem.mNameSpaceID;
 
   nsContainerFrame* newFrame;
   if (aDisplay->mDisplay == NS_STYLE_DISPLAY_TABLE_ROW) {
-    if (kNameSpaceID_MathML == nameSpaceID)
-      newFrame = NS_NewMathMLmtrFrame(mPresShell, styleContext);
-    else
-      newFrame = NS_NewTableRowFrame(mPresShell, styleContext);
+    newFrame = NS_NewTableRowFrame(mPresShell, styleContext);
   } else {
     newFrame = NS_NewTableRowGroupFrame(mPresShell, styleContext);
   }
@@ -2263,26 +2249,14 @@ nsCSSFrameConstructor::ConstructTableCell(nsFrameConstructorState& aState,
 
   nsIContent* const content = aItem.mContent;
   nsStyleContext* const styleContext = aItem.mStyleContext;
-  const uint32_t nameSpaceID = aItem.mNameSpaceID;
 
   nsTableFrame* tableFrame =
     static_cast<nsTableRowFrame*>(aParentFrame)->GetTableFrame();
   nsContainerFrame* newFrame;
-  // <mtable> is border separate in mathml.css and the MathML code doesn't implement
-  // border collapse. For those users who style <mtable> with border collapse,
-  // give them the default non-MathML table frames that understand border collapse.
-  // This won't break us because MathML table frames are all subclasses of the default
-  // table code, and so we can freely mix <mtable> with <mtr> or <tr>, <mtd> or <td>.
-  // What will happen is just that non-MathML frames won't understand MathML attributes
-  // and will therefore miss the special handling that the MathML code does.
-  if (kNameSpaceID_MathML == nameSpaceID && !tableFrame->IsBorderCollapse()) {
-    newFrame = NS_NewMathMLmtdFrame(mPresShell, styleContext, tableFrame);
-  } else {
-    // Warning: If you change this and add a wrapper frame around table cell
-    // frames, make sure Bug 368554 doesn't regress!
-    // See IsInAutoWidthTableCellForQuirk() in nsImageFrame.cpp.
-    newFrame = NS_NewTableCellFrame(mPresShell, styleContext, tableFrame);
-  }
+  // Warning: If you change this and add a wrapper frame around table cell
+  // frames, make sure Bug 368554 doesn't regress!
+  // See IsInAutoWidthTableCellForQuirk() in nsImageFrame.cpp.
+  newFrame = NS_NewTableCellFrame(mPresShell, styleContext, tableFrame);
 
   // Initialize the table cell frame
   InitAndRestoreFrame(aState, content, aParentFrame, newFrame);
@@ -2293,15 +2267,8 @@ nsCSSFrameConstructor::ConstructTableCell(nsFrameConstructorState& aState,
     ResolveAnonymousBoxStyle(nsCSSAnonBoxes::cellContent, styleContext);
 
   // Create a block frame that will format the cell's content
-  bool isBlock;
   nsContainerFrame* cellInnerFrame;
-  if (kNameSpaceID_MathML == nameSpaceID) {
-    cellInnerFrame = NS_NewMathMLmtdInnerFrame(mPresShell, innerPseudoStyle);
-    isBlock = false;
-  } else {
-    cellInnerFrame = NS_NewBlockFormattingContext(mPresShell, innerPseudoStyle);
-    isBlock = true;
-  }
+  cellInnerFrame = NS_NewBlockFormattingContext(mPresShell, innerPseudoStyle);
 
   InitAndRestoreFrame(aState, content, newFrame, cellInnerFrame);
 
@@ -2321,18 +2288,14 @@ nsCSSFrameConstructor::ConstructTableCell(nsFrameConstructorState& aState,
     // FrameConstructionItem down into ProcessChildren and just making use of
     // the push there, but that's a bit of work.
     nsFrameConstructorSaveState floatSaveState;
-    if (!isBlock) { /* MathML case */
-      aState.PushFloatContainingBlock(nullptr, floatSaveState);
-    } else {
-      aState.PushFloatContainingBlock(cellInnerFrame, floatSaveState);
-    }
+    aState.PushFloatContainingBlock(cellInnerFrame, floatSaveState);
 
     ConstructFramesFromItemList(aState, aItem.mChildItems, cellInnerFrame,
                                 childItems);
   } else {
     // Process the child content
     ProcessChildren(aState, content, styleContext, cellInnerFrame,
-                    true, childItems, isBlock, aItem.mPendingBinding);
+                    true, childItems, true, aItem.mPendingBinding);
   }
 
   cellInnerFrame->SetInitialChildList(kPrincipalList, childItems);
@@ -4002,38 +3965,7 @@ nsCSSFrameConstructor::ConstructFrameFromItemInternal(FrameConstructionItem& aIt
                         aItem.mPendingBinding, possiblyLeafFrame);
       }
 
-      if (bits & FCDATA_WRAP_KIDS_IN_BLOCKS) {
-        nsFrameItems newItems;
-        nsFrameItems currentBlockItems;
-        nsIFrame* f;
-        while ((f = childItems.FirstChild()) != nullptr) {
-          bool wrapFrame = IsInlineFrame(f) || IsFramePartOfIBSplit(f);
-          if (!wrapFrame) {
-            FlushAccumulatedBlock(aState, content, newFrameAsContainer,
-                                  currentBlockItems, newItems);
-          }
-
-          childItems.RemoveFrame(f);
-          if (wrapFrame) {
-            currentBlockItems.AddChild(f);
-          } else {
-            newItems.AddChild(f);
-          }
-        }
-        FlushAccumulatedBlock(aState, content, newFrameAsContainer,
-                              currentBlockItems, newItems);
-
-        if (childItems.NotEmpty()) {
-          // an error must have occurred, delete unprocessed frames
-          childItems.DestroyFrames();
-        }
-
-        childItems = newItems;
-      }
-
       // Set the frame's initial child list
-      // Note that MathML depends on this being called even if
-      // childItems is empty!
       newFrameAsContainer->SetInitialChildList(kPrincipalList, childItems);
     }
   }
@@ -4122,7 +4054,7 @@ nsCSSFrameConstructor::CreateAnonymousFrames(nsFrameConstructorState& aState,
     } else {
       FrameConstructionItemList items;
       {
-        // Skip parent display based style-fixup during our 
+        // Skip parent display based style-fixup during our
         // AddFrameConstructionItems() call:
         TreeMatchContext::AutoParentDisplayBasedStyleFixupSkipper
           parentDisplayBasedStyleFixupSkipper(aState.mTreeMatchContext);
@@ -4988,125 +4920,6 @@ nsCSSFrameConstructor::ResolveStyleContext(nsStyleContext* aParentStyleContext,
   return result.forget();
 }
 
-// MathML Mod - RBS
-void
-nsCSSFrameConstructor::FlushAccumulatedBlock(nsFrameConstructorState& aState,
-                                             nsIContent* aContent,
-                                             nsContainerFrame* aParentFrame,
-                                             nsFrameItems& aBlockItems,
-                                             nsFrameItems& aNewItems)
-{
-  if (aBlockItems.IsEmpty()) {
-    // Nothing to do
-    return;
-  }
-
-  nsIAtom* anonPseudo = nsCSSAnonBoxes::mozMathMLAnonymousBlock;
-
-  nsStyleContext* parentContext =
-    nsFrame::CorrectStyleParentFrame(aParentFrame,
-                                     anonPseudo)->StyleContext();
-  StyleSetHandle styleSet = mPresShell->StyleSet();
-  RefPtr<nsStyleContext> blockContext;
-  blockContext = styleSet->
-    ResolveAnonymousBoxStyle(anonPseudo, parentContext);
-
-
-  // then, create a block frame that will wrap the child frames. Make it a
-  // MathML frame so that Get(Absolute/Float)ContainingBlockFor know that this
-  // is not a suitable block.
-  nsContainerFrame* blockFrame =
-      NS_NewMathMLmathBlockFrame(mPresShell, blockContext,
-                                 NS_BLOCK_FLOAT_MGR | NS_BLOCK_MARGIN_ROOT);
-
-  InitAndRestoreFrame(aState, aContent, aParentFrame, blockFrame);
-  ReparentFrames(this, blockFrame, aBlockItems);
-  // abs-pos and floats are disabled in MathML children so we don't have to
-  // worry about messing up those.
-  blockFrame->SetInitialChildList(kPrincipalList, aBlockItems);
-  NS_ASSERTION(aBlockItems.IsEmpty(), "What happened?");
-  aBlockItems.Clear();
-  aNewItems.AddChild(blockFrame);
-}
-
-// Only <math> elements can be floated or positioned.  All other MathML
-// should be in-flow.
-#define SIMPLE_MATHML_CREATE(_tag, _func)                               \
-  { &nsGkAtoms::_tag,                                                   \
-      FCDATA_DECL(FCDATA_DISALLOW_OUT_OF_FLOW |                         \
-                  FCDATA_FORCE_NULL_ABSPOS_CONTAINER |                  \
-                  FCDATA_WRAP_KIDS_IN_BLOCKS, _func) }
-
-/* static */
-const nsCSSFrameConstructor::FrameConstructionData*
-nsCSSFrameConstructor::FindMathMLData(Element* aElement,
-                                      nsIAtom* aTag,
-                                      int32_t aNameSpaceID,
-                                      nsStyleContext* aStyleContext)
-{
-  // Make sure that we remain confined in the MathML world
-  if (aNameSpaceID != kNameSpaceID_MathML)
-    return nullptr;
-
-  // Handle <math> specially, because it sometimes produces inlines
-  if (aTag == nsGkAtoms::math) {
-    // This needs to match the test in EnsureBlockDisplay in
-    // nsRuleNode.cpp.  Though the behavior here for the display:table
-    // case is pretty weird...
-    if (aStyleContext->StyleDisplay()->IsBlockOutsideStyle()) {
-      static const FrameConstructionData sBlockMathData =
-        FCDATA_DECL(FCDATA_FORCE_NULL_ABSPOS_CONTAINER |
-                    FCDATA_WRAP_KIDS_IN_BLOCKS,
-                    NS_CreateNewMathMLmathBlockFrame);
-      return &sBlockMathData;
-    }
-
-    static const FrameConstructionData sInlineMathData =
-      FCDATA_DECL(FCDATA_FORCE_NULL_ABSPOS_CONTAINER |
-                  FCDATA_IS_LINE_PARTICIPANT |
-                  FCDATA_WRAP_KIDS_IN_BLOCKS,
-                  NS_NewMathMLmathInlineFrame);
-    return &sInlineMathData;
-  }
-
-
-  static const FrameConstructionDataByTag sMathMLData[] = {
-    SIMPLE_MATHML_CREATE(annotation_, NS_NewMathMLTokenFrame),
-    SIMPLE_MATHML_CREATE(annotation_xml_, NS_NewMathMLmrowFrame),
-    SIMPLE_MATHML_CREATE(mi_, NS_NewMathMLTokenFrame),
-    SIMPLE_MATHML_CREATE(mn_, NS_NewMathMLTokenFrame),
-    SIMPLE_MATHML_CREATE(ms_, NS_NewMathMLTokenFrame),
-    SIMPLE_MATHML_CREATE(mtext_, NS_NewMathMLTokenFrame),
-    SIMPLE_MATHML_CREATE(mo_, NS_NewMathMLmoFrame),
-    SIMPLE_MATHML_CREATE(mfrac_, NS_NewMathMLmfracFrame),
-    SIMPLE_MATHML_CREATE(msup_, NS_NewMathMLmmultiscriptsFrame),
-    SIMPLE_MATHML_CREATE(msub_, NS_NewMathMLmmultiscriptsFrame),
-    SIMPLE_MATHML_CREATE(msubsup_, NS_NewMathMLmmultiscriptsFrame),
-    SIMPLE_MATHML_CREATE(munder_, NS_NewMathMLmunderoverFrame),
-    SIMPLE_MATHML_CREATE(mover_, NS_NewMathMLmunderoverFrame),
-    SIMPLE_MATHML_CREATE(munderover_, NS_NewMathMLmunderoverFrame),
-    SIMPLE_MATHML_CREATE(mphantom_, NS_NewMathMLmrowFrame),
-    SIMPLE_MATHML_CREATE(mpadded_, NS_NewMathMLmpaddedFrame),
-    SIMPLE_MATHML_CREATE(mspace_, NS_NewMathMLmspaceFrame),
-    SIMPLE_MATHML_CREATE(none, NS_NewMathMLmspaceFrame),
-    SIMPLE_MATHML_CREATE(mprescripts_, NS_NewMathMLmspaceFrame),
-    SIMPLE_MATHML_CREATE(mfenced_, NS_NewMathMLmfencedFrame),
-    SIMPLE_MATHML_CREATE(mmultiscripts_, NS_NewMathMLmmultiscriptsFrame),
-    SIMPLE_MATHML_CREATE(mstyle_, NS_NewMathMLmrowFrame),
-    SIMPLE_MATHML_CREATE(msqrt_, NS_NewMathMLmsqrtFrame),
-    SIMPLE_MATHML_CREATE(mroot_, NS_NewMathMLmrootFrame),
-    SIMPLE_MATHML_CREATE(maction_, NS_NewMathMLmactionFrame),
-    SIMPLE_MATHML_CREATE(mrow_, NS_NewMathMLmrowFrame),
-    SIMPLE_MATHML_CREATE(merror_, NS_NewMathMLmrowFrame),
-    SIMPLE_MATHML_CREATE(menclose_, NS_NewMathMLmencloseFrame),
-    SIMPLE_MATHML_CREATE(semantics_, NS_NewMathMLsemanticsFrame)
-  };
-
-  return FindDataByTag(aTag, aElement, aStyleContext, sMathMLData,
-                       ArrayLength(sMathMLData));
-}
-
-
 nsContainerFrame*
 nsCSSFrameConstructor::ConstructFrameWithAnonymousChild(
                                    nsFrameConstructorState& aState,
@@ -5728,9 +5541,6 @@ nsCSSFrameConstructor::AddFrameConstructionItemsInternal(nsFrameConstructorState
                         styleContext);
     if (!data) {
       data = FindXULTagData(element, aTag, aNameSpaceID, styleContext);
-    }
-    if (!data) {
-      data = FindMathMLData(element, aTag, aNameSpaceID, styleContext);
     }
     if (!data) {
       data = FindSVGData(element, aTag, aNameSpaceID, aParentFrame,
@@ -9736,7 +9546,7 @@ nsCSSFrameConstructor::sPseudoParentData[eParentTypeCount] = {
     &nsCSSAnonBoxes::ruby
   },
   { // Ruby Base
-    FCDATA_DECL(FCDATA_USE_CHILD_ITEMS | 
+    FCDATA_DECL(FCDATA_USE_CHILD_ITEMS |
                 FCDATA_IS_LINE_PARTICIPANT |
                 FCDATA_DESIRED_PARENT_TYPE_TO_BITS(eTypeRubyBaseContainer) |
                 FCDATA_SKIP_FRAMESET,
@@ -10306,7 +10116,7 @@ nsCSSFrameConstructor::CreateNeededPseudoContainers(
         break;
       case eTypeColGroup:
         MOZ_CRASH("Colgroups should be suppresing non-col child items");
-      default: 
+      default:
         NS_ASSERTION(ourParentType == eTypeBlock, "Unrecognized parent type");
         if (IsRubyParentType(groupingParentType)) {
           wrapperType = eTypeRuby;

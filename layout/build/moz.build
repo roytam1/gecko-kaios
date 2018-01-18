@@ -28,7 +28,6 @@ LOCAL_INCLUDES += [
     '../forms',
     '../generic',
     '../inspector',
-    '../mathml',
     '../style',
     '../tables',
     '../xul',
