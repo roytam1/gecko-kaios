@@ -426,8 +426,12 @@ this.PushService = {
 
     this._db.getByKeyID(record.keyID, "unsubscribeDb").then(isExist => {
       if (!isExist) {
-        this._db.put(record, "unsubscribeDb");
+        this._db.put(record, "unsubscribeDb").catch(_ => {
+          console.error("Put record into unsubscribeDb fail");
+        });
       }
+    }).catch(_=> {
+      console.error("Check whether a record in unsubscribeDb fail");
     });
 
     if (!this._service.isConnected()) {
@@ -438,8 +442,6 @@ this.PushService = {
     this._sendUnregister(record, reason).catch(e => {
       console.error("backgroundUnregister: Error notifying server", e);
     });
-    // Try to unregister all records still pending in queue.
-    this.executeAllPendingUnregistering(record.keyID);
   },
 
   // utility function used to add/remove observers in startObservers() and
@@ -740,9 +742,11 @@ this.PushService = {
    * expired because the user revoked the notification permission are evicted
    * once the permission is reinstated.
    */
-  dropUnexpiredRegistrations: function() {
+  dropUnexpiredRegistrations: function () {
     let subscriptionChanges = [];
-    this._db.drop("unsubscribeDb");
+    this._db.drop("unsubscribeDb").catch(_ => {
+      console.error("Drop records of unsubscribeDb fail");
+    });
     return this._db.clearIf(record => {
       if (record.isExpired()) {
         return false;
@@ -763,8 +767,10 @@ this.PushService = {
     gPushNotifier.notifySubscriptionChange(record.scope, record.principal);
   },
 
-  removePendingUnsubscribe: function(aKeyID) {
-    return this._db.delete(aKeyID, "unsubscribeDb");
+  removePendingUnsubscribe: function (aKeyID) {
+    return this._db.delete(aKeyID, "unsubscribeDb").catch(_ => {
+      console.error("Delete a record of unsubscribeDb fail");
+    });
   },
 
   /**
@@ -1259,7 +1265,7 @@ this.PushService = {
    * client acknowledge. On a server, data is cheap, reliable notification is
    * not.
    */
-  unregister: function(aPageRecord) {
+  unregister: function (aPageRecord) {
     console.debug("unregister()", aPageRecord);
 
     return this._getByPageRecord(aPageRecord)
@@ -1267,23 +1273,22 @@ this.PushService = {
         if (record === undefined) {
           return false;
         }
-        this._db.getByKeyID(record.keyID, "unsubscribeDb").then(isExist => {
+        return this._db.getByKeyID(record.keyID, "unsubscribeDb").then(isExist => {
           if (!isExist) {
-            this._db.put(record, "unsubscribeDb");
+            this._db.put(record, "unsubscribeDb").catch(_ => {
+              console.error("Put record into unsubscribeDb fail");
+            });
           }
-        });
-
-        return Promise.all([
-          this._sendUnregister(record,
-                               Ci.nsIPushErrorReporter.UNSUBSCRIBE_MANUAL),
-          this._db.delete(record.keyID),
-        ]).then(() => {
-          if (this._service.isConnected()) {
-            // Try to unregister all records still pending in queue
-            // if websocket is connected.
-            this.executeAllPendingUnregistering(record.keyID);
-          }
-          return true;
+        }).catch(_ => {
+          console.error("Check whether a record in unsubscribeDb fail");
+        }).then(_ => {
+          return Promise.all([
+            this._sendUnregister(record,
+              Ci.nsIPushErrorReporter.UNSUBSCRIBE_MANUAL),
+            this._db.delete(record.keyID),
+          ]).then(() => {
+            return true;
+          });
         });
       });
   },
@@ -1385,20 +1390,25 @@ this.PushService = {
     });
   },
 
-  executePendingUnregisteringByKeyID: function(aKeyID) {
+  executePendingUnregisteringByKeyID: function (aKeyID) {
     console.debug("executePendingUnregisteringByKeyID()");
-    this._db.getByKeyID(aKeyID, "unsubscribeDb").then(record => {
+    return this._db.getByKeyID(aKeyID, "unsubscribeDb").then(record => {
       if (!record) {
         return;
       }
       console.debug("channel ID: ", record.keyID);
       if (!record.reachMaxRetryCounts()) {
-        this._db.update(record.keyID, record => {
+        return this._db.update(record.keyID, record => {
           record.retryCounts++;
           return record;
-        }, "unsubscribeDb");
-        this._sendUnregister(record,
-                             Ci.nsIPushErrorReporter.UNSUBSCRIBE_PENDING_RECORD);
+        }, "unsubscribeDb")
+          .catch(_ => {
+            console.error("Update unregister retry count in unsubscribeDb fail");
+          })
+          .then(_ => {
+            this._sendUnregister(record,
+              Ci.nsIPushErrorReporter.UNSUBSCRIBE_PENDING_RECORD);
+          });
       } else {
         console.error("Retry count exceeded, drop the record");
         this.removePendingUnsubscribe(record.keyID);
@@ -1406,7 +1416,7 @@ this.PushService = {
     });
   },
 
-  executeAllPendingUnregistering: function(newKeyID = null) {
+  executeAllPendingUnregistering: function (newKeyID = null) {
     console.debug("executeAllPendingUnregistering()");
     return this._db.getAllKeyIDs("unsubscribeDb").then(records => {
       return Promise.all(records.map(record => {
@@ -1416,12 +1426,17 @@ this.PushService = {
         }
         console.debug("channel ID: ", record.keyID);
         if (!record.reachMaxRetryCounts()) {
-          this._db.update(record.keyID, record => {
+          return this._db.update(record.keyID, record => {
             record.retryCounts++;
             return record;
-          }, "unsubscribeDb");
-          this._sendUnregister(record,
-                               Ci.nsIPushErrorReporter.UNSUBSCRIBE_PENDING_RECORD);
+          }, "unsubscribeDb")
+            .catch(_ => {
+              console.error("Update unregister retry count in unsubscribeDb fail");
+            })
+            .then(_ => {
+              this._sendUnregister(record,
+                Ci.nsIPushErrorReporter.UNSUBSCRIBE_PENDING_RECORD);
+            });
         } else {
           console.error("Retry count exceeded, drop the record");
           this.removePendingUnsubscribe(record.keyID);
