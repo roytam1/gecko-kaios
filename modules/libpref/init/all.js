@@ -4657,6 +4657,8 @@ pref("dom.push.pingInterval", 1800000); // 30 minutes
 
 // How long before we timeout
 pref("dom.push.requestTimeout", 10000);
+// extend request timeout if fetching token is required
+pref("dom.push.extendTimeout.token", 3000);
 pref("dom.push.pingInterval.default", 180000);// 3 min
 pref("dom.push.pingInterval.mobile", 180000); // 3 min
 pref("dom.push.pingInterval.wifi", 180000);  // 3 min

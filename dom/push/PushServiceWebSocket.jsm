@@ -50,6 +50,8 @@ const kUDP_WAKEUP_WS_STATUS_CODE = 4774;  // WebSocket Close status code sent
                                           // by server to signal that it can
                                           // wake client up using UDP.
 
+const kMinRequestTimeOut = 1000; // 1s
+
 // Maps ack statuses, unsubscribe reasons, and delivery error reasons to codes
 // included in request payloads.
 const kACK_STATUS_TO_CODE = {
@@ -281,6 +283,7 @@ this.PushServiceWebSocket = {
       // Cancel the repeating timer and exit early if we aren't waiting for
       // requests.
       this._requestTimeoutTimer.cancel();
+      this._requestTimeout = this._requestTimeoutBase;
       return;
     }
 
@@ -335,6 +338,7 @@ this.PushServiceWebSocket = {
   _currentState: STATE_SHUT_DOWN,
   _requestTimeout: 0,
   _requestTimeoutTimer: null,
+  _requestTimeoutBase: 0,
   _retryFailCount: 0,
 
   /**
@@ -438,7 +442,12 @@ this.PushServiceWebSocket = {
       this._networkInfo = PushNetworkInfo;
     }
 
-    this._requestTimeout = prefs.get("requestTimeout");
+    this._requestTimeoutBase = prefs.get("requestTimeout");
+    if (this._requestTimeoutBase < kMinRequestTimeOut) {
+      this._requestTimeoutBase = kMinRequestTimeOut;
+      console.warn("requestTimeout smaller than min, set it as default");
+    }
+    this._requestTimeout = this._requestTimeoutBase;
     this._adaptiveEnabled = prefs.get('adaptive.enabled');
     this._udpWakeUpEnabled = prefs.get('udp.wakeupEnabled');
     this._upperLimit = prefs.get('adaptive.upperLimit');
@@ -511,6 +520,7 @@ this.PushServiceWebSocket = {
 
     if (this._requestTimeoutTimer) {
       this._requestTimeoutTimer.cancel();
+      this._requestTimeout = this._requestTimeoutBase;
     }
 
     this._mainPushService = null;
@@ -569,6 +579,18 @@ this.PushServiceWebSocket = {
     if (!this._requestTimeoutTimer) {
       this._requestTimeoutTimer = Cc["@mozilla.org/timer;1"]
                                     .createInstance(Ci.nsITimer);
+    }
+
+    let extendTimeout = 0;
+    if (!this._ws) {
+      if (this.credential &&
+          this.credential.isExpired) {
+        extendTimeout += prefs.get("extendTimeout.token");
+      }
+    }
+    if (extendTimeout > 0) {
+      this._requestTimeout = this._requestTimeoutBase +
+                             extendTimeout;
     }
     this._requestTimeoutTimer.init(this,
                                    this._requestTimeout,
@@ -817,7 +839,7 @@ this.PushServiceWebSocket = {
         // Grab a wakelock before we open the socket to ensure we don't go to
         // sleep before connection the is opened.
         this._ws.asyncOpen(uri, uri.spec, 0, this._wsListener, null);
-        this._acquireWakeLock('WebSocketSetup');
+        this._acquireWakeLock('WebSocketSetup', this._requestTimeout);
         this._currentState = STATE_WAITING_FOR_WS_START;
       } catch(e) {
         console.error("beginWSSetup: Error opening websocket.",
@@ -868,7 +890,7 @@ this.PushServiceWebSocket = {
     return !!this._ws;
   },
 
-  _acquireWakeLock: function (reason) {
+  _acquireWakeLock: function (reason, duration) {
     if (!AppConstants.MOZ_B2G) {
       return;
     }
@@ -894,6 +916,11 @@ this.PushServiceWebSocket = {
       }
     }
 
+    let timeout = this._requestTimeoutBase;
+    if (typeof duration === 'number' &&
+        duration > 0) {
+      timeout = duration;
+    }
     console.debug("acquireWakeLock: Setting  " + reason + "  WakeLock Timer");
     this._socketWakeLock[reason].timer
       .initWithCallback(this._releaseWakeLock.bind(this, reason),
@@ -901,7 +928,7 @@ this.PushServiceWebSocket = {
                         // requests after the setup. Fudge it a bit since
                         // timers can be a little off and we don't want to go
                         // to sleep just as the socket connected.
-                        this._requestTimeout + 1000,
+                        timeout + 1000,
                         Ci.nsITimer.TYPE_ONE_SHOT);
   },
 
@@ -1034,6 +1061,7 @@ this.PushServiceWebSocket = {
     this._registerRequests.delete(reply.channelID);
     if (!this._hasPendingRequests()) {
       this._requestTimeoutTimer.cancel();
+      this._requestTimeout = this._requestTimeoutBase;
     }
 
     if (reply.status == 200) {
