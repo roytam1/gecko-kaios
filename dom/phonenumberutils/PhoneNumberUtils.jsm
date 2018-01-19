@@ -51,6 +51,12 @@ this.PhoneNumberUtils = {
     return this._defaultCountryCode;
   },
 
+  _persistCountryCode: libcutils.property_get("persist.device.countrycode", ""),
+
+  persistCountryCode: function () {
+    return this._persistCountryCode;
+  },
+
   getCountryName: function () {
     let mcc;
     let countryName;
@@ -96,7 +102,12 @@ this.PhoneNumberUtils = {
 
 #endif
 
-    countryName = MCC_ISO3166_TABLE[mcc] || this.defaultCountryCode();
+    countryName = MCC_ISO3166_TABLE[mcc]
+      || this.persistCountryCode() || this.defaultCountryCode();
+
+    if (countryName !== this.persistCountryCode()) {
+      libcutils.property_set("persist.device.countrycode", countryName);
+    }
 
     if (DEBUG) debug("MCC: " + mcc + "countryName: " + countryName);
     return countryName;
