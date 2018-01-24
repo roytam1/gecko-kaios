@@ -1052,7 +1052,6 @@ sys/reboot.h
 sys/reg.h
 sys/regset.h
 sys/resource.h
-sys/timerfd.h
 sys/sched.h
 sys/select.h
 sys/sem.h
