@@ -700,18 +700,27 @@ public:
 void
 AudioManager::HandleHeadphoneSwitchEvent(const hal::SwitchEvent& aEvent)
 {
+  // For more information, see bug 29237.
+  // Holds the wakelock for making sure that gecko can do all the needed things
+  // before system sleeps.
+  //
+  // Because of the switch events will be passed from
+  // InputReaderThread -> main thread -> IO thread -> main thread(HeadphoneSwitchObserver)
+  // I think adding wakelock on every thread is not a good way. So that I
+  // decide to hold the wakelock here first. If we still get problems, we may
+  // need to add more wakelocks on other threads.
+  CreateWakeLock();
+
   NotifyHeadphonesStatus(aEvent.status());
   // When user pulled out the headset, a delay of routing here can avoid the leakage of audio from speaker.
   if (aEvent.status() == hal::SWITCH_STATE_OFF && mSwitchDone) {
     // When system is in sleep mode and user unplugs the headphone, we need to
     // hold the wakelock here, or the delayed task will not be executed.
-    CreateWakeLock();
-
     RefPtr<AudioManager> self = this;
     nsCOMPtr<nsIRunnable> runnable =
       NS_NewRunnableFunction([self]() {
         if (self->mSwitchDone) {
-          self->ReleaseWakeLock();
+          // The headset was inserted again, so skip this task.
           return;
         }
         self->UpdateHeadsetConnectionState(hal::SWITCH_STATE_OFF);
@@ -734,6 +743,9 @@ AudioManager::HandleHeadphoneSwitchEvent(const hal::SwitchEvent& aEvent)
     SetForceForUse(AUDIO_POLICY_FORCE_FOR_MEDIA, AUDIO_POLICY_FORCE_NONE);
   }
 #endif
+  if (aEvent.status() != hal::SWITCH_STATE_OFF) {
+    ReleaseWakeLock();
+  }
 }
 
 void
@@ -743,7 +755,9 @@ AudioManager::CreateWakeLock()
   NS_ENSURE_TRUE_VOID(pmService);
 
   if (mWakeLock) {
-    NS_WARNING("mWakeLock is not null, someone creaetd but not unlocked !!");
+    // If the user inserts the headset before the SWITCH_STATE_OFF runnable is
+    // executed, we may hit his case.
+    return;
   }
 
   ErrorResult rv;
