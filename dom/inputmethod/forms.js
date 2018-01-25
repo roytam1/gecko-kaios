@@ -443,7 +443,6 @@ var FormAssistant = {
 
   scrollIntoViewTimeout: null,
   _focusedElement: null,
-  _focusCounter: 0, // up one for every time we focus a new element
   _focusDeleteObserver: null,
   _focusContentObserver: null,
   _documentEncoder: null,
@@ -459,7 +458,6 @@ var FormAssistant = {
   },
 
   set focusedElement(val) {
-    this._focusCounter++;
     this._focusedElement = val;
   },
 
@@ -678,19 +676,6 @@ var FormAssistant = {
   receiveMessage: function fa_receiveMessage(msg) {
     let target = this.focusedElement;
     let json = msg.json;
-
-    // To not break mozKeyboard contextId is optional
-    if ('contextId' in json &&
-        json.contextId !== this._focusCounter &&
-        json.requestId) {
-      // Ignore messages that are meant for a previously focused element
-      sendAsyncMessage("Forms:SequenceError", {
-        requestId: json.requestId,
-        error: "Expected contextId " + this._focusCounter +
-               " but was " + json.contextId
-      });
-      return;
-    }
 
     if (!target) {
       return;
@@ -928,7 +913,7 @@ var FormAssistant = {
       }
 
       case "Forms:GetContext": {
-        let obj = getJSON(target, this._focusCounter);
+        let obj = getJSON(target);
         sendAsyncMessage("Forms:GetContext:Result:OK", obj);
         break;
       }
@@ -1015,7 +1000,7 @@ var FormAssistant = {
   },
 
   sendInputState: function(element) {
-    sendAsyncMessage("Forms:Focus", getJSON(element, this._focusCounter));
+    sendAsyncMessage("Forms:Focus", getJSON(element));
   },
 
   getSelectionInfo: function fa_getSelectionInfo() {
@@ -1098,7 +1083,7 @@ function isNumberType(element) {
   return (element.getAttribute("type").toLowerCase() == "number");
 }
 
-function getJSON(element, focusCounter) {
+function getJSON(element) {
   // <input type=number> has a nested anonymous <input type=text> element that
   // takes focus on behalf of the number control when someone tries to focus
   // the number control. If |element| is such an anonymous text control then we
@@ -1151,8 +1136,6 @@ function getJSON(element, focusCounter) {
   let range = getSelectionRange(element);
 
   return {
-    "contextId": focusCounter,
-
     "type": type,
     "inputType": inputType,
     "inputMode": inputMode,

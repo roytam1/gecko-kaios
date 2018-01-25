@@ -837,14 +837,11 @@ function MozInputContext(data) {
     selectionEnd: data.selectionEnd,
     text: data.value
   };
-
-  this._contextId = data.contextId;
 }
 
 MozInputContext.prototype = {
   _window: null,
   _context: null,
-  _contextId: -1,
   _ipcHelper: null,
 
   classID: Components.ID("{1e38633d-d08b-4867-9944-afa5c648adb6}"),
@@ -940,7 +937,7 @@ MozInputContext.prototype = {
     let selectionDirty =
       this._context.selectionStart !== data.selectionStart ||
       this._context.selectionEnd !== data.selectionEnd;
-    let surroundDirty = selectionDirty || data.text !== this._contextId.text;
+    let surroundDirty = selectionDirty || data.text !== this._context.text;
 
     this._context.text = data.text;
     this._context.selectionStart = data.selectionStart;
@@ -1062,7 +1059,6 @@ MozInputContext.prototype = {
     let self = this;
     return this._sendPromise(function(resolverId) {
       cpmmSendAsyncMessageWithKbID(self, 'Keyboard:SetSelectionRange', {
-        contextId: self._contextId,
         requestId: resolverId,
         selectionStart: start,
         selectionEnd: start + length
@@ -1090,7 +1086,6 @@ MozInputContext.prototype = {
     let self = this;
     return this._sendPromise(function(resolverId) {
       cpmmSendAsyncMessageWithKbID(self, 'Keyboard:ReplaceSurroundingText', {
-        contextId: self._contextId,
         requestId: resolverId,
         text: text,
         offset: offset || 0,
@@ -1106,7 +1101,6 @@ MozInputContext.prototype = {
   deleteBackward: function ic_deleteBackward() {
     return this._sendPromise((resolverId) => {
       cpmmSendAsyncMessageWithKbID(this, 'Keyboard:DeleteBackward', {
-        contextId: this._contextId,
         requestId: resolverId
       });
     });
@@ -1118,7 +1112,6 @@ MozInputContext.prototype = {
 
       return this._sendPromise((resolverId) => {
         cpmmSendAsyncMessageWithKbID(this, 'Keyboard:SendKey', {
-          contextId: this._contextId,
           requestId: resolverId,
           method: 'sendKey',
           keyCode: dictOrKeyCode,
@@ -1129,7 +1122,6 @@ MozInputContext.prototype = {
     } else if (typeof dictOrKeyCode === 'object') {
       return this._sendPromise((resolverId) => {
         cpmmSendAsyncMessageWithKbID(this, 'Keyboard:SendKey', {
-          contextId: this._contextId,
           requestId: resolverId,
           method: 'sendKey',
           keyboardEventDict: this._getkeyboardEventDict(dictOrKeyCode)
@@ -1144,7 +1136,6 @@ MozInputContext.prototype = {
   keydown: function ic_keydown(dict) {
     return this._sendPromise((resolverId) => {
       cpmmSendAsyncMessageWithKbID(this, 'Keyboard:SendKey', {
-        contextId: this._contextId,
          requestId: resolverId,
         method: 'keydown',
         keyboardEventDict: this._getkeyboardEventDict(dict)
@@ -1155,7 +1146,6 @@ MozInputContext.prototype = {
   keyup: function ic_keyup(dict) {
     return this._sendPromise((resolverId) => {
       cpmmSendAsyncMessageWithKbID(this, 'Keyboard:SendKey', {
-        contextId: this._contextId,
         requestId: resolverId,
         method: 'keyup',
         keyboardEventDict: this._getkeyboardEventDict(dict)
@@ -1167,7 +1157,6 @@ MozInputContext.prototype = {
     let self = this;
     return this._sendPromise((resolverId) => {
       cpmmSendAsyncMessageWithKbID(self, 'Keyboard:SetComposition', {
-        contextId: self._contextId,
         requestId: resolverId,
         text: text,
         cursor: (typeof cursor !== 'undefined') ? cursor : text.length,
@@ -1181,7 +1170,6 @@ MozInputContext.prototype = {
     let self = this;
     return this._sendPromise((resolverId) => {
       cpmmSendAsyncMessageWithKbID(self, 'Keyboard:EndComposition', {
-        contextId: self._contextId,
         requestId: resolverId,
         text: text || '',
         keyboardEventDict: this._getkeyboardEventDict(dict)
