@@ -3062,6 +3062,10 @@ function WifiWorker() {
         self._fireEvent("onwpsoverlap", {});
         break;
       case "AUTHENTICATING":
+        self.currentNetwork =
+          { bssid: wifiInfo.bssid,
+            ssid: quote(wifiInfo.wifiSsid),
+            netId: wifiInfo.networkId };
         self._fireEvent("onauthenticating", {network: netToDOM(self.currentNetwork)});
         break;
       case "SCANNING":
