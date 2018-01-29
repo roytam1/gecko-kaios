@@ -4331,8 +4331,8 @@ WifiWorker.prototype = {
                   self._needToEnableNetworks = true;
                   self._sendMessage(message, ok, ok, msg);
                 });
+                return;
               }
-              return;
             }
             self._sendMessage(message, false, "network not found", msg);
           }).bind(self);
