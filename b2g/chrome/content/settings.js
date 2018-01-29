@@ -341,6 +341,9 @@ function setUpdateTrackingId() {
     if (!trackingId) {
       trackingId = uuidgen.generateUUID().toString().replace(/[{}]/g, "");
       Services.prefs.setCharPref('app.update.custom', trackingId);
+      if (navigator.mozSettings) {
+        navigator.mozSettings.createLock().set({ 'app.update.custom': trackingId });
+      }
     }
   } catch(e) {
     dump('Error getting tracking ID ' + e + '\n');
