@@ -69,6 +69,11 @@ XPCOMUtils.defineLazyServiceGetter(this, "gMIMEService",
 XPCOMUtils.defineLazyServiceGetter(this, "gExternalProtocolService",
                                    "@mozilla.org/uriloader/external-protocol-service;1",
                                    "nsIExternalProtocolService");
+
+XPCOMUtils.defineLazyServiceGetter(this, "gNetworkManager",
+                                   "@mozilla.org/network/manager;1",
+                                   "nsINetworkManager");
+
 #ifdef MOZ_WIDGET_ANDROID
 XPCOMUtils.defineLazyModuleGetter(this, "RuntimePermissions",
                                   "resource://gre/modules/RuntimePermissions.jsm");
@@ -127,8 +132,7 @@ const kObserverTopics = [
   "suspend_process_notification",
   "wake_notification",
   "resume_process_notification",
-  "network:offline-about-to-go-offline",
-  "network:offline-status-changed",
+  "network-active-changed",
   "xpcom-will-shutdown",
 ];
 
@@ -1056,6 +1060,22 @@ this.DownloadObserver = {
     let downloadsCount;
     let p = DownloadUIHelper.getPrompter();
     switch (aTopic) {
+      case "network-active-changed":
+        let active = gNetworkManager.activeNetworkInfo;
+        for (let download of this._publicInProgressDownloads) {
+            download.cancel();
+            this._canceledOfflineDownloads.add(download);
+        }
+        for (let download of this._privateInProgressDownloads) {
+          download.cancel();
+          this._canceledOfflineDownloads.add(download);
+        }
+
+         // XXX: Might need delay for debouncing case.
+        if (active) {
+          this._resumeOfflineDownloads();
+        }
+        break;
       case "quit-application-requested":
         downloadsCount = this._publicInProgressDownloads.size +
                          this._privateInProgressDownloads.size;
@@ -1091,7 +1111,6 @@ this.DownloadObserver = {
         break;
       case "sleep_notification":
       case "suspend_process_notification":
-      case "network:offline-about-to-go-offline":
         for (let download of this._publicInProgressDownloads) {
           download.cancel();
           this._canceledOfflineDownloads.add(download);
@@ -1111,11 +1130,6 @@ this.DownloadObserver = {
         if (wakeDelay >= 0) {
           this._wakeTimer = new Timer(this._resumeOfflineDownloads.bind(this), wakeDelay,
                                       Ci.nsITimer.TYPE_ONE_SHOT);
-        }
-        break;
-      case "network:offline-status-changed":
-        if (aData == "online") {
-          this._resumeOfflineDownloads();
         }
         break;
       // We need to unregister observers explicitly before we reach the
