@@ -17,7 +17,6 @@
 #include "nsINetworkInterface.h"
 
 #include "mozilla/Snprintf.h"
-#include "AutoMounter.h"
 #include "SystemProperty.h"
 
 #include <android/log.h>
@@ -38,7 +37,6 @@
 
 using namespace mozilla::dom;
 using namespace mozilla::ipc;
-using namespace mozilla::system;
 using mozilla::system::Property;
 
 static bool ENABLE_DEBUG = false;
@@ -48,14 +46,15 @@ static const char* PERSIST_SYS_USB_CONFIG_PROPERTY = "persist.sys.usb.config";
 static const char* SYS_USB_CONFIG_PROPERTY         = "sys.usb.config";
 static const char* SYS_USB_STATE_PROPERTY          = "sys.usb.state";
 
+static const char* USB_FUNCTION_NONE   = "none";
 static const char* USB_FUNCTION_RNDIS  = "rndis";
 static const char* USB_FUNCTION_ADB    = "adb";
 
 // Use this command to continue the function chain.
 static const char* DUMMY_COMMAND = "tether status";
 
-// Retry 20 times (2 seconds) for usb state transition.
-static const uint32_t USB_FUNCTION_RETRY_TIMES = 20;
+// Retry 10 times (1 seconds) for wait usb state transition.
+static const uint32_t USB_FUNCTION_RETRY_TIMES = 10;
 // Check "sys.usb.state" every 100ms.
 static const uint32_t USB_FUNCTION_RETRY_INTERVAL = 100;
 
@@ -3132,7 +3131,7 @@ void NetworkUtils::escapeQuote(nsCString& aString)
   aString.ReplaceSubstring("\"", "\\\"");
 }
 
-CommandResult NetworkUtils::checkUsbRndisState(NetworkParams& aOptions)
+bool NetworkUtils::waitForUsbState(bool aTryToFind, const char* aState)
 {
   static uint32_t retry = 0;
 
@@ -3141,26 +3140,20 @@ CommandResult NetworkUtils::checkUsbRndisState(NetworkParams& aOptions)
 
   nsTArray<nsCString> stateFuncs;
   split(currentState, USB_CONFIG_DELIMIT, stateFuncs);
-  bool rndisPresent = stateFuncs.Contains(nsCString(USB_FUNCTION_RNDIS));
+  bool foundState = stateFuncs.Contains(nsCString(aState));
 
-  if ((aOptions.mEnable && IsUsbConfigured()) ||
-      (!aOptions.mEnable && !rndisPresent)) {
-    NetworkResultOptions result;
-    result.mEnable = aOptions.mEnable;
-    result.mResult = true;
+  if (foundState == aTryToFind) {
     retry = 0;
-    return result;
+    return true;
   }
   if (retry < USB_FUNCTION_RETRY_TIMES) {
     retry++;
     usleep(USB_FUNCTION_RETRY_INTERVAL * 1000);
-    return checkUsbRndisState(aOptions);
+    return waitForUsbState(aTryToFind, aState);
   }
 
-  NetworkResultOptions result;
-  result.mResult = false;
   retry = 0;
-  return result;
+  return false;
 }
 
 /**
@@ -3168,8 +3161,6 @@ CommandResult NetworkUtils::checkUsbRndisState(NetworkParams& aOptions)
  */
 CommandResult NetworkUtils::enableUsbRndis(NetworkParams& aOptions)
 {
-  bool report = aOptions.mReport;
-
   // For some reason, rndis doesn't play well with diag,modem,nmea.
   // So when turning rndis on, we set sys.usb.config to either "rndis"
   // or "rndis,adb". When turning rndis off, we go back to
@@ -3215,14 +3206,32 @@ CommandResult NetworkUtils::enableUsbRndis(NetworkParams& aOptions)
   char newConfig[Property::VALUE_MAX_LENGTH] = "";
   Property::Get(SYS_USB_CONFIG_PROPERTY, currentConfig, nullptr);
   join(configFuncs, USB_CONFIG_DELIMIT, Property::VALUE_MAX_LENGTH, newConfig);
+
+  memset(&persistConfig, 0, sizeof(persistConfig));
+  join(persistFuncs, USB_CONFIG_DELIMIT, Property::VALUE_MAX_LENGTH, persistConfig);
+
+  NetworkResultOptions result;
+  result.mEnable = aOptions.mEnable;
+
+  bool cleanState = false;
   if (strcmp(currentConfig, newConfig)) {
-    Property::Set(SYS_USB_CONFIG_PROPERTY, newConfig);
+    // Clean the USB stack to close existing connections
+    Property::Set(SYS_USB_CONFIG_PROPERTY, USB_FUNCTION_NONE);
+    if (waitForUsbState(true, USB_FUNCTION_NONE)) {
+      cleanState = true;
+      Property::Set(SYS_USB_CONFIG_PROPERTY, newConfig);
+    } else {
+      // Clean failed, reset to default and report failed
+      Property::Set(SYS_USB_CONFIG_PROPERTY, persistConfig);
+    }
   }
 
   // Trigger the timer to check usb state and report the result to NetworkManager.
-  if (report) {
+  if (aOptions.mReport) {
     usleep(USB_FUNCTION_RETRY_INTERVAL * 1000);
-    return checkUsbRndisState(aOptions);
+    result.mResult = cleanState ?
+                     waitForUsbState(aOptions.mEnable, USB_FUNCTION_RNDIS) : false;
+    return result;
   }
   return SUCCESS;
 }

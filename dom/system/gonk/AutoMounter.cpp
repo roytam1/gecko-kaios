@@ -159,7 +159,7 @@ IsUsbCablePluggedIn()
 #endif
 }
 
-bool
+static bool
 IsUsbConfigured()
 {
   char usbStateNode[PROPERTY_VALUE_MAX];

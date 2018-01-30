@@ -487,8 +487,8 @@ private:
   /**
    * Utility functions.
    */
-  CommandResult checkUsbRndisState(NetworkParams& aOptions);
   void dumpParams(NetworkParams& aOptions, const char* aType);
+  bool waitForUsbState(bool aTryToFind, const char* aState);
 
   static void escapeQuote(nsCString& aString);
   inline uint32_t netdResponseType(uint32_t code);

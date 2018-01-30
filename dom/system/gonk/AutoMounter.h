@@ -51,12 +51,6 @@ int32_t
 GetAutoMounterStatus();
 
 /**
- * Report current USB configure status
- */
-bool
-IsUsbConfigured();
-
-/**
  * Sets the sharing mode of an individual volume.
  *
  * If a volume is enabled for sharing, and the autmounter
