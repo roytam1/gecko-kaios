@@ -140,7 +140,6 @@ this.KaiAccountsMgmtService = {
         ).then(null, Components.utils.reportError);
         break;
       case "signIn":
-      case "signUp":
       case "refreshAuthentication":
         KaiAccountsManager[data.method](data.accountId, data.password).then(
           user => {
@@ -153,6 +152,16 @@ this.KaiAccountsMgmtService = {
         break;
       case "requestVerificationOtp":
         KaiAccountsManager.requestVerificationOtp(data.accountId).then(
+          result => {
+            self._onFulfill(msg.id, result);
+          },
+          reason => {
+            self._onReject(msg.id, reason);
+          }
+        ).then(null, Components.utils.reportError);
+        break;
+      case "signUp":
+        KaiAccountsManager.signUp(data.accountId, data.password, data.info).then(
           result => {
             self._onFulfill(msg.id, result);
           },

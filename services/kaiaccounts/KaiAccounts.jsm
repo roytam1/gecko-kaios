@@ -27,6 +27,7 @@ let publicProperties = [
   "localtimeOffsetMsec",
   "now",
   "resendVerificationEmail",
+  "getAccountInfo",
   "setSignedInUser",
   "signOut",
   "version"
@@ -426,6 +427,36 @@ KaiAccountsInternal.prototype = {
       }
       throw new Error("Cannot resend verification email; no signed-in user");
     });
+  },
+
+  /**
+   * Obtain account information for the currently signed-in user.
+   */
+  getAccountInfo: function getAccountInfo() {
+    return this.getSignedInUser().then(
+      user => {
+        if (user) {
+          return this.getCertificate(user).then(
+            cert => {
+              return this.kaiAccountsClient.getAccountInfo(cert).then(
+                result => {
+                  let accountData = user;
+                  accountData.birthday = result.birthday;
+                  accountData.gender = result.gender;
+                  let currentState = this.currentAccountState;
+                  currentState.setUserAccountData(accountData);
+                  return Promise.resolve(result);
+                },
+                reason => {
+                  return Promise.reject(reason);
+                }
+              );
+            }
+          );
+        }
+        return Promise.reject("no login user");
+      }
+    );
   },
 
   /*

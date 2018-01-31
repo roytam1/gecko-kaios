@@ -63,6 +63,8 @@ this.KaiAccountsManager = {
 
     return {
       accountId: this._activeSession.accountId,
+      birthday: this._activeSession.birthday,
+      gender: this._activeSession.gender,
       verified: this._activeSession.verified
     }
   },
@@ -130,10 +132,20 @@ this.KaiAccountsManager = {
           () => {
             this._activeSession = user;
             log.debug("User signed in: " + JSON.stringify(this._user));
-            return Promise.resolve({
-              accountCreated: false,
-              user: this._user
-            });
+            return this._kaiAccounts.getAccountInfo().then(
+              () => {
+              },
+              (reason) => {
+                log.error("Obtaining account info failed reason " + JSON.stringify(reason));
+              }
+            ).then(
+              () => {
+                return Promise.resolve({
+                  accountCreated: false,
+                  user: this._user
+                });
+              }
+            );
           }
         );
       },
@@ -141,7 +153,7 @@ this.KaiAccountsManager = {
     );
   },
 
-  _signUp: function(aAccountId, aPassword) {
+  _signUp: function(aAccountId, aPassword, aInfo) {
     if (Services.io.offline) {
       return this._error(ERROR_OFFLINE);
     }
@@ -157,7 +169,7 @@ this.KaiAccountsManager = {
     let client = this._getKaiAccountsClient();
     return this._kaiAccounts.getSignedInUser().then(
       user => {
-        return client.signUp(aAccountId, aPassword);
+        return client.signUp(aAccountId, aPassword, aInfo);
       }
     ).then(
       user => {
@@ -336,8 +348,8 @@ this.KaiAccountsManager = {
     return this._signIn(aAccountId, aPassword);
   },
 
-  signUp: function(aAccountId, aPassword) {
-    return this._signUp(aAccountId, aPassword);
+  signUp: function(aAccountId, aPassword, aInfo) {
+    return this._signUp(aAccountId, aPassword, aInfo);
   },
 
   signOut: function() {
