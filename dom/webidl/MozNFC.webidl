@@ -45,7 +45,12 @@ enum NfcSelfTestType {
   "type-a_transaction",
 
   // Verify Type-B analog parameter.
-  "type-b_transaction"
+  "type-b_transaction",
+
+  // Reserve two types for future use, vendors are able to handle
+  // reserved types based on requirement of certification.
+  "vendor_defined_type1",
+  "vendor_defined_type2"
 };
 
 [NoInterfaceObject]
