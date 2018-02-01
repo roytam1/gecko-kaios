@@ -1184,6 +1184,7 @@ pref("dom.webnotifications.serviceworker.enabled", true);
 pref("dom.webnotifications.serviceworker.maxActions", 2);
 pref("dom.serviceWorkers.focus.enabled", false);
 pref("dom.push.enabled", true);
+pref("dom.push.serverURL", "wss://push.kaiostech.com/");
 // Enable Adaptive ping
 pref("dom.push.adaptive.enabled", true);
 // Set first pingInterval as adaptive pingInterval.default if adaptive.enabled is set
