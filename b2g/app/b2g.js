@@ -843,7 +843,7 @@ pref("hal.gonk.COMPOSITOR.nice", -4);
 #ifdef KAIOS_256MB_SUPPORT
 pref("gonk.notifyHardLowMemUnderKB", 7168); //kilobytes
 #else
-pref("gonk.notifyHardLowMemUnderKB", 14336);
+pref("gonk.notifyHardLowMemUnderKB", 30720);
 #endif
 
 // Fire a memory pressure event when the system has less than Xmb of memory
