@@ -894,7 +894,7 @@ private:
   bool GetNextSubChunk(size_t& aBytesToCopy, size_t& aSamplesToCopy)
   {
     size_t bufferCapabity = GetCapacity();
-    size_t sampleBytes = mOMXAEncoder.mChannels * mOMXAEncoder.mResamplingRatio
+    double sampleBytes = mOMXAEncoder.mChannels * mOMXAEncoder.mResamplingRatio
                         * sizeof(AudioDataValue);
     if (aBytesToCopy) {
       if (aBytesToCopy > bufferCapabity) {
