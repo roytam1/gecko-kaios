@@ -265,10 +265,7 @@ public:
   }
 
   void
-  UpdateIsConferenceParent(bool aIsParent)
-  {
-    mIsConferenceParent = aIsParent;
-  }
+  UpdateIsConferenceParent(bool aIsParent);
 
   void
   UpdateVoiceQuality(TelephonyCallVoiceQuality aVoiceQuality)

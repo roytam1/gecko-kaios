@@ -322,6 +322,24 @@ TelephonyCall::CreatePromise(ErrorResult& aRv)
 }
 
 void
+TelephonyCall::UpdateIsConferenceParent(bool aIsParent)
+{
+  if (aIsParent == mIsConferenceParent) {
+    return;
+  }
+
+  if (!aIsParent) {
+    RefPtr<TelephonyCallGroup> group = mTelephony->ConferenceGroup();
+    RefPtr<TelephonyCall> conferenceParentCall = group->GetConferenceParentCall();
+    if (conferenceParentCall == this) {
+      group->SetConferenceParentCall(nullptr);
+    }
+  }
+
+  mIsConferenceParent = aIsParent;
+}
+
+void
 TelephonyCall::NotifyError(const nsAString& aError)
 {
   // Set the error string
