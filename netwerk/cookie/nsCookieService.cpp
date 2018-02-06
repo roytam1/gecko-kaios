@@ -2027,7 +2027,9 @@ nsCookieService::SetCookieStringInternal(nsIURI                 *aHostURI,
     return;
   }
 
-  nsCookieKey key(baseDomain, aOriginAttrs);
+  nsCookieKey key(baseDomain, Preferences::GetBool("apps.sandboxed.cookies.enabled", true) ?
+                              aOriginAttrs :
+                              NeckoOriginAttributes(NECKO_NO_APP_ID, true));
 
   // check default prefs
   CookieStatus cookieStatus = CheckPrefs(aHostURI, aIsForeign, requireHostMatch,
@@ -3035,7 +3037,9 @@ nsCookieService::GetCookieStringInternal(nsIURI *aHostURI,
   int64_t currentTime = currentTimeInUsec / PR_USEC_PER_SEC;
   bool stale = false;
 
-  nsCookieKey key(baseDomain, aOriginAttrs);
+  nsCookieKey key(baseDomain, Preferences::GetBool("apps.sandboxed.cookies.enabled", true) ?
+                              aOriginAttrs :
+                              NeckoOriginAttributes(NECKO_NO_APP_ID, true));
   EnsureReadDomain(key);
 
   // perform the hash lookup

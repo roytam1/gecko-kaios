@@ -1274,6 +1274,11 @@ pref("apps.token.uri", "https://api.kaiostech.com/v3.0/applications/ZW8svGSlaw1Z
 // The secret API key of KaiOS apps service
 pref("apps.authorization.key", "%KAIOS_APPS_API_KEY%");
 
+// Disable sandboxed cookies for apps.
+// Turning this off treat apps as mozbrowser iframe when inserting cookies
+// into DB, allow us to do single-sign-on with services like Google, Facebook.
+pref("apps.sandboxed.cookies.enabled", false);
+
 // Enable navigator.kaiauth - the AuthorizationManager of KaiOS service
 pref("dom.kaiauth.enabled", true);
 

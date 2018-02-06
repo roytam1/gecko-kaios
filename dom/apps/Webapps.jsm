@@ -5067,6 +5067,11 @@ this.DOMApplicationRegistry = {
   receiveAppMessage: function(appId, message) {
     switch (message.name) {
       case "Webapps:ClearBrowserData":
+        try {
+          if (!Services.prefs.getBoolPref('apps.sandboxed.cookies.enabled')) {
+            appId = Ci.nsIScriptSecurityManager.NO_APP_ID;
+          }
+        } catch (e) {}
         this._clearPrivateData(appId, true, message.data);
         break;
     }
