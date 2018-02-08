@@ -671,6 +671,7 @@ public:
     hal::UnregisterFlipObserver(this);
     hal::UnregisterFlashlightObserver(this);
     hal::UnregisterUsbObserver(this);
+    hal::UnregisterPowerSupplyObserver(this);
   }
 
   virtual bool
