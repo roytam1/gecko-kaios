@@ -2509,12 +2509,17 @@ this.DOMApplicationRegistry = {
       }
     }
     let imei = this.imei || '123456789012345';
-    let RO_CUNAME = 'ro.fota.cu_ref';
-    let curef = libcutils.property_get(RO_CUNAME) || '40440-2AJIIN1';
-    function formatDeviceInfoHeader(imei, curef) {
-      return 'imei="'+imei+'", curef="'+curef+'"';
+    let cuRef;
+    try {
+      cuRef = Services.prefs.getCharPref("device.commercial.ref");
+    } catch (e) {
+      debug("get Commercial Unit Reference error: " + e);
     };
-    kaiHeaders.push({ 'name' : KAIAPIDEVICEINFO, 'value' : formatDeviceInfoHeader(imei, curef) });
+    cuRef = cuRef || '40440-2AJIIN1';
+    function formatDeviceInfoHeader(imei, cuRef) {
+      return 'imei="' + imei + '", curef="' + cuRef + '"';
+    };
+    kaiHeaders.push({ 'name' : KAIAPIDEVICEINFO, 'value' : formatDeviceInfoHeader(imei, cuRef) });
 
     this._hawkHeader(url).then( hawkHeader => {
       kaiHeaders.push(hawkHeader);
