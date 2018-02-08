@@ -54,11 +54,12 @@ this.DeviceUtils = {
     let cuRefStr;
 
     try {
-      if (isGonk) {
-        cuRefStr = libcutils.property_get("ro.fota.cu_ref");
-      }
+      cuRefStr = Services.prefs.getPrefType("device.commercial.ref") == Ci.nsIPrefBranch.PREF_STRING ?
+        Services.prefs.getCharPref("device.commercial.ref") : undefined;
       if (!cuRefStr) {
-        cuRefStr = Services.prefs.getCharPref("device.cuRef.default");
+        // TODO: Remove this pref since it will be deprecated in master and v2.5. See Bug-35271.
+        cuRefStr = Services.prefs.getPrefType("device.cuRef.default") == Ci.nsIPrefBranch.PREF_STRING ?
+          Services.prefs.getCharPref("device.cuRef.default") : undefined;
       }
     } catch(e) {
       dump("DeviceUtils.getRefNumber error=" + e);
