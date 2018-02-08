@@ -432,6 +432,30 @@ this.KaiAccountsManager = {
     );
   },
 
+  changePassword: function(aOldPassword, aNewPassword) {
+    if (Services.io.offline) {
+      return this._error(ERROR_OFFLINE);
+    }
+
+    if (!aOldPassword || !aNewPassword) {
+      return this._error(ERROR_INVALID_PASSWORD);
+    }
+
+    if (aOldPassword == aNewPassword) {
+      return this._error(ERROR_INVALID_PASSWORD);
+    }
+
+    return this._kaiAccounts.changePassword(aOldPassword, aNewPassword).then(
+      result => {
+        return Promise.resolve();
+      },
+      reason => {
+        log.error("Changing password failed reason " + JSON.stringify(reason));
+        return this._serverError(reason);
+      }
+    );
+  },
+
   queryAccount: function(aAccountId) {
     log.debug("queryAccount " + aAccountId);
     if (Services.io.offline) {

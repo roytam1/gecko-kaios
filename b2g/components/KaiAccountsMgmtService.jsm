@@ -170,6 +170,16 @@ this.KaiAccountsMgmtService = {
           }
         ).then(null, Components.utils.reportError);
         break;
+      case "changePassword":
+        KaiAccountsManager.changePassword(data.oldPassword, data.newPassword).then(
+          result => {
+            self._onFulfill(msg.id, result);
+          },
+          reason => {
+            self._onReject(msg.id, reason);
+          }
+        ).then(null, Components.utils.reportError);
+        break;
     }
   }
 };

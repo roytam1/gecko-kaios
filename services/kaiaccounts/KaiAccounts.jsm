@@ -28,6 +28,7 @@ let publicProperties = [
   "now",
   "resendVerificationEmail",
   "getAccountInfo",
+  "changePassword",
   "setSignedInUser",
   "signOut",
   "version"
@@ -451,6 +452,24 @@ KaiAccountsInternal.prototype = {
                   return Promise.reject(reason);
                 }
               );
+            }
+          );
+        }
+        return Promise.reject("no login user");
+      }
+    );
+  },
+
+  /**
+   * Change password for the currently signed-in user.
+   */
+  changePassword: function changePassword(oldPassword, newPassword) {
+    return this.getSignedInUser().then(
+      user => {
+        if (user && user.accountId) {
+          return this.getCertificate(user).then(
+            cert => {
+              return this.kaiAccountsClient.changePassword(user.accountId, oldPassword, newPassword, cert);
             }
           );
         }
