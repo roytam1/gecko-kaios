@@ -2487,8 +2487,30 @@ this.DOMApplicationRegistry = {
   },
 
   _prepareKaiHeaders: function(url){
-    let deferred = Promise.defer();
+    // Prepare KaiHeaders if the URL is hosted by KaiOS
+    let kaiApiURLs;
+    try {
+      kaiApiURLs = Services.prefs.getCharPref("apps.serviceCenter.kaiApiURLs");
+    } catch(e) {
+      debug("Failed to get Pref 'apps.serviceCenter.kaiApiURLs'");
+    }
+    if (!kaiApiURLs) {
+      return Promise.resolve([]);
+    }
+    let splits = kaiApiURLs.split(",");
+    let hostedByKai = false;;
+    for (let i in splits) {
+      if (url.indexOf(splits[i].trim()) > -1) {
+        hostedByKai = true;
+        break;
+      }
+    }
+    if (!hostedByKai) {
+      this.cachedHawkCredentials = null;
+      return Promise.resolve([]);
+    }
 
+    let deferred = Promise.defer();
     let kaiHeaders = [];
     let KAIAPIVERSION = 'Kai-API-Version';
     let prefName = 'app.kaiapi.version';
@@ -3712,11 +3734,26 @@ this.DOMApplicationRegistry = {
     }
 
     if (this.cachedHawkCredentials) {
-      // add Authorization header for Hawk
-      let options = { credentials : this.cachedHawkCredentials };
-      let uri = Services.io.newURI(aFullPackagePath, null, null);
-      let hawkHeader = CryptoUtils.computeHAWK(uri, "GET", options);
-      requestChannel.setRequestHeader("Authorization", hawkHeader.field, false);
+      // Append Hawk header if the package is stored in Kai's server
+      let kaiStorageURLs;
+      try {
+        kaiStorageURLs = Services.prefs.getCharPref("apps.serviceCenter.kaiStorageURLs");
+      } catch(e) {
+        debug("Failed to get Pref 'apps.serviceCenter.kaiStorageURLs'");
+      }
+      if (kaiStorageURLs) {
+        let splits = kaiStorageURLs.split(",");
+        for (let i in splits) {
+          if (aFullPackagePath.indexOf(splits[i].trim()) > -1) {
+            // add Authorization header for Hawk
+            let options = { credentials : this.cachedHawkCredentials };
+            let uri = Services.io.newURI(aFullPackagePath, null, null);
+            let hawkHeader = CryptoUtils.computeHAWK(uri, "GET", options);
+            requestChannel.setRequestHeader("Authorization", hawkHeader.field, false);
+            break;
+          }
+        }
+      }
     }
 
     let lastProgressTime = 0;
