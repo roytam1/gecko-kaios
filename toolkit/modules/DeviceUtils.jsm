@@ -106,8 +106,10 @@ this.DeviceUtils = {
             let device_info = {
               device_id: device_id,
               reference: this.getRefNumber(),
-              os: Services.prefs.getCharPref("b2g.osName"),
-              os_version: Services.prefs.getCharPref("b2g.version"),
+              os: Services.prefs.getPrefType("b2g.osName") == Ci.nsIPrefBranch.PREF_STRING ?
+                Services.prefs.getCharPref("b2g.osName") : undefined,
+              os_version: Services.prefs.getPrefType("b2g.version") == Ci.nsIPrefBranch.PREF_STRING ?
+                Services.prefs.getCharPref("b2g.version") : undefined,
               device_type: device_type_map[characteristics],
               brand: libcutils.property_get("ro.product.brand"),
               model: libcutils.property_get("ro.product.name")
