@@ -45,6 +45,11 @@ using mozilla::services::GetObserverService;
 static const char16_t kEllipsisChar[] = { 0x2026, 0x0 };
 static const char16_t kASCIIPeriodsChar[] = { '.', '.', '.', 0x0 };
 
+// Skip transformation of numbers even when bidi.numeral is been set.
+// Ideally we should create a whitelist, but for now we just check font family
+// if it is equal to "gaia-icons".
+#define NUMERAL_ALWAYS_NORMAL "\"gaia-icons\""
+
 #ifdef DEBUG_roc
 #define DEBUG_TEXT_RUN_STORAGE_METRICS
 #endif
@@ -236,7 +241,7 @@ gfxTextRun::ComputeLigatureData(Range aPartRange, PropertyProvider *aProvider)
     NS_ASSERTION(aPartRange.start < aPartRange.end,
                  "Computing ligature data for empty range");
     NS_ASSERTION(aPartRange.end <= GetLength(), "Character length overflow");
-  
+
     LigatureData result;
     CompressedGlyph *charGlyphs = mCharacterGlyphs;
 
@@ -383,7 +388,7 @@ gfxTextRun::ShrinkToLigatureBoundaries(Range* aRange)
 {
     if (aRange->start >= aRange->end)
         return;
-  
+
     CompressedGlyph *charGlyphs = mCharacterGlyphs;
 
     while (aRange->start < aRange->end &&
@@ -431,7 +436,7 @@ ClipPartialLigature(const gfxTextRun* aTextRun,
         } else {
             *aEnd = std::min(*aEnd, endEdge);
         }
-    }    
+    }
 }
 
 void
@@ -776,7 +781,7 @@ gfxTextRun::AccumulatePartialLigatureMetrics(gfxFont *aFont, Range aRange,
     // ligature. Shift it left.
     metrics.mBoundingBox.x -=
         IsRightToLeft() ? metrics.mAdvanceWidth - (data.mPartAdvance + data.mPartWidth)
-            : data.mPartAdvance;    
+            : data.mPartAdvance;
     metrics.mAdvanceWidth = data.mPartWidth;
 
     aMetrics->CombineWith(metrics, IsRightToLeft());
@@ -891,7 +896,7 @@ gfxTextRun::BreakAndMeasureText(uint32_t aStart, uint32_t aMaxLength,
         }
 
         // There can't be a word-wrap break opportunity at the beginning of the
-        // line: if the width is too small for even one character to fit, it 
+        // line: if the width is too small for even one character to fit, it
         // could be the first and last break opportunity on the line, and that
         // would trigger an infinite loop.
         if (aSuppressBreak != eSuppressAllBreaks &&
@@ -909,7 +914,7 @@ gfxTextRun::BreakAndMeasureText(uint32_t aStart, uint32_t aMaxLength,
                 if (atHyphenationBreak) {
                     hyphenatedAdvance += aProvider->GetHyphenWidth();
                 }
-            
+
                 if (lastBreak < 0 || width + hyphenatedAdvance - trimmableAdvance <= aWidth) {
                     // We can break here.
                     lastBreak = i;
@@ -929,7 +934,7 @@ gfxTextRun::BreakAndMeasureText(uint32_t aStart, uint32_t aMaxLength,
                 }
             }
         }
-        
+
         gfxFloat charAdvance;
         if (i >= ligatureRange.start && i < ligatureRange.end) {
             charAdvance = GetAdvanceForGlyphs(Range(i, i + 1));
@@ -942,7 +947,7 @@ gfxTextRun::BreakAndMeasureText(uint32_t aStart, uint32_t aMaxLength,
             charAdvance =
                 ComputePartialLigatureWidth(Range(i, i + 1), aProvider);
         }
-        
+
         advance += charAdvance;
         if (aTrimWhitespace) {
             if (mCharacterGlyphs[i].CharIsSpace()) {
@@ -1091,7 +1096,7 @@ gfxTextRun::AddGlyphRun(gfxFont *aFont, uint8_t aMatchType,
                  "mixed orientation should have been resolved");
     if (!aFont) {
         return NS_OK;
-    }    
+    }
     uint32_t numGlyphRuns = mGlyphRuns.Length();
     if (!aForceNewRun && numGlyphRuns > 0) {
         GlyphRun *lastGlyphRun = &mGlyphRuns[numGlyphRuns - 1];
@@ -1349,7 +1354,7 @@ gfxTextRun::SetSpaceGlyph(gfxFont* aFont, DrawTarget* aDrawTarget,
         (GetFlags() & gfxTextRunFactory::TEXT_ORIENT_VERTICAL_UPRIGHT) != 0;
     gfxShapedWord* sw = aFont->GetShapedWord(aDrawTarget,
                                              &space, 1,
-                                             gfxShapedWord::HashMix(0, ' '), 
+                                             gfxShapedWord::HashMix(0, ' '),
                                              Script::LATIN,
                                              vertical,
                                              mAppUnitsPerDevUnit,
@@ -1415,7 +1420,7 @@ gfxTextRun::FetchGlyphExtents(DrawTarget* aRefDrawTarget)
         bool fontIsSetup = false;
         uint32_t j;
         gfxGlyphExtents *extents = font->GetOrCreateGlyphExtents(mAppUnitsPerDevUnit);
-  
+
         for (j = start; j < end; ++j) {
             const gfxTextRun::CompressedGlyph *glyphData = &charGlyphs[j];
             if (glyphData->IsSimpleGlyph()) {
@@ -1942,13 +1947,13 @@ gfxFontGroup::Copy(const gfxFontStyle *aStyle)
     return fg;
 }
 
-bool 
+bool
 gfxFontGroup::IsInvalidChar(uint8_t ch)
 {
     return ((ch & 0x7f) < 0x20 || ch == 0x7f);
 }
 
-bool 
+bool
 gfxFontGroup::IsInvalidChar(char16_t ch)
 {
     // All printable 7-bit ASCII values are OK
@@ -2153,6 +2158,8 @@ gfxFontGroup::InitTextRun(DrawTarget* aDrawTarget,
     int32_t numOption = gfxPlatform::GetPlatform()->GetBidiNumeralOption();
     UniquePtr<char16_t[]> transformedString;
     if (numOption != IBMBIDI_NUMERAL_NOMINAL) {
+        nsAutoString fontFamilies;
+        mFamilyList.ToString(fontFamilies);
         // scan the string for numerals that may need to be transformed;
         // if we find any, we'll make a local copy here and use that for
         // font matching and glyph generation/shaping
@@ -2160,7 +2167,12 @@ gfxFontGroup::InitTextRun(DrawTarget* aDrawTarget,
             (aTextRun->GetFlags() & gfxTextRunFactory::TEXT_INCOMING_ARABICCHAR) != 0;
         for (uint32_t i = 0; i < aLength; ++i) {
             char16_t origCh = aString[i];
-            char16_t newCh = HandleNumberInChar(origCh, prevIsArabic, numOption);
+            char16_t newCh;
+            if (fontFamilies.EqualsLiteral(NUMERAL_ALWAYS_NORMAL)) {
+              newCh = HandleNumberInChar(origCh, prevIsArabic, IBMBIDI_NUMERAL_NOMINAL);
+            } else {
+              newCh = HandleNumberInChar(origCh, prevIsArabic, numOption);
+            }
             if (newCh != origCh) {
                 if (!transformedString) {
                     transformedString = MakeUnique<char16_t[]>(aLength);
@@ -3166,7 +3178,7 @@ already_AddRefed<gfxFont>
 gfxFontGroup::WhichSystemFontSupportsChar(uint32_t aCh, uint32_t aNextCh,
                                           Script aRunScript)
 {
-    gfxFontEntry *fe = 
+    gfxFontEntry *fe =
         gfxPlatformFontList::PlatformFontList()->
             SystemFindFontForChar(aCh, aNextCh, aRunScript, &mStyle);
     if (fe) {
