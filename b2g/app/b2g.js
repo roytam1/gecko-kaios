@@ -1189,6 +1189,8 @@ pref("dom.push.serverURL", "wss://push.kaiostech.com/");
 pref("dom.push.adaptive.enabled", true);
 // Set first pingInterval as adaptive pingInterval.default if adaptive.enabled is set
 pref("dom.push.pingInterval", 180000); // 3 minutes
+// KaiOS push service needs authorization
+pref("dom.push.authorization.enabled", true);
 
 // Retain at most 10 processes' layers buffers
 pref("layers.compositor-lru-size", 10);
