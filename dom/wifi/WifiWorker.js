@@ -972,8 +972,7 @@ var WifiManager = (function() {
 
     var space = event.indexOf(" ");
     var eventData = event.substr(0, space + 1);
-    if (eventData.indexOf("CTRL-EVENT-STATE-CHANGE") === 0 &&
-        (!manager.wpsStarted || manager.state === "COMPLETED")) {
+    if (eventData.indexOf("CTRL-EVENT-STATE-CHANGE") === 0) {
       // Parse the event data.
       var fields = {};
       var tokens = event.substr(space + 1).split(" ");
@@ -1003,6 +1002,10 @@ var WifiManager = (function() {
       } else {
         if (manager.isConnectState(manager.state))
           wifiInfo.reset();
+      }
+
+      if (manager.wpsStarted && manager.state !== "COMPLETED") {
+        return true;
       }
 
       if (manager.state === "COMPLETED" && fields.state === "ASSOCIATED") {
@@ -2994,21 +2997,11 @@ function WifiWorker() {
           }
         };
 
-        // We get the ASSOCIATED event when we've associated but not connected, so
-        // wait until the handshake is complete.
-        if (this.fromStatus || !self.currentNetwork) {
-          // In this case, we connected to an already-connected wpa_supplicant,
-          // because of that we need to gather information about the current
-          // network here.
-          self.currentNetwork = { bssid: wifiInfo.bssid,
-                                  ssid: quote(wifiInfo.wifiSsid),
-                                  netId: wifiInfo.networkId,
-                                  isDriverRoaming: this.isDriverRoaming };
-          WifiManager.getNetworkConfiguration(self.currentNetwork, _oncompleted);
-        } else {
-          self.currentNetwork.isDriverRoaming = this.isDriverRoaming;
-          _oncompleted();
-        }
+        self.currentNetwork = { bssid: wifiInfo.bssid,
+                                ssid: quote(wifiInfo.wifiSsid),
+                                netId: wifiInfo.networkId,
+                                isDriverRoaming: this.isDriverRoaming };
+        WifiManager.getNetworkConfiguration(self.currentNetwork, _oncompleted);
         break;
       case "CONNECTED":
         // BSSID is read after connected, update it.
@@ -3678,7 +3671,9 @@ WifiWorker.prototype = {
         delete networks[net];
 
         if (!network.ssid) {
-          WifiManager.removeNetwork(network.netId, function() {});
+          if (!WifiManager.wpsStarted || network.key_mgmt !== "WPS") {
+            WifiManager.removeNetwork(network.netId, function() {});
+          }
           continue;
         }
 
