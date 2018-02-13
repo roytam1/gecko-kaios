@@ -122,6 +122,7 @@ nsURLFormatterService.prototype = {
     KAIOS_GEO_API_KEY:  () => "@KAI_KAIOS_GEO_API_KEY@",
     KAIOS_PUSH_API_KEY:  () => "@KAI_KAIOS_PUSH_API_KEY@",
     KAIOS_APPS_API_KEY:  () => "@KAI_KAIOS_APPS_API_KEY@",
+    KAIOS_METRICS_API_KEY: () => "@KAI_KAIOS_METRICS_API_KEY@",
     DISTRIBUTION:     function() { return this.distribution.id; },
     DISTRIBUTION_VERSION: function() { return this.distribution.version; }
   },

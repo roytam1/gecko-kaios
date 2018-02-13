@@ -2978,6 +2978,16 @@ if test -z "$KAI_KAIOS_APPS_API_KEY"; then
 fi
 AC_SUBST(KAI_KAIOS_APPS_API_KEY)
 
+# Allow to specify a KaiOS Metrics API key file that contains the secret key to be
+# used for KaiOS metrics service requests.
+MOZ_ARG_WITH_STRING(kaios-metrics-api-keyfile,
+[  --with-kaios-metrics-api-keyfile=file   Use the secret key contained in the given keyfile for KaiOS metrics service requests],
+  KAI_KAIOS_METRICS_API_KEY=`cat $withval`)
+if test -z "$KAI_KAIOS_METRICS_API_KEY"; then
+    KAI_KAIOS_METRICS_API_KEY=no-kaios-metrics-api-key
+fi
+AC_SUBST(KAI_KAIOS_METRICS_API_KEY)
+
 # Allow specifying an Adjust SDK key file that contains the app token used for
 # Adjust SDK requests.
 MOZ_ARG_WITH_STRING(adjust-sdk-keyfile,
