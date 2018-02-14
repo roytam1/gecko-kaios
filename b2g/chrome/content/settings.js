@@ -29,6 +29,10 @@ if (isGonk) {
     Cu.import("resource://gre/modules/systemlibs.js");
     return libcutils;
   });
+  XPCOMUtils.defineLazyGetter(this, "DeviceUtils", function () {
+    Cu.import("resource://gre/modules/DeviceUtils.jsm");
+    return DeviceUtils;
+  });
 }
 
 XPCOMUtils.defineLazyServiceGetter(this, "uuidgen",
@@ -208,6 +212,7 @@ Components.utils.import('resource://gre/modules/ctypes.jsm');
   let sar_info = null;
   let version_tag = null;
   let base_version = null;
+  let cuRefStr = null;
   if (isGonk) {
     hardware_info = libcutils.property_get('ro.product.model.name') ||
                     libcutils.property_get('ro.hardware');
@@ -219,6 +224,7 @@ Components.utils.import('resource://gre/modules/ctypes.jsm');
     sar_info = libcutils.property_get('ro.product.sar_value', '0');
     version_tag = libcutils.property_get('ro.product.version_tag');
     base_version = libcutils.property_get('ro.product.base_version');
+    cuRefStr = DeviceUtils.getRefNumber() || null;
 
     let build_type = libcutils.property_get('ro.build.type');
     if (build_type === 'eng' || build_type === 'userdebug') {
@@ -254,7 +260,8 @@ Components.utils.import('resource://gre/modules/ctypes.jsm');
       'deviceinfo.product_device': product_device,
       'deviceinfo.sar_value': sar_info,
       'deviceinfo.software_tag': version_tag,
-      'deviceinfo.base_version': base_version
+      'deviceinfo.base_version': base_version,
+      'deviceinfo.commercial_ref': cuRefStr
     }
     lock.set(setting);
   }
