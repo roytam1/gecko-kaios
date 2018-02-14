@@ -10080,6 +10080,11 @@ DatabaseConnection::StartSavepoint()
     return rv;
   }
 
+  if (!mStorageConnection ||
+      !mUpdateRefcountFunction ||
+      !mInWriteTransaction) {
+    return NS_ERROR_DOM_INDEXEDDB_UNKNOWN_ERR;
+  }
   mUpdateRefcountFunction->StartSavepoint();
 
 #ifdef DEBUG
