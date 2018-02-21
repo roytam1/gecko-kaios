@@ -196,7 +196,7 @@ this.AppsServiceCenter = {
       debug("init - Failed to get service center url, error: " + e);
       return;
     }
-    url = url.replace(/%DEVICE_REF%/g, DeviceUtils.getRefNumber());
+    url = url.replace(/%DEVICE_REF%/g, DeviceUtils.cuRef);
     this._URI = Services.io.newURI(url, null, null);
 
     var checkInterval = 86400000; // set default interval to 1 day.

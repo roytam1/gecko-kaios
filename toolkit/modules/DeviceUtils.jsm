@@ -55,10 +55,10 @@ const device_type_map = {
 this.DeviceUtils = {
   device_info_cache: null,
   /**
-   * Returns a device reference number which is vendor dependent.
+   * Returns a Commercial Unit Reference which is vendor dependent.
    * For developer, a pref could be set from device config folder.
    */
-  getRefNumber: function DeviceUtils_getRefNumber() {
+  get cuRef() {
     let cuRefStr;
 
     try {
@@ -69,8 +69,8 @@ this.DeviceUtils = {
         cuRefStr = Services.prefs.getPrefType("device.cuRef.default") == Ci.nsIPrefBranch.PREF_STRING ?
           Services.prefs.getCharPref("device.cuRef.default") : undefined;
       }
-    } catch(e) {
-      dump("DeviceUtils.getRefNumber error=" + e);
+    } catch (e) {
+      dump("get Commercial Unit Reference error=" + e);
     }
     return cuRefStr;
   },
@@ -204,7 +204,7 @@ this.DeviceUtils = {
             let iccArray = this.getIccInfoArray();
             let device_info = {
               device_id: device_id,
-              reference: this.getRefNumber(),
+              reference: this.cuRef,
               os: Services.prefs.getPrefType("b2g.osName") == Ci.nsIPrefBranch.PREF_STRING ?
                 Services.prefs.getCharPref("b2g.osName") : undefined,
               os_version: Services.prefs.getPrefType("b2g.version") == Ci.nsIPrefBranch.PREF_STRING ?

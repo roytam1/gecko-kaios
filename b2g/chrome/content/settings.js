@@ -224,7 +224,7 @@ Components.utils.import('resource://gre/modules/ctypes.jsm');
     sar_info = libcutils.property_get('ro.product.sar_value', '0');
     version_tag = libcutils.property_get('ro.product.version_tag');
     base_version = libcutils.property_get('ro.product.base_version');
-    cuRefStr = DeviceUtils.getRefNumber() || null;
+    cuRefStr = DeviceUtils.cuRef || null;
 
     let build_type = libcutils.property_get('ro.build.type');
     if (build_type === 'eng' || build_type === 'userdebug') {
