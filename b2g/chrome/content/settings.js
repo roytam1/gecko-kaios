@@ -261,7 +261,8 @@ Components.utils.import('resource://gre/modules/ctypes.jsm');
       'deviceinfo.sar_value': sar_info,
       'deviceinfo.software_tag': version_tag,
       'deviceinfo.base_version': base_version,
-      'deviceinfo.commercial_ref': cuRefStr
+      // cu means Commercial Unit Reference
+      'deviceinfo.cu': cuRefStr
     }
     lock.set(setting);
   }
