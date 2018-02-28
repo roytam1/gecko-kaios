@@ -303,19 +303,27 @@ GonkGPSGeolocationProvider::SvStatusCallback(GpsSvStatus* sv_info)
         int num = sv_info->num_svs;
         mode_t procMask = umask(0);
         const char* path = "/data/mmitest_log";
-        if (opendir(path) == NULL) {
+        DIR *dp;
+        if ((dp = opendir(path)) == NULL) {
           if (mkdir(path, 0755) < 0){
             LOG("can't create directory %s\n", path);
+            return;
           }
+        } else {
+          closedir(dp);
         }
         fp = fopen("/data/mmitest_log/gps_info.txt", "wb");
         if (NULL == fp) {
           LOG("fp == NULL\n");
+          return;
         }
         fprintf(fp, "{");
 
         fprintf(fp, "\"num\": %d", num);
-        LOG("sv_info->num_svs = %d, num = %d\n",sv_info->num_svs, num);
+        fprintf(fp, ", \"almanac_mask\": %d", sv_info->almanac_mask);
+        fprintf(fp, ", \"ephemeris_mask\": %d", sv_info->ephemeris_mask);
+        fprintf(fp, ", \"used_in_fix_mask\": %d", sv_info->used_in_fix_mask);
+        LOG("cck sv_info->num_svs = %d, num = %d\n",sv_info->num_svs, num);
         if (sv_info->num_svs != 0) {
           fprintf(fp, ",");
         }
@@ -324,8 +332,9 @@ GonkGPSGeolocationProvider::SvStatusCallback(GpsSvStatus* sv_info)
           fprintf(fp, "\"gps\": [");
 
           for(int i = 0; i < num; i++) {
-            fprintf(fp, "{\"prn\": %d, \"snr\": %f}",
-              sv_info->sv_list[i].prn, sv_info->sv_list[i].snr);
+            fprintf(fp, "{\"prn\": %d, \"snr\": %f, \"elevation\": %f, \"azimuth\": %f}",
+              sv_info->sv_list[i].prn, sv_info->sv_list[i].snr,
+              sv_info->sv_list[i].elevation, sv_info->sv_list[i].azimuth);
             if (i < num - 1) {
               fprintf(fp, ",");
             }
@@ -377,6 +386,33 @@ GonkGPSGeolocationProvider::NmeaCallback(GpsUtcTime timestamp, const char* nmea,
 #ifdef HAS_KOOST_MODULES
   NS_DispatchToMainThread(new NotifyNmeaUpdateTask(timestamp, nmea));
 #endif
+
+  char enableNMEA[PROPERTY_VALUE_MAX + 1];
+  property_get("sgps.nmea.enabled", enableNMEA, "false");
+  if (!strcmp(enableNMEA, "true")) {
+    static FILE * fp = NULL;
+    if (fp != NULL) {
+      return;
+    }
+    const char* path = "/data/sgps_log";
+    DIR *dp;
+    if ((dp = opendir(path)) == NULL) {
+      if (mkdir(path, 0755) < 0){
+        LOG("can't create directory %s\n", path);
+        return;
+      }
+    } else {
+      closedir(dp);
+    }
+    fp = fopen("/data/sgps_log/Nmealog.txt", "a+");
+    if (NULL == fp) {
+      LOG("fp == NULL\n");
+      return;
+    }
+    fprintf(fp, nmea);
+    fclose(fp);
+    fp = NULL;
+  }
 }
 
 void
