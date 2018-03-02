@@ -961,7 +961,8 @@ VARIABLES = {
 
     'GENERATED_FILES': (StrictOrderingOnAppendListWithFlagsFactory({
                 'script': unicode,
-                'inputs': list }), list,
+                'inputs': list,
+                'abs_inputs': list }), list,
         """Generic generated files.
 
         This variable contains a list of files for the build system to

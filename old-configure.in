@@ -3023,6 +3023,15 @@ if test -n "$MOZ_ANDROID_DISTRIBUTION_DIRECTORY"; then
 fi
 AC_SUBST(MOZ_ANDROID_DISTRIBUTION_DIRECTORY)
 
+# Allow to specify a KaiOS Font extend support
+MOZ_ARG_WITH_STRING(kaios-font-config-file,
+[  --with-kaios-font-config-file=file   Use the extend font support for KaiOS apps],
+   KAI_KAIOS_FONT_CONFIG=$withval)
+if test -n "$KAI_KAIOS_FONT_CONFIG"; then
+    AC_DEFINE(KAI_KAIOS_FONT_CONFIG)
+fi
+AC_SUBST(KAI_KAIOS_FONT_CONFIG)
+
 dnl ========================================================
 dnl = Trademarked Branding
 dnl ========================================================

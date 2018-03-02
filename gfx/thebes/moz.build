@@ -311,3 +311,14 @@ if CONFIG['CLANG_CXX']:
 if CONFIG['_MSC_VER']:
     # This is intended as a temporary hack to support building with VS2015.
     CXXFLAGS += ['-wd4577']
+
+if CONFIG['KAI_KAIOS_FONT_CONFIG']:
+    headers_arrays_fonts = [
+        ('gfx_font_ext.h', 'serviceFontExtendSupport', '%'+CONFIG['KAI_KAIOS_FONT_CONFIG'] ),
+    ]
+
+    for header, array_name, json_data in headers_arrays_fonts:
+        GENERATED_FILES += [header]
+        h = GENERATED_FILES[header]
+        h.script = 'gen_font_ext_header.py:' + array_name
+        h.abs_inputs = [json_data]

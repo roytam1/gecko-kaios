@@ -344,6 +344,7 @@ def old_configure_options(*options):
     '--with-kaios-apps-api-keyfile',
     '--with-kaios-metrics-api-keyfile',
     '--with-kaios-release-tag',
+    '--with-kaios-font-config-file',
     '--with-thumb',
     '--with-thumb-interwork',
     '--with-unify-dist',

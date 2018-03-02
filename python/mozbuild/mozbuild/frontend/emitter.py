@@ -94,6 +94,7 @@ from .context import (
     Context,
     SourcePath,
     ObjDirPath,
+    AbsolutePath,
     Path,
     SubContext,
     TemplateContext,
@@ -1077,6 +1078,15 @@ class TreeMetadataEmitter(LoggingMixin):
                             'Input for generating %s does not exist: %s'
                             % (f, p.full_path), context)
                     inputs.append(p)
+
+                for i in flags.abs_inputs:
+                    abs_path = AbsolutePath(context, i)
+                    if not os.path.exists(abs_path.full_path):
+                        raise SandboxValidationError(
+                            'Input for generating %s does not exist: %s'
+                            % (f, abs_path.full_path), context)
+                    inputs.append(abs_path)
+
             else:
                 script = None
                 method = None

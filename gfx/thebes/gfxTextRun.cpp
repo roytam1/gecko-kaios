@@ -37,6 +37,10 @@
 
 #include "cairo.h"
 
+#ifdef KAI_KAIOS_FONT_CONFIG
+#include "gfx_font_ext.h"
+#endif
+
 using namespace mozilla;
 using namespace mozilla::gfx;
 using namespace mozilla::unicode;
@@ -2827,8 +2831,21 @@ gfxFontGroup::FindFontForChar(uint32_t aCh, uint32_t aPrevCh, uint32_t aNextCh,
     }
 
     // if character is in Private Use Area, don't do matching against pref or system fonts
-    if ((aCh >= 0xE000  && aCh <= 0xF8FF) || (aCh >= 0xF0000 && aCh <= 0x10FFFD))
-        return nullptr;
+    if ((aCh >= 0xE000  && aCh <= 0xF8FF) || (aCh >= 0xF0000 && aCh <= 0x10FFFD)) {
+        int matched = 0;
+        #ifdef KAI_KAIOS_FONT_CONFIG
+        for(uint32_t i = 0; i < font_ext_code_size; i++) {
+            if (aCh == unicode_ext_data_array[i].code) {
+                aRunScript = unicode_ext_data_array[i].language;
+                matched = 1;
+                break;
+            }
+        }
+        #endif
+        if (matched == 0) {
+            return nullptr;
+        }
+    }
 
     // 2. search pref fonts
     RefPtr<gfxFont> font = WhichPrefFontSupportsChar(aCh);
