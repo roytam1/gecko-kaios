@@ -186,7 +186,7 @@ AlertsService.prototype = {
             eventName,
             originSuffix,
             listener.serviceWorkerRegistrationID,
-            listener.id,
+            listener.dbId,
             listener.title,
             listener.dir,
             listener.lang,
