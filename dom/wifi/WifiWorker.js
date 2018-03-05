@@ -1317,7 +1317,7 @@ var WifiManager = (function() {
       /SIM-([0-9]*):UMTS-AUTH:([0-9a-f]+):([0-9a-f]+) needed for SSID (.+)/.exec(requestName);
     // EAP-SIM
     if (matchGsm) {
-      let networdId = parseInt(matchGsm[1]);
+      let networkId = parseInt(matchGsm[1]);
       let data = matchGsm[2].split(":");
       let authResponse = "";
       let count = 0;
@@ -1348,7 +1348,7 @@ var WifiManager = (function() {
                 },
                 notifyError: function(aErrorMsg) {
                   debug("Receive SIM iccResponse error: " + aErrorMsg);
-                  wifiCommand.simAuthFailedResponse(networdId, function(){});
+                  wifiCommand.simAuthFailedResponse(networkId, function(){});
                 },
               });
             },
@@ -1359,7 +1359,7 @@ var WifiManager = (function() {
       function iccResponseReady(iccResponse) {
         if (!iccResponse || iccResponse.length <= 4) {
           debug("bad response - " + iccResponse);
-          wifiCommand.simAuthFailedResponse(networdId, function(){});
+          wifiCommand.simAuthFailedResponse(networkId, function(){});
           return;
         }
         let result = base64Tobytes(iccResponse);
@@ -1371,7 +1371,7 @@ var WifiManager = (function() {
           kc_offset >= result.length ||
           kc_offset + kc_len > result.length) {
           debug("malfomed response - " + iccResponse);
-          wifiCommand.simAuthFailedResponse(networdId, function(){});
+          wifiCommand.simAuthFailedResponse(networkId, function(){});
           return;
         }
         let kc = bytesToHex(result, 1 + kc_offset, kc_len);
@@ -1380,13 +1380,13 @@ var WifiManager = (function() {
         count++;
         if (count == 3) {
           debug("Supplicant Response -" + authResponse);
-          wifiCommand.simAuthResponse(networdId, "GSM-AUTH", authResponse, function(){});
+          wifiCommand.simAuthResponse(networkId, "GSM-AUTH", authResponse, function(){});
         }
       }
 
     // EAP-AKA
     } else if (matchUmts) {
-      let networdId = parseInt(matchUmts[1]);
+      let networkId = parseInt(matchUmts[1]);
       let rand = matchUmts[2];
       let authn = matchUmts[3];
 
@@ -1413,7 +1413,7 @@ var WifiManager = (function() {
       function iccResponseReady(iccResponse) {
         if (!iccResponse || iccResponse.length <= 4) {
           debug("bad response - " + iccResponse);
-          wifiCommand.simAuthFailedResponse(networdId, function(){});
+          wifiCommand.simAuthFailedResponse(networkId, function(){});
           return;
         }
         let result = base64Tobytes(iccResponse);
@@ -1428,17 +1428,17 @@ var WifiManager = (function() {
           let ik = bytesToHex(result, res_len + ck_len + 4, ik_len);
           debug("ik:" + ik + " ck:" + ck + " res:" + res);
           let authResponse = ":" + ik + ":" + ck + ":" + res;
-          wifiCommand.simAuthResponse(networdId, "UMTS-AUTH", authResponse, function(){});
+          wifiCommand.simAuthResponse(networkId, "UMTS-AUTH", authResponse, function(){});
         } else if (tag == 0xdc) {
           debug("synchronisation failure");
           let auts_len = result.charCodeAt(1);
           let auts = bytesToHex(result, 2, auts_len);
           debug("auts:" + auts);
           let authResponse = ":" + auts;
-          wifiCommand.simAuthResponse(networdId, "UMTS-AUTS", authResponse, function(){});
+          wifiCommand.simAuthResponse(networkId, "UMTS-AUTS", authResponse, function(){});
         } else {
           debug("bad authResponse - unknown tag = " + tag);
-          wifiCommand.umtsAuthFailedResponse(networdId, function(){});
+          wifiCommand.umtsAuthFailedResponse(networkId, function(){});
         }
       }
     } else {
