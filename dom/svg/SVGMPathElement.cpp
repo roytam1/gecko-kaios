@@ -249,11 +249,6 @@ void
 SVGMPathElement::NotifyParentOfMpathChange(nsIContent* aParent)
 {
   if (aParent && aParent->IsSVGElement(nsGkAtoms::animateMotion)) {
-
-    SVGAnimateMotionElement* animateMotionParent =
-      static_cast<SVGAnimateMotionElement*>(aParent);
-
-    animateMotionParent->MpathChanged();
     AnimationNeedsResample();
   }
 }

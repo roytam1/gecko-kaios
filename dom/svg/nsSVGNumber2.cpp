@@ -7,8 +7,6 @@
 #include "nsSVGNumber2.h"
 #include "mozilla/Attributes.h"
 #include "nsContentUtils.h" // NS_ENSURE_FINITE
-#include "nsSMILFloatType.h"
-#include "nsSMILValue.h"
 #include "nsSVGAttrTearoffTable.h"
 #include "SVGContentUtils.h"
 
@@ -124,61 +122,4 @@ nsSVGNumber2::ToDOMAnimatedNumber(nsSVGElement* aSVGElement)
 nsSVGNumber2::DOMAnimatedNumber::~DOMAnimatedNumber()
 {
   sSVGAnimatedNumberTearoffTable.RemoveTearoff(mVal);
-}
-
-nsISMILAttr*
-nsSVGNumber2::ToSMILAttr(nsSVGElement *aSVGElement)
-{
-  return new SMILNumber(this, aSVGElement);
-}
-
-nsresult
-nsSVGNumber2::SMILNumber::ValueFromString(const nsAString& aStr,
-                                          const mozilla::dom::SVGAnimationElement* /*aSrcElement*/,
-                                          nsSMILValue& aValue,
-                                          bool& aPreventCachingOfSandwich) const
-{
-  float value;
-
-  if (!GetValueFromString(aStr,
-                          mSVGElement->NumberAttrAllowsPercentage(mVal->mAttrEnum),
-                          value)) {
-    return NS_ERROR_DOM_SYNTAX_ERR;
-  }
-
-  nsSMILValue val(nsSMILFloatType::Singleton());
-  val.mU.mDouble = value;
-  aValue = val;
-  aPreventCachingOfSandwich = false;
-
-  return NS_OK;
-}
-
-nsSMILValue
-nsSVGNumber2::SMILNumber::GetBaseValue() const
-{
-  nsSMILValue val(nsSMILFloatType::Singleton());
-  val.mU.mDouble = mVal->mBaseVal;
-  return val;
-}
-
-void
-nsSVGNumber2::SMILNumber::ClearAnimValue()
-{
-  if (mVal->mIsAnimated) {
-    mVal->mIsAnimated = false;
-    mVal->mAnimVal = mVal->mBaseVal;
-    mSVGElement->DidAnimateNumber(mVal->mAttrEnum);
-  }
-}
-
-nsresult
-nsSVGNumber2::SMILNumber::SetAnimValue(const nsSMILValue& aValue)
-{
-  NS_ASSERTION(aValue.mType == nsSMILFloatType::Singleton(),
-               "Unexpected type to assign animated value");
-  if (aValue.mType == nsSMILFloatType::Singleton()) {
-    mVal->SetAnimValue(float(aValue.mU.mDouble), mSVGElement);
-  }
-  return NS_OK;
 }

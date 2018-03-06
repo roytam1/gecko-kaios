@@ -33,12 +33,6 @@ NS_IMPL_ELEMENT_CLONE_WITH_INIT(SVGAnimateElement)
 
 //----------------------------------------------------------------------
 
-nsSMILAnimationFunction&
-SVGAnimateElement::AnimationFunction()
-{
-  return mAnimationFunction;
-}
-
 } // namespace dom
 } // namespace mozilla
 

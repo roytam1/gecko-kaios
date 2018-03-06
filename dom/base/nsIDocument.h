@@ -82,7 +82,6 @@ class nsViewManager;
 class nsPresContext;
 class nsRange;
 class nsScriptLoader;
-class nsSMILAnimationController;
 class nsTextNode;
 class nsWindowSizes;
 class nsDOMCaretPosition;
@@ -1956,16 +1955,6 @@ public:
   void EnumerateActivityObservers(ActivityObserverEnumerator aEnumerator,
                                   void* aData);
 
-  // Indicates whether mAnimationController has been (lazily) initialized.
-  // If this returns true, we're promising that GetAnimationController()
-  // will have a non-null return value.
-  bool HasAnimationController()  { return !!mAnimationController; }
-
-  // Getter for this document's SMIL Animation Controller. Performs lazy
-  // initialization, if this document supports animation and if
-  // mAnimationController isn't yet initialized.
-  virtual nsSMILAnimationController* GetAnimationController() = 0;
-
   // Gets the tracker for animations that are waiting to start.
   // Returns nullptr if there is no pending animation tracker for this document
   // which will be the case if there have never been any CSS animations or
@@ -2850,9 +2839,6 @@ protected:
   // to this set by calling RegisterPendingLinkUpdate when added to a document and must
   // remove themselves by calling UnregisterPendingLinkUpdate when removed from a document.
   nsTHashtable<nsPtrHashKey<mozilla::dom::Link> > mLinksToUpdate;
-
-  // SMIL Animation Controller, lazily-initialized in GetAnimationController
-  RefPtr<nsSMILAnimationController> mAnimationController;
 
   // Table of element properties for this document.
   nsPropertyTable mPropertyTable;

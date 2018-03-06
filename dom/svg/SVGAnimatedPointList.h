@@ -9,10 +9,8 @@
 
 #include "mozilla/Attributes.h"
 #include "nsAutoPtr.h"
-#include "nsISMILAttr.h"
 #include "SVGPointList.h"
 
-class nsSMILValue;
 class nsSVGElement;
 
 namespace mozilla {
@@ -86,9 +84,6 @@ public:
     return !!mAnimVal;
   }
 
-  /// Callers own the returned nsISMILAttr
-  nsISMILAttr* ToSMILAttr(nsSVGElement* aElement);
-
 private:
 
   // mAnimVal is a pointer to allow us to determine if we're being animated or
@@ -98,31 +93,6 @@ private:
 
   SVGPointList mBaseVal;
   nsAutoPtr<SVGPointList> mAnimVal;
-
-  struct SMILAnimatedPointList : public nsISMILAttr
-  {
-  public:
-    SMILAnimatedPointList(SVGAnimatedPointList* aVal,
-                          nsSVGElement* aElement)
-      : mVal(aVal)
-      , mElement(aElement)
-    {}
-
-    // These will stay alive because a nsISMILAttr only lives as long
-    // as the Compositing step, and DOM elements don't get a chance to
-    // die during that.
-    SVGAnimatedPointList *mVal;
-    nsSVGElement *mElement;
-
-    // nsISMILAttr methods
-    virtual nsresult ValueFromString(const nsAString& aStr,
-                                     const dom::SVGAnimationElement* aSrcElement,
-                                     nsSMILValue& aValue,
-                                     bool& aPreventCachingOfSandwich) const override;
-    virtual nsSMILValue GetBaseValue() const override;
-    virtual void ClearAnimValue() override;
-    virtual nsresult SetAnimValue(const nsSMILValue& aValue) override;
-  };
 };
 
 } // namespace mozilla
