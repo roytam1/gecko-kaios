@@ -12,10 +12,15 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
 Cu.import("resource://gre/modules/Task.jsm");
 Cu.import("resource://gre/modules/systemlibs.js");
+Cu.import("resource://gre/modules/Services.jsm");
 
 XPCOMUtils.defineLazyServiceGetter(this, "UiccConnector",
                                    "@mozilla.org/secureelement/connector/uicc;1",
                                    "nsISecureElementConnector");
+
+XPCOMUtils.defineLazyServiceGetter(this, "gSettingsService",
+                                   "@mozilla.org/settingsService;1",
+                                   "nsISettingsService");
 
 XPCOMUtils.defineLazyModuleGetter(this, "SEUtils",
                                   "resource://gre/modules/SEUtils.jsm");
@@ -40,6 +45,12 @@ XPCOMUtils.defineLazyGetter(this, "UiccConnector", () => {
 XPCOMUtils.defineLazyGetter(this, "EseConnector", () => {
   let eseClass = Cc["@mozilla.org/secureelement/connector/ese;1"];
   return eseClass ? eseClass.getService(Ci.nsISecureElementConnector) : null;
+});
+
+XPCOMUtils.defineLazyGetter(this, "NFC", function () {
+  let obj = {};
+  Cu.import("resource://gre/modules/nfc_consts.js", obj);
+  return obj;
 });
 
 // Ref: Secure Element Access Control – Public Release v1.1
@@ -79,11 +90,17 @@ const APDU_AR_DO     = 0xD0;
 const NFC_AR_DO      = 0xD1;
 
 var DEBUG = SE.DEBUG_ACE;
-function debug(msg) {
+var debug;
+function updateDebug() {
   if (DEBUG) {
-    dump("-*- GPAccessRulesManager " + msg);
+    debug = function (s) {
+      dump("ACE:GPAccessRulesManager: " + s + "\n");
+    };
+  } else {
+    debug = function (s) {};
   }
-}
+};
+updateDebug();
 
 function getConnector(type) {
   switch (type) {
@@ -106,7 +123,11 @@ function getConnector(type) {
  * commercial implemenations of ARA-M.
  * @todo Bug 1137537: Implement ARA-M support according to section #4 of [1]
  */
-function GPAccessRulesManager() {}
+function GPAccessRulesManager() {
+  let lock = gSettingsService.createLock();
+  lock.get(NFC.SETTING_NFC_DEBUG, this);
+  Services.obs.addObserver(this, NFC.TOPIC_MOZSETTINGS_CHANGED, false);
+}
 
 GPAccessRulesManager.prototype = {
   // source [1] section 7.1.3 PKCS#15 Selection
@@ -886,6 +907,35 @@ GPAccessRulesManager.prototype = {
       };
     }
     return apdu;
+  },
+
+  /**
+   * nsISettingsServiceCallback
+   */
+  handle: function handle(name, result) {
+    switch (name) {
+      case NFC.SETTING_NFC_DEBUG:
+        DEBUG = result;
+        updateDebug();
+        break;
+    }
+  },
+
+  /**
+   * nsIObserver interface methods.
+   */
+
+  observe: function observe(subject, topic, data) {
+    switch (topic) {
+      case NFC.TOPIC_MOZSETTINGS_CHANGED:
+        if ("wrappedJSObject" in subject) {
+          subject = subject.wrappedJSObject;
+        }
+        if (subject) {
+          this.handle(subject.key, subject.value);
+        }
+        break;
+    }
   },
 
   classID: Components.ID("{3e046b4b-9e66-439a-97e0-98a69f39f55f}"),

@@ -18,20 +18,36 @@ XPCOMUtils.defineLazyModuleGetter(this, "DOMApplicationRegistry",
 XPCOMUtils.defineLazyModuleGetter(this, "SEUtils",
                                   "resource://gre/modules/SEUtils.jsm");
 
+XPCOMUtils.defineLazyServiceGetter(this, "gSettingsService",
+                                   "@mozilla.org/settingsService;1",
+                                   "nsISettingsService");
+
 XPCOMUtils.defineLazyGetter(this, "SE", function() {
   let obj = {};
   Cu.import("resource://gre/modules/se_consts.js", obj);
   return obj;
 });
 
+XPCOMUtils.defineLazyGetter(this, "NFC", function () {
+  let obj = {};
+  Cu.import("resource://gre/modules/nfc_consts.js", obj);
+  return obj;
+});
+
 const APP_HASH_LEN = 20;
 
 var DEBUG = SE.DEBUG_ACE;
-function debug(msg) {
+var debug;
+function updateDebug() {
   if (DEBUG) {
-    dump("ACEservice: " + msg + "\n");
+    debug = function (s) {
+      dump("ACE:ACEservice: " + s + "\n");
+    };
+  } else {
+    debug = function (s) {};
   }
-}
+};
+updateDebug();
 
 /**
  * Implements decision making algorithm as described in GPD specification,
@@ -65,31 +81,31 @@ GPAccessDecision.prototype = {
   isApduAccessAllowed: function isApduAccessAllowed(apduHeader) {
     let rule = this._findSpecificRule(this.aid, this.certHash);
     if (rule) {
-      debug("Matched rule:" + JSON.stringify(rule));
+      debug("Matched specific rule:" + JSON.stringify(rule));
       return this._apduAllowed(rule.apduRules, apduHeader);
     }
 
     rule = this._findSpecificAidRule(this.aid);
     if (rule) {
-      debug("Matched rule:" + JSON.stringify(rule));
+      debug("Matched specific aid rule:" + JSON.stringify(rule));
       return false;
     }
 
     rule = this._findGenericAidRule(this.aid)
     if (rule) {
-      debug("Matched rule:" + JSON.stringify(rule));
+      debug("Matched generic aid rule:" + JSON.stringify(rule));
       return this._apduAllowed(rule.apduRules, apduHeader);
     }
 
     rule = this._findGenericHashRule(this.certHash);
     if (rule) {
-      debug("Matched rule:" + JSON.stringify(rule));
+      debug("Matched generic hash rule:" + JSON.stringify(rule));
       return this._apduAllowed(rule.apduRules, apduHeader);
     }
 
     rule = this._findGenericRule();
     if (rule) {
-      debug("Matched rule:" + JSON.stringify(rule));
+      debug("Matched generic rule:" + JSON.stringify(rule));
       return this._apduAllowed(rule.apduRules, apduHeader);
     }
     debug("Can't find matched rule, access denied");
@@ -265,6 +281,10 @@ function ACEService() {
   if (!this._rulesManagers) {
     debug("Can't find rules manager");
   }
+
+  let lock = gSettingsService.createLock();
+  lock.get(NFC.SETTING_NFC_DEBUG, this);
+  Services.obs.addObserver(this, NFC.TOPIC_MOZSETTINGS_CHANGED, false);
 }
 
 ACEService.prototype = {
@@ -397,7 +417,36 @@ ACEService.prototype = {
 
   classID: Components.ID("{882a7463-2ca7-4d61-a89a-10eb6fd70478}"),
   contractID: "@mozilla.org/secureelement/access-control/ace;1",
-  QueryInterface: XPCOMUtils.generateQI([Ci.nsIAccessControlEnforcer])
+  QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver, Ci.nsIAccessControlEnforcer]),
+
+  /**
+   * nsISettingsServiceCallback
+   */
+  handle: function handle(name, result) {
+    switch (name) {
+      case NFC.SETTING_NFC_DEBUG:
+        DEBUG = result;
+        updateDebug();
+        break;
+    }
+  },
+
+  /**
+   * nsIObserver interface methods.
+   */
+
+  observe: function observe(subject, topic, data) {
+    switch (topic) {
+      case NFC.TOPIC_MOZSETTINGS_CHANGED:
+        if ("wrappedJSObject" in subject) {
+          subject = subject.wrappedJSObject;
+        }
+        if (subject) {
+          this.handle(subject.key, subject.value);
+        }
+        break;
+    }
+  },
 };
 
 this.NSGetFactory = XPCOMUtils.generateNSGetFactory([ACEService]);
