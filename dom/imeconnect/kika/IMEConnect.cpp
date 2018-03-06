@@ -8,6 +8,10 @@
 
 #include "mozilla/dom/IMEConnect.h"
 #include "mozilla/dom/IMEConnectBinding.h"
+#include "nsCycleCollectionParticipant.h"
+#include "nsAutoPtr.h"
+#include "mozilla/dom/BindingDeclarations.h"
+#include "MainThreadUtils.h"
 
 namespace mozilla {
 namespace dom {
@@ -357,6 +361,57 @@ IMEConnect::GetNextWordCandidates(const nsAString& aWord, nsAString& aRetval)
   KIKA_LOGD("GetNextWordCandidates::nextWordCandidates = %s", NS_ConvertUTF16toUTF8(nextWordCandidates).get());
 
   aRetval = nextWordCandidates;
+}
+
+void
+IMEConnect::ImportDictionary(Blob& aBlob, ErrorResult& aRv)
+{
+  uint64_t blobSize;
+  uint32_t numRead;
+  char *readBuf;
+  int ret;
+  uint8_t imeId = mCurrentLID & IQQI_IME_ID_MASK;
+
+  blobSize = aBlob.GetSize(aRv);
+  if (aRv.Failed()) {
+    KIKA_LOGE("ImportDictionary::failed to get blob blobSize=%lld", blobSize);
+    aRv.Throw(NS_ERROR_FAILURE);
+    return;
+  }
+
+  nsCOMPtr<nsIInputStream> stream;
+  aBlob.GetInternalStream(getter_AddRefs(stream), aRv);
+  if (aRv.Failed()) {
+    KIKA_LOGE("ImportDictionary::failed to get internal stream");
+    aRv.Throw(NS_ERROR_FAILURE);
+    return;
+  }
+
+  readBuf = (char*)malloc(blobSize);
+  if (!readBuf) {
+    KIKA_LOGE("ImportDictionary::failed allocate memory");
+    aRv.Throw(NS_ERROR_FAILURE);
+    return;
+  }
+
+  aRv = stream->Read(readBuf, blobSize, &numRead);
+  if (aRv.Failed() || (numRead != blobSize)) {
+    KIKA_LOGE("ImportDictionary::failed to read stream");
+    free(readBuf);
+    aRv.Throw(NS_ERROR_FAILURE);
+    return;
+  }
+
+  ret = IQQI_LearnWordByToken(imeId, NULL, readBuf, blobSize);
+  if (ret) {
+    KIKA_LOGE("ImportDictionary::failed on IQQI_LearnWordByToken ret = %d", ret);
+    free(readBuf);
+    aRv.Throw(NS_ERROR_FAILURE);
+    return;
+  }
+
+  free(readBuf);
+  KIKA_LOGI("ImportDictionary::loading dictionary successfully");
 }
 
 uint32_t

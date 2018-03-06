@@ -26,6 +26,9 @@ partial interface IMEConnect {
   void setLetterMultiTap(unsigned long keyCode, unsigned long tapCount, unsigned short prevUnichar);
 
   DOMString getNextWordCandidates(DOMString word);
+
+  [Throws]
+  void importDictionary(Blob dictionary);
 };
 #endif
 

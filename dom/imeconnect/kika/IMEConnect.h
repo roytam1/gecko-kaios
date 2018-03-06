@@ -13,10 +13,7 @@
 #include "nsPIDOMWindow.h"
 #include "nsISupports.h"
 #include "nsWrapperCache.h"
-#include "nsCycleCollectionParticipant.h"
-#include "nsAutoPtr.h"
-#include "mozilla/dom/BindingDeclarations.h"
-#include "MainThreadUtils.h"
+#include "mozilla/dom/File.h"
 
 #include <list>
 #include <vector>
@@ -348,6 +345,7 @@ public:
   static void SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLetter, ErrorResult& aRv);
   static void SetLetterMultiTap(const unsigned long aKeyCode,const unsigned long aTapCount, unsigned short aPrevUnichar);
   static void GetNextWordCandidates(const nsAString& aWord, nsAString& aRetval);
+  static void ImportDictionary(Blob& aBlob, ErrorResult& aRv);
   static uint32_t SetLanguage(const uint32_t aLid);
   static nsString mCandidateWord;
   static uint16_t mTotalWord;
