@@ -507,7 +507,7 @@ this.PermissionsTable =  { geolocation: {
                            },
                            "secureelement-manage": {
                              app: DENY_ACTION,
-                             privileged: DENY_ACTION,
+                             privileged: ALLOW_ACTION,
                              certified: ALLOW_ACTION
                            },
                            "inputport": {

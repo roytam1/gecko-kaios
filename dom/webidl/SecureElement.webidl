@@ -38,7 +38,7 @@ dictionary SECommand {
 
 [Pref="dom.secureelement.enabled",
  CheckAnyPermissions="secureelement-manage",
- AvailableIn="CertifiedApps",
+ AvailableIn="PrivilegedApps",
  JSImplementation="@mozilla.org/secureelement/reader;1"]
 interface SEReader {
 
@@ -75,7 +75,7 @@ interface SEReader {
 
 [Pref="dom.secureelement.enabled",
  CheckAnyPermissions="secureelement-manage",
- AvailableIn="CertifiedApps",
+ AvailableIn="PrivilegedApps",
  JSImplementation="@mozilla.org/secureelement/session;1"]
 interface SESession {
 
@@ -132,7 +132,7 @@ interface SESession {
 
 [Pref="dom.secureelement.enabled",
  CheckAnyPermissions="secureelement-manage",
- AvailableIn="CertifiedApps",
+ AvailableIn="PrivilegedApps",
  JSImplementation="@mozilla.org/secureelement/channel;1"]
 interface SEChannel {
 
@@ -172,7 +172,7 @@ interface SEChannel {
 
 [Pref="dom.secureelement.enabled",
  CheckAnyPermissions="secureelement-manage",
- AvailableIn="CertifiedApps",
+ AvailableIn="PrivilegedApps",
  JSImplementation="@mozilla.org/secureelement/response;1"]
 interface SEResponse {
   // Response received on this 'channel' object.

@@ -6,7 +6,7 @@
 
 [Pref="dom.secureelement.enabled",
  CheckAnyPermissions="secureelement-manage",
- AvailableIn="CertifiedApps",
+ AvailableIn="PrivilegedApps",
  JSImplementation="@mozilla.org/secureelement/manager;1",
  NavigatorProperty="seManager",
  NoInterfaceObject]
