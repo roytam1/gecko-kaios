@@ -155,6 +155,8 @@ function SettingsLockInfo(aDB, aMsgMgr, aPrincipal, aLockID, aIsServiceLock, aWi
     // will continue to exist under this principal for the duration of
     // its lifetime.
     principal: aPrincipal,
+    // Record the name of last settings which is accessed by this lock.
+    settingsname: null,
     getObjectStore: function() {
       if (VERBOSE) debug("Getting transaction for " + this.lockID);
       let store;
@@ -813,7 +815,7 @@ var SettingsRequestManager = {
         continue;
       }
 
-      let path = "settings-locks/tasks/lock(id=" + lockId + ")/";
+      let path = "settings-locks/tasks/lock(id=" + lockId + ", name=" + lock.settingsname + ")/";
 
       aCallback.callback("", path + "alive",
                          Ci.nsIMemoryReporter.KIND_OTHER,
@@ -1156,6 +1158,8 @@ var SettingsRequestManager = {
         break;
       case "Settings:Get":
         if (VERBOSE) debug("Received getRequest from " + msg.lockID);
+        // Update settings name
+        this.lockInfo[msg.lockID].settingsname = msg.name;
         this.queueTask("get", msg).then(function(settings) {
             returnMessage("Settings:Get:OK", {
               lockID: msg.lockID,
@@ -1173,6 +1177,8 @@ var SettingsRequestManager = {
         break;
       case "Settings:Set":
         if (VERBOSE) debug("Received Set Request from " + msg.lockID);
+        // Update settings name
+        this.lockInfo[msg.lockID].settingsname = msg.name;
         this.queueTask("set", msg).then(function(settings) {
           returnMessage("Settings:Set:OK", {
             lockID: msg.lockID,
