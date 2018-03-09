@@ -128,14 +128,14 @@ this.KaiAccountsManager = {
           return this._error(error);
         }
         this._otpId = null;
+        this._activeSession = null;
         return this._kaiAccounts.setSignedInUser(user).then(
           () => {
-            this._activeSession = user;
             log.debug("User signed in: " + JSON.stringify(this._user));
             return this._kaiAccounts.getAccountInfo().then(
-              () => {
+              accountInfo => {
               },
-              (reason) => {
+              reason => {
                 log.error("Obtaining account info failed reason " + JSON.stringify(reason));
               }
             ).then(
@@ -263,10 +263,6 @@ this.KaiAccountsManager = {
   },
 
   _signOut: function(user) {
-    if (!this._activeSession) {
-      return Promise.resolve();
-    }
-
     return this._localSignOut().then(
       () => {
         // At this point the local session should already be removed.
