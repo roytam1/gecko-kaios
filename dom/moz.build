@@ -64,7 +64,6 @@ DIRS += [
     'fetch',
     'filehandle',
     'filesystem',
-    'flipmanager',
     'fmradio',
     'geolocation',
     'html',
