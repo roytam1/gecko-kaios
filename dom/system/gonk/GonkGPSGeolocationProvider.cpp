@@ -19,6 +19,7 @@
 #include <cmath>
 #include <pthread.h>
 #include <hardware/gps.h>
+#include <hardware_legacy/power.h>
 
 #include "GeolocationUtil.h"
 #include "mozilla/Preferences.h"
@@ -96,6 +97,7 @@ static const char* kSettingDebugGpsIgnored = "geolocation.debugging.gps-location
 // Gaia will modify the value of settings key(supl.verification.choice)
 //   when user make his/her choice of SUPL NI verification.
 static const char* kSettingSuplVerificationChoice = "supl.verification.choice";
+static const char* kWakeLockName = "GeckoGPS";
 
 
 // While most methods of GonkGPSGeolocationProvider should only be
@@ -323,11 +325,13 @@ GonkGPSGeolocationProvider::SetCapabilitiesCallback(uint32_t capabilities)
 void
 GonkGPSGeolocationProvider::AcquireWakelockCallback()
 {
+  acquire_wake_lock(PARTIAL_WAKE_LOCK, kWakeLockName);
 }
 
 void
 GonkGPSGeolocationProvider::ReleaseWakelockCallback()
 {
+  release_wake_lock(kWakeLockName);
 }
 
 typedef void *(*pthread_func)(void *);

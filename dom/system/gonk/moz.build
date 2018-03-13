@@ -69,6 +69,8 @@ UNIFIED_SOURCES += [
     'VolumeServiceTest.cpp',
 ]
 
+LOCAL_INCLUDES += ['%' + '%s/hardware/libhardware_legacy/include' % CONFIG['ANDROID_SOURCE']]
+
 if CONFIG['ANDROID_VERSION'] >= '17':
     LOCAL_INCLUDES += ['%' + '%s/frameworks/av/media/mtp' % CONFIG['ANDROID_SOURCE']]
 else:
