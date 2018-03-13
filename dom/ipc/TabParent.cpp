@@ -2701,6 +2701,26 @@ TabParent::RecvRespondStartSwipeEvent(const uint64_t& aInputBlockId,
 }
 
 bool
+TabParent::RecvSetSpatialNavigationEnabled(const bool& aEnabled)
+{
+  RefPtr<nsFrameLoader> frameLoader = GetFrameLoader();
+  NS_ENSURE_TRUE(frameLoader, false);
+  frameLoader->SetSpatialNavigationEnabled(aEnabled);
+
+  return true;
+}
+
+bool
+TabParent::RecvGetSpatialNavigationEnabled(bool* aEnabled)
+{
+  RefPtr<nsFrameLoader> frameLoader = GetFrameLoader();
+  NS_ENSURE_TRUE(frameLoader, false);
+  frameLoader->GetSpatialNavigationEnabled(aEnabled);
+
+  return true;
+}
+
+bool
 TabParent::RecvUpdateSpatialNavigationCursorPosition(
   const LayoutDeviceIntPoint& aPoint)
 {

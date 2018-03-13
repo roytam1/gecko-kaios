@@ -289,6 +289,8 @@ public:
   void MozSetMessageHandlerPromise(Promise& aPromise, ErrorResult& aRv);
 #ifdef HAS_KOOST_MODULES
   VolumeManager* GetVolumeManager(ErrorResult& aRv);
+  bool SpatialNavigationEnabled() const;
+  void SetSpatialNavigationEnabled(bool enabled);
 #endif
 
 #ifdef MOZ_B2G

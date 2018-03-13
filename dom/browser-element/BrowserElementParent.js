@@ -1182,15 +1182,24 @@ BrowserElementParent.prototype = {
   },
 
   setSpatialNavigationEnabled: defineNoReturnMethod(function(enabled) {
-    this._frameLoader.spatialNavigationEnabled = enabled;
+    if (!this._mm.assertAppHasPermission("spatialnavigation-app-manage")) {
+      this._frameLoader.spatialNavigationEnabled = enabled;
+    }
   }),
 
   getSpatialNavigationEnabled: function() {
+    if (!this._isAlive()) {
+      throw Components.Exception("Dead content process",
+                                 Cr.NS_ERROR_DOM_INVALID_STATE_ERR);
+    }
+
     return this._frameLoader.spatialNavigationEnabled;
   },
 
   setTouchPanningSimulationEnabled: defineNoReturnMethod(function(enabled) {
-    this._frameLoader.touchPanningSimulationEnabled = enabled;
+    if (!this._mm.assertAppHasPermission("spatialnavigation-app-manage")) {
+      this._frameLoader.touchPanningSimulationEnabled = enabled;
+    }
   }),
 
   getTouchPanningSimulationEnabled: function() {

@@ -53,6 +53,7 @@
 #include "mozilla/dom/SoftkeyManager.h"
 #ifdef HAS_KOOST_MODULES
 #include "mozilla/dom/VolumeManager.h"
+#include "SpatialNavigationServiceChild.h"
 #endif
 #include "mozilla/dom/VRDevice.h"
 #include "mozilla/dom/FlashlightManager.h"
@@ -147,6 +148,7 @@
 #include "mozilla/dom/fota/FotaEngine.h"
 #endif
 namespace mozilla {
+using namespace toolkit;
 namespace dom {
 #ifdef ENABLE_FOTA
 using namespace fota;
@@ -3031,6 +3033,27 @@ Navigator::GetVolumeManager(ErrorResult& aRv)
 
   return mVolumeManager;
 }
+
+void
+Navigator::SetSpatialNavigationEnabled(bool aEnabled)
+{
+  RefPtr<SpatialNavigationServiceChild> service =
+    SpatialNavigationServiceChild::GetOrCreate();
+
+  service->RequestSetEnabled(mWindow, aEnabled);
+}
+
+bool
+Navigator::SpatialNavigationEnabled() const
+{
+  bool enabled = false;
+  RefPtr<SpatialNavigationServiceChild> service =
+    SpatialNavigationServiceChild::GetOrCreate();
+
+  service->RequestGetEnabled(mWindow, &enabled);
+  return enabled;
+}
+
 #endif
 } // namespace dom
 } // namespace mozilla
