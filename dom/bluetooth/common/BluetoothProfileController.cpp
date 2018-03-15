@@ -352,10 +352,12 @@ void
 BluetoothProfileController::GiveupAndContinue()
 {
   MOZ_ASSERT(!mCurrentProfileFinished);
-  MOZ_ASSERT(mProfilesIndex < (int)mProfiles.Length());
+  MOZ_ASSERT(mProfilesIndex == -1);
 
-  BT_LOGR_PROFILE(mProfiles[mProfilesIndex], ERR_OPERATION_TIMEOUT);
-  mProfiles[mProfilesIndex]->Reset();
+  if (mProfilesIndex < (int)mProfiles.Length()) {
+    BT_LOGR_PROFILE(mProfiles[mProfilesIndex], ERR_OPERATION_TIMEOUT);
+    mProfiles[mProfilesIndex]->Reset();
+  }
 
   if (IsBtServiceAvailable()) {
     Next();

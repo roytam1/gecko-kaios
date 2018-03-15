@@ -2184,6 +2184,12 @@ BluetoothServiceBluedroid::AdapterStateChangedNotification(bool aState)
     for (size_t i = 0; i < MOZ_ARRAY_LENGTH(sDeinitManager); ++i) {
       sDeinitManager[i](res);
     }
+
+    // Bluetooth just disabled, clear profile constrollers.
+    for (uint32_t i = 0; i < sControllerArray.Length(); ++i) {
+      sControllerArray[i]->EndSession();
+    }
+    sControllerArray.Clear();
   }
 
   if (mEnabled) {
@@ -2194,8 +2200,7 @@ BluetoothServiceBluedroid::AdapterStateChangedNotification(bool aState)
     // enabling it might interfere with the shutdown procedure.
     BluetoothService::AcknowledgeToggleBt(true);
 
-    // Bluetooth just enabled, clear profile controllers and runnable arrays.
-    sControllerArray.Clear();
+    // Bluetooth just enabled, clear runnable arrays.
     mGetDeviceRequests.Clear();
     mChangeDiscoveryRunnables.Clear();
     mSetAdapterPropertyRunnables.Clear();
