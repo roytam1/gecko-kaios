@@ -450,7 +450,13 @@ public:
 #undef COPY_FIELD
 #undef COPY_OPT_FIELD
 
-    mNfcService->DispatchNfcEvent(cx, event);
+    JS::RootedValue val(cx);
+
+    if (!ToJSValue(cx, event, &val)) {
+      return NS_ERROR_FAILURE;
+    }
+
+    mNfcService->DispatchNfcEvent(val);
     return NS_OK;
   }
 
@@ -884,7 +890,7 @@ NfcService::SendCommand(JS::HandleValue aOptions, JSContext* aCx)
 }
 
 void
-NfcService::DispatchNfcEvent(JSContext* cx, const mozilla::dom::NfcEventOptions& aOptions)
+NfcService::DispatchNfcEvent(JS::RootedValue& optionsValue)
 {
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(mListener);
@@ -893,13 +899,7 @@ NfcService::DispatchNfcEvent(JSContext* cx, const mozilla::dom::NfcEventOptions&
     return; // NFC has been shutdown meanwhile; not en error
   }
 
-  JS::RootedValue val(cx);
-
-  if (!ToJSValue(cx, aOptions, &val)) {
-    return;
-  }
-
-  mListener->OnEvent(val);
+  mListener->OnEvent(optionsValue);
 }
 
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(NfcService,

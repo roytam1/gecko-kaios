@@ -382,7 +382,7 @@ SecureElementManager.prototype = {
       },
       notifyError: (reason) => {
         if (gMap.isChannels()) {
-          debug("Failed to open basic channel to AID : " +
+          debug("Failed to open channel to AID : " +
                 SEUtils.byteArrayToHexString(msg.aid) +
                 ", Rejected with Reason : " + reason);
           callback({ error: SE.ERROR_GENERIC, reason: reason, response: [] });

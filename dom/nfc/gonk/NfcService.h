@@ -27,7 +27,7 @@ public:
 
   static already_AddRefed<NfcService> FactoryCreate();
 
-  void DispatchNfcEvent(JSContext* cx, const mozilla::dom::NfcEventOptions& aOptions);
+  void DispatchNfcEvent(JS::RootedValue& optionsValue);
 
   static void TimerCallback(nsITimer *aTimer, void *aClosure);
 
