@@ -199,9 +199,9 @@ IMEConnect::SetLetterMultiTap(const unsigned long aKeyCode, const unsigned long 
     return;
   }
 
-  KIKA_LOGD("SetLetterMultiTap::aKeyCode = 0x%x, count = %d", (int)aKeyCode, (int)aTapCount);
+  KIKA_LOGD("SetLetterMultiTap::aKeyCode = 0x%lx, aPrevUnichar = 0x%x, count = %ld", aKeyCode, aPrevUnichar, aTapCount);
 
-  wchar_t *keyin = IQQI_MultiTap_Input(imeId, (int)aKeyCode, (int)aTapCount);
+  wchar_t *keyin = IQQI_MultiTap_Input(imeId, (int)aKeyCode, (int)aPrevUnichar, (int)aTapCount);
 
   if (keyin == 0) {
     KIKA_LOGW("SetLetterMultiTap::MultiTap invalid keyin");
