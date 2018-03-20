@@ -924,6 +924,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
         'VideoCallSessionChangeEvent.webidl',
         'VideoCallSessionModifyRequestEvent.webidl',
         'VideoCallSessionModifyResponseEvent.webidl',
+        'WifiHasInternetEvent.webidl',
         'WifiOpenNetworkEvent.webidl',
         'WifiScanResultEvent.webidl',
     ]

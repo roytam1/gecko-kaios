@@ -83,6 +83,7 @@ function DOMWifiManager() {
   this.defineEventHandlerGetterSetter("onstationinfoupdate");
   this.defineEventHandlerGetterSetter("onopennetwork");
   this.defineEventHandlerGetterSetter("onscanresult");
+  this.defineEventHandlerGetterSetter("onwifihasinternet");
 }
 
 DOMWifiManager.prototype = {
@@ -101,6 +102,7 @@ DOMWifiManager.prototype = {
     this._connectionStatus = "disconnected";
     this._enabled = false;
     this._notification = false;
+    this._hasInternet = false;
     this._scanResult = null;
     this._lastConnectionInfo = null;
     this._capabilities = null;
@@ -126,7 +128,7 @@ DOMWifiManager.prototype = {
                       "WifiManager:onauthenticating", "WifiManager:ondhcpfailed",
                       "WifiManager:onauthenticationfailed", "WifiManager:onassociationreject",
                       "WifiManager:stationinfoupdate", "WifiManager:opennetwork",
-                      "WifiManager:scanresult"];
+                      "WifiManager:scanresult", "WifiManager:wifihasinternet"];
     this.initDOMRequestHelper(aWindow, messages);
     this._mm = Cc["@mozilla.org/childprocessmessagemanager;1"].getService(Ci.nsISyncMessageSender);
 
@@ -408,6 +410,12 @@ DOMWifiManager.prototype = {
         this._scanResult = this._convertWifiNetworks(msg.scanResult);
         this._fireScanResult(this._scanResult);
         break;
+
+      case "WifiManager:wifihasinternet":
+        this._hasInternet = msg.hasInternet;
+        this._currentNetwork = this._convertWifiNetwork(msg.network);
+        this._fireWifiHasInternet(msg.network);
+        break;
     }
   },
 
@@ -454,6 +462,14 @@ DOMWifiManager.prototype = {
                                                    { scanResult: scanResult }
                                                   );
     this.__DOM_IMPL__.dispatchEvent(evt);
+  },
+
+  _fireWifiHasInternet: function onWifiHasInternet(aNetwork) {
+    var event = new this._window.WifiHasInternetEvent("wifihasinternet",
+                                                     { hasInternet: this._hasInternet,
+                                                       network: this._convertWifiNetwork(aNetwork)
+                                                     });
+    this.__DOM_IMPL__.dispatchEvent(event);
   },
 
   setWifiEnabled: function setWifiEnabled(enabled) {
@@ -554,6 +570,10 @@ DOMWifiManager.prototype = {
 
   get scanResult() {
     return this._scanResult;
+  },
+
+  get hasInternet() {
+    return this._hasInternet;
   },
 
   get connection() {

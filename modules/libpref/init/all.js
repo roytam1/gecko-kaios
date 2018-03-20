@@ -4905,7 +4905,6 @@ pref("captivedetect.canonicalURL", "http://detectportal.kaiostech.com/success.tx
 pref("captivedetect.canonicalContent", "success");
 pref("captivedetect.maxWaitingTime", 5000);
 pref("captivedetect.pollingTime", 3000);
-pref("captivedetect.maxRetryCount", 5);
 
 #ifdef RELEASE_BUILD
 pref("dom.forms.inputmode", false);

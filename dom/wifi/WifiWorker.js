@@ -35,6 +35,8 @@ const kNetworkConnectionStateChangedTopic = "network-connection-state-changed";
 const kPrefDefaultServiceId               = "dom.telephony.defaultServiceId";
 const kPrefRilNumRadioInterfaces          = "ril.numRadioInterfaces";
 const NS_PREFBRANCH_PREFCHANGE_TOPIC_ID   = "nsPref:changed";
+const kWifiCaptivePortalResult            = "wifi-captive-portal-result";
+const kOpenCaptivePortalLoginEvent        = "captive-portal-login";
 
 const MAX_RETRIES_ON_AUTHENTICATION_FAILURE = 1;
 const MAX_SUPPLICANT_LOOP_ITERATIONS = 4;
@@ -105,6 +107,8 @@ const MODE_IBSS = 1;
 const POWER_MODE_DHCP = 1;
 const POWER_MODE_SCREEN_STATE = 1 << 1;
 const POWER_MODE_SETTING_CHANGED = 1 << 2;
+
+const PROMPT_UNVALIDATED_DELAY_MS = 8000;
 
 XPCOMUtils.defineLazyServiceGetter(this, "gNetworkManager",
                                    "@mozilla.org/network/manager;1",
@@ -2574,6 +2578,8 @@ function WifiWorker() {
   Services.obs.addObserver(this, kInterfaceDnsInfoTopic, false);
   Services.obs.addObserver(this, kRouteChangedTopic, false);
   Services.obs.addObserver(this, kNetworkConnectionStateChangedTopic, false);
+  Services.obs.addObserver(this, kWifiCaptivePortalResult, false);
+  Services.obs.addObserver(this, kOpenCaptivePortalLoginEvent, false);
   Services.prefs.addObserver(kPrefDefaultServiceId, this, false);
 
   this.wantScanResults = [];
@@ -3022,7 +3028,12 @@ function WifiWorker() {
 
         self._fireEvent("ondisconnect", {network: netToDOM(self.currentNetwork)});
 
+        // TODO: Change currentNetwork to lastNetwork in Bug-35607
         self.currentNetwork = null;
+        if (self.handlePromptUnvalidatedId !== null) {
+          clearTimeout(self.handlePromptUnvalidatedId);
+          self.handlePromptUnvalidatedId = null;
+        }
         self.ipAddress = "";
 
         WifiManager.connectionDropped(function() {
@@ -3114,6 +3125,8 @@ function WifiWorker() {
       WifiNetworkInterface.info.dnses.push(this.info.dns2_str);
     }
     gNetworkManager.updateNetworkInterface(WifiNetworkInterface);
+    self.handlePromptUnvalidatedId =
+      setTimeout(self.handlePromptUnvalidated.bind(self), PROMPT_UNVALIDATED_DELAY_MS);
     // wifi connected and reset open network notification.
     WifiNotificationController.resetNotification();
     self.ipAddress = this.info.ipaddr_str;
@@ -3555,6 +3568,22 @@ WifiWorker.prototype = {
         self._reloadConfiguredNetworks(function() {});
       });
     });
+  },
+
+  // TODO: Change currentNetwork to lastNetwork in Bug-35607
+  handlePromptUnvalidatedId: null,
+  handlePromptUnvalidated: function() {
+    this.handlePromptUnvalidatedId = null;
+    if (this.currentNetwork == null) {
+      return;
+    }
+    debug("handlePromptUnvalidated: " + uneval(this.currentNetwork));
+    if (this.currentNetwork.everValidated ||
+      this.currentNetwork.everCaptivePortalDetected) {
+      return;
+    }
+    this._fireEvent("wifihasinternet", { hasInternet: false,
+                                         network: netToDOM(this.currentNetwork)});
   },
 
   // Internal methods.
@@ -4723,7 +4752,9 @@ WifiWorker.prototype = {
     Services.obs.removeObserver(this, kInterfaceDnsInfoTopic);
     Services.obs.removeObserver(this, kRouteChangedTopic);
     Services.obs.removeObserver(this, kNetworkConnectionStateChangedTopic);
-    Services.prefs.removeObserver(kPrefDefaultServiceId, this, false);
+    Services.obs.removeObserver(this, kWifiCaptivePortalResult);
+    Services.obs.removeObserver(this, kOpenCaptivePortalLoginEvent);
+    Services.prefs.removeObserver(kPrefDefaultServiceId, this);
   },
 
   // TODO: Remove command queue in Bug 1050147.
@@ -4922,7 +4953,9 @@ WifiWorker.prototype = {
         Services.obs.removeObserver(this, kInterfaceDnsInfoTopic);
         Services.obs.removeObserver(this, kRouteChangedTopic);
         Services.obs.removeObserver(this, kNetworkConnectionStateChangedTopic);
-        Services.prefs.removeObserver(kPrefDefaultServiceId, this, false);
+        Services.obs.removeObserver(this, kWifiCaptivePortalResult);
+        Services.obs.removeObserver(this, kOpenCaptivePortalLoginEvent);
+        Services.prefs.removeObserver(kPrefDefaultServiceId, this);
         if (this.mobileConnectionListener) {
           gMobileConnectionService
             .getItemByServiceId(WifiManager.telephonyServiceId).unregisterListener(this);
@@ -5068,6 +5101,45 @@ WifiWorker.prototype = {
         } else {
           this._wifiCreated = false;
         }
+        break;
+
+      // TODO: Change currentNetwork to lastNetwork in Bug-35607
+      case kWifiCaptivePortalResult:
+        if (!(subject instanceof Ci.nsIPropertyBag2)) {
+          return;
+        }
+        if (WifiNetworkInterface.info.state !==
+          Ci.nsINetworkInfo.NETWORK_STATE_CONNECTED) {
+          debug("ignore captive portal result event when network not connected");
+          return;
+        }
+        let props = subject.QueryInterface(Ci.nsIPropertyBag2);
+        let landing = props.get("landing");
+        if (this.currentNetwork == null) {
+          debug("currentNetwork is null");
+          return;
+        }
+        debug("Receive currentNetwork : " + uneval(this.currentNetwork)
+          + " landing = " + landing);
+        this.currentNetwork.everValidated |= landing;
+        this._fireEvent("wifihasinternet",
+          { hasInternet: (this.currentNetwork.everValidated) ? true : false,
+            network: netToDOM(this.currentNetwork)});
+        break;
+
+      case kOpenCaptivePortalLoginEvent:
+        if (WifiNetworkInterface.info.state !==
+          Ci.nsINetworkInfo.NETWORK_STATE_CONNECTED) {
+          debug("ignore captive portal login event when network not connected");
+          return;
+        }
+        if (this.currentNetwork == null) {
+          debug("currentNetwork is null");
+          return;
+        }
+        debug("Receive captive-portal-login, set currentNetwork : " +
+          uneval(this.currentNetwork));
+        this.currentNetwork.everCaptivePortalDetected = true;
         break;
     }
   },

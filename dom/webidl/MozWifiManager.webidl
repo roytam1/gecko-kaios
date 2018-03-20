@@ -299,6 +299,11 @@ interface MozWifiManager : EventTarget {
   readonly attribute boolean openNetworkNotify;
 
   /**
+   * Returns whether or not wifi has internet.
+   */
+  readonly attribute boolean hasInternet;
+
+  /**
    * Returns the last wifi scan result.
    */
   readonly attribute any scanResult;
@@ -379,4 +384,10 @@ interface MozWifiManager : EventTarget {
    * An event listener that is called with wifi scan result.
    */
   attribute EventHandler onscanresult;
+
+  /**
+   * An event listener that is called with notification about the current
+   * wifi network has internet or not.
+   */
+  attribute EventHandler onwifihasinternet;
 };
