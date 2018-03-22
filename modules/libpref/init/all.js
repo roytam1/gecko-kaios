@@ -2032,8 +2032,7 @@ pref("security.csp.enable", true);
 pref("security.csp.experimentalEnabled", false);
 
 // Default Content Security Policy to apply to privileged apps.
-pref("security.apps.privileged.CSP.default", "default-src * data: blob:; script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'");
-
+pref("security.apps.privileged.CSP.default", "default-src * data: blob:; script-src 'self' http://localhost:8081/sdk/ads/; object-src 'none'; style-src 'self' 'unsafe-inline'");
 // Mixed content blocking
 pref("security.mixed_content.block_active_content", false);
 pref("security.mixed_content.block_display_content", false);
