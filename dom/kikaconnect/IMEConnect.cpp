@@ -194,7 +194,7 @@ IMEConnect::SetLetterMultiTap(const unsigned long aKeyCode, const unsigned long 
     return;
   }
 
-  if (aKeyCode < 0x30 || aKeyCode > 0x39) { // 0~9
+  if (!((aKeyCode >= 0x30 && aKeyCode <= 0x39) || aKeyCode == 0x2A)) { // Except 0~9, *
     KIKA_LOGW("SetLetterMultiTap::Invalid aKeyCode = 0x%lx", aKeyCode);
     return;
   }
@@ -281,7 +281,7 @@ IMEConnect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLe
       break;
     default:
       if (keyboardId == eKeyboardT9) {
-        if (aHexLetter >= 0x30 && aHexLetter <= 0x39) { // 0~9
+        if ((aHexLetter >= 0x30 && aHexLetter <= 0x39) || aHexLetter == 0x2A) { // 0~9, *
           KIKA_LOGD("SetLetter::push aHexLetter = 0x%x", (int)aHexLetter);
           mKeyBuff.push_back(aHexLetter);
           mActiveWordIndex = 0;
