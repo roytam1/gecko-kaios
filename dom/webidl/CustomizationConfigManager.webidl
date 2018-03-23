@@ -12,7 +12,7 @@
  CheckAnyPermissions="customization"]
 interface Customization : EventTarget {
   // Customize the device with the variant depending on the matchInfo value.
-  Promise<any> applyVariant(optional object matchInfo);
+  Promise<any> applyVariant(optional object matchInfo, optional object blacklist);
 
   // Returns the value of the customization item.
   Promise<any> getValue(DOMString name);
