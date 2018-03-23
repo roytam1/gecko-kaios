@@ -149,7 +149,8 @@ const gfxFontFeature numericDefaults[] = {
   { TRUETYPE_TAG('f','r','a','c'), 1 },
   { TRUETYPE_TAG('a','f','r','c'), 1 },
   { TRUETYPE_TAG('z','e','r','o'), 1 },
-  { TRUETYPE_TAG('o','r','d','n'), 1 }
+  { TRUETYPE_TAG('o','r','d','n'), 1 },
+  { TRUETYPE_TAG('n','o','m','n'), 1 }
 };
 
 static_assert(MOZ_ARRAY_LENGTH(numericDefaults) ==
@@ -268,7 +269,7 @@ void nsFont::AddFontFeaturesToStyle(gfxFontStyle *aStyle) const
   if (variantNumeric) {
     AddFontFeaturesBitmask(variantNumeric,
                            NS_FONT_VARIANT_NUMERIC_LINING,
-                           NS_FONT_VARIANT_NUMERIC_ORDINAL,
+                           NS_FONT_VARIANT_NUMERIC_NOMINAL,
                            numericDefaults, aStyle->featureSettings);
   }
 

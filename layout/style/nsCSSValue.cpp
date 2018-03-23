@@ -1310,7 +1310,7 @@ nsCSSValue::AppendToString(nsCSSProperty aProperty, nsAString& aResult,
     case eCSSProperty_font_variant_numeric:
       nsStyleUtil::AppendBitmaskCSSValue(aProperty, intValue,
                                          NS_FONT_VARIANT_NUMERIC_LINING,
-                                         NS_FONT_VARIANT_NUMERIC_ORDINAL,
+                                         NS_FONT_VARIANT_NUMERIC_NOMINAL,
                                          aResult);
       break;
 

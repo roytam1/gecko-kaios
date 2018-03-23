@@ -210,7 +210,7 @@ nsCSSProps::AddRefTable(void)
     static bool prefObserversInited = false;
     if (!prefObserversInited) {
       prefObserversInited = true;
-      
+
       #define OBSERVE_PROP(pref_, id_)                                        \
         if (pref_[0]) {                                                       \
           Preferences::AddBoolVarCache(&gPropertyEnabled[id_],                \
@@ -1631,6 +1631,7 @@ const KTableEntry nsCSSProps::kFontVariantNumericKTable[] = {
   { eCSSKeyword_stacked_fractions, NS_FONT_VARIANT_NUMERIC_STACKED_FRACTIONS },
   { eCSSKeyword_slashed_zero, NS_FONT_VARIANT_NUMERIC_SLASHZERO },
   { eCSSKeyword_ordinal, NS_FONT_VARIANT_NUMERIC_ORDINAL },
+  { eCSSKeyword_nominal, NS_FONT_VARIANT_NUMERIC_NOMINAL },
   { eCSSKeyword_UNKNOWN, -1 }
 };
 
@@ -2848,7 +2849,7 @@ static const nsCSSProperty gFlexFlowSubpropTable[] = {
 
 static const nsCSSProperty gGridTemplateSubpropTable[] = {
   eCSSProperty_grid_template_areas,
-  eCSSProperty_grid_template_rows, 
+  eCSSProperty_grid_template_rows,
   eCSSProperty_grid_template_columns,
   eCSSProperty_UNKNOWN
 };

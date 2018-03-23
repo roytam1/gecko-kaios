@@ -527,7 +527,7 @@ nsComputedDOMStyle::GetStyleContextForElementNoFlush(Element* aElement,
          i < stop; ++i) {
       rules[i].swap(rules[length - i - 1]);
     }
-    
+
     sc = styleSet->AsGecko()->ResolveStyleForRules(parentContext, rules);
   }
 
@@ -1787,7 +1787,7 @@ nsComputedDOMStyle::DoGetFontVariantNumeric()
 
     nsStyleUtil::AppendBitmaskCSSValue(eCSSProperty_font_variant_numeric,
       intValue, NS_FONT_VARIANT_NUMERIC_LINING,
-      NS_FONT_VARIANT_NUMERIC_ORDINAL, valueStr);
+      NS_FONT_VARIANT_NUMERIC_NOMINAL, valueStr);
     val->SetString(valueStr);
   }
 
@@ -2203,7 +2203,7 @@ nsComputedDOMStyle::DoGetImageLayerRepeat(const nsStyleImageLayers& aLayers)
                                          nsCSSProps::kImageLayerRepeatKTable));
     } else {
       valY = new nsROCSSPrimitiveValue;
-      
+
       valX->SetIdent(nsCSSProps::ValueToKeywordEnum(xRepeat,
                                           nsCSSProps::kImageLayerRepeatKTable));
       valY->SetIdent(nsCSSProps::ValueToKeywordEnum(yRepeat,
@@ -4677,7 +4677,7 @@ nsComputedDOMStyle::DoGetHeight()
         !(mInnerFrame->IsFrameOfType(nsIFrame::eReplaced)) &&
         // An outer SVG frame should behave the same as eReplaced in this case
         mInnerFrame->GetType() != nsGkAtoms::svgOuterSVGFrame) {
-      
+
       calcHeight = false;
     }
   }
@@ -4721,7 +4721,7 @@ nsComputedDOMStyle::DoGetWidth()
         !(mInnerFrame->IsFrameOfType(nsIFrame::eReplaced)) &&
         // An outer SVG frame should behave the same as eReplaced in this case
         mInnerFrame->GetType() != nsGkAtoms::svgOuterSVGFrame) {
-      
+
       calcWidth = false;
     }
   }

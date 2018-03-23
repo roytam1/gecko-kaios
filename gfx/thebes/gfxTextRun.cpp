@@ -2168,7 +2168,7 @@ gfxFontGroup::InitTextRun(DrawTarget* aDrawTarget,
         for (uint32_t i = 0; i < aLength; ++i) {
             char16_t origCh = aString[i];
             char16_t newCh;
-            if (fontFamilies.EqualsLiteral(NUMERAL_ALWAYS_NORMAL)) {
+            if (fontFamilies.EqualsLiteral(NUMERAL_ALWAYS_NORMAL) || mStyle.IsNumericNominal()) {
               newCh = HandleNumberInChar(origCh, prevIsArabic, IBMBIDI_NUMERAL_NOMINAL);
             } else {
               newCh = HandleNumberInChar(origCh, prevIsArabic, numOption);

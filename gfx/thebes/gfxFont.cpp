@@ -3934,3 +3934,24 @@ gfxFontStyle::AdjustForSubSuperscript(int32_t aAppUnitsPerDevPixel)
     // clear the variant field
     variantSubSuper = NS_FONT_VARIANT_POSITION_NORMAL;
 }
+
+bool
+gfxFontStyle::IsNumericNominal()
+{
+    if (featureSettings.IsEmpty()) {
+        return false;
+    }
+
+    uint32_t i, count;
+
+    nsTArray<gfxFontFeature>& styleFeatures = featureSettings;
+    count = styleFeatures.Length();
+    for (i = 0; i < count; i++) {
+        const gfxFontFeature& feature = styleFeatures.ElementAt(i);
+        if (feature.mTag == TRUETYPE_TAG('n','o','m','n')) {
+            return feature.mValue !=0;
+        }
+    }
+
+    return false;
+}

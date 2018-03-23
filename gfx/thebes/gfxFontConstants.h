@@ -174,6 +174,7 @@ enum {
     eFeatureNumeric_stacked_fractions,
     eFeatureNumeric_slashedzero,
     eFeatureNumeric_ordinal,
+    eFeatureNumeric_nominal,
 
     eFeatureNumeric_numFeatures
 };
@@ -186,6 +187,7 @@ enum {
 #define NS_FONT_VARIANT_NUMERIC_STACKED_FRACTIONS   (1 << eFeatureNumeric_stacked_fractions)
 #define NS_FONT_VARIANT_NUMERIC_SLASHZERO           (1 << eFeatureNumeric_slashedzero)
 #define NS_FONT_VARIANT_NUMERIC_ORDINAL             (1 << eFeatureNumeric_ordinal)
+#define NS_FONT_VARIANT_NUMERIC_NOMINAL             (1 << eFeatureNumeric_nominal)
 
 #define NS_FONT_VARIANT_NUMERIC_FIGURE_MASK \
     NS_FONT_VARIANT_NUMERIC_LINING | \

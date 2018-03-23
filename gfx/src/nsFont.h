@@ -53,7 +53,7 @@ struct nsFont {
 
   // Variant subproperties
   uint8_t variantCaps;
-  uint8_t variantNumeric;
+  uint16_t variantNumeric;
   uint8_t variantPosition;
   uint8_t variantWidth;
 
