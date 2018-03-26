@@ -263,33 +263,30 @@ this.KaiAccountsManager = {
   },
 
   _signOut: function(user) {
-    return this._localSignOut().then(
-      () => {
-        // At this point the local session should already be removed.
-
-        // The client can create new sessions up to the limit (100?).
-        // Orphaned tokens on the server will eventually be garbage collected.
-        if (Services.io.offline) {
-          return Promise.resolve();
-        }
-
-        // Otherwise, we try to remove the remote session.
-        let client = this._getKaiAccountsClient();
-        return this._kaiAccounts.getCertificate(user).then(cert => {
-          return client.signOut(cert).then(
-            result => {
-              let error = this._getError(result);
-              if (error) {
-                return this._error(error);
-              }
-              log.debug("Signed out");
-              return Promise.resolve();
-            },
-            reason => {
-              return this._serverError(reason);
+    if (Services.io.offline) {
+      return this._error(ERROR_OFFLINE);
+    }
+    let client = this._getKaiAccountsClient();
+    return this._kaiAccounts.getCertificate(user).then(
+      cert => {
+        return client.signOut(cert).then(
+          result => {
+            let error = this._getError(result);
+            if (error) {
+              return this._error(error);
             }
-          );
-        });
+            return this._localSignOut().then(
+              () => {
+                log.debug("Signed out");
+                return Promise.resolve();
+              }
+            );
+          },
+          reason => {
+            log.error("Sign out account failed reason " + JSON.stringify(reason));
+            return this._serverError(reason);
+          }
+        );
       }
     );
   },
