@@ -322,3 +322,9 @@ textarea {
 -moz-binding: none !important;
 }
 %endif
+
+/* The following CSS style let numbers in editable <input> and <textarea>
+   appears in default format (0, 1, ... 9). */
+input, textarea, [contenteditable="true"] {
+  font-variant-numeric: nominal;
+}
