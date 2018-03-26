@@ -254,7 +254,7 @@ var SystemAppProxy = {
     let payload;
     // If the root object already has __exposedProps__,
     // we consider the caller already wrapped (correctly) the object.
-    if ('__exposedProps__' in details) {
+    if (details && '__exposedProps__' in details) {
       payload = details;
     } else {
       payload = details ? Cu.cloneInto(details, content) : {};
