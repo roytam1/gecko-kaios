@@ -2652,8 +2652,19 @@ function WifiWorker() {
       pub.identity = dequote(net.identity);
     if ("netId" in net) {
       pub.known = true;
-      if (net.netId == wifiInfo.networkId && self.ipAddress)
+      if (net.netId == wifiInfo.networkId && self.ipAddress) {
         pub.connected = true;
+        if (self.currentNetwork.everValidated) {
+          pub.hasInternet = true;
+          pub.captivePortalDetected = false;
+        } else if (self.currentNetwork.everCaptivePortalDetected) {
+          pub.hasInternet = false;
+          pub.captivePortalDetected = true;
+        } else {
+          pub.hasInternet = false;
+          pub.captivePortalDetected = false;
+        }
+      }
     }
     if (net.scan_ssid === 1)
       pub.hidden = true;
@@ -3202,8 +3213,19 @@ function WifiWorker() {
 
           self.networksArray.push(network);
           if (network.bssid === wifiInfo.bssid &&
-            self.ipAddress)
+            self.ipAddress) {
             network.connected = true;
+            if (self.currentNetwork.everValidated) {
+              network.hasInternet = true;
+              network.captivePortalDetected = false;
+            } else if (self.currentNetwork.everCaptivePortalDetected) {
+              network.hasInternet = false;
+              network.captivePortalDetected = true;
+            } else {
+              network.hasInternet = false;
+              network.captivePortalDetected = false;
+            }
+          }
 
           let signal = calculateSignal(Number(match[3]));
           if (signal > network.relSignalStrength)

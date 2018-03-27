@@ -37,6 +37,8 @@ dictionary NetworkProperties {
   boolean known;
   boolean connected;
   boolean hidden;
+  boolean hasInternet;
+  boolean captivePortalDetected;
   DOMString bssid;
   DOMString signalStrength;
   long relSignalStrength;
@@ -81,6 +83,8 @@ interface MozWifiNetwork {
   readonly attribute boolean known;
   readonly attribute boolean connected;
   readonly attribute boolean hidden;
+  readonly attribute boolean hasInternet;
+  readonly attribute boolean captivePortalDetected;
 
            attribute DOMString? bssid;
            attribute DOMString? signalStrength;
