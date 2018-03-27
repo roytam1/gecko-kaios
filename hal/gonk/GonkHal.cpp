@@ -511,6 +511,22 @@ public:
     const char *devpath = event->findParam("DEVPATH");
     if (strcmp(subsystem, "power_supply") == 0 &&
         strstr(devpath, "battery")) {
+
+      const char *chargingStatus = event->findParam("POWER_SUPPLY_STATUS");
+      const char *batteryLevel = event->findParam("POWER_SUPPLY_CAPACITY");
+      const char *batteryHealth = event->findParam("POWER_SUPPLY_HEALTH");
+
+      // Retuen if no change of charging status, battery level and health.
+      if (mLastChargingStatus.EqualsASCII(chargingStatus) &&
+          mLastBatteryLevel.EqualsASCII(batteryLevel) &&
+          mLastBatteryHealth.EqualsASCII(batteryHealth)) {
+        return;
+      }
+
+      mLastChargingStatus.AssignASCII(chargingStatus, strlen(chargingStatus));
+      mLastBatteryLevel.AssignASCII(batteryLevel, strlen(batteryLevel));
+      mLastBatteryHealth.AssignASCII(batteryHealth, strlen(batteryHealth));
+
       // aEvent will be valid only in this method.
       NS_DispatchToMainThread(mUpdater);
     }
@@ -521,6 +537,10 @@ protected:
 
 private:
   RefPtr<BatteryUpdater> mUpdater;
+
+  nsCString mLastChargingStatus;
+  nsCString mLastBatteryLevel;
+  nsCString mLastBatteryHealth;
 };
 
 // sBatteryObserver is owned by the IO thread. Only the IO thread may
