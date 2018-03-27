@@ -74,6 +74,7 @@ IMEConnect::Constructor(const GlobalObject& aGlobal, uint32_t aLid, ErrorResult&
 nsresult
 IMEConnect::Init(uint32_t aLid)
 {
+  KIKA_LOGI("Init::version = %s", IQQI_Version());
   SetLanguage(aLid);
   return NS_OK;
 }

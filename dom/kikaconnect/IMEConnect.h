@@ -47,6 +47,7 @@ extern "C" {
 #define LOG_KIKA_TAG "GeckoKikaConnect"
 #define KIKA_DEBUG 0
 
+#define KIKA_LOGI(args...)  __android_log_print(ANDROID_LOG_INFO, LOG_KIKA_TAG , ## args)
 #define KIKA_LOGW(args...)  __android_log_print(ANDROID_LOG_WARN, LOG_KIKA_TAG , ## args)
 #define KIKA_LOGE(args...)  __android_log_print(ANDROID_LOG_ERROR, LOG_KIKA_TAG , ## args)
 
