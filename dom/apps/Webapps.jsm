@@ -2031,8 +2031,6 @@ this.DOMApplicationRegistry = {
 
     yield this._saveApps();
     // Update the handlers and permissions for this app.
-    this.updateAppHandlers(oldManifest, newManifest, app);
-
     let updateManifest = yield AppsUtils.loadJSONAsync(staged.path);
     let appObject = AppsUtils.cloneAppObject(app);
     appObject.updateManifest = updateManifest;
@@ -2045,6 +2043,8 @@ this.DOMApplicationRegistry = {
           manifestURL: app.manifestURL },
         true);
     }
+
+    this.updateAppHandlers(oldManifest, newManifest, app);
     this.updateDataStore(this.webapps[id].localId, app.origin,
                          app.manifestURL, newManifest);
     MessageBroadcaster.broadcastMessage("Webapps:UpdateState", {
@@ -2619,9 +2619,6 @@ this.DOMApplicationRegistry = {
     }
 
     if (aNewManifest) {
-      this.updateAppHandlers(aOldManifest, aNewManifest, aApp);
-      this.notifyUpdateHandlers(AppsUtils.cloneAppObject(aApp), aNewManifest);
-
       // Store the new manifest.
       let dir = this._getAppDir(aId).path;
       let manFile = OS.Path.join(dir, "manifest.webapp");
@@ -2639,6 +2636,8 @@ this.DOMApplicationRegistry = {
         }, true);
       }
 
+      this.updateAppHandlers(aOldManifest, aNewManifest, aApp);
+      this.notifyUpdateHandlers(AppsUtils.cloneAppObject(aApp), aNewManifest);
       this.updateDataStore(this.webapps[aId].localId, aApp.origin,
                            aApp.manifestURL, aApp.manifest);
 
@@ -3448,7 +3447,6 @@ this.DOMApplicationRegistry = {
 
     yield this._saveApps();
 
-    this.updateAppHandlers(null, aManifest, aNewApp);
     // Clear the manifest cache in case it holds the update manifest.
     if (aId in this._manifestCache) {
       delete this._manifestCache[aId];
@@ -3469,6 +3467,7 @@ this.DOMApplicationRegistry = {
       }, true);
     }
 
+    this.updateAppHandlers(null, aManifest, aNewApp);
     this.updateDataStore(this.webapps[aId].localId, aNewApp.origin,
                          aNewApp.manifestURL, aManifest);
 
