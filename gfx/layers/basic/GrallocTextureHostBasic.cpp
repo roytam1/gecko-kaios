@@ -180,7 +180,7 @@ GrallocTextureHostBasic::ClearTextureSource()
 void
 GrallocTextureHostBasic::SetCompositor(Compositor* aCompositor)
 {
-  BasicCompositor* compositor = AssertBasicCompositor(aCompositor);
+  BasicCompositor* compositor = static_cast<BasicCompositor*> (aCompositor);
   if (!compositor) {
     return;
   }
