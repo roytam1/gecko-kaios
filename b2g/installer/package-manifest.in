@@ -71,8 +71,10 @@
 @BINPATH@/ucrtbase.dll
 #endif
 #endif
-#ifndef MOZ_SYSTEM_ICU
+#if ENABLE_INTL_API
+#if !defined(MOZ_SYSTEM_ICU) || MOZ_SYSTEM_ICU != 1
 @RESPATH@/@ICU_DATA_FILE@
+#endif
 #endif
 #ifdef MOZ_SHARED_MOZGLUE
 @BINPATH@/@DLL_PREFIX@mozglue@DLL_SUFFIX@
@@ -89,6 +91,53 @@
 @BINPATH@/@DLL_PREFIX@mozgtk@DLL_SUFFIX@
 @BINPATH@/gtk2/@DLL_PREFIX@mozgtk@DLL_SUFFIX@
 #endif
+
+@RESPATH@/chrome/recording.manifest
+@RESPATH@/chrome/recording/content/recording.js
+@RESPATH@/chrome/recording/content/recording.xul
+@RESPATH@/components/BrowserPageThumbs.manifest
+@RESPATH@/components/PageThumbsProtocol.js
+@RESPATH@/components/RemoteWebNavigation.js
+@RESPATH@/components/SlowScriptDebug.js
+@RESPATH@/components/SlowScriptDebug.manifest
+@RESPATH@/components/addonManager.js
+@RESPATH@/components/addoncompat.manifest
+@RESPATH@/components/amContentHandler.js
+@RESPATH@/components/amInstallTrigger.js
+@RESPATH@/components/amWebAPI.js
+@RESPATH@/components/amWebInstallListener.js
+@RESPATH@/components/content_webrtc.xpt
+@RESPATH@/components/crashmonitor.manifest
+@RESPATH@/components/defaultShims.js
+@RESPATH@/components/dom_eseconnector.xpt
+@RESPATH@/components/dom_gamepad.xpt
+@RESPATH@/components/dom_presentation.xpt
+@RESPATH@/components/dom_subsidylock.xpt
+@RESPATH@/components/dom_videocallprovider.xpt
+@RESPATH@/components/engmodeExtension.js
+@RESPATH@/components/engmodeExtension.manifest
+@RESPATH@/components/filepicker.xpt
+@RESPATH@/components/interfaces.manifest
+@RESPATH@/components/multiprocessShims.js
+@RESPATH@/components/necko_ipc.xpt
+@RESPATH@/components/nsBlocklistServiceContent.js
+@RESPATH@/components/nsCrashMonitor.js
+@RESPATH@/components/nsDownloadManagerUI.js
+@RESPATH@/components/nsDownloadManagerUI.manifest
+@RESPATH@/components/nsFilePicker.js
+@RESPATH@/components/nsFilePicker.manifest
+@RESPATH@/components/nsHelperAppDlg.js
+@RESPATH@/components/nsHelperAppDlg.manifest
+@RESPATH@/components/recording-cmdline.js
+@RESPATH@/components/recording-cmdline.manifest
+@RESPATH@/components/remotebrowserutils.manifest
+@RESPATH@/components/startupcache.xpt
+@RESPATH@/components/storage-mozStorage.js
+@RESPATH@/@PREF_DIR@/services-common.js
+@RESPATH@/js-gdb.py
+@RESPATH@/res/langGroups.properties
+@RESPATH@/update.locale
+@RESPATH@/xpcshell
 
 [browser]
 ; [Base Browser Files]
