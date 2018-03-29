@@ -996,6 +996,14 @@ bin/libfreebl_32int64_3.so
 @RESPATH@/gmp-clearkey/0.1/@DLL_PREFIX@clearkey@DLL_SUFFIX@
 @RESPATH@/gmp-clearkey/0.1/clearkey.info
 #endif
+#if !defined(KAIOS_DISABLE_GMP_FAKE_LIBS) || KAIOS_DISABLE_GMP_FAKE_LIBS != 1
+@RESPATH@/gmp-fake/1.0/fake.info
+@RESPATH@/gmp-fake/1.0/fake.voucher
+@RESPATH@/gmp-fake/1.0/libfake.so
+@RESPATH@/gmp-fakeopenh264/1.0/fakeopenh264.info
+@RESPATH@/gmp-fakeopenh264/1.0/fakeopenh264.voucher
+@RESPATH@/gmp-fakeopenh264/1.0/libfakeopenh264.so
+#endif
 
 #ifdef PKG_LOCALE_MANIFEST
 #include @PKG_LOCALE_MANIFEST@
