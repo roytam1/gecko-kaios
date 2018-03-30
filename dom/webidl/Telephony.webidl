@@ -70,7 +70,7 @@ interface Telephony : EventTarget {
   /**
    * Hangup all calls.
    */
-  [NewObject]
+  [Throws]
   Promise<void> hangUpAllCalls(optional unsigned long serviceId);
 
   /**
@@ -108,6 +108,18 @@ interface Telephony : EventTarget {
   [Pref="telephony.vt.loopback.enabled"]
   readonly attribute VideoCallProvider? loopbackProvider;
 #endif
+
+  /**
+   * Return ECC list.
+   *
+   * @param serviceId [optional]
+   *    serviceId that client is instereted to. If no specify, default service
+   *    Id that user select from settings is used.
+   *
+   * @return a DOMString, ex: 112,911.
+   */
+  [Throws]
+  Promise<DOMString> getEccList(optional unsigned long serviceId);
 
   [Throws]
   attribute boolean hacMode;

@@ -165,6 +165,9 @@ public:
   already_AddRefed<Promise>
   HangUpAllCalls(const Optional<uint32_t>& aServiceId, ErrorResult& aRv);
 
+  already_AddRefed<Promise>
+  GetEccList(const Optional<uint32_t>& aServiceId, ErrorResult& aRv);
+
 #ifdef MOZ_WIDGET_GONK
   already_AddRefed<DOMVideoCallProvider>
   GetLoopbackProvider() const;
