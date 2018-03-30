@@ -36,7 +36,6 @@
 #include "nsIGonkTelephonyService.h"
 #endif
 #include "nsXULAppAPI.h" // For XRE_GetProcessType()
-#include "SystemProperty.h"
 
 // === SIMULATOR START ===
 #ifdef MOZ_WIDGET_GONK
@@ -60,7 +59,6 @@
 
 using namespace mozilla::dom;
 using namespace mozilla::dom::telephony;
-using namespace mozilla::system;
 using mozilla::ErrorResult;
 
 class Telephony::Listener : public nsITelephonyListener
@@ -508,49 +506,6 @@ Telephony::HangUpAllCalls(const Optional<uint32_t>& aServiceId,
     return promise.forget();
   }
 
-  return promise.forget();
-}
-
-already_AddRefed<Promise>
-Telephony::GetEccList(const Optional<uint32_t>& aServiceId,
-                      ErrorResult& aRv)
-{
-  nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetOwner());
-  if (!global) {
-    aRv.Throw(NS_ERROR_FAILURE);
-    return nullptr;
-  }
-
-  RefPtr<Promise> promise = Promise::Create(global, aRv);
-  if (aRv.Failed()) {
-    return nullptr;
-  }
-
-  if (!promise) {
-    return nullptr;
-  }
-
-  char propKey[Property::KEY_MAX_LENGTH];
-  char propValue[Property::VALUE_MAX_LENGTH];
-
-  uint32_t serviceId = GetServiceId(aServiceId,
-                                    true /* aGetIfActiveCall */);
-  switch (serviceId) {
-    case 1:
-      strcpy(propKey, "ril.ecclist1");
-      break;
-    case 0:
-    default:
-      strcpy(propKey, "ril.ecclist");
-      break;
-  }
-
-  if (property_get(propKey, propValue, "") == 0) {
-    promise->MaybeReject(NS_ERROR_DOM_INVALID_ACCESS_ERR);
-    return promise.forget();
-  }
-
-  promise->MaybeResolve(NS_ConvertASCIItoUTF16(propValue));
   return promise.forget();
 }
 
