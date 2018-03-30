@@ -206,6 +206,12 @@ TelephonyCall::TelephonyCall(nsPIDOMWindowInner* aOwner)
 TelephonyCall::~TelephonyCall()
 {
   LOG("~TelephonyCall");
+#ifdef MOZ_WIDGET_GONK
+  if (mVideoCallProvider) {
+    mVideoCallProvider->Shutdown();
+    mVideoCallProvider = nullptr;
+  }
+#endif
 }
 
 JSObject*
