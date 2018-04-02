@@ -1772,6 +1772,12 @@ Navigator::GetFeature(const nsAString& aName, ErrorResult& aRv)
   } // hardware.memory
 #endif
 
+  if (aName.EqualsLiteral("device.storage.size")) {
+    int storageSize = Preferences::GetInt("device.storage.size", 0);
+    p->MaybeResolve(storageSize);
+    return p.forget();
+  }
+
 #ifdef MOZ_WIDGET_GONK
   if (StringBeginsWith(aName, NS_LITERAL_STRING("acl.")) &&
       (aName.EqualsLiteral("acl.version") || CheckPermission("external-app"))) {
