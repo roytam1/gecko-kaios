@@ -79,6 +79,12 @@
 #include "VsyncSource.h"
 #include <algorithm>
 
+#include <utils/String8.h>
+#include <sys/timerfd.h>
+#include <dirent.h>
+#include <sys/epoll.h>
+#include <linux/rtc.h>
+
 #define NsecPerMsec  1000000LL
 #define NsecPerSec   1000000000
 
@@ -117,6 +123,12 @@
 #define POWER_SUPPLY_TYPE_AC       0x01
 #define POWER_SUPPLY_TYPE_USB      0x02
 #define POWER_SUPPLY_TYPE_WIRELESS 0x04
+
+#ifdef PRODUCT_MANUFACTURER_SPRD
+#define CLOCK_POWEROFF_ALARM 14
+#else
+#define CLOCK_POWEROFF_ALARM 12
+#endif
 
 using namespace mozilla;
 using namespace mozilla::hal;
@@ -163,6 +175,8 @@ struct LightConfiguration {
   uint32_t color;
 };
 
+static const size_t ANDROID_ALARM_TYPE_COUNT = 5;
+static const size_t N_ANDROID_TIMERFDS = ANDROID_ALARM_TYPE_COUNT + 1;
 static light_device_t* sLights[eHalLightID_Count]; // will be initialized to nullptr
 
 static light_device_t*
@@ -1399,19 +1413,69 @@ AdjustSystemClock(int64_t aDeltaMilliseconds)
     now.tv_sec -= 1;
   }
 
-  do {
-    fd = open("/dev/alarm", O_RDWR);
-  } while (fd == -1 && errno == EINTR);
+  char useTimerfd[PROPERTY_VALUE_MAX];
+  property_get("ro.kaios.use_timerfd", useTimerfd, "");
+
+  if (strcmp(useTimerfd, "true") == 0) {
+    do {
+      fd = open("/dev/rtc0", O_RDWR);
+    } while (fd == -1 && errno == EINTR);
+  } else {
+    do {
+      fd = open("/dev/alarm", O_RDWR);
+    } while (fd == -1 && errno == EINTR);
+  }
   ScopedClose autoClose(fd);
   if (fd < 0) {
-    HAL_LOG("Failed to open /dev/alarm: %s", strerror(errno));
+    if (strcmp(useTimerfd, "true") == 0) {
+      HAL_LOG("Failed to open /dev/rtc0: %s", strerror(errno));
+    } else {
+      HAL_LOG("Failed to open /dev/alarm: %s", strerror(errno));
+    }
     return;
   }
 
-  if (ioctl(fd, ANDROID_ALARM_SET_RTC, &now) < 0) {
-    HAL_LOG("ANDROID_ALARM_SET_RTC failed: %s", strerror(errno));
-  }
+  if (strcmp(useTimerfd, "true") == 0) {
+    struct rtc_time rtc;
+    struct tm tm, *gmtime_res;
+    struct timeval tv;
+    int res;
 
+    tv.tv_sec = now.tv_sec;
+    tv.tv_usec = now.tv_nsec % 1000LL;
+
+    res = settimeofday(&tv, 0);
+    if (res < 0) {
+      HAL_LOG("settimeofday() failed: %s", strerror(errno));
+    }
+
+    gmtime_res = gmtime_r(&now.tv_sec, &tm);
+    if (!gmtime_res) {
+      HAL_LOG("gmtime_r() failed: %s", strerror(errno));
+      res = -1;
+    }
+
+    memset(&rtc, 0, sizeof(rtc));
+    rtc.tm_sec = tm.tm_sec;
+    rtc.tm_min = tm.tm_min;
+    rtc.tm_hour = tm.tm_hour;
+    rtc.tm_mday = tm.tm_mday;
+    rtc.tm_mon = tm.tm_mon;
+    rtc.tm_year = tm.tm_year;
+    rtc.tm_wday = tm.tm_wday;
+    rtc.tm_yday = tm.tm_yday;
+    rtc.tm_isdst = tm.tm_isdst;
+
+    res = ioctl(fd, RTC_SET_TIME, &rtc);
+    if (res < 0)
+      HAL_LOG("RTC_SET_TIME ioctl failed: res = %d; error %s",res, strerror(errno));
+
+    close(fd);
+  } else {
+    if (ioctl(fd, ANDROID_ALARM_SET_RTC, &now) < 0) {
+      HAL_LOG("ANDROID_ALARM_SET_RTC failed: %s", strerror(errno));
+    }
+  }
   hal::NotifySystemClockChange(aDeltaMilliseconds);
 }
 
@@ -1601,27 +1665,53 @@ WaitForAlarm(void* aData)
 
   AlarmData* alarmData = static_cast<AlarmData*>(aData);
 
-  while (!alarmData->mShuttingDown) {
-    int alarmTypeFlags = 0;
+  char useTimerfd[PROPERTY_VALUE_MAX];
+  property_get("ro.kaios.use_timerfd", useTimerfd, "");
 
-    // ALARM_WAIT apparently will block even if an alarm hasn't been
-    // programmed, although this behavior doesn't seem to be
-    // documented.  We rely on that here to avoid spinning the CPU
-    // while awaiting an alarm to be programmed.
-    do {
-      alarmTypeFlags = ioctl(alarmData->mFd, ANDROID_ALARM_WAIT);
-    } while (alarmTypeFlags < 0 && errno == EINTR &&
+  if (strcmp(useTimerfd, "true") == 0) {
+    while (!alarmData->mShuttingDown) {
+      uint64_t unused;
+      epoll_event events[N_ANDROID_TIMERFDS];
+      epoll_wait(alarmData->mFd, events, N_ANDROID_TIMERFDS, -1);
+      ssize_t err = read(alarmData->mFd, &unused, sizeof(unused));
+
+      if (err < 0) {
+        HAL_LOG("Failed to read.");
+      }
+
+      if (!alarmData->mShuttingDown && err == sizeof(unused)) {
+        // To make sure the observer can get the alarm firing notification
+        // *on time* (the system won't sleep during the process in any way),
+        // we need to acquire a CPU wake lock before firing the alarm event.
+        InternalLockCpu();
+        RefPtr<AlarmFiredEvent> event =
+          new AlarmFiredEvent(alarmData->mGeneration);
+        NS_DispatchToMainThread(event);
+      }
+    }
+  } else {
+    while (!alarmData->mShuttingDown) {
+      int alarmTypeFlags = 0;
+
+      // ALARM_WAIT apparently will block even if an alarm hasn't been
+      // programmed, although this behavior doesn't seem to be
+      // documented.  We rely on that here to avoid spinning the CPU
+      // while awaiting an alarm to be programmed.
+      do {
+        alarmTypeFlags = ioctl(alarmData->mFd, ANDROID_ALARM_WAIT);
+      } while (alarmTypeFlags < 0 && errno == EINTR &&
              !alarmData->mShuttingDown);
 
-    if (!alarmData->mShuttingDown && alarmTypeFlags >= 0 &&
-        (alarmTypeFlags & ANDROID_ALARM_RTC_WAKEUP_MASK)) {
-      // To make sure the observer can get the alarm firing notification
-      // *on time* (the system won't sleep during the process in any way),
-      // we need to acquire a CPU wake lock before firing the alarm event.
-      InternalLockCpu();
-      RefPtr<AlarmFiredEvent> event =
-        new AlarmFiredEvent(alarmData->mGeneration);
-      NS_DispatchToMainThread(event);
+      if (!alarmData->mShuttingDown && alarmTypeFlags >= 0 &&
+          (alarmTypeFlags & ANDROID_ALARM_RTC_WAKEUP_MASK)) {
+        // To make sure the observer can get the alarm firing notification
+        // *on time* (the system won't sleep during the process in any way),
+        // we need to acquire a CPU wake lock before firing the alarm event.
+        InternalLockCpu();
+        RefPtr<AlarmFiredEvent> event =
+          new AlarmFiredEvent(alarmData->mGeneration);
+        NS_DispatchToMainThread(event);
+      }
     }
   }
 
@@ -1634,10 +1724,22 @@ EnableAlarm()
 {
   MOZ_ASSERT(!sAlarmData);
 
-  int alarmFd = open("/dev/alarm", O_RDWR);
-  if (alarmFd < 0) {
-    HAL_LOG("Failed to open alarm device: %s.", strerror(errno));
-    return false;
+  int alarmFd;
+  char useTimerfd[PROPERTY_VALUE_MAX];
+  property_get("ro.kaios.use_timerfd", useTimerfd, "");
+
+  if (strcmp(useTimerfd, "true") == 0) {
+    alarmFd = timerfd_create(CLOCK_POWEROFF_ALARM, 0);
+    if (alarmFd < 0) {
+      HAL_LOG("Failed to create timerfd: %s.", strerror(errno));
+      return false;
+    }
+  } else {
+    alarmFd = open("/dev/alarm", O_RDWR);
+    if (alarmFd < 0) {
+      HAL_LOG("Failed to open alarm device: %s.", strerror(errno));
+      return false;
+    }
   }
 
   UniquePtr<AlarmData> alarmData = MakeUnique<AlarmData>(alarmFd);
@@ -1693,14 +1795,26 @@ SetAlarm(int32_t aSeconds, int32_t aNanoseconds)
     return false;
   }
 
-  struct timespec ts;
-  ts.tv_sec = aSeconds;
-  ts.tv_nsec = aNanoseconds;
+  int result;
+  char useTimerfd[PROPERTY_VALUE_MAX];
+  property_get("ro.kaios.use_timerfd", useTimerfd, "");
 
-  // Currently we only support RTC wakeup alarm type.
-  const int result = ioctl(sAlarmData->mFd,
+  if (strcmp(useTimerfd, "true") == 0) {
+    struct itimerspec ts;
+    memset(&ts, 0, sizeof(ts));
+    ts.it_value.tv_sec = aSeconds;
+    ts.it_value.tv_nsec = aNanoseconds;
+
+    result = timerfd_settime(sAlarmData->mFd, TFD_TIMER_ABSTIME, &ts, NULL);
+  } else {
+    struct timespec ts;
+    ts.tv_sec = aSeconds;
+    ts.tv_nsec = aNanoseconds;
+
+    // Currently we only support RTC wakeup alarm type.
+    result = ioctl(sAlarmData->mFd,
                            ANDROID_ALARM_SET(ANDROID_ALARM_RTC_WAKEUP), &ts);
-
+  }
   if (result < 0) {
     HAL_LOG("Unable to set alarm: %s.", strerror(errno));
     return false;
