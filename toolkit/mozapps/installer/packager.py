@@ -414,6 +414,12 @@ def main():
         copier.add(os.path.join(respath, repo_info),
                    File(os.path.join(args.source, repo_info)))
 
+    # Put menuconfig information to device
+    menuconf_log = 'menuconfig-log'
+    if os.path.exists(os.path.join(args.source, menuconf_log)):
+        copier.add(os.path.join(respath, menuconf_log),
+                   File(os.path.join(args.source, menuconf_log)))
+
     copier.copy(args.destination)
 
 
