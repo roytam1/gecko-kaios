@@ -415,10 +415,10 @@ this.Download.prototype = {
     // it comes in late from a download attempt that was replaced by a new one.
     // If the cancellation process for the download has started, then the update
     // is ignored.
-    function DS_setProgressBytes(aCurrentBytes, aTotalBytes, aHasPartialData)
+    function DS_setProgressBytes(aCurrentBytes, aTotalBytes, aHasPartialData, aSkipUpdateSpeed)
     {
       if (this._currentAttempt == currentAttempt) {
-        this._setBytes(aCurrentBytes, aTotalBytes, aHasPartialData);
+        this._setBytes(aCurrentBytes, aTotalBytes, aHasPartialData, aSkipUpdateSpeed);
       }
     }
 
@@ -1067,8 +1067,12 @@ this.Download.prototype = {
    * @param aHasPartialData
    *        Indicates whether the partially downloaded data can be used when
    *        restarting the download if it fails or is canceled.
+   * @param aSkipUpdateSpeed
+   *        Indicates whether to update last progress time and compute speed.
    */
-  _setBytes: function D_setBytes(aCurrentBytes, aTotalBytes, aHasPartialData) {
+
+  _setBytes: function D_setBytes(aCurrentBytes, aTotalBytes,
+                                 aHasPartialData, aSkipUpdateSpeed) {
     let changeMade = (this.hasPartialData != aHasPartialData);
     this.hasPartialData = aHasPartialData;
 
@@ -1081,39 +1085,46 @@ this.Download.prototype = {
       changeMade = true;
     }
 
-    // Updating the progress and computing the speed require that enough time
-    // passed since the last update, or that we haven't started throttling yet.
-    let currentTimeMs = Date.now();
-    let intervalMs = currentTimeMs - this._lastProgressTimeMs;
-    if (intervalMs >= kProgressUpdateIntervalMs) {
-      // Don't compute the speed unless we started throttling notifications.
-      if (this._lastProgressTimeMs != 0) {
-        // Calculate the speed in bytes per second.
-        let rawSpeed = (aCurrentBytes - this.currentBytes) / intervalMs * 1000;
-        if (this.speed == 0) {
-          // When the previous speed is exactly zero instead of a fractional
-          // number, this can be considered the first element of the series.
-          this.speed = rawSpeed;
-        } else {
-          // Apply exponential smoothing, with a smoothing factor of 0.1.
-          this.speed = rawSpeed * 0.1 + this.speed * 0.9;
-        }
-      }
-
-      // Start throttling notifications only when we have actually received some
-      // bytes for the first time.  The timing of the first part of the download
-      // is not reliable, due to possible latency in the initial notifications.
-      // This also allows automated tests to receive and verify the number of
-      // bytes initially transferred.
-      if (aCurrentBytes > 0) {
-        this._lastProgressTimeMs = currentTimeMs;
-
-        // Update the progress now that we don't need its previous value.
+    if (aSkipUpdateSpeed) {
+      if (this.currentBytes != aCurrentBytes) {
         this.currentBytes = aCurrentBytes;
-        if (this.totalBytes > 0) {
-          this.progress = Math.floor(this.currentBytes / this.totalBytes * 100);
-        }
         changeMade = true;
+      }
+    } else {
+      // Updating the progress and computing the speed require that enough time
+      // passed since the last update, or that we haven't started throttling yet.
+      let currentTimeMs = Date.now();
+      let intervalMs = currentTimeMs - this._lastProgressTimeMs;
+      if (intervalMs >= kProgressUpdateIntervalMs) {
+        // Don't compute the speed unless we started throttling notifications.
+        if (this._lastProgressTimeMs != 0) {
+          // Calculate the speed in bytes per second.
+          let rawSpeed = (aCurrentBytes - this.currentBytes) / intervalMs * 1000;
+          if (this.speed == 0) {
+            // When the previous speed is exactly zero instead of a fractional
+            // number, this can be considered the first element of the series.
+            this.speed = rawSpeed;
+          } else {
+            // Apply exponential smoothing, with a smoothing factor of 0.1.
+            this.speed = rawSpeed * 0.1 + this.speed * 0.9;
+          }
+        }
+
+        // Start throttling notifications only when we have actually received some
+        // bytes for the first time.  The timing of the first part of the download
+        // is not reliable, due to possible latency in the initial notifications.
+        // This also allows automated tests to receive and verify the number of
+        // bytes initially transferred.
+        if (aCurrentBytes > 0) {
+          this._lastProgressTimeMs = currentTimeMs;
+
+          // Update the progress now that we don't need its previous value.
+          this.currentBytes = aCurrentBytes;
+          if (this.totalBytes > 0) {
+            this.progress = Math.floor(this.currentBytes / this.totalBytes * 100);
+          }
+          changeMade = true;
+        }
       }
     }
 
@@ -1724,11 +1735,12 @@ this.DownloadSaver.prototype = {
    *
    * @param aSetProgressBytesFn
    *        This function may be called by the saver to report progress. It
-   *        takes three arguments: the first is the number of bytes transferred
+   *        takes four arguments: the first is the number of bytes transferred
    *        until now, the second is the total number of bytes to be
    *        transferred (or -1 if unknown), the third indicates whether the
    *        partially downloaded data can be used when restarting the download
-   *        if it fails or is canceled.
+   *        if it fails or is canceled, and the fourth indicates whether to update
+   *        last progress time and compute speed.
    * @param aSetPropertiesFn
    *        This function may be called by the saver to report information
    *        about new download properties discovered by the saver during the
@@ -2020,6 +2032,10 @@ this.DownloadCopySaver.prototype = {
               channel.resumeAt(stat.size, this.entityID);
               resumeAttempted = true;
               resumeFromBytes = stat.size;
+              // No data is actually received yet, so the current bytes value is just
+              // the size of previously downloaded part file. We should just update current
+              // bytes and should not affect last progress time or speed computation.
+              aSetProgressBytesFn(resumeFromBytes, -1, true, true);
             } catch (ex) {
               if (!(ex instanceof OS.File.Error) || !ex.becauseNoSuchFile) {
                 throw ex;
@@ -2037,7 +2053,7 @@ this.DownloadCopySaver.prototype = {
               let totalBytes = aProgressMax == -1 ? -1 : (resumeFromBytes +
                                                           aProgressMax);
               aSetProgressBytesFn(currentBytes, totalBytes, aProgress > 0 &&
-                                  partFilePath && keepPartialData);
+                                  partFilePath && keepPartialData, false);
             },
             onStatus: function () { },
           };
@@ -2065,7 +2081,7 @@ this.DownloadCopySaver.prototype = {
               // even if the download doesn't generate any progress events
               // later.
               if (channel.contentLength >= 0) {
-                aSetProgressBytesFn(0, channel.contentLength);
+                aSetProgressBytesFn(0, channel.contentLength, false, false);
               }
 
               // If the URL we are downloading from includes a file extension
@@ -2422,7 +2438,7 @@ this.DownloadLegacySaver.prototype = {
     let hasPartFile = !!this.download.target.partFilePath;
 
     this.setProgressBytesFn(aCurrentBytes, aTotalBytes,
-                            aCurrentBytes > 0 && hasPartFile);
+                            aCurrentBytes > 0 && hasPartFile, false);
   },
 
   /**
@@ -2545,7 +2561,7 @@ this.DownloadLegacySaver.prototype = {
         if (!this.progressWasNotified &&
             this.request instanceof Ci.nsIChannel &&
             this.request.contentLength >= 0) {
-          aSetProgressBytesFn(0, this.request.contentLength);
+          aSetProgressBytesFn(0, this.request.contentLength, false, false);
         }
 
         // If the component executing the download provides the path of a
@@ -2817,7 +2833,7 @@ this.DownloadPDFSaver.prototype = {
             onProgressChange: function (webProgress, request, curSelfProgress,
                                         maxSelfProgress, curTotalProgress,
                                         maxTotalProgress) {
-              aSetProgressBytesFn(curTotalProgress, maxTotalProgress, false);
+              aSetProgressBytesFn(curTotalProgress, maxTotalProgress, false, false);
             },
             onLocationChange: function () {},
             onStatusChange: function () {},
@@ -2830,7 +2846,7 @@ this.DownloadPDFSaver.prototype = {
       }
 
       let fileInfo = yield OS.File.stat(targetPath);
-      aSetProgressBytesFn(fileInfo.size, fileInfo.size, false);
+      aSetProgressBytesFn(fileInfo.size, fileInfo.size, false, false);
     }.bind(this));
   },
 
