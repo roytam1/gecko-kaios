@@ -2752,8 +2752,10 @@ this.DOMApplicationRegistry = {
       }
 
       // Disallow reinstalls from the same manifest url for now.
-      for (let id in this.webapps) {
-        if (this.webapps[id].manifestURL == app.manifestURL) {
+      let id = this._appIdForManifestURL(app.manifestURL);
+      if (id !== null) {
+        if (this.webapps[id].installState !== "pending" ||
+            AppDownloadManager.get(app.manifestURL)) {
           sendError("REINSTALL_FORBIDDEN");
           return false;
         }
@@ -2901,8 +2903,11 @@ this.DOMApplicationRegistry = {
       // Disallow reinstalls from the same manifest URL for now.
       let id = this._appIdForManifestURL(app.manifestURL);
       if (id !== null) {
-        sendError("REINSTALL_FORBIDDEN");
-        return false;
+        if (this.webapps[id].installState !== "pending" ||
+            AppDownloadManager.get(app.manifestURL)) {
+          sendError("REINSTALL_FORBIDDEN");
+          return false;
+        }
       }
 
       if (!(AppsUtils.checkManifest(manifest, app) && manifest.package_path)) {
