@@ -651,16 +651,12 @@ var FormAssistant = {
         if (!this.focusedElement || this._editing) {
           break;
         }
-
-        CompositionManager.endComposition('');
         break;
 
       case "keyup":
         if (!this.focusedElement || this._editing) {
           break;
         }
-
-        CompositionManager.endComposition('');
         break;
 
       case "compositionend":
@@ -695,8 +691,6 @@ var FormAssistant = {
       }
 
       case "Forms:Input:SendKey":
-        CompositionManager.endComposition('');
-
         let win = target.ownerDocument.defaultView;
         let tip = WindowMap.getTextInputProcessor(win);
         if (!tip) {
