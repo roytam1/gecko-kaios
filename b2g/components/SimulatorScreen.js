@@ -70,6 +70,9 @@ function hookScreen(window) {
   Object.defineProperty(screen, 'mozOrientation', {
     get: () => GlobalSimulatorScreen.mozOrientation
   });
+  Object.defineProperty(screen.orientation, 'type', {
+    get: () => GlobalSimulatorScreen.mozOrientation
+  });
 }
 
 function SimulatorScreen() {}

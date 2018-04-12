@@ -133,6 +133,8 @@ function onStart() {
                              ratio == 1 ? -1 : ratio);
   GlobalSimulatorScreen.width = width;
   GlobalSimulatorScreen.height = height;
+  const defaultOrientation = width < height ? 'portrait' : 'landscape';
+  GlobalSimulatorScreen.mozOrientation = GlobalSimulatorScreen.screenOrientation = defaultOrientation;
 
   const container = document.getElementById('container');
   container.style.width = width + 'px';
