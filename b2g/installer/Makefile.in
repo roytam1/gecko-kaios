@@ -129,8 +129,8 @@ export MAKE
 
 .PHONY: simulator
 simulator: make-package
-	@echo 'Building simulator addon...'
-	$(PYTHON) $(topsrcdir)/b2g/simulator/build_xpi.py $(MOZ_PKG_PLATFORM)
+	@echo 'Ignore Building simulator addon...'
+	# $(PYTHON) $(topsrcdir)/b2g/simulator/build_xpi.py $(MOZ_PKG_PLATFORM)
 
 libs:: simulator
 
