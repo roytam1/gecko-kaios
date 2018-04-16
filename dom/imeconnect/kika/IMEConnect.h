@@ -6,8 +6,8 @@
  * All other trademarks are the property of their respective owners.
  */
 
-#ifndef mozilla_dom_kikaconnect_IMEConnect_h
-#define mozilla_dom_kikaconnect_IMEConnect_h
+#ifndef mozilla_dom_imeconnect_kika_IMEConnect_h
+#define mozilla_dom_imeconnect_kika_IMEConnect_h
 
 #include "nsCOMPtr.h"
 #include "nsPIDOMWindow.h"
@@ -378,5 +378,5 @@ private:
 } // namespace dom
 } // namespace mozilla
 
-#endif // mozilla_dom_kikaconnect_IMEConnect_h
+#endif // mozilla_dom_imeconnect_kika_IMEConnect_h
 
