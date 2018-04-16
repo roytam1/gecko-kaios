@@ -332,6 +332,7 @@ public:
 
   static void SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLetter, ErrorResult& aRv);
   static void SetLetterMultiTap(const unsigned long aKeyCode,const unsigned long aTapCount, unsigned short aPrevUnichar);
+  static void GetNextWordCandidates(const nsAString& aWord, nsAString& aRetval);
   static uint32_t SetLanguage(const uint32_t aLid);
   static nsString mCandidateWord;
   static uint16_t mTotalWord;

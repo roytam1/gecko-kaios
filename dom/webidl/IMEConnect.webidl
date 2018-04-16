@@ -24,6 +24,8 @@ interface IMEConnect {
 #ifdef ENABLE_KIKA_IQQI
 partial interface IMEConnect {
   void setLetterMultiTap(unsigned long keyCode, unsigned long tapCount, unsigned short prevUnichar);
+
+  DOMString getNextWordCandidates(DOMString word);
 };
 #endif
 

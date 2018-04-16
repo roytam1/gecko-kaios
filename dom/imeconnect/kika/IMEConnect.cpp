@@ -99,6 +99,16 @@ wchar_t* WstrToLower(wchar_t *str)
   return str;
 }
 
+void U16strToWstr(wchar_t *dest, const char16_t *src, unsigned int length)
+{
+  unsigned int i = 0;
+  while (i<length) {
+    dest[i] = (wchar_t)src[i];
+    i++;
+  }
+  dest[length] = 0;
+}
+
 void PackCandidates()
 {
   uint8_t imeId = IMEConnect::mCurrentLID & IQQI_IME_ID_MASK;
@@ -310,6 +320,36 @@ IMEConnect::SetLetter(const unsigned long aHexPrefix, const unsigned long aHexLe
   if (shouldRefetch) {
     FetchCandidates();
   }
+}
+
+void
+IMEConnect::GetNextWordCandidates(const nsAString& aWord, nsAString& aRetval)
+{
+  uint8_t imeId = IMEConnect::mCurrentLID & IQQI_IME_ID_MASK;
+  nsString currentWord, nextWordCandidates;
+  int total;
+  CandidateCH candNextWord;
+
+  currentWord = nsString(aWord);
+  wchar_t wsWord[currentWord.Length() + 1];
+  U16strToWstr(wsWord, currentWord.get(), currentWord.Length());
+
+  candNextWord.alloc(CANDIDATE_MAX_ROW, CANDIDATE_MAX_COL);
+  total = IQQI_GetNextWordCandidates(imeId, (wchar_t*)wsWord, 0, CANDIDATE_MAX_ROW, candNextWord.pointer());
+
+  KIKA_LOGD("GetNextWordCandidates::total = %d, wsWord = %ls", total, wsWord);
+
+  for (int i=0; i<total; i++) {
+    for (int j=0; j<candNextWord.vlen(i); j++) {
+      nextWordCandidates.Append((PRUnichar)candNextWord.record(i)[j]);
+    }
+    nextWordCandidates.AppendLiteral("|");
+  }
+  candNextWord.empty();
+
+  KIKA_LOGD("GetNextWordCandidates::nextWordCandidates = %s", NS_ConvertUTF16toUTF8(nextWordCandidates).get());
+
+  aRetval = nextWordCandidates;
 }
 
 uint32_t
