@@ -1083,6 +1083,7 @@ void
 BluetoothMapSmsManager::ReplyToSetPath()
 {
   if (!mMasConnected) {
+    BT_LOGR("Can't reply to set-path when MAS isn't connected.");
     return;
   }
 
@@ -1358,6 +1359,7 @@ BluetoothMapSmsManager::ReplyToMessagesListing(Blob* aBlob, uint8_t aMasId,
                                                int aSize)
 {
   if (!mMasConnected) {
+    BT_LOGR("Can't reply to message-listing when MAS isn't connected.");
     return false;
   }
 
@@ -1418,6 +1420,7 @@ BluetoothMapSmsManager::ReplyToMessagesListing(Blob* aBlob, uint8_t aMasId,
   if (mBodyRequired) {
     // Open input stream only if |mBodyRequired| is true
     if (!GetInputStreamFromBlob(aBlob, true)) {
+      BT_LOGR("Failed to reply to message listing due to the invalid blob");
       SendReply(ObexResponseCode::InternalServerError);
       return false;
     }
@@ -1446,6 +1449,7 @@ bool
 BluetoothMapSmsManager::ReplyToGetMessage(Blob* aBlob, uint8_t aMasId)
 {
   if (!GetInputStreamFromBlob(aBlob, true)) {
+    BT_LOGR("Failed to reply to get-message due to the invalid blob");
     SendReply(ObexResponseCode::InternalServerError);
     return false;
   }
@@ -1497,10 +1501,12 @@ BluetoothMapSmsManager::ReplyToSendMessage(
   uint8_t aMasId, const nsAString& aHandleId, bool aStatus)
 {
   if (!mMasConnected) {
+    BT_LOGR("Can't reply to send-message when MAS isn't connected.");
     return false;
   }
 
   if (!aStatus) {
+    BT_LOGR("Failed to reply to send-message.");
     return SendReply(ObexResponseCode::InternalServerError);
   }
 
@@ -2138,6 +2144,7 @@ BluetoothMapSmsManager::HandleSmsMmsPushMessage(const ObexHeaderSet& aHeader)
   //   3. Send it to Gaia
   // Otherwise reply NotAcceptable error code.
   if (name.Find("outbox") == -1) {
+    BT_LOGR("Can't push message to any folder other than 'outbox'");
     ReplyToPut(ObexResponseCode::NotAcceptable);
     return;
   }

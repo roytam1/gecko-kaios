@@ -50,6 +50,9 @@ already_AddRefed<Promise>
 BluetoothMapRequestHandle::ReplyToFolderListing(uint8_t aMasId,
   const nsAString& aFolderlists, ErrorResult& aRv)
 {
+  BT_LOGR("ReplyToFolderListing with the list %s",
+          NS_ConvertUTF16toUTF8(aFolderlists).get());
+
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetParentObject());
   if (!global) {
     aRv.Throw(NS_ERROR_FAILURE);
@@ -79,6 +82,8 @@ BluetoothMapRequestHandle::ReplyToMessagesListing(uint8_t aMasId,
                                                   int aSize,
                                                   ErrorResult& aRv)
 {
+  BT_LOGR("ReplyToMessagesListing with %d messages.", aSize);
+
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetParentObject());
   if (!global) {
     aRv.Throw(NS_ERROR_FAILURE);
@@ -122,6 +127,8 @@ already_AddRefed<Promise>
 BluetoothMapRequestHandle::ReplyToGetMessage(uint8_t aMasId, Blob& aBlob,
                                              ErrorResult& aRv)
 {
+  BT_LOGD("ReplyToGetMessage with a message blob.");
+
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetParentObject());
   if (!global) {
     aRv.Throw(NS_ERROR_FAILURE);
@@ -166,6 +173,8 @@ BluetoothMapRequestHandle::ReplyToSetMessageStatus(uint8_t aMasId,
                                                    bool aStatus,
                                                    ErrorResult& aRv)
 {
+  BT_LOGR("ReplyToSetMessageStatus with status %d.", aStatus);
+
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetParentObject());
   if (!global) {
     aRv.Throw(NS_ERROR_FAILURE);
@@ -193,6 +202,8 @@ BluetoothMapRequestHandle::ReplyToSendMessage(uint8_t aMasId,
                                               bool aStatus,
                                               ErrorResult& aRv)
 {
+  BT_LOGR("ReplyToSendMessage with status %d.", aStatus);
+
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetParentObject());
   if (!global) {
     aRv.Throw(NS_ERROR_FAILURE);
@@ -219,6 +230,8 @@ BluetoothMapRequestHandle::ReplyToMessageUpdate(uint8_t aMasId,
                                                 bool aStatus,
                                                 ErrorResult& aRv)
 {
+  BT_LOGR("ReplyToMessageUpdate with status %d.", aStatus);
+
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetParentObject());
   if (!global) {
     aRv.Throw(NS_ERROR_FAILURE);
