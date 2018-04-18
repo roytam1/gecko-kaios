@@ -6,6 +6,12 @@
 
 window.performance.mark('gecko-shell-loadstart');
 
+if (!isGonk) {
+  // Workaround for Bug-8878
+  // Force updating permissions each time to boot normally
+  Services.prefs.setBoolPref("dom.apps.reset-permissions", false);
+}
+
 Cu.import('resource://gre/modules/DataStoreChangeNotifier.jsm');
 Cu.import('resource://gre/modules/ActivitiesService.jsm');
 Cu.import('resource://gre/modules/NotificationDB.jsm');
