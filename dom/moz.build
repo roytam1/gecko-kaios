@@ -163,7 +163,7 @@ if CONFIG['MOZ_B2G']:
 DIRS += ['presentation']
 
 if CONFIG['ENABLE_NUANCE_XT9']:
-    DIRS += ['xt9connect']
+    DIRS += ['imeconnect/xt9']
 
 if CONFIG['ENABLE_REVERIE_RT9']:
     DIRS += ['rt9connect']
