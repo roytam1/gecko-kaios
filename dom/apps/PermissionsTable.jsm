@@ -418,7 +418,7 @@ this.PermissionsTable =  { geolocation: {
                            },
                            "nfc-hci-events": {
                              app: DENY_ACTION,
-                             privileged: DENY_ACTION,
+                             privileged: ALLOW_ACTION,
                              certified: ALLOW_ACTION
                            },
                            "speaker-control": {
