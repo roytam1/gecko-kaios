@@ -2967,11 +2967,8 @@ function WifiWorker() {
         self._fireEvent("onconnecting", { network: netToDOM(self.currentNetwork) });
         break;
       case "ASSOCIATED":
-        if (!self.currentNetwork) {
-          self.currentNetwork =
-            { bssid: wifiInfo.bssid,
-              ssid: quote(wifiInfo.wifiSsid) };
-        }
+        self.currentNetwork.bssid = wifiInfo.bssid;
+        self.currentNetwork.ssid = quote(wifiInfo.wifiSsid);
         self.currentNetwork.isDriverRoaming = this.isDriverRoaming;
         self.currentNetwork.netId = wifiInfo.networkId;
         WifiManager.getNetworkConfiguration(self.currentNetwork, function (){
@@ -3002,11 +2999,10 @@ function WifiWorker() {
             self._fireEvent("onassociate", { network: netToDOM(self.currentNetwork) });
           }
         };
-
-        self.currentNetwork = { bssid: wifiInfo.bssid,
-                                ssid: quote(wifiInfo.wifiSsid),
-                                netId: wifiInfo.networkId,
-                                isDriverRoaming: this.isDriverRoaming };
+        self.currentNetwork.bssid = wifiInfo.bssid;
+        self.currentNetwork.ssid = quote(wifiInfo.wifiSsid);
+        self.currentNetwork.netId = wifiInfo.networkId;
+        self.currentNetwork.isDriverRoaming = this.isDriverRoaming;
         WifiManager.getNetworkConfiguration(self.currentNetwork, _oncompleted);
         break;
       case "CONNECTED":
@@ -3066,10 +3062,9 @@ function WifiWorker() {
         self._fireEvent("onwpsoverlap", {});
         break;
       case "AUTHENTICATING":
-        self.currentNetwork =
-          { bssid: wifiInfo.bssid,
-            ssid: quote(wifiInfo.wifiSsid),
-            netId: wifiInfo.networkId };
+        self.currentNetwork.bssid = wifiInfo.bssid;
+        self.currentNetwork.ssid = quote(wifiInfo.wifiSsid);
+        self.currentNetwork.netId = wifiInfo.networkId;
         self._fireEvent("onauthenticating", {network: netToDOM(self.currentNetwork)});
         break;
       case "SCANNING":
