@@ -194,6 +194,9 @@ UPowerClient::UPowerClient()
   , mLevel(kDefaultLevel)
   , mCharging(kDefaultCharging)
   , mRemainingTime(kDefaultRemainingTime)
+  , mHealth(kDefaultHealth)
+  , mPresent(kDefaultPresent)
+  , mTemperature(kDefaultTemperature)
 {
 }
 
