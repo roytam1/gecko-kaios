@@ -524,11 +524,15 @@ public:
     // e.g. DEVPATH=/devices/platform/sec-battery/power_supply/battery
     const char *devpath = event->findParam("DEVPATH");
     if (strcmp(subsystem, "power_supply") == 0 &&
-        strstr(devpath, "battery")) {
+        strstr(devpath, "power_supply/battery")) {
 
       const char *chargingStatus = event->findParam("POWER_SUPPLY_STATUS");
       const char *batteryLevel = event->findParam("POWER_SUPPLY_CAPACITY");
       const char *batteryHealth = event->findParam("POWER_SUPPLY_HEALTH");
+
+      if (!chargingStatus || !batteryLevel || !batteryHealth) {
+        return;
+      }
 
       // Retuen if no change of charging status, battery level and health.
       if (mLastChargingStatus.EqualsASCII(chargingStatus) &&
