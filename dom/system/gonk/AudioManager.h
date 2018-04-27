@@ -153,7 +153,6 @@ private:
   void HandleBluetoothStatusChanged(nsISupports* aSubject,
                                     const char* aTopic,
                                     const nsCString aAddress);
-  void HandleAudioChannelProcessChanged();
 
   // Append the audio output device to the volume setting string.
   nsAutoCString AppendDeviceToVolumeSetting(const char* aName,

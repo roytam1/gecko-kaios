@@ -66,7 +66,6 @@ using namespace mozilla::dom::bluetooth;
 #define HEADPHONES_STATUS_UNKNOWN     MOZ_UTF16("unknown")
 #define HEADPHONES_STATUS_CHANGED     "headphones-status-changed"
 #define MOZ_SETTINGS_CHANGE_ID        "mozsettings-changed"
-#define AUDIO_CHANNEL_PROCESS_CHANGED "audio-channel-process-changed"
 #define AUDIO_POLICY_SERVICE_NAME     "media.audio_policy"
 #define SETTINGS_SERVICE              "@mozilla.org/settingsService;1"
 
@@ -594,30 +593,6 @@ AudioManager::HandleBluetoothStatusChanged(nsISupports* aSubject,
 #endif
 }
 
-void
-AudioManager::HandleAudioChannelProcessChanged()
-{
-  // Note: If the user answers a VoIP call (e.g. WebRTC calls) during the
-  // telephony call (GSM/CDMA calls) the audio manager won't set the
-  // PHONE_STATE_IN_COMMUNICATION audio state. Once the telephony call finishes
-  // the RIL plumbing sets the PHONE_STATE_NORMAL audio state. This seems to be
-  // an issue for the VoIP call but it is not. Once the RIL plumbing sets the
-  // the PHONE_STATE_NORMAL audio state the AudioManager::mPhoneAudioAgent
-  // member will call the NotifyStoppedPlaying() method causing that this function will
-  // be called again and therefore the audio manager sets the
-  // PHONE_STATE_IN_COMMUNICATION audio state.
-
-  if ((mPhoneState == PHONE_STATE_IN_CALL) ||
-      (mPhoneState == PHONE_STATE_RINGTONE)) {
-    return;
-  }
-
-  RefPtr<AudioChannelService> service = AudioChannelService::GetOrCreate();
-  bool telephonyChannelIsActive = service && service->TelephonyChannelIsActive();
-  telephonyChannelIsActive ? SetPhoneState(PHONE_STATE_IN_COMMUNICATION) :
-                             SetPhoneState(PHONE_STATE_NORMAL);
-}
-
 nsresult
 AudioManager::Observe(nsISupports* aSubject,
                       const char* aTopic,
@@ -635,11 +610,6 @@ AudioManager::Observe(nsISupports* aSubject,
     }
 
     HandleBluetoothStatusChanged(aSubject, aTopic, address);
-    return NS_OK;
-  }
-
-  else if (!strcmp(aTopic, AUDIO_CHANNEL_PROCESS_CHANGED)) {
-    HandleAudioChannelProcessChanged();
     return NS_OK;
   }
 
@@ -852,9 +822,6 @@ AudioManager::AudioManager()
   if (NS_FAILED(obs->AddObserver(this, MOZ_SETTINGS_CHANGE_ID, false))) {
     NS_WARNING("Failed to add mozsettings-changed observer!");
   }
-  if (NS_FAILED(obs->AddObserver(this, AUDIO_CHANNEL_PROCESS_CHANGED, false))) {
-    NS_WARNING("Failed to add audio-channel-process-changed observer!");
-  }
 
 #ifdef MOZ_B2G_RIL
   char value[PROPERTY_VALUE_MAX];
@@ -893,9 +860,6 @@ AudioManager::~AudioManager() {
   }
   if (NS_FAILED(obs->RemoveObserver(this, MOZ_SETTINGS_CHANGE_ID))) {
     NS_WARNING("Failed to remove mozsettings-changed observer!");
-  }
-  if (NS_FAILED(obs->RemoveObserver(this,  AUDIO_CHANNEL_PROCESS_CHANGED))) {
-    NS_WARNING("Failed to remove audio-channel-process-changed!");
   }
 }
 
