@@ -252,7 +252,6 @@ function BrowserElementParent() {
 
   Services.obs.addObserver(this, 'oop-frameloader-crashed', /* ownsWeak = */ true);
   Services.obs.addObserver(this, 'ask-children-to-execute-copypaste-command', /* ownsWeak = */ true);
-  Services.obs.addObserver(this, 'back-docommand', /* ownsWeak = */ true);
 
   this.proxyCallHandler = new BrowserElementParentProxyCallHandler();
 }
@@ -1343,11 +1342,6 @@ BrowserElementParent.prototype = {
     case 'ask-children-to-execute-copypaste-command':
       if (this._isAlive() && this._frameElement == subject.wrappedJSObject) {
         this._sendAsyncMsg('copypaste-do-command', { command: data });
-      }
-      break;
-    case 'back-docommand':
-      if (this._isAlive() && this._frameLoader.visible) {
-          this.goBack();
       }
       break;
     default:
