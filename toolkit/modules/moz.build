@@ -50,7 +50,6 @@ EXTRA_JS_MODULES += [
     'LoadContextInfo.jsm',
     'Locale.jsm',
     'Log.jsm',
-    'NewTabUtils.jsm',
     'ObjectUtils.jsm',
     'PageMenu.jsm',
     'PageMetadata.jsm',
