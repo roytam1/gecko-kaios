@@ -66,4 +66,18 @@ def presentation(value, target):
 set_config('MOZ_PRESENTATION', presentation)
 set_define('MOZ_PRESENTATION', presentation)
 
+# SocialAPI Support
+# ==============================================================
+option('--enable-social',
+       help='Enable Social Service (default disable)')
+
+@depends('--disable-social', target)
+def social(value, target):
+    enabled = bool(value)
+    if enabled:
+        return True
+
+set_config('MOZ_SOCIAL', social)
+set_define('MOZ_SOCIAL', social)
+
 include('common.configure')
