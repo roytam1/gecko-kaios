@@ -4459,7 +4459,17 @@ WifiWorker.prototype = {
         }
 
         this.configuredNetworks[networkKey] = privnet;
-        networkReady();
+        // Supplicant will connect to access point directly without disconnect
+        // if we are currently associated, hence trigger a disconnect
+        if (WifiManager.state == "COMPLETED" && this.currentNetwork &&
+            this.currentNetwork.netId !== INVALID_NETWORK_ID &&
+            this.currentNetwork.netId !== privnet.netId) {
+          WifiManager.disconnect(function(){
+            networkReady();
+          });
+        } else {
+          networkReady();
+        }
       }).bind(this));
     }
   },
