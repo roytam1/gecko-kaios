@@ -457,7 +457,10 @@ pref("browser.dom.window.dump.enabled", false);
 
 // Default Content Security Policy to apply to certified apps.
 // If you change this CSP, make sure to update the fast path in nsCSPService.cpp
-pref("security.apps.certified.CSP.default", "default-src * data: blob:; script-src 'self' http://127.0.0.1:8081 app://theme.gaiamobile.org; object-src 'none'; style-src 'self' 'unsafe-inline' app://theme.gaiamobile.org app://shared.gaiamobile.org");
+pref("security.apps.certified.CSP.default", "default-src * data: blob:; script-src 'self' http://127.0.0.1:8081 http://local-device.kaiostech.com:8081 app://theme.gaiamobile.org; object-src 'none'; style-src 'self' 'unsafe-inline' app://theme.gaiamobile.org app://shared.gaiamobile.org");
+
+// Set local domain pref to be local-device.kaiostech.com.
+pref("network.dns.localDomains", "local-device.kaiostech.com");
 
 // handle links targeting new windows
 // 1=current window/tab, 2=new window, 3=new tab in most recent window
