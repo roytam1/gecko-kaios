@@ -340,6 +340,7 @@ DOMWifiManager.prototype = {
         this._currentNetwork = null;
         this._connectionStatus = "disconnected";
         this._lastConnectionInfo = null;
+        this._hasInternet = false;
         this._fireStatusChangeEvent(msg.network);
         break;
 
