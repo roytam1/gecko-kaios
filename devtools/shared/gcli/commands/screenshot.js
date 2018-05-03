@@ -14,9 +14,11 @@ loader.lazyImporter(this, "Downloads", "resource://gre/modules/Downloads.jsm");
 loader.lazyImporter(this, "Task", "resource://gre/modules/Task.jsm");
 loader.lazyImporter(this, "OS", "resource://gre/modules/osfile.jsm");
 loader.lazyImporter(this, "FileUtils", "resource://gre/modules/FileUtils.jsm");
-loader.lazyImporter(this, "PrivateBrowsingUtils",
-                          "resource://gre/modules/PrivateBrowsingUtils.jsm");
-
+loader.lazyImporter(this, "AppConstants", "resource://gre/modules/AppConstants.jsm");
+if (AppConstants.MOZ_PRIVATEBROWSING) {
+  loader.lazyImporter(this, "PrivateBrowsingUtils",
+                      "resource://gre/modules/PrivateBrowsingUtils.jsm");
+}
 const BRAND_SHORT_NAME = Cc["@mozilla.org/intl/stringbundle;1"]
                            .getService(Ci.nsIStringBundleService)
                            .createBundle("chrome://branding/locale/brand.properties")
@@ -223,6 +225,14 @@ exports.items = [
     },
   }
 ];
+
+function isContentWindowPrivate(aWindow) {
+  let isContentWindowPrivate = false;
+  if (AppConstants.MOZ_PRIVATEBROWSING) {
+    isContentWindowPrivate = PrivateBrowsingUtils.isContentWindowPrivate(aWindow);
+  }
+  return isContentWindowPrivate;
+}
 
 /**
  * This function simply handles the --delay argument before calling
@@ -541,8 +551,7 @@ var saveToFile = Task.async(function*(context, reply) {
                 nsIWBP.PERSIST_FLAGS_FORCE_ALLOW_COOKIES |
                 nsIWBP.PERSIST_FLAGS_BYPASS_CACHE |
                 nsIWBP.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION;
-  let isPrivate =
-    PrivateBrowsingUtils.isContentWindowPrivate(document.defaultView);
+  let isPrivate = isContentWindowPrivate(document.defaultView);
   let persist = Cc["@mozilla.org/embedding/browser/nsWebBrowserPersist;1"]
                   .createInstance(Ci.nsIWebBrowserPersist);
   persist.persistFlags = flags;

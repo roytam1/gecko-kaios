@@ -7,7 +7,10 @@ this.EXPORTED_SYMBOLS = ["PopupNotifications"];
 var Cc = Components.classes, Ci = Components.interfaces, Cu = Components.utils;
 
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+Cu.import("resource://gre/modules/AppConstants.jsm");
+if (AppConstants.MOZ_PRIVATEBROWSING) {
+  Cu.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+}
 Cu.import("resource://gre/modules/Promise.jsm");
 
 const NOTIFICATION_EVENT_DISMISSED = "dismissed";
@@ -39,6 +42,14 @@ const TELEMETRY_STAT_REOPENED_OFFSET = 20;
 
 var popupNotificationsMap = new WeakMap();
 var gNotificationParents = new WeakMap;
+
+function isWindowPrivate(aWindow) {
+  let isWindowPrivate = false;
+  if (AppConstants.MOZ_PRIVATEBROWSING) {
+    isWindowPrivate = PrivateBrowsingUtils.isWindowPrivate(aWindow);
+  }
+  return isWindowPrivate;
+}
 
 function getAnchorFromBrowser(aBrowser, aAnchorID) {
   let attrPrefix = aAnchorID ? aAnchorID.replace("notification-icon", "") : "";
@@ -74,8 +85,7 @@ function Notification(id, message, anchorID, mainAction, secondaryActions,
   this._dismissed = false;
   this.wasDismissed = false;
   this.recordedTelemetryStats = new Set();
-  this.isPrivate = PrivateBrowsingUtils.isWindowPrivate(
-                                        this.browser.ownerDocument.defaultView);
+  this.isPrivate = isWindowPrivate(this.browser.ownerDocument.defaultView);
   this.timeCreated = this.owner.window.performance.now();
 }
 

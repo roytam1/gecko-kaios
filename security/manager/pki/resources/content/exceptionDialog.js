@@ -15,7 +15,10 @@ var gNeedReset;
 var gSecHistogram;
 var gNsISecTel;
 
-Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+Components.utils.import("resource://gre/modules/resource://gre/modules/AppConstants.jsm");
+if (AppConstants.MOZ_PRIVATEBROWSING) {
+  Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+}
 
 function badCertListener() {}
 badCertListener.prototype = {
@@ -364,5 +367,9 @@ function addException() {
  * Returns true if this dialog is in private browsing mode.
  */
 function inPrivateBrowsingMode() {
-  return PrivateBrowsingUtils.isWindowPrivate(window);
+  let inPrivateBrowsingMode = false;
+  if (AppConstants.MOZ_PRIVATEBROWSING) {
+    inPrivateBrowsingMode = PrivateBrowsingUtils.isWindowPrivate(window);
+  }
+  return inPrivateBrowsingMode;
 }

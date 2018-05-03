@@ -80,4 +80,18 @@ def social(value, target):
 set_config('MOZ_SOCIAL', social)
 set_define('MOZ_SOCIAL', social)
 
+# PrivateBrowsing Support
+# ==============================================================
+option('--disable-privatebrowsing',
+       help='Disable Private Browsing (default enable)')
+
+@depends('--enable-privatebrowsing', target)
+def privatebrowsing(value, target):
+    enabled = bool(value)
+    if enabled:
+        return True
+
+set_config('MOZ_PRIVATEBROWSING', privatebrowsing)
+set_define('MOZ_PRIVATEBROWSING', privatebrowsing)
+
 include('common.configure')

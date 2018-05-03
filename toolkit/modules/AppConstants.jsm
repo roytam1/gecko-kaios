@@ -276,6 +276,13 @@ this.AppConstants = Object.freeze({
   false,
 #endif
 
+  MOZ_PRIVATEBROWSING:
+#ifdef MOZ_PRIVATEBROWSING
+  true,
+#else
+  false,
+#endif
+
   DLL_PREFIX: "@DLL_PREFIX@",
   DLL_SUFFIX: "@DLL_SUFFIX@",
 

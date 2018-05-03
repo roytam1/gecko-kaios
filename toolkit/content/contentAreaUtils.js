@@ -14,8 +14,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "FileUtils",
                                   "resource://gre/modules/FileUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "OS",
                                   "resource://gre/modules/osfile.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
-                                  "resource://gre/modules/PrivateBrowsingUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Promise",
                                   "resource://gre/modules/Promise.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Services",
@@ -26,6 +24,18 @@ XPCOMUtils.defineLazyModuleGetter(this, "Deprecated",
                                   "resource://gre/modules/Deprecated.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "AppConstants",
                                   "resource://gre/modules/AppConstants.jsm");
+if (AppConstants.MOZ_PRIVATEBROWSING) {
+  XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
+    "resource://gre/modules/PrivateBrowsingUtils.jsm");
+}
+
+function isContentWindowPrivate(aWindow) {
+  let isContentWindowPrivate = false;
+  if (AppConstants.MOZ_PRIVATEBROWSING) {
+    isContentWindowPrivate = PrivateBrowsingUtils.isContentWindowPrivate(aWindow);
+  }
+  return isContentWindowPrivate;
+}
 
 var ContentAreaUtils = {
 
@@ -152,8 +162,7 @@ function saveImageURL(aURL, aFileName, aFilePickerTitleKey, aShouldBypassCache,
     Deprecated.warning("saveImageURL should be passed the private state of " +
                        "the containing window.",
                        "https://bugzilla.mozilla.org/show_bug.cgi?id=1243643");
-    aIsContentWindowPrivate =
-      PrivateBrowsingUtils.isContentWindowPrivate(aDoc.defaultView);
+    aIsContentWindowPrivate = isContentWindowPrivate(aDoc.defaultView);
   }
 
   // We'd better have the private state by now.
@@ -461,7 +470,7 @@ function internalSave(aURL, aDocument, aDefaultFileName, aContentDisposition,
     let isPrivate = aIsContentWindowPrivate;
     if (isPrivate === undefined) {
       isPrivate = aInitiatingDocument instanceof Components.interfaces.nsIDOMDocument
-        ? PrivateBrowsingUtils.isContentWindowPrivate(aInitiatingDocument.defaultView)
+        ? isContentWindowPrivate(aInitiatingDocument.defaultView)
         : aInitiatingDocument.isPrivate;
     }
 

@@ -6,11 +6,16 @@ const { classes: Cc, interfaces: Ci, results: Cr, utils: Cu } = Components;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+Cu.import("resource://gre/modules/AppConstants.jsm");
 Cu.import("resource://gre/modules/SharedPromptUtils.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "LoginHelper",
                                   "resource://gre/modules/LoginHelper.jsm");
+
+if (AppConstants.MOZ_PRIVATEBROWSING) {
+  XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
+    "resource://gre/modules/PrivateBrowsingUtils.jsm");
+}
 
 const LoginInfo =
       Components.Constructor("@mozilla.org/login-manager/loginInfo;1",
@@ -26,6 +31,14 @@ const PROMPT_DISPLAYED = 0;
 const PROMPT_ADD_OR_UPDATE = 1;
 const PROMPT_NOTNOW = 2;
 const PROMPT_NEVER = 3;
+
+function isContentWindowPrivate(aWindow) {
+  let isContentWindowPrivate = false;
+  if (AppConstants.MOZ_PRIVATEBROWSING) {
+    isContentWindowPrivate = PrivateBrowsingUtils.isContentWindowPrivate(aWindow);
+  }
+  return isContentWindowPrivate;
+}
 
 /*
  * LoginManagerPromptFactory
@@ -262,7 +275,7 @@ LoginManagerPrompter.prototype = {
   // Whether we are in private browsing mode
   get _inPrivateBrowsing() {
     if (this._window) {
-      return PrivateBrowsingUtils.isContentWindowPrivate(this._window);
+      return isContentWindowPrivate(this._window);
     } else {
       // If we don't that we're in private browsing mode if the caller did
       // not provide a window.  The callers which really care about this

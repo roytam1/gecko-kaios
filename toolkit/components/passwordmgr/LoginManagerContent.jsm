@@ -13,7 +13,7 @@ const PASSWORD_INPUT_ADDED_COALESCING_THRESHOLD_MS = 1;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+Cu.import("resource://gre/modules/AppConstants.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "DeferredTask", "resource://gre/modules/DeferredTask.jsm");
@@ -29,6 +29,10 @@ XPCOMUtils.defineLazyServiceGetter(this, "gContentSecurityManager",
 XPCOMUtils.defineLazyServiceGetter(this, "gNetUtil",
                                    "@mozilla.org/network/util;1",
                                    "nsINetUtil");
+if (AppConstants.MOZ_PRIVATEBROWSING) {
+  XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
+    "resource://gre/modules/PrivateBrowsingUtils.jsm");
+}
 
 XPCOMUtils.defineLazyGetter(this, "log", () => {
   let logger = LoginHelper.createLogger("LoginManagerContent");
@@ -74,6 +78,13 @@ prefBranch.addObserver("", observer.onPrefChange, false);
 
 observer.onPrefChange(); // read initial values
 
+function isContentWindowPrivate(aWindow) {
+  let isContentWindowPrivate = false;
+  if (AppConstants.MOZ_PRIVATEBROWSING) {
+    isContentWindowPrivate = PrivateBrowsingUtils.isContentWindowPrivate(aWindow);
+  }
+  return isContentWindowPrivate;
+}
 
 function messageManagerFromWindow(win) {
   return win.QueryInterface(Ci.nsIInterfaceRequestor)
@@ -497,7 +508,7 @@ var LoginManagerContent = {
 
   loginsFound: function({ form, loginsFound, recipes }) {
     let doc = form.ownerDocument;
-    let autofillForm = gAutofillForms && !PrivateBrowsingUtils.isContentWindowPrivate(doc.defaultView);
+    let autofillForm = gAutofillForms && !isContentWindowPrivate(doc.defaultView);
 
     this._fillForm(form, autofillForm, false, false, false, loginsFound, recipes);
   },
@@ -759,7 +770,7 @@ var LoginManagerContent = {
     var doc = form.ownerDocument;
     var win = doc.defaultView;
 
-    if (PrivateBrowsingUtils.isContentWindowPrivate(win)) {
+    if (isContentWindowPrivate(win)) {
       // We won't do anything in private browsing mode anyway,
       // so there's no need to perform further checks.
       log("(form submission ignored in private browsing mode)");

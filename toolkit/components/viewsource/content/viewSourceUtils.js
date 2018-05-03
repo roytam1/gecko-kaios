@@ -13,14 +13,33 @@
  */
 
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
+Components.utils.import("resource://gre/modules/AppConstants.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "ViewSourceBrowser",
   "resource://gre/modules/ViewSourceBrowser.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Deprecated",
   "resource://gre/modules/Deprecated.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
-  "resource://gre/modules/PrivateBrowsingUtils.jsm");
+if (AppConstants.MOZ_PRIVATEBROWSING) {
+  XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
+    "resource://gre/modules/PrivateBrowsingUtils.jsm");
+}
 XPCOMUtils.defineLazyModuleGetter(this, "Services",
   "resource://gre/modules/Services.jsm");
+
+function isWindowPrivate(aWindow) {
+  let isWindowPrivate = false;
+  if (AppConstants.MOZ_PRIVATEBROWSING) {
+    isWindowPrivate = PrivateBrowsingUtils.isWindowPrivate(aWindow);
+  }
+  return isWindowPrivate;
+}
+
+function isBrowserPrivate(aBrowser) {
+  let isBrowserPrivate = false;
+  if (AppConstants.MOZ_PRIVATEBROWSING) {
+    isBrowserPrivate = PrivateBrowsingUtils.isBrowserPrivate(aBrowser);
+  }
+  return isBrowserPrivate;
+}
 
 var gViewSourceUtils = {
 
@@ -247,8 +266,7 @@ var gViewSourceUtils = {
         isPrivate: false,
       };
       if (aDocument) {
-          data.isPrivate =
-            PrivateBrowsingUtils.isWindowPrivate(aDocument.defaultView);
+          data.isPrivate = isWindowPrivate(aDocument.defaultView);
       }
     } else {
       let { URL, browser, lineNumber } = aArgsOrURL;
@@ -263,7 +281,7 @@ var gViewSourceUtils = {
           contentType: browser.documentContentType,
           title: browser.contentTitle,
         };
-        data.isPrivate = PrivateBrowsingUtils.isBrowserPrivate(browser);
+        data.isPrivate = isBrowserPrivate(browser);
       }
     }
 

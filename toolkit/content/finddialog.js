@@ -6,10 +6,22 @@
 
 Components.utils.import("resource://gre/modules/Services.jsm");
 Components.utils.import("resource://gre/modules/FormHistory.jsm");
+Components.utils.import("resource://gre/modules/AppConstants.jsm");
+if (AppConstants.MOZ_PRIVATEBROWSING) {
+  Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+}
 
 var dialog;     // Quick access to document/form elements.
 var gFindInst;   // nsIWebBrowserFind that we're going to use
 var gFindInstData; // use this to update the find inst data
+
+function isWindowPrivate(aWindow) {
+  let isWindowPrivate = false;
+  if (AppConstants.MOZ_PRIVATEBROWSING) {
+    isWindowPrivate = PrivateBrowsingUtils.isWindowPrivate(aWindow);
+  }
+  return isWindowPrivate;
+}
 
 function initDialogObject()
 {
@@ -131,8 +143,7 @@ function doEnabling()
 
 function updateFormHistory()
 {
-  if (window.opener.PrivateBrowsingUtils &&
-      window.opener.PrivateBrowsingUtils.isWindowPrivate(window.opener) ||
+  if (window.opener.PrivateBrowsingUtils && isWindowPrivate(window.opener) ||
       !dialog.findKey.value)
     return;
 

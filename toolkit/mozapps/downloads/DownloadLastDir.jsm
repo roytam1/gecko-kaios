@@ -32,7 +32,10 @@ this.EXPORTED_SYMBOLS = [ "DownloadLastDir" ];
 
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 Components.utils.import("resource://gre/modules/Services.jsm");
-Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+Components.utils.import("resource://gre/modules/AppConstants.jsm");
+if (AppConstants.MOZ_PRIVATEBROWSING) {
+  Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+}
 
 var observer = {
   QueryInterface: function (aIID) {

@@ -56,7 +56,6 @@ EXTRA_JS_MODULES += [
     'PermissionsUtils.jsm',
     'PopupNotifications.jsm',
     'Preferences.jsm',
-    'PrivateBrowsingUtils.jsm',
     'ProfileAge.jsm',
     'Promise-backend.js',
     'Promise.jsm',
@@ -125,6 +124,11 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     EXTRA_JS_MODULES += [
         'WindowsRegistry.jsm',
     ]
+
+if CONFIG['MOZ_PRIVATEBROWSING']:
+    EXTRA_JS_MODULES += [
+        'PrivateBrowsingUtils.jsm',
+]
 
 for var in ('ANDROID_PACKAGE_NAME',
             'MOZ_APP_NAME',

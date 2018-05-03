@@ -9,7 +9,18 @@ const nsIDialogParamBlock = Components.interfaces.nsIDialogParamBlock;
 const nsICookie = Components.interfaces.nsICookie;
 const nsICookiePromptService = Components.interfaces.nsICookiePromptService;
 
-Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+Components.utils.import("resource://gre/modules/resource://gre/modules/AppConstants.jsm");
+if (AppConstants.MOZ_PRIVATEBROWSING) {
+  Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+}
+
+function isWindowPrivate(aWindow) {
+  let isWindowPrivate = false;
+  if (AppConstants.MOZ_PRIVATEBROWSING) {
+    isWindowPrivate = PrivateBrowsingUtils.isWindowPrivate(aWindow);
+  }
+  return isWindowPrivate;
+}
 
 var params;
 var cookieBundle;
@@ -131,7 +142,7 @@ function onload()
 
   // The Private Browsing service might not be available
   try {
-    if (window.opener && PrivateBrowsingUtils.isWindowPrivate(window.opener)) {
+    if (window.opener && isWindowPrivate(window.opener)) {
       var persistCheckbox = document.getElementById("persistDomainAcceptance");
       persistCheckbox.removeAttribute("checked");
       persistCheckbox.setAttribute("disabled", "true");

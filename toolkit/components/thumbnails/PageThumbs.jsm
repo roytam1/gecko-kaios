@@ -32,6 +32,7 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm", this);
 Cu.import("resource://gre/modules/PromiseWorker.jsm", this);
 Cu.import("resource://gre/modules/Promise.jsm", this);
 Cu.import("resource://gre/modules/osfile.jsm", this);
+Cu.import("resource://gre/modules/AppConstants.jsm");
 
 Cu.importGlobalProperties(['FileReader']);
 
@@ -69,8 +70,18 @@ XPCOMUtils.defineLazyModuleGetter(this, "AsyncShutdown",
   "resource://gre/modules/AsyncShutdown.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PageThumbUtils",
   "resource://gre/modules/PageThumbUtils.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
-  "resource://gre/modules/PrivateBrowsingUtils.jsm");
+if (AppConstants.MOZ_PRIVATEBROWSING) {
+  XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
+    "resource://gre/modules/PrivateBrowsingUtils.jsm");
+}
+
+function isBrowserPrivate(aBrowser) {
+  let isBrowserPrivate = false;
+  if (AppConstants.MOZ_PRIVATEBROWSING) {
+    isBrowserPrivate = PrivateBrowsingUtils.isBrowserPrivate(aBrowser);
+  }
+  return isBrowserPrivate;
+}
 
 /**
  * Utilities for dealing with promises and Task.jsm

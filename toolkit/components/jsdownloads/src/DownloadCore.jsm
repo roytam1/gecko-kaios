@@ -73,8 +73,12 @@ XPCOMUtils.defineLazyModuleGetter(this, "Services",
                                   "resource://gre/modules/Services.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Task",
                                   "resource://gre/modules/Task.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
-                                  "resource://gre/modules/PrivateBrowsingUtils.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "AppConstants",
+                                  "resource://gre/modules/AppConstants.jsm");
+if (AppConstants.MOZ_PRIVATEBROWSING) {
+  XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
+    "resource://gre/modules/PrivateBrowsingUtils.jsm");
+}
 
 XPCOMUtils.defineLazyServiceGetter(this, "gDownloadHistory",
            "@mozilla.org/browser/download-history;1",
@@ -95,6 +99,14 @@ Integration.downloads.defineModuleGetter(this, "DownloadIntegration",
 const BackgroundFileSaverStreamListener = Components.Constructor(
       "@mozilla.org/network/background-file-saver;1?mode=streamlistener",
       "nsIBackgroundFileSaver");
+
+function isContentWindowPrivate(aWindow) {
+  let isContentWindowPrivate = false;
+  if (AppConstants.MOZ_PRIVATEBROWSING) {
+    isContentWindowPrivate = PrivateBrowsingUtils.isContentWindowPrivate(aWindow);
+  }
+  return isContentWindowPrivate;
+}
 
 /**
  * Returns true if the given value is a primitive string or a String object.
@@ -1345,7 +1357,7 @@ this.DownloadSource.fromSerializable = function (aSerializable) {
     source.url = aSerializable.spec;
   } else if (aSerializable instanceof Ci.nsIDOMWindow) {
     source.url = aSerializable.location.href;
-    source.isPrivate = PrivateBrowsingUtils.isContentWindowPrivate(aSerializable);
+    source.isPrivate = isContentWindowPrivate(aSerializable);
     source.windowRef = Cu.getWeakReference(aSerializable);
   } else {
     // Convert String objects to primitive strings at this point.

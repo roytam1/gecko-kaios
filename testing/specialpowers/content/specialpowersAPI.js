@@ -17,7 +17,10 @@ Cu.import("chrome://specialpowers/content/MockFilePicker.jsm");
 Cu.import("chrome://specialpowers/content/MockColorPicker.jsm");
 Cu.import("chrome://specialpowers/content/MockPermissionPrompt.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+Cu.import("resource://gre/modules/resource://gre/modules/AppConstants.jsm");
+if (AppConstants.MOZ_PRIVATEBROWSING) {
+  Cu.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+}
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/NetUtil.jsm");
 
@@ -710,7 +713,7 @@ SpecialPowersAPI.prototype = {
      we will revert the permission back to the original.
 
      inPermissions is an array of objects where each object has a type, action, context, ex:
-     [{'type': 'SystemXHR', 'allow': 1, 'context': document}, 
+     [{'type': 'SystemXHR', 'allow': 1, 'context': document},
       {'type': 'SystemXHR', 'allow': Ci.nsIPermissionManager.PROMPT_ACTION, 'context': document}]
 
      Allow can be a boolean value of true/false or ALLOW_ACTION/DENY_ACTION/PROMPT_ACTION/UNKNOWN_ACTION
@@ -1860,7 +1863,11 @@ SpecialPowersAPI.prototype = {
   },
 
   isContentWindowPrivate: function(win) {
-    return PrivateBrowsingUtils.isContentWindowPrivate(win);
+    let isContentWindowPrivate = false;
+    if (AppConstants.MOZ_PRIVATEBROWSING) {
+      isContentWindowPrivate = PrivateBrowsingUtils.isContentWindowPrivate(win);
+    }
+    return isContentWindowPrivate;
   },
 
   notifyObserversInParentProcess: function(subject, topic, data) {

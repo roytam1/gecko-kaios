@@ -21,8 +21,12 @@ XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils",
                                   "resource://gre/modules/PlacesUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Task",
                                   "resource://gre/modules/Task.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
-                                  "resource://gre/modules/PrivateBrowsingUtils.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "AppConstants",
+                                  "resource://gre/modules/AppConstants.jsm");
+if (AppConstants.MOZ_PRIVATEBROWSING) {
+  XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
+    "resource://gre/modules/PrivateBrowsingUtils.jsm");
+}
 
 
 this.EXPORTED_SYMBOLS = ["PushRecord"];
@@ -30,6 +34,14 @@ this.EXPORTED_SYMBOLS = ["PushRecord"];
 const prefs = new Preferences("dom.push.");
 
 const maxRetryCounts = 3;
+
+function isWindowPrivate(aWindow) {
+  let isWindowPrivate = false;
+  if (AppConstants.MOZ_PRIVATEBROWSING) {
+    isWindowPrivate = PrivateBrowsingUtils.isWindowPrivate(aWindow);
+  }
+  return isWindowPrivate;
+}
 
 /**
  * The push subscription record, stored in IndexedDB.
@@ -189,7 +201,7 @@ PushRecord.prototype = {
     let windows = Services.wm.getEnumerator("navigator:browser");
     while (windows.hasMoreElements()) {
       let window = windows.getNext();
-      if (window.closed || PrivateBrowsingUtils.isWindowPrivate(window)) {
+      if (window.closed || isWindowPrivate(window)) {
         continue;
       }
       // `gBrowser` on Desktop; `BrowserApp` on Fennec.
