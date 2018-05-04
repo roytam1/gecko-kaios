@@ -1152,6 +1152,14 @@ AudioContext::RequestCleanAfterRelease()
   NS_DispatchToMainThread(runnable);
 }
 
+void
+AudioContext::ForceAudioChannelPlaying()
+{
+  if (!mCloseCalled) {
+    mDestination->ForceAudioChannelPlaying();
+  }
+}
+
 BasicWaveFormCache::BasicWaveFormCache(uint32_t aSampleRate)
   : mSampleRate(aSampleRate)
 {

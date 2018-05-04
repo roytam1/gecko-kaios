@@ -309,6 +309,8 @@ public:
 
   void RequestCleanAfterRelease();
 
+  void ForceAudioChannelPlaying();
+
   IMPL_EVENT_HANDLER(mozinterruptbegin)
   IMPL_EVENT_HANDLER(mozinterruptend)
 

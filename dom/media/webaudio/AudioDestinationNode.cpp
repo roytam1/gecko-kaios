@@ -24,6 +24,7 @@
 #include "nsIScriptObjectPrincipal.h"
 #include "nsServiceManagerUtils.h"
 #include "mozilla/dom/Promise.h"
+#include "mtransport/runnable_utils.h"
 
 namespace mozilla {
 namespace dom {
@@ -332,6 +333,7 @@ AudioDestinationNode::AudioDestinationNode(AudioContext* aContext,
   , mAudioChannel(AudioChannel::Normal)
   , mIsOffline(aIsOffline)
   , mAudioChannelAgentPlaying(false)
+  , mAudioChannelNotifiedPlaying(false)
   , mExtraCurrentTimeSinceLastStartedBlocking(0)
   , mExtraCurrentTimeUpdatedSinceLastStableState(false)
   , mCaptured(false)
@@ -387,6 +389,7 @@ AudioDestinationNode::DestroyAudioChannelAgent()
   if (mAudioChannelAgent && !Context()->IsOffline()) {
     mAudioChannelAgent->NotifyStoppedPlaying();
     mAudioChannelAgent = nullptr;
+    mAudioChannelNotifiedPlaying = false;
   }
 }
 
@@ -475,7 +478,11 @@ AudioDestinationNode::Suspend()
 void
 AudioDestinationNode::Resume()
 {
-  CreateAudioChannelAgent();
+  // If there is already an agent created by ForceAudioChannelPlaying(),
+  // don't create a new one.
+  if (!mAudioChannelAgent) {
+    CreateAudioChannelAgent();
+  }
   SendInt32ParameterToStream(DestinationNodeEngine::SUSPENDED, 0);
 }
 
@@ -638,6 +645,7 @@ AudioDestinationNode::CreateAudioChannelAgent()
     }
   }
 
+  mAudioChannelNotifiedPlaying = false;
   mAudioChannelAgent = new AudioChannelAgent();
   rv = mAudioChannelAgent->InitWithWeakCallback(GetOwner(),
                                            static_cast<int32_t>(mAudioChannel),
@@ -722,6 +730,11 @@ AudioDestinationNode::InputMuted(bool aMuted)
 {
   MOZ_ASSERT(Context() && !Context()->IsOffline());
 
+  // Prevent duplicate notifying
+  if (mAudioChannelNotifiedPlaying == !aMuted) {
+    return;
+  }
+
   if (!mAudioChannelAgent) {
     if (aMuted) {
       return;
@@ -731,6 +744,7 @@ AudioDestinationNode::InputMuted(bool aMuted)
 
   if (aMuted) {
     mAudioChannelAgent->NotifyStoppedPlaying();
+    mAudioChannelNotifiedPlaying = false;
     return;
   }
 
@@ -741,7 +755,24 @@ AudioDestinationNode::InputMuted(bool aMuted)
     return;
   }
 
+  mAudioChannelNotifiedPlaying = true;
   WindowVolumeChanged(volume, muted);
+}
+
+void
+AudioDestinationNode::ForceAudioChannelPlaying()
+{
+  if (mIsOffline) {
+    return;
+  }
+
+  if (!NS_IsMainThread()) {
+    NS_DispatchToMainThread(WrapRunnable(this,
+                                         &AudioDestinationNode::ForceAudioChannelPlaying));
+    return;
+  }
+
+  InputMuted(false);
 }
 
 } // namespace dom

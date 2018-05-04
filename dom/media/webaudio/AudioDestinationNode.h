@@ -75,6 +75,18 @@ public:
   nsresult CreateAudioChannelAgent();
   void DestroyAudioChannelAgent();
 
+  // Force the agent to start playing in order to grabbed the audio channel
+  // before input data is processed. If the input data is already being
+  // processed, this function has no effect because the agent already
+  // started playing.
+  // After this function is called, the agent will stop playing if any of
+  // the following conditions is met:
+  // 1. Input data was unmuted and now muted again,
+  // 2. Suspend() is called,
+  // 3. DestroyAudioChannelAgent() is called. This happens when
+  //    AudioContext::Close() is called.
+  void ForceAudioChannelPlaying();
+
   const char* NodeType() const override
   {
     return "AudioDestinationNode";
@@ -110,6 +122,7 @@ private:
   AudioChannel mAudioChannel;
   bool mIsOffline;
   bool mAudioChannelAgentPlaying;
+  bool mAudioChannelNotifiedPlaying;
 
   TimeStamp mStartedBlockingDueToBeingOnlyNode;
   StreamTime mExtraCurrentTimeSinceLastStartedBlocking;

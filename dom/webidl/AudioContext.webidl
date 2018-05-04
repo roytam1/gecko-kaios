@@ -98,6 +98,16 @@ interface AudioContext : EventTarget {
     // context.requestCleanAfterRelease();
     // context = null;
     void requestCleanAfterRelease();
+
+    // Force the underlying audio channel agent to start playing so the
+    // channel can be grabbed immediately before audio data actually
+    // reaches destination node. The audio channel will be released when
+    // 1) audio data is finished, 2) suspend() is called or 3) close() is
+    // called.
+    // The caller who called this API should always call close() to make
+    // sure the audio channel is released when this AudioContext is no
+    // longer needed.
+    void forceAudioChannelPlaying();
 };
 
 // Mozilla extensions
