@@ -59,6 +59,7 @@ const _MMS_ERROR_SHUTDOWN                      = -5;
 const _MMS_ERROR_USER_CANCELLED_NO_REASON      = -6;
 const _MMS_ERROR_SIM_NOT_MATCHED               = -7;
 const _MMS_ERROR_FAILED_TO_ROUTE               = -8;
+const _MMS_ERROR_NETWORK_ERROR                 = -9;
 
 const CONFIG_SEND_REPORT_NEVER       = 0;
 const CONFIG_SEND_REPORT_DEFAULT_NO  = 1;
@@ -438,7 +439,13 @@ MmsConnection.prototype = {
 
       // Bug 1059110: Ensure all the initialization are done before setup data call.
       if (DEBUG) debug("acquire: buffer the MMS request and setup the MMS data call.");
-      this.radioInterface.setupDataCallByType(Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_MMS);
+      try {
+        this.radioInterface.setupDataCallByType(Ci.nsINetworkInfo.NETWORK_TYPE_MOBILE_MMS);
+      } catch (e) {
+        errorStatus = _HTTP_STATUS_ACQUIRE_TIMEOUT;
+        this.flushPendingCallbacks(errorStatus);
+        this.connectTimer.cancel();
+      }
 
       return false;
     }
@@ -907,6 +914,8 @@ XPCOMUtils.defineLazyGetter(this, "gMmsTransactionHelper", function() {
           return cancelledReason;
         case _HTTP_STATUS_RADIO_DISABLED:
           return _MMS_ERROR_RADIO_DISABLED;
+        case _HTTP_STATUS_ACQUIRE_TIMEOUT:
+          return _MMS_ERROR_NETWORK_ERROR;
         case _HTTP_STATUS_NO_SIM_CARD:
           return _MMS_ERROR_NO_SIM_CARD;
         case _HTTP_STATUS_FAILED_TO_ROUTE:
@@ -1823,7 +1832,8 @@ MmsService.prototype = {
     if (MMS.MMS_PDU_STATUS_RETRIEVED !== mmsStatus) {
       if (mmsStatus != _MMS_ERROR_RADIO_DISABLED &&
           mmsStatus != _MMS_ERROR_NO_SIM_CARD &&
-          mmsStatus != _MMS_ERROR_SIM_CARD_CHANGED) {
+          mmsStatus != _MMS_ERROR_SIM_CARD_CHANGED &&
+          mmsStatus != _MMS_ERROR_NETWORK_ERROR) {
         let transaction = new NotifyResponseTransaction(mmsConnection,
                                                         transactionId,
                                                         mmsStatus,
@@ -2446,6 +2456,8 @@ MmsService.prototype = {
           errorCode = Ci.nsIMobileMessageCallback.NO_SIM_CARD_ERROR;
         } else if (aMmsStatus == _MMS_ERROR_SIM_CARD_CHANGED) {
           errorCode = Ci.nsIMobileMessageCallback.NON_ACTIVE_SIM_CARD_ERROR;
+        } else if (aMmsStatus == _MMS_ERROR_NETWORK_ERROR) {
+          errorCode = Ci.nsIMobileMessageCallback.NETWORK_PROBLEMS_ERROR;
         } else if (aMmsStatus != MMS.MMS_PDU_ERROR_OK) {
           errorCode = Ci.nsIMobileMessageCallback.INTERNAL_ERROR;
         } else {
@@ -2577,6 +2589,8 @@ MmsService.prototype = {
             errorCode = Ci.nsIMobileMessageCallback.NO_SIM_CARD_ERROR;
           } else if (mmsStatus == _MMS_ERROR_SIM_CARD_CHANGED) {
             errorCode = Ci.nsIMobileMessageCallback.NON_ACTIVE_SIM_CARD_ERROR;
+          } else if (mmsStatus == _MMS_ERROR_NETWORK_ERROR) {
+            errorCode = Ci.nsIMobileMessageCallback.NETWORK_PROBLEMS_ERROR;
           }
           gMobileMessageDatabaseService
             .setMessageDeliveryByMessageId(aMessageId,
