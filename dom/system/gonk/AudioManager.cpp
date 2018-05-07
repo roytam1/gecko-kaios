@@ -390,7 +390,11 @@ static void SetAudioSystemParameters(audio_io_handle_t ioHandle,
 bool
 AudioManager::IsFmOutConnected()
 {
+#ifndef PRODUCT_MANUFACTURER_SPRD
   return mConnectedDevices.Get(AUDIO_DEVICE_OUT_FM, nullptr);
+#else
+  return mConnectedDevices.Get(AUDIO_DEVICE_OUT_FM_HEADSET, nullptr) ||mConnectedDevices.Get(AUDIO_DEVICE_OUT_FM_SPEAKER, nullptr);
+#endif
 }
 
 NS_IMPL_ISUPPORTS(AudioManager, nsIAudioManager, nsIObserver)
@@ -1064,9 +1068,35 @@ AudioManager::GetFmRadioAudioEnabled(bool *aFmRadioAudioEnabled)
 NS_IMETHODIMP
 AudioManager::SetFmRadioAudioEnabled(bool aFmRadioAudioEnabled)
 {
+#ifndef PRODUCT_MANUFACTURER_SPRD
   UpdateDeviceConnectionState(aFmRadioAudioEnabled,
                               AUDIO_DEVICE_OUT_FM,
                               NS_LITERAL_CSTRING(""));
+#else
+  //Bug 17313,Sync ForceForUse FORCE_SPEAKER between
+  //nsIAudioManager::USE_MEDIA and nsIAudioManager::USE_FM
+  int32_t aForce = nsIAudioManager::FORCE_NONE;
+  if (GetForceForUse(nsIAudioManager::USE_MEDIA, &aForce) == NS_OK) {
+    SetForceForUse(nsIAudioManager::USE_FM, aForce);
+    LOG("SetFmRadioAudioEnabled() Sync SetForceForUse nsIAudioManager::USE_FM : %d", aForce);
+  }
+
+  UpdateDeviceConnectionState(aFmRadioAudioEnabled,
+                              AUDIO_DEVICE_OUT_FM_HEADSET,
+                              NS_LITERAL_CSTRING(""));
+
+  UpdateDeviceConnectionState(aFmRadioAudioEnabled,
+                              AUDIO_DEVICE_OUT_FM_SPEAKER,
+                              NS_LITERAL_CSTRING(""));
+  if(aFmRadioAudioEnabled) {
+    String8 cmd;
+    char strTmp[13]={0};
+    uint32_t volIndex = mStreamStates[AUDIO_STREAM_MUSIC]->GetVolumeIndex();
+    snprintf(strTmp, sizeof(strTmp),"FM_Volume=%d", volIndex);
+    cmd.setTo(strTmp);
+    SetAudioSystemParameters(0, cmd);
+  }
+#endif
 
 #ifdef PRODUCT_MANUFACTURER_MTK
   if(aFmRadioAudioEnabled) {
@@ -1194,6 +1224,19 @@ AudioManager::SetStreamVolumeIndex(int32_t aStream, uint32_t aIndex)
     if (NS_WARN_IF(NS_FAILED(rv))) {
       return rv;
     }
+  }
+#endif
+
+#ifdef PRODUCT_MANUFACTURER_SPRD
+  // Bug 17613, Sync FM volume with MUSIC volume for SPRD.
+  if(streamAlias == AUDIO_STREAM_MUSIC && IsFmOutConnected()) {
+      String8 cmd;
+      char strTmp[13]={0};
+      uint32_t volIndex = mStreamStates[AUDIO_STREAM_MUSIC]->GetVolumeIndex();
+      LOG("Sync FM volume with MUSIC %d", volIndex);
+      snprintf(strTmp, sizeof(strTmp),"FM_Volume=%d", volIndex);
+      cmd.setTo(strTmp);
+      SetAudioSystemParameters(0, cmd);
   }
 #endif
 
@@ -1601,6 +1644,20 @@ AudioManager::VolumeStreamState::SetVolumeIndex(uint32_t aIndex,
          static_cast<audio_stream_type_t>(mStreamType),
          aIndex,
          aDevice);
+
+  //when changing music volume,  also set FMradio volume.Just for SPRD FMradio.
+  #ifdef PRODUCT_MANUFACTURER_SPRD
+  if( (AUDIO_STREAM_MUSIC == mStreamType) && mManager.IsFmOutConnected() )
+  {
+    String8 cmd;
+    char strTmp[15]={0};
+    uint32_t volIndex = mManager.mStreamStates[AUDIO_STREAM_MUSIC]->GetVolumeIndex();
+    snprintf(strTmp, sizeof(strTmp),"FM_Volume=%d", volIndex);
+    cmd.setTo(strTmp);
+    SetAudioSystemParameters(0, cmd);
+  }
+  #endif
+
   return rv ? NS_ERROR_FAILURE : NS_OK;
 #else
   if (aUpdateCache) {
