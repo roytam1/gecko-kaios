@@ -12,3 +12,9 @@ WorkerNavigator implements NavigatorLanguage;
 WorkerNavigator implements NavigatorOnLine;
 WorkerNavigator implements NavigatorDataStore;
 WorkerNavigator implements NavigatorConcurrentHardware;
+
+[Exposed=(Worker)]
+partial interface WorkerNavigator {
+    [Throws]
+    readonly attribute ExternalAPI externalapi;
+};

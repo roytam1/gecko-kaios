@@ -573,3 +573,7 @@ partial interface Navigator {
 };
 #endif
 
+partial interface Navigator {
+  [Throws]
+  readonly attribute ExternalAPI externalapi;
+};

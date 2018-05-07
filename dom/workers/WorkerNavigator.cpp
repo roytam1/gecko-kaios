@@ -13,6 +13,7 @@
 #include "mozilla/dom/PromiseWorkerProxy.h"
 #include "mozilla/dom/WorkerNavigator.h"
 #include "mozilla/dom/WorkerNavigatorBinding.h"
+#include "mozilla/dom/ExternalAPI.h"
 
 #include "nsProxyRelease.h"
 #include "RuntimeService.h"
@@ -28,7 +29,7 @@ namespace dom {
 
 using namespace mozilla::dom::workers;
 
-NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE_0(WorkerNavigator)
+NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(WorkerNavigator, mExternalAPI);
 
 NS_IMPL_CYCLE_COLLECTION_ROOT_NATIVE(WorkerNavigator, AddRef)
 NS_IMPL_CYCLE_COLLECTION_UNROOT_NATIVE(WorkerNavigator, Release)
@@ -409,6 +410,22 @@ WorkerNavigator::HardwareConcurrency() const
   MOZ_ASSERT(rts);
 
   return rts->ClampedHardwareConcurrency();
+}
+
+ExternalAPI*
+WorkerNavigator::GetExternalapi(ErrorResult& aRv)
+{
+  if (!mExternalAPI) {
+    WorkerPrivate* workerPrivate = GetCurrentThreadWorkerPrivate();
+    MOZ_ASSERT(workerPrivate);
+
+    RefPtr<nsIGlobalObject> global = workerPrivate->GlobalScope();
+    MOZ_ASSERT(global);
+
+    mExternalAPI = ExternalAPI::Create(global);
+  }
+
+  return mExternalAPI;
 }
 
 } // namespace dom

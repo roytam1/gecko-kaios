@@ -19,12 +19,14 @@
 namespace mozilla {
 namespace dom {
 class Promise;
+class ExternalAPI;
 
 class WorkerNavigator final : public nsWrapperCache
 {
   typedef struct workers::RuntimeService::NavigatorProperties NavigatorProperties;
 
   NavigatorProperties mProperties;
+  RefPtr<ExternalAPI> mExternalAPI;
   bool mOnline;
 
   WorkerNavigator(const NavigatorProperties& aProperties,
@@ -110,6 +112,8 @@ public:
                                           ErrorResult& aRv);
 
   uint64_t HardwareConcurrency() const;
+
+  ExternalAPI* GetExternalapi(ErrorResult& aRv);
 };
 
 } // namespace dom

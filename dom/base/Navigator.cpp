@@ -147,6 +147,9 @@
 #ifdef ENABLE_FOTA
 #include "mozilla/dom/fota/FotaEngine.h"
 #endif
+
+#include "mozilla/dom/ExternalAPI.h"
+
 namespace mozilla {
 using namespace toolkit;
 namespace dom {
@@ -253,6 +256,8 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Navigator)
 #ifdef ENABLE_FOTA
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFotaEngine)
 #endif
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mExternalAPI)
+
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE_SCRIPT_OBJECTS
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
@@ -433,6 +438,10 @@ Navigator::Invalidate()
     mVolumeManager = nullptr;
   }
 #endif
+
+  if (mExternalAPI) {
+    mExternalAPI = nullptr;
+  }
 }
 
 //*****************************************************************************
@@ -3055,5 +3064,21 @@ Navigator::SpatialNavigationEnabled() const
 }
 
 #endif
+
+ExternalAPI*
+Navigator::GetExternalapi(ErrorResult& aRv)
+{
+  if (!mExternalAPI) {
+    nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(mWindow);
+    if (!global) {
+      aRv.Throw(NS_ERROR_UNEXPECTED);
+      return nullptr;
+    }
+    mExternalAPI = ExternalAPI::Create(global);
+  }
+
+  return mExternalAPI;
+}
+
 } // namespace dom
 } // namespace mozilla

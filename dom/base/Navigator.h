@@ -115,6 +115,7 @@ class SoftkeyManager;
 #ifdef HAS_KOOST_MODULES
 class VolumeManager;
 #endif
+class ExternalAPI;
 
 namespace time {
 class TimeManager;
@@ -293,6 +294,8 @@ public:
   void SetSpatialNavigationEnabled(bool enabled);
 #endif
 
+  ExternalAPI* GetExternalapi(ErrorResult& aRv);
+
 #ifdef MOZ_B2G
   already_AddRefed<Promise> GetMobileIdAssertion(const MobileIdOptions& options,
                                                  ErrorResult& aRv);
@@ -457,6 +460,8 @@ private:
 #ifdef HAS_KOOST_MODULES
   RefPtr<VolumeManager> mVolumeManager;
 #endif
+
+  RefPtr<ExternalAPI> mExternalAPI;
 };
 
 } // namespace dom

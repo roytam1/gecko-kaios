@@ -822,6 +822,9 @@ var shell = {
     Cu.import('resource://gre/modules/CustomizationService.jsm');
     Cu.import('resource://gre/modules/CustomizationConfigManager.jsm');
 
+    // Initialization for ExternalAPI.
+    Cu.import('resource://gre/modules/ExternalAPIService.jsm');
+
     UserAgentOverrides.init();
   }
 };
