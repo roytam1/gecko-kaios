@@ -251,7 +251,12 @@ function BrowserElementParent() {
   this._pendingDOMFullscreen = false;
 
   Services.obs.addObserver(this, 'oop-frameloader-crashed', /* ownsWeak = */ true);
-  Services.obs.addObserver(this, 'ask-children-to-execute-copypaste-command', /* ownsWeak = */ true);
+  // This observer is required only when AccessibleCaret is enabled.
+  try {
+    if (Services.prefs.getBoolPref("layout.accessiblecaret.enabled")) {
+      Services.obs.addObserver(this, 'ask-children-to-execute-copypaste-command', /* ownsWeak = */ true);
+    }
+  } catch (e) {}
 
   this.proxyCallHandler = new BrowserElementParentProxyCallHandler();
 }
