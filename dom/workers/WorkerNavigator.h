@@ -114,6 +114,7 @@ public:
   uint64_t HardwareConcurrency() const;
 
   ExternalAPI* GetExternalapi(ErrorResult& aRv);
+  static bool HasExternalAPISupport(JSContext* aCx, JSObject* aGlobal);
 };
 
 } // namespace dom

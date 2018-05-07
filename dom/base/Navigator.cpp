@@ -2692,6 +2692,25 @@ Navigator::HasPresentationSupport(JSContext* aCx, JSObject* aGlobal)
 
 /* static */
 bool
+Navigator::HasExternalAPISupport(JSContext* aCx, JSObject* aGlobal)
+{
+  JS::Rooted<JSObject*> global(aCx, aGlobal);
+
+  nsCOMPtr<nsPIDOMWindowInner> inner = GetWindowFromGlobal(global);
+  if (NS_WARN_IF(!inner)) {
+    return false;
+  }
+
+  nsIDocument* doc = inner->GetExtantDoc();
+  if (!doc || !doc->NodePrincipal()) {
+    return false;
+  }
+
+  return ExternalAPI::CheckPermission(doc->NodePrincipal());
+}
+
+/* static */
+bool
 Navigator::IsE10sEnabled(JSContext* aCx, JSObject* aGlobal)
 {
   return XRE_IsContentProcess();

@@ -377,6 +377,8 @@ public:
 
   static bool HasPresentationSupport(JSContext* aCx, JSObject* aGlobal);
 
+  static bool HasExternalAPISupport(JSContext* aCx, JSObject* aGlobal);
+
   static bool IsE10sEnabled(JSContext* aCx, JSObject* aGlobal);
 
   nsPIDOMWindowInner* GetParentObject() const

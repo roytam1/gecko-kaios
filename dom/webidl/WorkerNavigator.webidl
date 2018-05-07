@@ -15,6 +15,6 @@ WorkerNavigator implements NavigatorConcurrentHardware;
 
 [Exposed=(Worker)]
 partial interface WorkerNavigator {
-    [Throws]
+    [Throws, Func="WorkerNavigator::HasExternalAPISupport"]
     readonly attribute ExternalAPI externalapi;
 };

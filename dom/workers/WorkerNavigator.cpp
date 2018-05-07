@@ -55,6 +55,38 @@ WorkerNavigator::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
   return WorkerNavigatorBinding::Wrap(aCx, this, aGivenProto);
 }
 
+class HasExternalAPISupportRunnable final
+  : public WorkerCheckAPIExposureOnMainThreadRunnable
+{
+public:
+  explicit HasExternalAPISupportRunnable(WorkerPrivate* aWorkerPrivate)
+    : WorkerCheckAPIExposureOnMainThreadRunnable(aWorkerPrivate)
+    , mResult(false)
+  {
+    MOZ_ASSERT(aWorkerPrivate);
+    aWorkerPrivate->AssertIsOnWorkerThread();
+  }
+
+  bool IsGranted()
+  {
+    return mResult;
+  }
+
+protected:
+  virtual bool
+  MainThreadRun() override
+  {
+    workers::AssertIsOnMainThread();
+
+    mResult = ExternalAPI::CheckPermission(mWorkerPrivate->GetPrincipal());
+
+    return true;
+  }
+
+private:
+  bool mResult;
+};
+
 // A WorkerMainThreadRunnable to synchronously add DataStoreChangeEventProxy on
 // the main thread. We need this because we have to access |mBackingStore| on
 // the main thread.
@@ -426,6 +458,20 @@ WorkerNavigator::GetExternalapi(ErrorResult& aRv)
   }
 
   return mExternalAPI;
+}
+
+/* static */
+bool
+WorkerNavigator::HasExternalAPISupport(JSContext* aCx, JSObject* aGlobal)
+{
+  WorkerPrivate* workerPrivate = GetCurrentThreadWorkerPrivate();
+  if (!workerPrivate) {
+    return false;
+  }
+
+  RefPtr<HasExternalAPISupportRunnable> runnable =
+    new HasExternalAPISupportRunnable(workerPrivate);
+  return runnable->Dispatch() && runnable->IsGranted();
 }
 
 } // namespace dom

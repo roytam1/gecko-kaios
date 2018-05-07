@@ -574,6 +574,6 @@ partial interface Navigator {
 #endif
 
 partial interface Navigator {
-  [Throws]
+  [Throws, Func="Navigator::HasExternalAPISupport"]
   readonly attribute ExternalAPI externalapi;
 };
