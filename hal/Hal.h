@@ -693,6 +693,13 @@ void EnableFMRadio(const hal::FMRadioSettings& aInfo);
  */
 void DisableFMRadio();
 
+#ifdef PRODUCT_MANUFACTURER_SPRD
+/**
+ * Update FM Internal Antenna state
+ */
+void SetFMRadioAntenna(const int32_t aStatus);
+#endif
+
 /**
  * Seek to an available FM radio station.
  *
