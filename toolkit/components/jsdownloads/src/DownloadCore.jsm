@@ -532,6 +532,15 @@ this.Download.prototype = {
           ex = new DownloadError({ becauseBlockedByParentalControls: true });
         }
 
+        // If download failed because network is offline, cancel download and add
+        // download to canceleOfflineDownloads so that download will be resumed when
+        // network is back online.
+        if (ex instanceof DownloadError && ex.result == Cr.NS_ERROR_OFFLINE) {
+          this.cancel();
+          DownloadIntegration.addToObserverCanceledOfflineDownloads(this);
+          throw new DownloadError({ message: "Download canceled due to offline." });
+        }
+
         // Update the download error, unless a new attempt already started. The
         // change in the status property is notified in the finally block.
         if (this._currentAttempt == currentAttempt || !this._currentAttempt) {

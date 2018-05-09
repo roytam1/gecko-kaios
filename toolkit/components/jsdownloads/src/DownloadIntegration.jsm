@@ -936,6 +936,16 @@ this.DownloadIntegration = {
       return false;
     }
   },
+
+  /**
+   * Add a download object to _canceledOfflineDownloads in DownloadObserver so that
+   * the download will be resumed when returning online or waking.
+   * @param aDownload
+   *        The download to be resume when returning online or waking.
+   */
+  addToObserverCanceledOfflineDownloads(aDownload) {
+    DownloadObserver.addToCanceledOfflineDownloads(aDownload);
+  },
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1053,6 +1063,14 @@ this.DownloadObserver = {
     }
   },
 
+  /**
+   * Wrapper for other caller to add download object to _canceledOfflineDownloads
+   * @param aDownload
+   *        The download to be resumed when returning online or waking.
+   */
+  addToCanceledOfflineDownloads(aDownload) {
+    this._canceledOfflineDownloads.add(aDownload);
+  },
   ////////////////////////////////////////////////////////////////////////////
   //// nsIObserver
 
