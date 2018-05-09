@@ -355,7 +355,8 @@ IMEConnect::GetNextWordCandidates(const nsAString& aWord, nsAString& aRetval)
 uint32_t
 IMEConnect::SetLanguage(const uint32_t aLid)
 {
-  int ret;
+  int err;
+  uint32_t retval = eRetvalInitSuccess;
   char IME_ErrorList[32] = {0};
   uint8_t imeId = aLid & IQQI_IME_ID_MASK;
   uint8_t keyboardId = (aLid & KEYBOARD_ID_MASK) >> KEYBOARD_ID_SHIFT;
@@ -363,12 +364,12 @@ IMEConnect::SetLanguage(const uint32_t aLid)
 
   if (imeId <= eImeStart || imeId >= eImeEnd) {
     KIKA_LOGW("SetLanguage::imeId = 0x%x not found", imeId);
-    return mCurrentLID;
+    return eRetvalInitError;
   }
 
   if (keyboardId <= eKeyboardStart || keyboardId >= eKeyboardEnd) {
     KIKA_LOGW("SetLanguage::keyboardId = 0x%x not found", keyboardId);
-    return mCurrentLID;
+    return eRetvalInitError;
   }
 
   KIKA_LOGD("SetLanguage::keyboardId = 0x%x, imeId = 0x%x", keyboardId, imeId);
@@ -376,9 +377,10 @@ IMEConnect::SetLanguage(const uint32_t aLid)
   IQQI_SetOption(eOptionKeyboardMode, keyboardId);
 
   dictPath += DICT_TABLE[imeId];
-  ret = IQQI_Initial(imeId, (char*)dictPath.c_str(), NULL, NULL, IME_ErrorList);
-  if (ret != KIKA_OK) {
-    KIKA_LOGW("SetLanguage::IQQI_initial() dictPath = %s, ret = %d", dictPath.c_str(), ret);
+  err = IQQI_Initial(imeId, (char*)dictPath.c_str(), NULL, NULL, IME_ErrorList);
+  if (err != KIKA_OK) {
+    KIKA_LOGW("SetLanguage::IQQI_initial() dictPath = %s, err = %d", dictPath.c_str(), err);
+    retval = eRetvalInitDictNotFound;
   }
 
   mCandidateWord.AssignLiteral("");
@@ -392,7 +394,7 @@ IMEConnect::SetLanguage(const uint32_t aLid)
 
   KIKA_LOGD("SetLanguage::mCurrentLID = 0x%x" , mCurrentLID);
 
-  return mCurrentLID;
+  return retval;
 }
 
 JSObject*

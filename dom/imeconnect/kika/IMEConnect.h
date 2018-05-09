@@ -280,6 +280,11 @@ enum EOptionId {
   eOptionReportActivate = 0x1001
 };
 
+enum ERetval {
+  eRetvalInitSuccess      = 0,
+  eRetvalInitError        = 1,
+  eRetvalInitDictNotFound = 2
+};
 
 class IMEConnect final : public nsISupports, public nsWrapperCache
 {
