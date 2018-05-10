@@ -261,7 +261,8 @@ var SystemAppProxy = {
     }
 
     if ((target || content) === frameInfo.frame.contentWindow) {
-      dump('XXX FIXME : Dispatch a ' + type + ': ' + details.type + '\n');
+      let detailsType = details ? details.type : 'undefined';
+      dump('XXX FIXME : Dispatch a ' + type + ': ' + detailsType + '\n');
     }
 
     event.initCustomEvent(type, true, false, payload);
