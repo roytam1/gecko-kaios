@@ -399,6 +399,7 @@ this.Keyboard = {
     // is from an mozApp window or not.
     let appManifest = msg.target.appManifestURL;
     msg.data.isFromApp = appManifest !== '';
+    msg.data.manifestURL = appManifest;
 
     // Notify the current active input app to gain focus.
     this.forwardEvent('Keyboard:Focus', msg).then(() => {
@@ -434,6 +435,7 @@ this.Keyboard = {
 
     msg.data.isFromApp = null;
     msg.data.defaultSoftkeyBar = null;
+    msg.data.manifestURL = null;
 
     // unset formMM
     this.formMM = null;
@@ -457,6 +459,7 @@ this.Keyboard = {
     if (newEventName === 'Keyboard:GetContext:Result:OK') {
       appManifest = msg.target.appManifestURL;
       msg.data.isFromApp = appManifest !== '';
+      msg.data.manifestURL = appManifest;
       if (appManifest && appManifest.length) {
         shouldGetAppManifest = true;
       }

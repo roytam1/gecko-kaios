@@ -834,7 +834,8 @@ function MozInputContext(data) {
     defaultSoftkeyBar: data.defaultSoftkeyBar,
     selectionStart: data.selectionStart,
     selectionEnd: data.selectionEnd,
-    text: data.value
+    text: data.value,
+    manifestURL: data.manifestURL
   };
 }
 
@@ -1052,6 +1053,10 @@ MozInputContext.prototype = {
     let start = this._context.selectionStart;
     let end = this._context.selectionEnd;
     return text.substr(start, end - start + 100);
+  },
+
+  get manifestURL() {
+    return this._context.manifestURL;
   },
 
   setSelectionRange: function ic_setSelectionRange(start, length) {

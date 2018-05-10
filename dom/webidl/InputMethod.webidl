@@ -549,6 +549,11 @@ interface MozInputContext: EventTarget {
    * Delete a text/node/selection before the cursor
    */
   Promise<boolean> deleteBackward();
+
+  /**
+   * Get manifestURL of app which holding this inputcontext.
+   */
+  readonly attribute DOMString? manifestURL;
 };
 
 /**
