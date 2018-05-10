@@ -178,7 +178,7 @@ BluetoothUUID::GetTable(GattAttribute aAttr, const nsAString& aString,
     tableSlot = &sUUIDDescriptorTable;
   }
 
-  NS_ENSURE_TRUE(!tableSlot, false);
+  NS_ENSURE_TRUE(tableSlot, false);
 
   if (!*tableSlot) {
     (*tableSlot) = new nsDataHashtable<nsStringHashKey, uint32_t>;
