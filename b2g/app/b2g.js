@@ -844,7 +844,7 @@ pref("hal.gonk.COMPOSITOR.nice", -4);
 // (see below), even while we have processes that we would happily kill in
 // order to free up memory.
 #ifdef KAIOS_256MB_SUPPORT
-pref("gonk.notifyHardLowMemUnderKB", 7168); //kilobytes
+pref("gonk.notifyHardLowMemUnderKB", 14336); //kilobytes
 #else
 pref("gonk.notifyHardLowMemUnderKB", 30720);
 #endif
