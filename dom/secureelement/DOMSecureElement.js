@@ -250,7 +250,7 @@ SESessionImpl.prototype = {
     }
 
     let aidLen = aid ? aid.length : 0;
-    if (aidLen < SE.MIN_AID_LEN || aidLen > SE.MAX_AID_LEN) {
+    if (aid && (aidLen < SE.MIN_AID_LEN || aidLen > SE.MAX_AID_LEN)) {
       return PromiseHelpers.rejectWithSEError(SE.ERROR_ILLEGALPARAMETER,
              "Invalid AID length - " + aidLen);
     }
@@ -280,7 +280,7 @@ SESessionImpl.prototype = {
     }
 
     let aidLen = aid ? aid.length : 0;
-    if (aidLen < SE.MIN_AID_LEN || aidLen > SE.MAX_AID_LEN) {
+    if (aid && (aidLen < SE.MIN_AID_LEN || aidLen > SE.MAX_AID_LEN)) {
       return PromiseHelpers.rejectWithSEError(SE.ERROR_ILLEGALPARAMETER,
              "Invalid AID length - " + aidLen);
     }
