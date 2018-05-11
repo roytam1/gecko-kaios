@@ -167,6 +167,7 @@ void FetchCandidates()
   uint8_t imeId = IMEConnect::mCurrentLID & IQQI_IME_ID_MASK;
   uint8_t keyboardId = (IMEConnect::mCurrentLID & KEYBOARD_ID_MASK) >> KEYBOARD_ID_SHIFT;
   bool isGroupSupported = (imeId == eImeChineseCn || imeId == eImeChineseTw) && (keyboardId == eKeyboardT9);
+  bool isChinese = (imeId == eImeChineseCn || imeId == eImeChineseTw || imeId == eImeChineseHk);
   wstring wsKeyin;
 
   IMEConnect::mKeyBuff.push_back(0x0);
@@ -174,19 +175,22 @@ void FetchCandidates()
   IMEConnect::mKeyBuff.pop_back();
 
   if (isGroupSupported) {
-    IMEConnect::mCandGroup.alloc(CANDIDATE_MAX_ROW, CANDIDATE_MAX_COL);
-    IMEConnect::mTotalGroup = IQQI_GetGrouping(imeId, (wchar_t *)wsKeyin.c_str(), 0, CANDIDATE_MAX_ROW, IMEConnect::mCandGroup.pointer());
+    IMEConnect::mCandGroup.alloc(MAX_GROUP_COUNT, MAX_GROUP_LENGTH);
+    IMEConnect::mTotalGroup = IQQI_GetGrouping(imeId, (wchar_t *)wsKeyin.c_str(), 0, MAX_GROUP_COUNT, IMEConnect::mCandGroup.pointer());
 
     if (IMEConnect::mTotalGroup > 0) {
       wsKeyin.append(L":");
       wsKeyin.append(IMEConnect::mCandGroup.record(IMEConnect::mActiveGroupIndex));
 
-      IMEConnect::mCandVoca.alloc(CANDIDATE_MAX_ROW_ZH, CANDIDATE_MAX_COL);
-      IQQI_GetCandidates(imeId, (wchar_t *)wsKeyin.c_str(), false, 3, 0, CANDIDATE_MAX_ROW_ZH, IMEConnect::mCandVoca.pointer());
+      IMEConnect::mCandVoca.alloc(MAX_WORD_ZH_COUNT, MAX_WORD_ZH_LENGTH);
+      IQQI_GetCandidates(imeId, (wchar_t *)wsKeyin.c_str(), false, 3, 0, MAX_WORD_ZH_COUNT, IMEConnect::mCandVoca.pointer());
     }
   } else {
-    IMEConnect::mCandVoca.alloc(CANDIDATE_MAX_ROW, CANDIDATE_MAX_COL);
-    IQQI_GetCandidates(imeId, (wchar_t *)wsKeyin.c_str(), false, 3, 0, CANDIDATE_MAX_ROW, IMEConnect::mCandVoca.pointer());
+    int maxCount = isChinese ? MAX_WORD_ZH_COUNT : MAX_WORD_COUNT;
+    int macLength = isChinese ? MAX_WORD_ZH_LENGTH : MAX_WORD_LENGTH;
+
+    IMEConnect::mCandVoca.alloc(maxCount, macLength);
+    IQQI_GetCandidates(imeId, (wchar_t *)wsKeyin.c_str(), false, 3, 0, maxCount, IMEConnect::mCandVoca.pointer());
   }
 
   IMEConnect::mTotalWord = IQQI_GetCandidateCount(0, (wchar_t *)wsKeyin.c_str(), false, 0);
@@ -326,16 +330,19 @@ void
 IMEConnect::GetNextWordCandidates(const nsAString& aWord, nsAString& aRetval)
 {
   uint8_t imeId = IMEConnect::mCurrentLID & IQQI_IME_ID_MASK;
-  nsString currentWord, nextWordCandidates;
+  bool isChinese = (imeId == eImeChineseCn || imeId == eImeChineseTw || imeId == eImeChineseHk);
+  int maxCount = isChinese ? MAX_NEXTWORD_ZH_COUNT : MAX_NEXTWORD_COUNT;
+  int macLength = isChinese ? MAX_NEXTWORD_ZH_LENGTH : MAX_NEXTWORD_LENGTH;
   int total;
+  nsString currentWord, nextWordCandidates;
   CandidateCH candNextWord;
 
   currentWord = nsString(aWord);
   wchar_t wsWord[currentWord.Length() + 1];
   U16strToWstr(wsWord, currentWord.get(), currentWord.Length());
 
-  candNextWord.alloc(CANDIDATE_MAX_ROW, CANDIDATE_MAX_COL);
-  total = IQQI_GetNextWordCandidates(imeId, (wchar_t*)wsWord, 0, CANDIDATE_MAX_ROW, candNextWord.pointer());
+  candNextWord.alloc(maxCount, macLength);
+  total = IQQI_GetNextWordCandidates(imeId, (wchar_t*)wsWord, 0, maxCount, candNextWord.pointer());
 
   KIKA_LOGD("GetNextWordCandidates::total = %d, wsWord = %ls", total, wsWord);
 

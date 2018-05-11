@@ -68,9 +68,19 @@ extern "C" {
 
 #define KIKA_OK                   0
 #define KIKA_NOT_OK              -1
-#define CANDIDATE_MAX_COL        54
-#define CANDIDATE_MAX_ROW        20
-#define CANDIDATE_MAX_ROW_ZH     80
+
+#define MAX_GROUP_COUNT          10
+#define MAX_GROUP_LENGTH          6
+
+#define MAX_WORD_COUNT           20
+#define MAX_WORD_LENGTH          45
+#define MAX_WORD_ZH_COUNT        80
+#define MAX_WORD_ZH_LENGTH        1
+
+#define MAX_NEXTWORD_COUNT       20
+#define MAX_NEXTWORD_LENGTH      45
+#define MAX_NEXTWORD_ZH_COUNT    20
+#define MAX_NEXTWORD_ZH_LENGTH    1
 
 #define IQQI_IME_ID_MASK       0xFF
 #define KEYBOARD_ID_MASK     0xFF00
@@ -111,7 +121,7 @@ enum EImeId {
   eImeUrdu,
   eImeAfrikaans,
   eImeArabic,
-  eImeChineseCn,
+  eImeChineseCn, // ChinesePinyin
   eImeDutch,
   eImeEnglishGb,
   eImeFrenchFr,
@@ -153,8 +163,8 @@ enum EImeId {
   eImeAzerbaijani,
   eImeBelarusian,
   eImeBosnian,
-  eImeChineseHk,
-  eImeChineseTw,
+  eImeChineseHk, // ChineseBihua
+  eImeChineseTw, // ChineseZhuyin
   eImeDanish,
   eImeEstonian,
   eImeGeorgian,
@@ -201,7 +211,7 @@ const string DICT_TABLE[eImeEnd] = {
   "Urdu.dict",
   "Afrikaans.dict",
   "Arabic.dict",
-  "Chinese_CN.dict",
+  "Chinese_CN.dict", // Chinese_Pinyin
   "Dutch.dict",
   "English_GB.dict",
   "French_FR.dict",
@@ -243,8 +253,8 @@ const string DICT_TABLE[eImeEnd] = {
   "Azerbaijani.dict",
   "Belarusian.dict",
   "Bosnian.dict",
-  "Chinese_HK.dict",
-  "Chinese_TW.dict",
+  "Chinese_HK.dict", // Chinese_Bihua
+  "Chinese_TW.dict", // Chinese_Zhuyin
   "Danish.dict",
   "Estonian.dict",
   "Georgian.dict",
