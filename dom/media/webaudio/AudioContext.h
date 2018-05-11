@@ -331,6 +331,12 @@ private:
 
   bool CheckClosed(ErrorResult& aRv);
 
+  // Check if mActiveNodes should be kept alive.
+  bool IsActive()
+  {
+    return mIsStarted && !mCloseCalled && !mSuspendCalled;
+  }
+
   nsTArray<MediaStream*> GetAllStreams() const;
 
 private:

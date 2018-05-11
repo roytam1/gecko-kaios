@@ -59,7 +59,7 @@ NS_IMPL_CYCLE_COLLECTION_CLASS(AudioContext)
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(AudioContext)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mDestination)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mListener)
-  if (!tmp->mIsStarted) {
+  if (!tmp->IsActive()) {
     NS_IMPL_CYCLE_COLLECTION_UNLINK(mActiveNodes)
   }
   // Remove weak reference on the global window as the context is not usable
@@ -71,9 +71,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(AudioContext,
                                                   DOMEventTargetHelper)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mDestination)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mListener)
-  if (!tmp->mIsStarted) {
-    MOZ_ASSERT(tmp->mIsOffline,
-               "Online AudioContexts should always be started");
+  if (!tmp->IsActive()) {
     NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mActiveNodes)
   }
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
