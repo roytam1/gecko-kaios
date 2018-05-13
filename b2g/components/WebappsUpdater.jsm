@@ -20,6 +20,10 @@ XPCOMUtils.defineLazyServiceGetter(this, "settings",
 XPCOMUtils.defineLazyModuleGetter(this, "SystemAppProxy",
                                   "resource://gre/modules/SystemAppProxy.jsm");
 
+XPCOMUtils.defineLazyServiceGetter(this, "powerManagerService",
+                                   "@mozilla.org/power/powermanagerservice;1",
+                                   "nsIPowerManagerService");
+
 var debug;
 function debugPrefObserver() {
   debug = Services.prefs.getBoolPref("dom.mozApps.debug")
@@ -31,6 +35,7 @@ Services.prefs.addObserver("dom.mozApps.debug", debugPrefObserver, false);
 
 this.WebappsUpdater = {
   _checkingApps: false,
+  _wakeLock: null,
 
   handleContentStart: function() {
   },
@@ -55,6 +60,10 @@ this.WebappsUpdater = {
     lock.set("apps.updateStatus", "check-complete", null);
     this.sendChromeEvent("apps-update-check", { apps: aApps });
     this._checkingApps = false;
+    if ( this._wakeLock ) {
+      this._wakeLock.unlock();
+      this._wakeLock = null;
+    }
   },
 
   // Trigger apps update check and wait for all to be done before
@@ -76,6 +85,7 @@ this.WebappsUpdater = {
     }
 
     this._checkingApps = true;
+    this._wakeLock = powerManagerService.newWakeLock("cpu");
 
     let self = this;
 
