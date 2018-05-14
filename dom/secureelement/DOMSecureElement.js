@@ -427,7 +427,7 @@ SEChannelImpl.prototype = {
              " Extended APDU is not supported!");
     }
 
-    if ((command.cla & 0x80 === 0) && ((command.cla & 0x60) !== 0x20)) {
+    if (((command.cla & 0x80) === 0) && ((command.cla & 0x60) !== 0x20)) {
       if (command.ins === SE.INS_MANAGE_CHANNEL) {
         return PromiseHelpers.rejectWithSEError(SE.ERROR_SECURITY,
                "MANAGE CHANNEL command not permitted");
