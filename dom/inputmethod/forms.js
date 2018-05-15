@@ -691,6 +691,8 @@ var FormAssistant = {
       }
 
       case "Forms:Input:SendKey":
+        CompositionManager.endComposition('');
+
         let win = target.ownerDocument.defaultView;
         let tip = WindowMap.getTextInputProcessor(win);
         if (!tip) {
