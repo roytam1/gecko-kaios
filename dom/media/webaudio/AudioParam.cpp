@@ -18,10 +18,12 @@ NS_IMPL_CYCLE_COLLECTION_CLASS(AudioParam)
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(AudioParam)
   tmp->DisconnectFromGraphAndDestroyStream();
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mNode)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mContext)
   NS_IMPL_CYCLE_COLLECTION_UNLINK_PRESERVED_WRAPPER
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(AudioParam)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mNode)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mContext)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE_SCRIPT_OBJECTS
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
@@ -39,10 +41,12 @@ AudioParam::AudioParam(AudioNode* aNode,
                        const char* aName)
   : AudioParamTimeline(aDefaultValue)
   , mNode(aNode)
+  , mContext(aNode->Context())
   , mName(aName)
   , mIndex(aIndex)
   , mDefaultValue(aDefaultValue)
 {
+  mContext->RegisterParam(this);
 }
 
 AudioParam::~AudioParam()
@@ -78,6 +82,10 @@ AudioParam::DisconnectFromGraphAndDestroyStream()
   if (mStream) {
     mStream->Destroy();
     mStream = nullptr;
+  }
+
+  if (mContext) {
+    mContext->UnregisterParam(this);
   }
 }
 

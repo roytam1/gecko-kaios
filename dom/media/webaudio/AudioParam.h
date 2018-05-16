@@ -226,6 +226,7 @@ private:
   nsCycleCollectingAutoRefCnt mRefCnt;
   NS_DECL_OWNINGTHREAD
   RefPtr<AudioNode> mNode;
+  RefPtr<AudioContext> mContext;
   // For every InputNode, there is a corresponding entry in mOutputParams of the
   // InputNode's mInputNode.
   nsTArray<AudioNode::InputNode> mInputNodes;

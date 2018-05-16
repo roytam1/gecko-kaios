@@ -50,6 +50,7 @@ class AudioBufferSourceNode;
 class AudioDestinationNode;
 class AudioListener;
 class AudioNode;
+class AudioParam;
 class BiquadFilterNode;
 class ChannelMergerNode;
 class ChannelSplitterNode;
@@ -303,6 +304,9 @@ public:
   void RegisterNode(AudioNode* aNode);
   void UnregisterNode(AudioNode* aNode);
 
+  void RegisterParam(AudioParam* aParam);
+  void UnregisterParam(AudioParam* aParam);
+
   void OnStateChanged(void* aPromise, AudioContextState aNewState);
 
   BasicWaveFormCache* GetBasicWaveFormCache();
@@ -349,6 +353,8 @@ private:
   nsTHashtable<nsRefPtrHashKey<AudioNode> > mActiveNodes;
   // Raw (non-owning) references to all AudioNodes for this AudioContext.
   nsTHashtable<nsPtrHashKey<AudioNode> > mAllNodes;
+  // Raw (non-owning) references to all AudioParams for this AudioContext.
+  nsTHashtable<nsPtrHashKey<AudioParam> > mAllParams;
   // Hashsets containing all the PannerNodes, to compute the doppler shift.
   // These are weak pointers.
   nsTHashtable<nsPtrHashKey<PannerNode> > mPannerNodes;

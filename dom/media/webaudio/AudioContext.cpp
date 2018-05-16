@@ -23,6 +23,7 @@
 #include "AudioChannelService.h"
 #include "AudioDestinationNode.h"
 #include "AudioListener.h"
+#include "AudioParam.h"
 #include "AudioStream.h"
 #include "BiquadFilterNode.h"
 #include "ChannelMergerNode.h"
@@ -847,6 +848,13 @@ AudioContext::GetAllStreams() const
       streams.AppendElement(s);
     }
   }
+  for (auto iter = mAllParams.ConstIter(); !iter.Done(); iter.Next()) {
+    // Call base version of Stream() so it won't create a new stream if it doesn't exist.
+    MediaStream* s = iter.Get()->GetKey()->AudioParamTimeline::Stream();
+    if (s) {
+      streams.AppendElement(s);
+    }
+  }
   return streams;
 }
 
@@ -1010,6 +1018,20 @@ AudioContext::UnregisterNode(AudioNode* aNode)
   if (mDestination) {
     mDestination->SetIsOnlyNodeForContext(mAllNodes.Count() == 1);
   }
+}
+
+void
+AudioContext::RegisterParam(AudioParam* aParam)
+{
+  MOZ_ASSERT(!mAllParams.Contains(aParam));
+  mAllParams.PutEntry(aParam);
+}
+
+void
+AudioContext::UnregisterParam(AudioParam* aParam)
+{
+  MOZ_ASSERT(mAllParams.Contains(aParam));
+  mAllParams.RemoveEntry(aParam);
 }
 
 JSObject*
