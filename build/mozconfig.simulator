@@ -1,5 +1,6 @@
 ac_add_options --enable-application=b2g
 ac_add_options --disable-tests
+ac_add_options --disable-webrtc
 mk_add_options MOZ_OBJDIR="${GECKO_OBJDIR}"
 
 FXOS_SIMULATOR=1
