@@ -240,9 +240,6 @@ private:
   RefPtr<FMRadioReplyRunnable> mPendingRequest;
 
   FMRadioEventObserverList mObserverList;
-  #ifdef PRODUCT_MANUFACTURER_SPRD
-  nsAutoPtr<hal::SwitchObserver> mObserver;
-  #endif
 
   static StaticRefPtr<FMRadioService> sFMRadioService;
 

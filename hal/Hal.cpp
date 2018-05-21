@@ -1260,14 +1260,6 @@ DisableFMRadio() {
   PROXY_IF_SANDBOXED(DisableFMRadio());
 }
 
-#ifdef PRODUCT_MANUFACTURER_SPRD
-void
-SetFMRadioAntenna(const int32_t aStatus) {
-  AssertMainThread();
-  PROXY_IF_SANDBOXED(SetFMRadioAntenna(aStatus));
-}
-#endif
-
 void
 FMRadioSeek(const FMRadioSeekDirection& aDirection) {
   PROXY_IF_SANDBOXED(FMRadioSeek(aDirection));

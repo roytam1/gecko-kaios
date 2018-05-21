@@ -523,14 +523,6 @@ DisableFMRadio()
   NS_RUNTIMEABORT("FM radio cannot be called from sandboxed contexts.");
 }
 
-#ifdef PRODUCT_MANUFACTURER_SPRD
-void
-SetFMRadioAntenna(const int32_t aStatus)
-{
-  NS_RUNTIMEABORT("FM radio cannot be called from sandboxed contexts.");
-}
-#endif
-
 void
 FMRadioSeek(const hal::FMRadioSeekDirection& aDirection)
 {

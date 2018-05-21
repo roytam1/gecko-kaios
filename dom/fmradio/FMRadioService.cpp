@@ -39,19 +39,6 @@ using mozilla::Preferences;
 
 BEGIN_FMRADIO_NAMESPACE
 
-#ifdef PRODUCT_MANUFACTURER_SPRD
-class AntennaSwitchObserver : public hal::SwitchObserver
-{
-public:
-  void Notify(const hal::SwitchEvent& aEvent)
-  {
-    if((hal::IsFMRadioOn()) && (aEvent.device() == hal::SWITCH_HEADPHONES)) {
-      hal::SetFMRadioAntenna(aEvent.status());
-    }
-  }
-};
-#endif
-
 // static
 IFMRadioService*
 IFMRadioService::Singleton()
@@ -73,9 +60,6 @@ FMRadioService::FMRadioService()
   , mRDSEnabled(false)
   , mPendingRequest(nullptr)
   , mObserverList(FMRadioEventObserverList())
-  #ifdef PRODUCT_MANUFACTURER_SPRD
-  , mObserver(new AntennaSwitchObserver())
-  #endif
   , mRDSGroupMask(0)
   , mLastPI(0)
   , mPI(0)
@@ -155,16 +139,10 @@ FMRadioService::FMRadioService()
 
   hal::RegisterFMRadioObserver(this);
   hal::RegisterFMRadioRDSObserver(this);
-  #ifdef PRODUCT_MANUFACTURER_SPRD
-  hal::RegisterSwitchObserver(hal::SWITCH_HEADPHONES, mObserver);
-  #endif
 }
 
 FMRadioService::~FMRadioService()
 {
-  #ifdef PRODUCT_MANUFACTURER_SPRD
-  hal::UnregisterSwitchObserver(hal::SWITCH_HEADPHONES, mObserver);
-  #endif
   hal::UnregisterFMRadioRDSObserver(this);
   hal::UnregisterFMRadioObserver(this);
 }
@@ -172,11 +150,6 @@ FMRadioService::~FMRadioService()
 void
 FMRadioService::EnableFMRadio()
 {
-  #ifdef PRODUCT_MANUFACTURER_SPRD
-  //Bug 17313,Update ForceForUse in AudioManager before enable FM hardware.
-  //This prevent from leak FM sound from incorrect audio path.
-  EnableAudio(true);
-  #endif
   hal::FMRadioSettings info;
   info.upperLimit() = mUpperBoundInKHz;
   info.lowerLimit() = mLowerBoundInKHz;

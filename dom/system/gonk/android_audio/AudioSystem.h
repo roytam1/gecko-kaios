@@ -460,10 +460,6 @@ enum {
     AUDIO_DEVICE_OUT_AUX_LINE                  = 0x200000,
     /* limited-output speaker device for acoustic safety */
     AUDIO_DEVICE_OUT_SPEAKER_SAFE              = 0x400000,
-    #ifdef PRODUCT_MANUFACTURER_SPRD
-    AUDIO_DEVICE_OUT_FM_HEADSET               = 0x1000000,
-    AUDIO_DEVICE_OUT_FM_SPEAKER               = 0x2000000,
-    #endif
     AUDIO_DEVICE_OUT_DEFAULT                   = AUDIO_DEVICE_BIT_DEFAULT,
     AUDIO_DEVICE_OUT_ALL      = (AUDIO_DEVICE_OUT_EARPIECE |
                                  AUDIO_DEVICE_OUT_SPEAKER |

@@ -17,12 +17,6 @@ void
 DisableFMRadio()
 {}
 
-#ifdef PRODUCT_MANUFACTURER_SPRD
-void
-SetFMRadioAntenna(const int32_t aStatus)
-{}
-#endif
-
 void
 FMRadioSeek(const hal::FMRadioSeekDirection& aDirection)
 {}

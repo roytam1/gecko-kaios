@@ -75,7 +75,6 @@ interface nsIAudioManager : nsISupports
   const long USE_MEDIA             = 1;
   const long USE_RECORD            = 2;
   const long USE_DOCK              = 3;
-  const long USE_FM                = 6;//for SPRD fm radio
 
   void setForceForUse(in long usage, in long force);
   long getForceForUse(in long usage);
