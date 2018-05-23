@@ -53,6 +53,12 @@ enum NfcSelfTestType {
   "vendor_defined_type2"
 };
 
+enum SetConfigureResult {
+  "success",
+  "busy",
+  "failed"
+};
+
 [NoInterfaceObject]
 interface MozNFCManager {
   /**
@@ -194,6 +200,12 @@ partial interface MozNFC {
    */
   [CheckAnyPermissions="nfc-manager", AvailableIn=CertifiedApps]
   Promise<void> nfcSelfTest(NfcSelfTestType type);
+
+  /**
+   * Setup and apply configuration file for transit use case.
+   */
+  [CheckAnyPermissions="nfc-manager", AvailableIn=CertifiedApps]
+  Promise<SetConfigureResult> setConfig(Blob? configFile);
 };
 
 MozNFC implements MozNFCManager;

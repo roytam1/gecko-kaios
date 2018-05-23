@@ -26,7 +26,8 @@ enum NfcRequestType {
   "lsExecuteScript",
   "lsGetVersion",
   "mPOSReaderMode",
-  "nfcSelfTest"
+  "nfcSelfTest",
+  "setConfig"
 };
 
 /**
@@ -47,7 +48,8 @@ enum NfcResponseType {
   "lsExecuteScriptRsp",
   "lsGetVersionRsp",
   "mPOSReaderModeRsp",
-  "nfcSelfTestRsp"
+  "nfcSelfTestRsp",
+  "setConfigRsp"
 };
 
 /**
@@ -107,6 +109,7 @@ dictionary NfcCommandOptions
   boolean mPOSReaderMode;
 
   NfcSelfTestType selfTestType;
+  Blob confBlob;
 };
 
 dictionary NfcEventOptions
@@ -146,4 +149,6 @@ dictionary NfcEventOptions
   Uint8Array apduResponse;
 
   long mPOSReaderModeEvent;
+
+  long setConfigResult;
 };

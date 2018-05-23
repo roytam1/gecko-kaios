@@ -34,6 +34,17 @@ const NFC_MPOS_EVENTS = [
   "MPOS_READER_MODE_INVALID"
 ];
 
+const SetConfigResult = {
+  NFC_SETCONFIG_SUCCESS: 0,
+  NFC_SETCONFIG_BUSY   : 1,
+  NFC_SETCONFIG_FAILED : 2
+};
+
+const DOMSetConfigResult = {};
+DOMSetConfigResult[SetConfigResult.NFC_SETCONFIG_SUCCESS] = "success";
+DOMSetConfigResult[SetConfigResult.NFC_SETCONFIG_BUSY] = "busy";
+DOMSetConfigResult[SetConfigResult.NFC_SETCONFIG_FAILED] = "failed";
+
 function NfcCallback(aWindow) {
   this._window = aWindow;
   this.initDOMRequestHelper(aWindow, null);
@@ -99,6 +110,21 @@ NfcCallback.prototype = {
       return;
     }
     resolver.resolve(Cu.cloneInto(aArray, this._window));
+  },
+
+  notifySuccessWithInt: function notifySetConfigureResult(aResult) {
+    let resolver = this.takePromiseResolver(atob(this._requestId));
+    if (!resolver) {
+      debug("can not find promise resolver for id: " + this._requestId);
+      return;
+    }
+
+    if (aResult == SetConfigResult.NFC_SETCONFIG_SUCCESS) {
+      resolver.resolve(DOMSetConfigResult[aResult]);
+      return;
+    }
+
+    resolver.reject(DOMSetConfigResult[aResult]);
   },
 
   notifyError: function notifyError(aErrorMsg) {
@@ -470,6 +496,15 @@ MozNFCImpl.prototype = {
   nfcSelfTest: function nfcSelfTest(type) {
     let callback = new NfcCallback(this.window);
     this._nfcContentHelper.nfcSelfTest(type, callback);
+    return callback.promise;
+  },
+
+  setConfig: function setConfig(confFile) {
+    let callback = new NfcCallback(this.window);
+    if (!confFile) {
+      confFile = new Blob([''], {type: "text/plain"});
+    }
+    this._nfcContentHelper.setConfig(confFile, callback);
     return callback.promise;
   },
 

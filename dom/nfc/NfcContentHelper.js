@@ -61,7 +61,8 @@ const NFC_IPC_MSG_NAMES = [
   "NFC:NotifySendFileStatusResponse",
   "NFC:ChangeRFStateResponse",
   "NFC:MPOSReaderModeResponse",
-  "NFC:NfcSelfTestResponse"
+  "NFC:NfcSelfTestResponse",
+  "NFC:SetConfigResponse"
 ];
 
 XPCOMUtils.defineLazyServiceGetter(this, "cpmm",
@@ -253,6 +254,14 @@ NfcContentHelper.prototype = {
                            selfTestType: type});
   },
 
+  setConfig: function setConfig(confFile, callback) {
+    let requestId = callback.getCallbackId();
+    this._requestMap[requestId] = callback;
+    cpmm.sendAsyncMessage("NFC:SetConfig",
+                          {requestId: requestId,
+                           confBlob: confFile});
+  },
+
   get isMPOSReaderMode() {
     return this._mPOSReaderModeOn;
   },
@@ -309,6 +318,9 @@ NfcContentHelper.prototype = {
       case "NFC:NfcSelfTestResponse":
         this.handleNfcSelfTestResponse(result);
         break;
+      case "NFC:SetConfigResponse":
+        this.handleSetConfigResponse(result);
+        break
       case "NFC:DOMEvent":
         this.handleDOMEvent(result);
         break;
@@ -324,6 +336,18 @@ NfcContentHelper.prototype = {
 
   handleNfcSelfTestResponse: function handleNfcSelfTestResponse(result) {
     this.handleGeneralResponse(result);
+  },
+
+  handleSetConfigResponse: function handleSetConfigResponse(result) {
+    let requestId = result.requestId;
+    let callback = this._requestMap[requestId];
+    if (!callback) {
+      debug("not firing message " + result.type + " for id: " + requestId);
+      return;
+    }
+    delete this._requestMap[requestId];
+
+    callback.notifySuccessWithInt(result.setConfigResult);
   },
 
   handleGeneralResponse: function handleGeneralResponse(result) {

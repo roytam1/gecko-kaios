@@ -9,6 +9,8 @@
 
 #include "mozilla/dom/NfcOptionsBinding.h"
 #include "mozilla/dom/MozNDEFRecordBinding.h"
+#include "mozilla/dom/File.h"
+#include "nsIDOMBlob.h"
 
 namespace mozilla {
 
@@ -104,6 +106,9 @@ struct CommandOptions
                  static_cast<int32_t>(aOther.mSelfTestType.Value()) :
                  0;
 
+    if (aOther.mConfBlob.WasPassed()) {
+      mConfBlob = aOther.mConfBlob.InternalValue();
+    }
 #undef COPY_FIELD
 #undef COPY_OPT_FIELD
   }
@@ -129,6 +134,7 @@ struct CommandOptions
   bool mMPOSReaderMode;
 
   int32_t mSelfTestType;
+  RefPtr<mozilla::dom::Blob> mConfBlob;
 };
 
 struct EventOptions
@@ -172,6 +178,8 @@ struct EventOptions
   int32_t mMPOSReaderModeEvent;
 
   bool mIsNtf;
+
+  int32_t mSetConfigResult;
 };
 
 } // namespace mozilla

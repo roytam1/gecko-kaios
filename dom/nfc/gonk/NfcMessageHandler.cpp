@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <cutils/properties.h>
 
 #include "NfcMessageHandler.h"
 #include <binder/Parcel.h>
@@ -15,12 +16,16 @@
 #include "nsDebug.h"
 #include "NfcOptions.h"
 #include "mozilla/unused.h"
+#include "nsNetUtil.h"
+#include "nsIInputStream.h"
 
 #include <android/log.h>
 #define NMH_LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "NfcMessageHandler", args)
 
 #define NFCD_MAJOR_VERSION 1
 #define NFCD_MINOR_VERSION 22
+
+#define TRANSIT_FILE_SIZE "nfc.transit.size"
 
 using namespace android;
 using namespace mozilla;
@@ -29,7 +34,7 @@ using namespace mozilla::dom;
 bool
 NfcMessageHandler::Marshall(Parcel& aParcel, const CommandOptions& aOptions)
 {
-  bool result;
+  bool result = false;
   NMH_LOG("Marshall type %d\n", (int)aOptions.mType);
   switch (aOptions.mType) {
     case NfcRequestType::ChangeRFState:
@@ -77,6 +82,8 @@ NfcMessageHandler::Marshall(Parcel& aParcel, const CommandOptions& aOptions)
     case NfcRequestType::NfcSelfTest:
       result = NfcSelfTestRequest(aParcel, aOptions);
       break;
+    case NfcRequestType::SetConfig:
+      result = SetConfigRequest(aParcel, aOptions);
     default:
       result = false;
       break;
@@ -101,7 +108,7 @@ NfcMessageHandler::Unmarshall(const Parcel& aParcel, EventOptions& aOptions)
 bool
 NfcMessageHandler::ProcessResponse(int32_t aType, const Parcel& aParcel, EventOptions& aOptions)
 {
-  bool result;
+  bool result = false;
   aOptions.mRspType = static_cast<NfcResponseType>(aType);
   switch (aOptions.mRspType) {
     case NfcResponseType::ChangeRFStateRsp:
@@ -145,6 +152,9 @@ NfcMessageHandler::ProcessResponse(int32_t aType, const Parcel& aParcel, EventOp
     case NfcResponseType::NfcSelfTestRsp:
       result = NfcSelfTestResponse(aParcel, aOptions);
       break;
+    case NfcResponseType::SetConfigRsp:
+      result = SetConfigResponse(aParcel, aOptions);
+      break;
     default:
       result = false;
   }
@@ -155,7 +165,7 @@ NfcMessageHandler::ProcessResponse(int32_t aType, const Parcel& aParcel, EventOp
 bool
 NfcMessageHandler::ProcessNotification(int32_t aType, const Parcel& aParcel, EventOptions& aOptions)
 {
-  bool result;
+  bool result = false;
   aOptions.mNtfType = static_cast<NfcNotificationType>(aType);
   NMH_LOG("ProcessNotification %d", aType);
   switch (aOptions.mNtfType) {
@@ -714,6 +724,59 @@ NfcMessageHandler::NfcSelfTestResponse(const Parcel& aParcel, EventOptions& aOpt
 {
   NMH_LOG("NfcSelfTestResponse\n");
   aOptions.mErrorCode = aParcel.readInt32();
+  NS_ENSURE_TRUE(!mRequestIdQueue.IsEmpty(), false);
+  aOptions.mRequestId = mRequestIdQueue[0];
+  mRequestIdQueue.RemoveElementAt(0);
+  return true;
+}
+
+bool
+NfcMessageHandler::SetConfigRequest(Parcel& aParcel, const CommandOptions& aOptions)
+{
+  int64_t maxSize;
+  char propValue[PROPERTY_VALUE_MAX];
+  property_get(TRANSIT_FILE_SIZE, propValue, "16384");
+  maxSize = atol(propValue);
+
+  ErrorResult rv;
+  uint64_t size = aOptions.mConfBlob->GetSize(rv);
+  if (NS_WARN_IF(rv.Failed())) {
+    return true;
+  }
+
+  NMH_LOG("SetConfigRequest %llu %llu\n", size, (uint64_t)maxSize);
+  if (size > (uint64_t)maxSize) {
+    return false;
+  }
+
+  nsCOMPtr<nsIInputStream> inputStream;
+  aOptions.mConfBlob->GetInternalStream(getter_AddRefs(inputStream), rv);
+  if (NS_WARN_IF(rv.Failed())) {
+    return false;
+  }
+
+  nsCString blobBuf;
+  rv = NS_ReadInputStreamToString(inputStream, blobBuf, (uint32_t)size);
+  if (NS_WARN_IF(rv.Failed())) {
+    return false;
+  }
+  NMH_LOG("Blob buffer size = %llu ", size);
+
+  aParcel.writeInt32(static_cast<int32_t>(NfcRequestType::SetConfig));
+  nsString blob = NS_ConvertUTF8toUTF16(blobBuf);
+  WriteString16(aParcel, blob.get(), size);
+  mRequestIdQueue.AppendElement(aOptions.mRequestId);
+  return true;
+}
+
+bool
+NfcMessageHandler::SetConfigResponse(const Parcel& aParcel, EventOptions& aOptions)
+{
+  aOptions.mErrorCode = aParcel.readInt32();
+  aOptions.mSetConfigResult = aParcel.readInt32();
+
+  NMH_LOG("SetConfigResponse code= %d result= %d\n", aOptions.mErrorCode, aOptions.mSetConfigResult);
+
   NS_ENSURE_TRUE(!mRequestIdQueue.IsEmpty(), false);
   aOptions.mRequestId = mRequestIdQueue[0];
   mRequestIdQueue.RemoveElementAt(0);

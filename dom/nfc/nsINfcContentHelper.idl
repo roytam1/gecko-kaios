@@ -6,6 +6,7 @@
 
 interface nsIVariant;
 interface nsIDOMWindow;
+interface nsIDOMBlob;
 
 [scriptable, uuid(a694c7e8-10dd-416e-a3d9-433edf40647e)]
 interface nsITagInfo : nsISupports
@@ -131,6 +132,8 @@ interface nsINfcRequestCallback : nsISupports
   DOMString getCallbackId();
 
   void notifySuccess();
+
+  void notifySuccessWithInt(in long result);
 
   void notifySuccessWithBoolean(in boolean result);
 
@@ -397,4 +400,14 @@ interface nsINfcContentHelper : nsISupports
    */
   void nfcSelfTest(in DOMString type,
                      in nsINfcRequestCallback callback);
+
+  /**
+   * Setup nfc configuration file.
+   *
+   * @param blob. Possible value is "test_rf_on" or "test_rf_off".
+   *
+   * @param callback
+   *        Called when request is finished
+   */
+  void setConfig(in nsIDOMBlob confFile, in nsINfcRequestCallback callback);
 };

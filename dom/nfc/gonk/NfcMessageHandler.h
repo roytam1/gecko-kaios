@@ -64,6 +64,9 @@ private:
   bool NfcSelfTestRequest(android::Parcel& aParcel, const CommandOptions& aOptions);
   bool NfcSelfTestResponse(const android::Parcel& aParcel, EventOptions& aOptions);
 
+  bool SetConfigRequest(android::Parcel& aParcel, const CommandOptions& aOptions);
+  bool SetConfigResponse(const android::Parcel& aParcel, EventOptions& aOptions);
+
   bool ProcessNotification(int32_t aType, const android::Parcel& aParcel, EventOptions& aOptions);
   bool InitializeNotification(const android::Parcel& aParcel, EventOptions& aOptions);
   bool TechDiscoveredNotification(const android::Parcel& aParcel, EventOptions& aOptions);

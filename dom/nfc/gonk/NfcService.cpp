@@ -447,6 +447,7 @@ public:
 
     COPY_OPT_FIELD(mMPOSReaderModeEvent, -1)
 
+    COPY_OPT_FIELD(mSetConfigResult, -1)
 #undef COPY_FIELD
 #undef COPY_OPT_FIELD
 

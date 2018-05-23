@@ -95,7 +95,8 @@ const NFC_IPC_MSG_ENTRIES = [
                "NFC:ChangeRFState",
                "NFC:SetFocusTab",
                "NFC:MPOSReaderMode",
-               "NFC:NfcSelfTest"] }
+               "NFC:NfcSelfTest",
+               "NFC:SetConfig"] }
 ];
 
 // Should be consistent with NfcRequestType defined in NfcOptions.webidl.
@@ -114,7 +115,8 @@ const NfcRequestType = {
   LSEXECUTESCRIPT: "lsExecuteScript",
   LSGETVERSION: "lsGetVersion",
   MPOSREADERMODE: "mPOSReaderMode",
-  NFCSELFTEST: "nfcSelfTest"
+  NFCSELFTEST: "nfcSelfTest",
+  SETCONFIG: "setConfig"
 };
 
 const CommandMsgTable = {};
@@ -133,7 +135,7 @@ CommandMsgTable["NFC:LsExecuteScript"] = NfcRequestType.LSEXECUTESCRIPT;
 CommandMsgTable["NFC:LsGetVersion"] = NfcRequestType.LSGETVERSION;
 CommandMsgTable["NFC:MPOSReaderMode"] = NfcRequestType.MPOSREADERMODE;
 CommandMsgTable["NFC:NfcSelfTest"] = NfcRequestType.NFCSELFTEST;
-
+CommandMsgTable["NFC:SetConfig"] = NfcRequestType.SETCONFIG;
 
 // Should be consistent with NfcResponseType defined in NfcOptions.webidl.
 const NfcResponseType = {
@@ -152,7 +154,8 @@ const NfcResponseType = {
   LSGETVERSION_RSP: "lsGetVersionRsp",
   MPOSREADERMODE_RSP: "mPOSReaderModeRsp",
   CONNECTERROR_RSP: "connectErrorRsp",
-  NFCSELFTEST_RSP: "nfcSelfTestRsp"
+  NFCSELFTEST_RSP: "nfcSelfTestRsp",
+  SETCONFIG_RSP: "setConfigRsp"
 };
 
 const EventMsgTable = {};
@@ -171,6 +174,7 @@ EventMsgTable[NfcResponseType.LSEXECUTESCRIPT_RSP] = "NFC:LsExecuteScriptRespons
 EventMsgTable[NfcResponseType.LSGETVERSION_RSP] = "NFC:LsGetVersionResponse";
 EventMsgTable[NfcResponseType.MPOSREADERMODE_RSP] = "NFC:MPOSReaderModeResponse";
 EventMsgTable[NfcResponseType.NFCSELFTEST_RSP] = "NFC:NfcSelfTestResponse";
+EventMsgTable[NfcResponseType.SETCONFIG_RSP] = "NFC:SetConfigResponse";
 
 // Should be consistent with NfcNotificationType defined in NfcOptions.webidl.
 const NfcNotificationType = {
@@ -187,6 +191,12 @@ const NfcNotificationType = {
   UNINITIALIZED: "unInitialized",
   ENABLETIMEOUT: "enableTimeout",
   DISABLETIMEOUT: "disableTimeout"
+};
+
+const SetConfigResult = {
+  NFC_SETCONFIG_SUCCESS: 0,
+  NFC_SETCONFIG_BUSY   : 1,
+  NFC_SETCONFIG_FAILED : 2
 };
 
 XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
@@ -965,6 +975,20 @@ Nfc.prototype = {
       case NfcResponseType.NFCSELFTEST_RSP:
         this.nfcSelfTestResponse(message);
         break;
+      case NfcResponseType.SETCONFIG_RSP:
+        if ((message.setConfigResult > SetConfigResult.NFC_SETCONFIG_FAILED) ||
+            (message.setConfigResult < SetConfigResult.NFC_SETCONFIG_SUCCESS)) {
+          message.setConfigResult = SetConfigResult.NFC_SETCONFIG_FAILED;
+        }
+
+        this.setConfigResponse(message);
+        if (message.setConfigResult == SetConfigResult.NFC_SETCONFIG_BUSY) {
+          Services.obs.notifyObservers(event, TOPIC_NFCD_UNINITIALIZED, null);
+          // Restart NFC service.
+          this.shutdownNfcService();
+          this.createRestartTimer(NFC.NFC_RF_STATE_DISCOVERY, 1000);
+        }
+        break;
       default:
         throw new Error("Don't know about this message type: " + message.type);
     }
@@ -1590,6 +1614,12 @@ Nfc.prototype = {
   nfcSelfTestResponse: function(message)
   {
     debug("nfcSelfTestResponse: send nfc self test response:" + JSON.stringify(message));
+    this.sendNfcResponse(message);
+  },
+
+  setConfigResponse: function(message)
+  {
+    debug("setConfigResponse: send setconfig response:" + JSON.stringify(message));
     this.sendNfcResponse(message);
   },
 
