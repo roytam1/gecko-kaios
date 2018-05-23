@@ -899,14 +899,19 @@ OmxDecoder::ReleaseAllPendingVideoBuffersLocked()
     // This code expect MediaBuffer's ref count is 1.
     // Return gralloc buffer to ANativeWindow
     ANativeWindow* window = static_cast<ANativeWindow*>(mNativeWindowClient.get());
-    window->cancelBuffer(window,
-                         buffer->graphicBuffer().get(),
-                         fenceFd);
-    // Mark MediaBuffer as rendered.
-    // When gralloc buffer is directly returned to ANativeWindow,
-    // this mark is necesary.
-    sp<MetaData> metaData = buffer->meta_data();
-    metaData->setInt32(kKeyRendered, 1);
+
+    // It's a workaround.
+    // For more information see https://bugzilla.kaiostech.com/show_bug.cgi?id=40120#c12
+    if (buffer->graphicBuffer().get()) {
+      window->cancelBuffer(window,
+                           buffer->graphicBuffer().get(),
+                           fenceFd);
+      // Mark MediaBuffer as rendered.
+      // When gralloc buffer is directly returned to ANativeWindow,
+      // this mark is necesary.
+      sp<MetaData> metaData = buffer->meta_data();
+      metaData->setInt32(kKeyRendered, 1);
+    }
 #endif
     // Return MediaBuffer to OMXCodec.
     buffer->release();
