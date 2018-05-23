@@ -187,9 +187,9 @@ void FetchCandidates()
     }
   } else {
     int maxCount = isChinese ? MAX_WORD_ZH_COUNT : MAX_WORD_COUNT;
-    int macLength = isChinese ? MAX_WORD_ZH_LENGTH : MAX_WORD_LENGTH;
+    int maxLength = isChinese ? MAX_WORD_ZH_LENGTH : MAX_WORD_LENGTH;
 
-    IMEConnect::mCandVoca.alloc(maxCount, macLength);
+    IMEConnect::mCandVoca.alloc(maxCount, maxLength);
     IQQI_GetCandidates(imeId, (wchar_t *)wsKeyin.c_str(), false, 3, 0, maxCount, IMEConnect::mCandVoca.pointer());
   }
 
@@ -332,7 +332,7 @@ IMEConnect::GetNextWordCandidates(const nsAString& aWord, nsAString& aRetval)
   uint8_t imeId = IMEConnect::mCurrentLID & IQQI_IME_ID_MASK;
   bool isChinese = (imeId == eImeChineseCn || imeId == eImeChineseTw || imeId == eImeChineseHk);
   int maxCount = isChinese ? MAX_NEXTWORD_ZH_COUNT : MAX_NEXTWORD_COUNT;
-  int macLength = isChinese ? MAX_NEXTWORD_ZH_LENGTH : MAX_NEXTWORD_LENGTH;
+  int maxLength = isChinese ? MAX_NEXTWORD_ZH_LENGTH : MAX_NEXTWORD_LENGTH;
   int total;
   nsString currentWord, nextWordCandidates;
   CandidateCH candNextWord;
@@ -341,7 +341,7 @@ IMEConnect::GetNextWordCandidates(const nsAString& aWord, nsAString& aRetval)
   wchar_t wsWord[currentWord.Length() + 1];
   U16strToWstr(wsWord, currentWord.get(), currentWord.Length());
 
-  candNextWord.alloc(maxCount, macLength);
+  candNextWord.alloc(maxCount, maxLength);
   total = IQQI_GetNextWordCandidates(imeId, (wchar_t*)wsWord, 0, maxCount, candNextWord.pointer());
 
   KIKA_LOGD("GetNextWordCandidates::total = %d, wsWord = %ls", total, wsWord);

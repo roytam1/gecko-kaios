@@ -74,7 +74,7 @@ extern "C" {
 
 #define MAX_WORD_COUNT           20
 #define MAX_WORD_LENGTH          45
-#define MAX_WORD_ZH_COUNT        80
+#define MAX_WORD_ZH_COUNT       120
 #define MAX_WORD_ZH_LENGTH        1
 
 #define MAX_NEXTWORD_COUNT       20
