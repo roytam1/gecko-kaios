@@ -39,14 +39,14 @@ public:
 
   void DoNotifyStarted()
   {
-    if (mSpeechTask) {
+    if (mSpeechTask && !mStream->IsDestroyed()) {
       mSpeechTask->DispatchStartInner();
     }
   }
 
   void DoNotifyFinished()
   {
-    if (mSpeechTask) {
+    if (mSpeechTask && !mStream->IsDestroyed()) {
       mSpeechTask->DispatchEndInner(mSpeechTask->GetCurrentTime(),
                                     mSpeechTask->GetCurrentCharOffset());
     }
