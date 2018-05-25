@@ -243,8 +243,9 @@ var ContactService = this.ContactService = {
           notifyIccContactUpdated: function(aContact) {
             msg.options.contact.id = aContact.id;
             if (DEBUG) debug('notifyIccContactUpdated id: ' + msg.options.contact.id);
+            this._injectPropsIntoSIM(msg.options.contact);
             saveContact(msg);
-          },
+          }.bind(this),
 
           notifyError: function(aErrorMsg) {
             if (DEBUG) debug('notifyError: ' + aErrorMsg);
@@ -551,6 +552,25 @@ var ContactService = this.ContactService = {
     if (category.indexOf(CATEGORY_DEVICE) < 0 &&
         category.indexOf(CATEGORY_SIM) < 0) {
       category.push(CATEGORY_DEVICE);
+    }
+  },
+
+  _injectPropsIntoSIM: function(aContact) {
+    if (!aContact || !aContact.properties) {
+      return;
+    }
+
+    if (aContact.properties.name) {
+      let givenName = [];
+      let familyName = [];
+      aContact.properties.name.forEach((name) => {
+        let segs = name.split(' ');
+        givenName.push([segs.shift()]);
+        familyName.push(segs.join(' '));
+      });
+
+      aContact.properties.givenName = givenName;
+      aContact.properties.familyName = familyName;
     }
   }
 }
