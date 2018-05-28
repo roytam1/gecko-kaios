@@ -454,10 +454,6 @@ MozInputMethod.prototype = {
   },
 
   uninit: function mozInputMethodUninit() {
-    this._window = null;
-    this._mgmt = null;
-    this._wrappedMgmt = null;
-
     cpmm.removeWeakMessageListener('Keyboard:Focus', this);
     cpmm.removeWeakMessageListener('Keyboard:Blur', this);
     cpmm.removeWeakMessageListener('Keyboard:SelectionChange', this);
@@ -479,6 +475,9 @@ MozInputMethod.prototype = {
       cpmm.removeWeakMessageListener('System:InputRegistry:Add', this);
       cpmm.removeWeakMessageListener('System:InputRegistry:Remove', this);
     }
+    this._window = null;
+    this._mgmt = null;
+    this._wrappedMgmt = null;
   },
 
   receiveMessage: function mozInputMethodReceiveMsg(msg) {
