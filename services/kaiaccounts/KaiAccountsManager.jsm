@@ -349,12 +349,12 @@ this.KaiAccountsManager = {
     if (!this._activeSession) {
       // If there is no cached active session, we try to get it from the
       // account storage.
-      return this.getAccount().then(
-        result => {
-          if (!result) {
+      return this._kaiAccounts.getSignedInUser().then(
+        user => {
+          if (!user) {
             return Promise.resolve();
           }
-          return this._signOut(result);
+          return this._signOut(user);
         }
       );
     }
