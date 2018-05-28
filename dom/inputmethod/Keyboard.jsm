@@ -173,6 +173,16 @@ this.Keyboard = {
         });
 
         this.formMM = null;
+      } else {
+        for (var i = 0; i < this._systemMMs.length; ++i) {
+          // Keyboard app has been closed unexpectedly. We should do the
+          // same thing when receiving System:Unregister.
+          if (this._systemMMs[i] == mm) {
+            this._systemMMs.splice(i, 1);
+            this.formMM = null;
+            break;
+          }
+        }
       }
     } else {
       // Ignore notifications that aren't from a BrowserOrApp
