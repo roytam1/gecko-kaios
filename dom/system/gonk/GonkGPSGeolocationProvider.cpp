@@ -1198,21 +1198,24 @@ GonkGPSGeolocationProvider::Startup()
     }
   }
 
-  // Setup NetworkLocationProvider if the API key is available
-  nsresult rv;
-  nsCOMPtr<nsIURLFormatter> formatter =
-    do_CreateInstance("@mozilla.org/toolkit/URLFormatterService;1", &rv);
-  if (NS_SUCCEEDED(rv)) {
-    nsString key;
-    rv = formatter->FormatURLPref(NS_LITERAL_STRING("geo.authorization.key"), key);
-    if (NS_SUCCEEDED(rv) && !key.IsEmpty()) {
-      gHasAuthorizationKey = true;
-      mNetworkLocationProvider = do_CreateInstance("@mozilla.org/geolocation/mls-provider;1");
-      if (mNetworkLocationProvider) {
-        rv = mNetworkLocationProvider->Startup();
-        if (NS_SUCCEEDED(rv)) {
-          RefPtr<NetworkLocationUpdate> update = new NetworkLocationUpdate();
-          mNetworkLocationProvider->Watch(update);
+  // Setup NetworkLocationProvider if the API key and server URI are available
+  const nsAdoptingString& serverUri = Preferences::GetString("geo.wifi.uri");
+  if (!serverUri.IsEmpty()) {
+    nsresult rv;
+    nsCOMPtr<nsIURLFormatter> formatter =
+      do_CreateInstance("@mozilla.org/toolkit/URLFormatterService;1", &rv);
+    if (NS_SUCCEEDED(rv)) {
+      nsString key;
+      rv = formatter->FormatURLPref(NS_LITERAL_STRING("geo.authorization.key"), key);
+      if (NS_SUCCEEDED(rv) && !key.IsEmpty()) {
+        gHasAuthorizationKey = true;
+        mNetworkLocationProvider = do_CreateInstance("@mozilla.org/geolocation/mls-provider;1");
+        if (mNetworkLocationProvider) {
+          rv = mNetworkLocationProvider->Startup();
+          if (NS_SUCCEEDED(rv)) {
+            RefPtr<NetworkLocationUpdate> update = new NetworkLocationUpdate();
+            mNetworkLocationProvider->Watch(update);
+          }
         }
       }
     }

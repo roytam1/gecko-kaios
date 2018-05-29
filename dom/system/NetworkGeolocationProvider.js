@@ -27,6 +27,10 @@ const HTTP_CODE_CREATED = 201;
 const HTTP_CODE_BAD_REQUEST = 400;
 const HTTP_CODE_UNAUTHORIZED = 401;
 
+// Supported location servers
+const KAI_SERVER_URI = "https://lbs.kaiostech.com/v2.0/lbs/locate";
+const AMAP_SERVER_URI = "http://apilocate.amap.com/position";
+
 // Define a cooldown to prevent overly retrying in case the location server
 // have any internal errors.
 const TOKEN_REFRESH_COOLDOWN_IN_MS = 1800000; // half hour
@@ -34,6 +38,14 @@ const TOKEN_REFRESH_COOLDOWN_IN_MS = 1800000; // half hour
 XPCOMUtils.defineLazyServiceGetter(this, "gMobileConnectionService",
                                    "@mozilla.org/mobileconnection/mobileconnectionservice;1",
                                    "nsIMobileConnectionService");
+
+XPCOMUtils.defineLazyServiceGetter(this, "gSystemWorkerManager",
+                                   "@mozilla.org/telephony/system-worker-manager;1",
+                                   "nsIInterfaceRequestor");
+
+XPCOMUtils.defineLazyServiceGetter(this, "gNetworkManager",
+                                   "@mozilla.org/network/manager;1",
+                                   "nsINetworkManager");
 
 var gLoggingEnabled = false;
 
@@ -269,6 +281,7 @@ function WifiGeoPositionProvider() {
   this.wifiService = null;
   this.timer = null;
   this.started = false;
+  this.serverUri = Services.urlFormatter.formatURLPref("geo.wifi.uri");
 }
 
 WifiGeoPositionProvider.prototype = {
@@ -345,8 +358,7 @@ WifiGeoPositionProvider.prototype = {
       return;
 
     // Check whether there are any active network
-    let nm = Cc["@mozilla.org/network/manager;1"].getService(Ci.nsINetworkManager);
-    if (nm && nm.activeNetworkInfo) {
+    if (gNetworkManager && gNetworkManager.activeNetworkInfo) {
       this.hasNetwork = true;
     } else {
       this.hasNetwork = false;
@@ -459,7 +471,7 @@ WifiGeoPositionProvider.prototype = {
     };
 
     function encode(ap) {
-      return { 'macAddress': ap.mac, 'signalStrength': ap.signal };
+      return { 'macAddress': ap.mac, 'signal': ap.signal, 'ssid': ap.ssid };
     };
 
     let wifiData = null;
@@ -480,8 +492,7 @@ WifiGeoPositionProvider.prototype = {
     try {
       let radioService = Cc["@mozilla.org/ril;1"]
                     .getService(Ci.nsIRadioInterfaceLayer);
-      let service = Cc["@mozilla.org/mobileconnection/mobileconnectionservice;1"]
-                    .getService(Ci.nsIMobileConnectionService);
+      let service = gMobileConnectionService;
 
       let result = [];
       for (let i = 0; i < service.numItems; i++) {
@@ -491,14 +502,17 @@ WifiGeoPositionProvider.prototype = {
         let cell = voice && voice.cell;
         let type = voice && voice.type;
         let network = voice && voice.network;
+        let signalStrength = connection && connection.signalStrength;
 
-        if (network && cell && type) {
+        if (network && cell && type && signalStrength) {
           let radioTechFamily;
+          let mobileSignal;
           switch (type) {
             case "gsm":
             case "gprs":
             case "edge":
               radioTechFamily = "gsm";
+              mobileSignal = signalStrength.gsmSignalStrength;
               break;
             case "umts":
             case "hsdpa":
@@ -506,9 +520,11 @@ WifiGeoPositionProvider.prototype = {
             case "hspa":
             case "hspa+":
               radioTechFamily = "wcdma";
+              mobileSignal = signalStrength.gsmSignalStrength;
               break;
             case "lte":
               radioTechFamily = "lte";
+              mobileSignal = signalStrength.lteSignalStrength;
               break;
             // CDMA cases to be handled in bug 1010282
           }
@@ -516,7 +532,8 @@ WifiGeoPositionProvider.prototype = {
                       mobileCountryCode: voice.network.mcc,
                       mobileNetworkCode: voice.network.mnc,
                       locationAreaCode: cell.gsmLocationAreaCode,
-                      cellId: cell.gsmCellId });
+                      cellId: cell.gsmCellId,
+                      signal: mobileSignal });
         }
       }
       return result;
@@ -604,6 +621,130 @@ WifiGeoPositionProvider.prototype = {
     return deferred.promise;
   },
 
+  // whether the server take HTTP POST as location request
+  isPostReq: function () {
+    switch (this.serverUri) {
+      case AMAP_SERVER_URI:
+        return false;
+      case KAI_SERVER_URI:
+      return true;
+    }
+    return true;
+  },
+
+  // gennerate the URL of HTTP request with parameters
+  generateUrl: function (cellTowers, wifiAccessPoints) {
+    let url = this.serverUri;
+
+    // POST request don't add parameters via request url
+    if (this.isPostReq()) {
+      return url;
+    }
+
+    switch (this.serverUri) {
+      case AMAP_SERVER_URI: {
+        // add 'accesstype'
+        let accesstype = 0; // cellular network
+        if (gNetworkManager && gNetworkManager.activeNetworkInfo &&
+            gNetworkManager.activeNetworkInfo.type === Ci.nsINetworkInfo.NETWORK_TYPE_WIFI) {
+            accesstype = 1; //  wifi
+        }
+        url += "?accesstype=" + accesstype;
+
+        // add 'output'
+        url += "&output=json";
+
+        // add 'key'
+        url += "&key=" + Services.urlFormatter.formatURLPref("geo.authorization.key");
+
+        // add 'imei'
+        if (gMobileConnectionService) {
+          let conn = gMobileConnectionService.getItemByServiceId(0);
+          if (conn && conn.deviceIdentities) {
+            url += "&imei=" + conn.deviceIdentities.imei;
+          }
+        }
+
+        if (cellTowers) {
+          // add 'cdma'
+          url += "&cdma=0";
+
+          // add 'network'
+          let network = cellTowers[0].radioType;
+          // amap server can't recognize "lte"
+          if (network === "lte") {
+            network = "gsm";
+          }
+          url += "&network=" + network;
+
+          // add 'bts'
+          let bts = cellTowers[0].mobileCountryCode + ","
+                  + cellTowers[0].mobileNetworkCode + ","
+                  + cellTowers[0].locationAreaCode + ","
+                  + cellTowers[0].cellId + ","
+                  + cellTowers[0].signal;
+          url += "&bts=" + bts
+        }
+
+        if (wifiAccessPoints) {
+          // add 'mmac'
+          let wifiInfo = gSystemWorkerManager.getInterface(Ci.nsIWifi).wifiNetworkInfo;
+          let mmac = wifiInfo.bssid + "," +  wifiInfo.rssi + "," + wifiInfo.wifiSsid;
+          url += "&mmac=" + mmac;
+
+          // add 'macs'
+          let macs = "";
+          // amap can only take at most 30 APs
+          var length = Math.min(wifiAccessPoints.length, 30);
+          for (let i = 0; i < length && i < 30; i++) {
+              macs += wifiAccessPoints[i].macAddress + ","
+                    + wifiAccessPoints[i].signal + ","
+                    + wifiAccessPoints[i].ssid + '|';
+          }
+          macs = macs.slice(0, -1); // cut the last '|'
+          url += "&macs=" + macs;
+        }
+        break;
+      }
+    }
+    return url;
+  },
+
+  // whether the http response is valid
+  isValidResponse: function (response) {
+    if (!response) return false;
+
+    switch (this.serverUri) {
+      case AMAP_SERVER_URI:
+        return !!response.result && !!response.result.location;
+      case KAI_SERVER_URI:
+        return !!response.location;
+    }
+    return !!response.location;
+  },
+
+  // create WifiGeoPositionObject by the HTTP response
+  createLocationObject: function (response) {
+    if (!response) return false;
+
+    let latitude, longtitude, accuracy;
+    switch (this.serverUri) {
+      case AMAP_SERVER_URI: {
+        let splitArray = response.result.location.split(",");
+        latitude = splitArray[1];
+        longtitude = splitArray[0];
+        accuracy = response.result.radius;
+        break;
+      }
+      case KAI_SERVER_URI:
+        latitude = response.location.lat;
+        longtitude = response.location.lng;
+        accuracy = response.accuracy;
+        return
+    }
+    return new WifiGeoPositionObject(latitude, longtitude, accuracy);
+  },
+
   sendLocationRequest: function (wifiData) {
     let data = { cellTowers: undefined, wifiAccessPoints: undefined };
     if (wifiData && wifiData.length >= 2) {
@@ -634,14 +775,18 @@ WifiGeoPositionProvider.prototype = {
     }
 
     // From here on, do a network geolocation request //
-    let url = Services.urlFormatter.formatURLPref("geo.wifi.uri");
+    let url = this.generateUrl(data.cellTowers, data.wifiAccessPoints);
     LOG("Sending request");
 
     let xhr = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
                         .createInstance(Ci.nsIXMLHttpRequest);
 
     try {
-      xhr.open("POST", url, true);
+      if (this.isPostReq()) {
+        xhr.open("POST", url, true);
+      } else {
+        xhr.open("GET", url, true);
+      }
     } catch (e) {
       this.notifyListener("notifyError",
                           [POSITION_UNAVAILABLE]);
@@ -672,7 +817,7 @@ WifiGeoPositionProvider.prototype = {
     xhr.onload = (function() {
       LOG("server returned status: " + xhr.status + " --> " +  JSON.stringify(xhr.response));
       if ((xhr.channel instanceof Ci.nsIHttpChannel && xhr.status != HTTP_CODE_OK) ||
-          !xhr.response || !xhr.response.location) {
+          !this.isValidResponse(xhr.response)) {
         this.notifyListener("notifyError",
                             [POSITION_UNAVAILABLE]);
 
@@ -695,17 +840,20 @@ WifiGeoPositionProvider.prototype = {
         return;
       }
 
-      let newLocation = new WifiGeoPositionObject(xhr.response.location.lat,
-                                                  xhr.response.location.lng,
-                                                  xhr.response.accuracy);
+      let newLocation = this.createLocationObject(xhr.response);
 
       this.notifyListener("update", [newLocation]);
       gCachedRequest = new CachedRequest(newLocation, data.cellTowers, data.wifiAccessPoints);
     }).bind(this);
 
-    var requestData = JSON.stringify(data);
-    LOG("sending " + requestData);
-    xhr.send(requestData);
+    if (this.isPostReq()) {
+      var requestData = JSON.stringify(data);
+      LOG("sending HTTP POST with " + requestData);
+      xhr.send(requestData);
+    } else {
+      LOG("sending HTTP GET based on " + requestData);
+      xhr.send(null);
+    }
   },
 
   notifyListener: function(listenerFunc, args) {
