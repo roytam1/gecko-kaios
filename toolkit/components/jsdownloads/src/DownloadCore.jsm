@@ -533,7 +533,7 @@ this.Download.prototype = {
         }
 
         // If download failed because network is offline, cancel download and add
-        // download to canceleOfflineDownloads so that download will be resumed when
+        // download to canceledOfflineDownloads so that download will be resumed when
         // network is back online.
         if (ex instanceof DownloadError && ex.result == Cr.NS_ERROR_OFFLINE) {
           this.cancel();
@@ -780,12 +780,19 @@ this.Download.prototype = {
    * to "cancel" happens asynchronously, and is consistent with the case where
    * the cancellation request could not be processed in time.
    *
+   * This method also removes the download from canceledOfflineDownloads. If caller
+   * cancels download and wants the download to be automaticallly resumed once the
+   * network is back online, it should remember to add the download to
+   * canceledOfflineDownloads right after calling cancel.
+   *
    * @return {Promise}
    * @resolves When the cancellation process has finished.
    * @rejects Never.
    */
   cancel: function D_cancel()
   {
+    DownloadIntegration.deleteFromObserverCanceledOfflineDownloads(this);
+
     // If the download is currently stopped, we have nothing to do.
     if (this.stopped) {
       return Promise.resolve();

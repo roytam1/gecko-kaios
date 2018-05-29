@@ -946,6 +946,15 @@ this.DownloadIntegration = {
   addToObserverCanceledOfflineDownloads(aDownload) {
     DownloadObserver.addToCanceledOfflineDownloads(aDownload);
   },
+
+  /**
+   * Delete a download object to _canceledOfflineDownloads in DownloadObserver
+   * @param aDownload
+   *        The download to be deleted.
+   */
+  deleteFromObserverCanceledOfflineDownloads(aDownload) {
+    DownloadObserver.deleteFromCanceledOfflineDownloads(aDownload);
+  },
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1071,6 +1080,16 @@ this.DownloadObserver = {
   addToCanceledOfflineDownloads(aDownload) {
     this._canceledOfflineDownloads.add(aDownload);
   },
+
+  /**
+   * Wrapper for other caller to delete download object from _canceledOfflineDownloads
+   * @param aDownload
+   *        The download to be deleted.
+   */
+  deleteFromCanceledOfflineDownloads(aDownload) {
+    this._canceledOfflineDownloads.delete(aDownload);
+  },
+
   ////////////////////////////////////////////////////////////////////////////
   //// nsIObserver
 
