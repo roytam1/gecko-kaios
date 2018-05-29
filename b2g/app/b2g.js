@@ -1194,7 +1194,6 @@ pref("dom.activities.developer_mode_only", "import-app");
 pref("dom.serviceWorkers.enabled", true);
 pref("dom.webnotifications.serviceworker.enabled", true);
 pref("dom.webnotifications.serviceworker.maxActions", 2);
-pref("dom.serviceWorkers.focus.enabled", false);
 pref("dom.push.enabled", true);
 pref("dom.push.serverURL", "wss://push.kaiostech.com/");
 // Enable Adaptive ping
