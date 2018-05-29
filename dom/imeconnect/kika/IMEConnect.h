@@ -72,7 +72,7 @@ extern "C" {
 #define MAX_GROUP_COUNT          10
 #define MAX_GROUP_LENGTH          6
 
-#define MAX_WORD_COUNT           20
+#define MAX_WORD_COUNT           21
 #define MAX_WORD_LENGTH          45
 #define MAX_WORD_ZH_COUNT       120
 #define MAX_WORD_ZH_LENGTH        1
