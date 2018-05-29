@@ -148,6 +148,9 @@ public:
              const nsACString& aScope);
 
   void
+  FocusClient(const mozilla::ipc::PrincipalInfo& aPrincipalInfo);
+
+  void
   PropagateSoftUpdate(const PrincipalOriginAttributes& aOriginAttributes,
                       const nsAString& aScope);
 

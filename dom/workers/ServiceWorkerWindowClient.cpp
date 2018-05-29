@@ -16,6 +16,7 @@
 #include "nsGlobalWindow.h"
 #include "WorkerPrivate.h"
 #include "WorkerScope.h"
+#include "ServiceWorkerManager.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -93,11 +94,25 @@ public:
     UniquePtr<ServiceWorkerClientInfo> clientInfo;
 
     if (window) {
+#ifdef MOZ_B2G
+      nsIPrincipal* principal = window->GetDocument()->NodePrincipal();
+      PrincipalInfo principalInfo;
+      if (NS_SUCCEEDED(PrincipalToPrincipalInfo(principal, &principalInfo))) {
+        RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
+        swm->FocusClient(principalInfo);
+
+        nsCOMPtr<nsIDocument> doc = window->GetDocument();
+        if (doc) {
+          clientInfo.reset(new ServiceWorkerClientInfo(doc));
+        }
+      }
+#else
       nsCOMPtr<nsIDocument> doc = window->GetDocument();
       if (doc) {
         nsContentUtils::DispatchFocusChromeEvent(window->GetOuterWindow());
         clientInfo.reset(new ServiceWorkerClientInfo(doc));
       }
+#endif
     }
 
     DispatchResult(Move(clientInfo));

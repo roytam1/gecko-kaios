@@ -53,6 +53,8 @@ private:
   virtual bool RecvUnregister(const PrincipalInfo& aPrincipalInfo,
                               const nsString& aScope) override;
 
+  virtual bool RecvServiceWorkerFocusClient(const PrincipalInfo& aPrincipalInfo) override;
+
   virtual bool RecvPropagateSoftUpdate(const PrincipalOriginAttributes& aOriginAttributes,
                                        const nsString& aScope) override;
 

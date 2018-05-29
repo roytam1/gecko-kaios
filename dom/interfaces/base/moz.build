@@ -29,6 +29,7 @@ XPIDL_SOURCES += [
     'nsIIdleObserver.idl',
     'nsIQueryContentEventResult.idl',
     'nsIRemoteBrowser.idl',
+    'nsIServiceWorkerIPCHelper.idl',
     'nsIServiceWorkerManager.idl',
     'nsIStructuredCloneContainer.idl',
     'nsITabChild.idl',

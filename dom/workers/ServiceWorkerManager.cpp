@@ -2558,6 +2558,18 @@ ServiceWorkerManager::NotifyServiceWorkerRegistrationRemoved(ServiceWorkerRegist
 }
 
 void
+ServiceWorkerManager::FocusClient(const PrincipalInfo& aPrincipalInfo)
+{
+  MOZ_ASSERT(mActor);
+
+  if (!mActor) {
+    return;
+  }
+
+  mActor->SendServiceWorkerFocusClient(aPrincipalInfo);
+}
+
+void
 ServiceWorkerManager::SoftUpdate(const PrincipalOriginAttributes& aOriginAttributes,
                                  const nsACString& aScope)
 {

@@ -12,6 +12,7 @@
 #include "mozilla/ipc/BackgroundParent.h"
 #include "mozilla/ipc/BackgroundUtils.h"
 #include "mozilla/unused.h"
+#include "nsIServiceWorkerIPCHelper.h"
 #include "nsThreadUtils.h"
 
 namespace mozilla {
@@ -104,6 +105,47 @@ private:
   const PrincipalInfo mPrincipalInfo;
   nsString mScope;
   uint64_t mParentID;
+};
+
+class DispatchFocusClientCallback final : public nsRunnable
+{
+public:
+  DispatchFocusClientCallback(already_AddRefed<ContentParent> aContentParent,
+                              const PrincipalInfo& aPrincipalInfo)
+    : mPrincipalInfo(aPrincipalInfo)
+    , mContentParent(aContentParent)
+  {
+    AssertIsInMainProcess();
+    AssertIsOnBackgroundThread();
+  }
+
+  NS_IMETHOD
+  Run() override
+  {
+    AssertIsInMainProcess();
+    MOZ_ASSERT(NS_IsMainThread());
+
+    nsCOMPtr<nsIPrincipal> principal = PrincipalInfoToPrincipal(mPrincipalInfo);
+    if (mContentParent) {
+      AssertAppPrincipal(mContentParent, principal);
+      mContentParent = nullptr;
+    }
+
+    nsresult rv;
+    nsCOMPtr<nsIServiceWorkerIPCHelper> helper =
+      do_GetService(NS_SERVICEWORKERIPC_HELPER_CONTRACTID, &rv);
+
+    if (NS_WARN_IF(!helper)) {
+      return rv;
+    }
+    helper->SendClientFocusEvent(principal->GetAppId());
+
+    return NS_OK;
+  }
+
+private:
+  const PrincipalInfo mPrincipalInfo;
+  RefPtr<ContentParent> mContentParent;
 };
 
 class CheckPrincipalWithCallbackRunnable final : public nsRunnable
@@ -241,6 +283,29 @@ ServiceWorkerManagerParent::RecvUnregister(const PrincipalInfo& aPrincipalInfo,
     new CheckPrincipalWithCallbackRunnable(parent.forget(), aPrincipalInfo,
                                            callback);
   MOZ_ALWAYS_SUCCEEDS(NS_DispatchToMainThread(runnable));
+
+  return true;
+}
+
+bool
+ServiceWorkerManagerParent::RecvServiceWorkerFocusClient(
+  const PrincipalInfo& aPrincipalInfo)
+{
+  AssertIsInMainProcess();
+  AssertIsOnBackgroundThread();
+
+  if (aPrincipalInfo.type() == PrincipalInfo::TNullPrincipalInfo ||
+      aPrincipalInfo.type() == PrincipalInfo::TSystemPrincipalInfo) {
+    return false;
+  }
+
+  RefPtr<ContentParent> parent = BackgroundParent::GetContentParent(Manager());
+
+  RefPtr<DispatchFocusClientCallback> callback =
+    new DispatchFocusClientCallback(parent.forget(), aPrincipalInfo);
+
+  nsresult rv = NS_DispatchToMainThread(callback);
+  MOZ_ALWAYS_TRUE(NS_SUCCEEDED(rv));
 
   return true;
 }

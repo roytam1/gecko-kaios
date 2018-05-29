@@ -5,6 +5,10 @@ category agent-style-sheets browser-content-stylesheet chrome://b2g/content/cont
 component {fe33c107-82a4-41d6-8c64-5353267e04c9} AlertsService.js
 contract @mozilla.org/system-alerts-service;1 {fe33c107-82a4-41d6-8c64-5353267e04c9}
 
+# ServiceWorkerIPCHelper.js
+component {ec24be4e-6245-11e8-88f7-ef9ea5d89e80} ServiceWorkerIPCHelper.js
+contract @mozilla.org/serviceworkers/ipchelper;1 {ec24be4e-6245-11e8-88f7-ef9ea5d89e80}
+
 # ContentPermissionPrompt.js
 component {8c719f03-afe0-4aac-91ff-6c215895d467} ContentPermissionPrompt.js
 contract @mozilla.org/content-permission/prompt;1 {8c719f03-afe0-4aac-91ff-6c215895d467}

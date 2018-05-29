@@ -21,6 +21,8 @@ parent:
 
   async Unregister(PrincipalInfo principalInfo, nsString scope);
 
+  async ServiceWorkerFocusClient(PrincipalInfo principalInfo);
+
   async PropagateSoftUpdate(PrincipalOriginAttributes originAttributes,
                             nsString scope);
   async PropagateUnregister(PrincipalInfo principalInfo, nsString scope);
