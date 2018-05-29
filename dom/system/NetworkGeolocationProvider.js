@@ -367,7 +367,7 @@ WifiGeoPositionProvider.prototype = {
             self.wifiService.stopWatching(self);
             self.wifiService = null;
           }
-          if (gWifiScanningEnabled && this.hasNetwork) {
+          if (gWifiScanningEnabled && self.hasNetwork) {
             self.wifiService = Cc["@mozilla.org/wifi/monitor;1"].getService(Ci.nsIWifiMonitor);
             self.wifiService.startWatching(self);
           }
