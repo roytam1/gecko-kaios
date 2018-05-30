@@ -51,7 +51,11 @@ var ContactService = this.ContactService = {
                       "Contacts:GetCount",
                       "Contacts:GetSpeedDials",
                       "Contacts:SetSpeedDial",
-                      "Contacts:RemoveSpeedDial"];
+                      "Contacts:RemoveSpeedDial",
+                      "Contacts:GetAllGroups",
+                      "Contacts:FindGroups",
+                      "Contacts:SaveGroup",
+                      "Contacts:RemoveGroup"];
     this._children = [];
     this._cursors = new Map();
     this._messages.forEach(function(msgName) {
@@ -215,11 +219,11 @@ var ContactService = this.ContactService = {
           this.broadcastMessage("Contact:Changed", { contactID: msg.options.contact.id,
                                                      reason: msg.options.reason,
                                                      contact: result });
-        }
+        };
 
         let failureCb = (aErrorMsg) => {
           mm.sendAsyncMessage("Contact:Save:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg });
-        }
+        };
         let saveContact = function(msg) {
           this._db.saveContact(
             contact,
@@ -286,7 +290,7 @@ var ContactService = this.ContactService = {
 
         let simClient = gSimContactService.getSimClient(msg.options.id);
         if (simClient === SIM_CLIENT_NONE) {
-          removeContact(msg)
+          removeContact(msg);
           return;
         }
 
@@ -314,11 +318,11 @@ var ContactService = this.ContactService = {
         let successCb = () => {
           mm.sendAsyncMessage("Contacts:Clear:Return:OK", { requestID: msg.requestID });
           this.broadcastMessage("Contact:Changed", { reason: "remove" });
-        }
+        };
 
         let failureCb = (aErrorMsg) => {
           mm.sendAsyncMessage("Contacts:Clear:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg });
-        }
+        };
 
         let clearContact = function(msg) {
           this._db.clear(
@@ -448,6 +452,19 @@ var ContactService = this.ContactService = {
           this._cursors.delete(mm);
         }
         break;
+        case "Contacts:GetAllGroups":
+          this._getAllGroups(aMessage);
+          break;
+        case "Contacts:FindGroups":
+          if (DEBUG) debug("Contacts:FindGroups");
+          this._findGroups(aMessage, "Contacts:FindGroups");
+          break;
+        case "Contacts:SaveGroup":
+          this._saveGroup(aMessage);
+          break;
+        case "Contacts:RemoveGroup":
+          this._removeGroup(aMessage);
+          break;
       default:
         if (DEBUG) debug("WRONG MESSAGE NAME: " + aMessage.name);
     }
@@ -505,7 +522,7 @@ var ContactService = this.ContactService = {
 
         return this._emails.slice();
       }
-    }
+    };
 
     return iccContact;
   },
@@ -572,7 +589,82 @@ var ContactService = this.ContactService = {
       aContact.properties.givenName = givenName;
       aContact.properties.familyName = familyName;
     }
+  },
+
+  _getAllGroups: function(aMessage) {
+    this._findGroups(aMessage, "Contacts:GetAllGroups");
+  },
+
+  _findGroups: function(aMessage, aMessageName) {
+    if (DEBUG) debug(aMessageName);
+    if (!this.assertPermission(aMessage, "contacts-read")) {
+      return null;
+    }
+
+    let groupResult = [];
+    let mm = aMessage.target;
+    let msg = aMessage.data;
+    this._db.findGroups(
+      function(groups) {
+        for (let i in groups) {
+          groupResult.push(groups[i]);
+        }
+        if (DEBUG) debug("result: " + JSON.stringify(groupResult));
+        mm.sendAsyncMessage(aMessageName + ":Return:OK", {
+          requestID: msg.requestID,
+          cursorId: msg.cursorId,
+          groups: groupResult
+        });
+      }.bind(this),
+      function(aErrorMsg) {
+        mm.sendAsyncMessage(aMessageName + ":Return:KO", {
+          requestID: msg.requestID,
+          cursorId: msg.cursorId,
+          errorMsg: aErrorMsg });},
+      msg.options.findOptions);
+  },
+
+  _saveGroup: function (aMessage) {
+    if (DEBUG) debug("Contacts:SaveGroup");
+    if (!this.assertPermission(aMessage, "contacts-write")) {
+      return null;
+    }
+
+    let msg = aMessage.data;
+    let mm = aMessage.target;
+    this._db.saveGroup(
+      msg.options.id,
+      msg.options.name,
+      function() {
+        mm.sendAsyncMessage("Contacts:SaveGroup:Return:OK", { requestID: msg.requestID, groupId: msg.options.id });
+        this.broadcastMessage("Contacts:Group:Changed", { groupId: msg.options.id,
+                                                          groupName: msg.options.name,
+                                                          reason: msg.options.reason });
+      }.bind(this),
+      function(aErrorMsg) {
+        mm.sendAsyncMessage("Contacts:SaveGroup:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg });
+      }.bind(this));
+  },
+
+  _removeGroup: function (aMessage) {
+    if (DEBUG) debug("Contacts:RemoveGroup");
+    if (!this.assertPermission(aMessage, "contacts-write")) {
+      return null;
+    }
+
+    let msg = aMessage.data;
+    let mm = aMessage.target;
+    this._db.removeGroup(
+      msg.options.id,
+      function() {
+        mm.sendAsyncMessage("Contacts:RemoveGroup:Return:OK", { requestID: msg.requestID });
+        this.broadcastMessage("Contacts:Group:Changed", { groupId: msg.options.id, reason: 'remove' });
+      }.bind(this),
+      function(aErrorMsg) {
+        mm.sendAsyncMessage("Contacts:RemoveGroup:Return:KO", { requestID: msg.requestID, errorMsg: aErrorMsg });
+      }
+    );
   }
-}
+};
 
 ContactService.init();

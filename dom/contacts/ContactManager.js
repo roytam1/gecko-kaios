@@ -32,8 +32,7 @@ const PROPERTIES = [
   "phoneticGivenName", "phoneticFamilyName",
   "honorificSuffix", "nickname", "photo", "category", "org", "jobTitle",
   "bday", "note", "anniversary", "sex", "genderIdentity", "key", "adr", "email",
-  "url", "impp", "tel",
-  "ringtone"
+  "url", "impp", "tel", "ringtone", "group"
 ];
 
 var mozContactInitWarned = false;
@@ -98,6 +97,14 @@ ContactManager.prototype = {
     return this.__DOM_IMPL__.getEventHandler("onspeeddialchange");
   },
 
+  set oncontactgroupchange(aHandler) {
+    this.__DOM_IMPL__.setEventHandler("oncontactgroupchange", aHandler);
+  },
+
+  get oncontactgroupchange() {
+    return this.__DOM_IMPL__.getEventHandler("oncontactgroupchange");
+  },
+
   _convertContact: function(aContact) {
     if (aContact) {
       let properties = aContact.properties;
@@ -119,15 +126,33 @@ ContactManager.prototype = {
   },
 
   _convertSpeedDials: function(aSpeedDials) {
-    let speedDials = new this._window.Array();
-    for (let i in aSpeedDials) {
-      let newSpeedDial = new this._window.Object();
-      for (let prop in aSpeedDials[i]) {
-        newSpeedDial[prop] = aSpeedDials[i][prop];
-      }
-      speedDials.push(newSpeedDial);
+    return this._convertWindowObjectArray(aSpeedDials);
+  },
+
+  _convertGroups: function(aGroups) {
+    return this._convertWindowObjectArray(aGroups);
+  },
+
+  _convertGroup: function(aGroup) {
+    return this._convertWindowObject(aGroup);
+  },
+
+  _convertWindowObjectArray: function(aArray) {
+    let objectArray = new this._window.Array();
+    for (let i in aArray) {
+      let newObject = this._convertWindowObject(aArray[i]);
+      objectArray.push(newObject);
     }
-    return speedDials;
+
+    return objectArray;
+  },
+
+  _convertWindowObject: function(aSrouce) {
+    let newObject = new this._window.Object();
+    for (let prop in aSrouce) {
+      newObject[prop] = aSrouce[prop];
+    }
+    return newObject;
   },
 
   _fireSuccessOrDone: function(aCursor, aResult) {
@@ -186,10 +211,13 @@ ContactManager.prototype = {
           }
           delete this._cachedContacts[msg.requestID];
         }
+        /* fall through */
       case "Contacts:Clear:Return:OK":
       case "Contact:Remove:Return:OK":
       case "Contacts:RemoveSpeedDial:Return:OK":
       case "Contacts:SetSpeedDial:Return:OK":
+      case "Contacts:SaveGroup:Return:OK":
+      case "Contacts:RemoveGroup:Return:OK":
         req = this.getRequest(msg.requestID);
         if (req) {
           Services.DOMRequest.fireSuccess(req.request, null);
@@ -220,6 +248,10 @@ ContactManager.prototype = {
       case "Contacts:GetSpeedDials:Return:KO":
       case "Contacts:SetSpeedDial:Return:KO":
       case "Contacts:RemoveSpeedDial:Return:KO":
+      case "Contacts:GetAllGroups:Return:KO":
+      case "Contacts:FindGroups:Return:KO":
+      case "Contacts:SaveGroup:Return:KO":
+      case "Contacts:RemoveGroup:Return:KO":
         req = this.getRequest(msg.requestID);
         if (req) {
           if (req.request) {
@@ -258,6 +290,48 @@ ContactManager.prototype = {
           Services.DOMRequest.fireSuccess(req.request, msg.count);
         }
         break;
+      case "Contacts:GetAllGroups:Return:OK":
+        if (DEBUG) debug("Contacts:GetAllGroups:Return:OK");
+        let getAllGroupsData = this.getRequest(msg.cursorId);
+
+        if (!getAllGroupsData) {
+          break;
+        }
+        let getAllGroupsResult = msg.groups;
+        if (getAllGroupsData.waitingForNext) {
+          getAllGroupsData.waitingForNext = false;
+          let group = getAllGroupsResult.shift();
+          group = group ? this._convertWindowObject(group) : null;
+          this._pushArray(getAllGroupsData.cachedGroups, getAllGroupsResult);
+          this.nextTick(this._fireSuccessOrDone.bind(this, getAllGroupsData.cursor, group));
+          if (!group) {
+            this.removeRequest(msg.cursorId);
+          }
+        } else {
+          if (DEBUG) debug("cursor not waiting, saving");
+          this._pushArray(getAllGroupsData.cachedGroups, getAllGroupsResult);
+        }
+        break;
+      case "Contacts:FindGroups:Return:OK":
+        if (DEBUG) debug("Contacts:FindGroups:Return:OK");
+        req = this.getRequest(msg.requestID);
+        if (req) {
+          let groups = this._convertGroups(msg.groups);
+          Services.DOMRequest.fireSuccess(req.request, groups);
+        } else {
+          if (DEBUG) debug("no request stored!" + msg.requestID);
+        }
+        break;
+      case "Contacts:Group:Changed":
+        // Fire oncontactgroupchange event
+        if (DEBUG) debug("Contacts:GroupChanged: " + msg.groupId + ", " + msg.reason);
+        let groupEvent = new this._window.ContactGroupChangeEvent("contactgroupchange", {
+          groupId: msg.groupId,
+          groupName: msg.groupName,
+          reason: msg.reason
+        });
+        this.dispatchEvent(groupEvent);
+      break;
       default:
         if (DEBUG) debug("Wrong message: " + aMessage.name);
     }
@@ -297,7 +371,7 @@ ContactManager.prototype = {
     let type = "contacts-" + access;
     let permValue =
       Services.perms.testExactPermissionFromPrincipal(principal, type);
-    DEBUG && debug("Existing permission " + permValue);
+    if (DEBUG) debug("Existing permission " + permValue);
     if (permValue == Ci.nsIPermissionManager.ALLOW_ACTION) {
       if (aAllowCallback) {
         aAllowCallback();
@@ -431,6 +505,8 @@ ContactManager.prototype = {
       }.bind(this)),
       cachedContacts: [],
       waitingForNext: true,
+      cachedGroups: [],
+      request: aRequest
     };
     let id = this.getRequestId(data);
     if (DEBUG) debug("saved cursor id: " + id);
@@ -439,7 +515,7 @@ ContactManager.prototype = {
 
   getAll: function CM_getAll(aOptions) {
     if (DEBUG) debug("getAll: " + JSON.stringify(aOptions));
-    let [cursorId, cursor] = this.createCursor();
+    let [cursorId, cursor] = this.createCursor("GetAll");
 
     let allowCallback = function() {
       cpmm.sendAsyncMessage("Contacts:GetAll", {
@@ -463,6 +539,12 @@ ContactManager.prototype = {
   handleContinue: function CM_handleContinue(aCursorId) {
     if (DEBUG) debug("handleContinue: " + aCursorId);
     let data = this.getRequest(aCursorId);
+
+    if (data.request === "GetAllGroups") {
+      this._handleContinueGetAllGroups(aCursorId);
+      return;
+    }
+
     if (data.cachedContacts.length > 0) {
       if (DEBUG) debug("contact in cache");
       let contact = data.cachedContacts.shift();
@@ -475,6 +557,23 @@ ContactManager.prototype = {
     } else {
       if (DEBUG) debug("waiting for contact");
       data.waitingForNext = true;
+    }
+  },
+
+  _handleContinueGetAllGroups: function CM_handleContinueGetAllGroups(aCursorId) {
+    if (DEBUG) debug("_handleContinueGetAllGroups: " + aCursorId);
+    let data = this.getRequest(aCursorId);
+    if (data.cachedGroups.length > 0) {
+      let cachedGroup = data.cachedGroups.shift();
+      if (DEBUG) debug("group in cache");
+      let group = this._convertGroup(cachedGroup);
+      this.nextTick(this._fireSuccessOrDone.bind(this, data.cursor, group));
+      if (!group) {
+        this.removeRequest(aCursorId);
+      }
+    } else {
+      this.nextTick(this._fireSuccessOrDone.bind(this, data.cursor, null));
+      this.removeRequest(aCursorId);
     }
   },
 
@@ -574,7 +673,7 @@ ContactManager.prototype = {
 
     let cancelCallback = function(reason) {
       Services.DOMRequest.fireErrorAsync(request, reason);
-    }
+    };
 
     this.askPermission("find", request, allowCallback, cancelCallback);
     return request;
@@ -598,7 +697,7 @@ ContactManager.prototype = {
 
     let cancelCallback = function(reason) {
       Services.DOMRequest.fireErrorAsync(request, reason);
-    }
+    };
 
     this.askPermission("create", request, allowCallback, cancelCallback);
     return request;
@@ -620,9 +719,93 @@ ContactManager.prototype = {
 
     let cancelCallback = function(reason) {
       Services.DOMRequest.fireErrorAsync(request, reason);
-    }
+    };
 
     this.askPermission("remove", request, allowCallback, cancelCallback);
+    return request;
+  },
+
+  getAllGroups: function CM_getAllGroups(aOptions) {
+    if (DEBUG) debug("getAllGroups " + JSON.stringify(aOptions));
+    let [cursorId, cursor] = this.createCursor("GetAllGroups");
+    let options = { findOptions: aOptions };
+
+    let allowCallback = function() {
+      cpmm.sendAsyncMessage("Contacts:GetAllGroups", {
+        cursorId: cursorId,
+        options: options
+      });
+    }.bind(this);
+
+    let cancelCallback = function(reason) {
+      Services.DOMRequest.fireErrorAsync(cursor, reason);
+    };
+
+    this.askPermission("find", cursor, allowCallback, cancelCallback);
+
+    return cursor;
+  },
+
+  findGroups: function CM_findGroup(aOptions) {
+    if (DEBUG) debug("findGroup: " + JSON.stringify(aOptions));
+    let options = { findOptions: aOptions };
+    return this._sendSimpleRequest("Contacts:FindGroups", options, "find");
+  },
+
+  saveGroup: function CM_saveGroup(aName, aId) {
+    if (DEBUG) debug("saveGroup: " + aName + ", aId: " + aId);
+
+    if (!aName) {
+      let request = this.createRequest();
+      Services.DOMRequest.fireErrorAsync(request, true);
+      return request;
+    }
+
+    let permission = "update";
+    if (!aId) {
+      aId = this._getRandomId().replace(/[{}-]/g, "");
+      permission = "create";
+    }
+    let options = {
+      name: aName,
+      id: aId,
+      reason: permission
+    };
+
+    return this._sendSimpleRequest("Contacts:SaveGroup", options, permission);
+  },
+
+  removeGroup: function CM_removeGroup(aId) {
+    if (DEBUG) debug("removeGroup: " + aId);
+    if (!aId) {
+      let request = this.createRequest();
+      Services.DOMRequest.fireErrorAsync(request, true);
+      return request;
+    }
+
+    let options = {
+      id: aId
+    };
+    return this._sendSimpleRequest("Contacts:RemoveGroup", options, "remove");
+  },
+
+  _sendSimpleRequest: function sendSimpleRequest(aMessage, aOptions, aPermission) {
+    let request = this.createRequest();
+    let options = aOptions;
+
+    let allowCallback = function() {
+      cpmm.sendAsyncMessage(aMessage, {
+        requestID: this.getRequestId({ request: request}),
+        options: options
+      });
+    }.bind(this);
+
+    let cancelCallback = function(reason) {
+      Services.DOMRequest.fireErrorAsync(request, reason);
+    };
+
+    this.askPermission(aPermission, request, allowCallback, cancelCallback);
+
     return request;
   },
 
@@ -639,7 +822,12 @@ ContactManager.prototype = {
                               "Contacts:GetSpeedDials:Return:OK", "Contacts:GetSpeedDials:Return:KO",
                               "Contacts:SetSpeedDial:Return:OK", "Contacts:SetSpeedDial:Return:KO",
                               "Contacts:SpeedDial:Changed",
-                              "Contacts:RemoveSpeedDial:Return:OK", "Contacts:RemoveSpeedDial:Return:KO",]);
+                              "Contacts:RemoveSpeedDial:Return:OK", "Contacts:RemoveSpeedDial:Return:KO",
+                              "Contacts:GetAllGroups:Return:OK", "Contacts:GetAllGroups:Return:KO",
+                              "Contacts:FindGroups:Return:OK", "Contacts:FindGroups:Return:KO",
+                              "Contacts:SaveGroup:Return:OK", "Contacts:SaveGroup:Return:KO",
+                              "Contacts:RemoveGroup:Return:OK", "Contacts:RemoveGroup:Return:KO",
+                              "Contacts:Group:Changed"]);
 
     let allowCallback = function() {
       cpmm.sendAsyncMessage("Contacts:RegisterForMessages");

@@ -57,6 +57,7 @@ dictionary ContactProperties {
   sequence<DOMString>?           jobTitle;
   sequence<DOMString>?           note;
   sequence<DOMString>?           key;
+  sequence<DOMString>?           group;
 };
 
 [Constructor(optional ContactProperties properties),
@@ -99,6 +100,7 @@ interface mozContact {
   [Cached, Pure] attribute sequence<DOMString>?       jobTitle;
   [Cached, Pure] attribute sequence<DOMString>?       note;
   [Cached, Pure] attribute sequence<DOMString>?       key;
+  [Cached, Pure] attribute sequence<DOMString>?       group;
 
   void init(optional ContactProperties properties);
 
@@ -109,7 +111,11 @@ interface mozContact {
 };
 
 dictionary ContactFindSortOptions {
-  DOMString sortBy;                    // "givenName" or "familyName"
+  /**
+   * Possible values for contacts: "givenName", "familyName"
+   * Possible values for group: "name"
+   */
+  DOMString sortBy;
   DOMString sortOrder = "ascending";   // e.g. "descending"
 };
 
@@ -142,6 +148,30 @@ interface ContactManager : EventTarget {
   DOMRequest setSpeedDial(DOMString speedDial, DOMString tel, optional DOMString contactId);
   DOMRequest removeSpeedDial(DOMString speedDial);
 
-  attribute  EventHandler oncontactchange;
-  attribute  EventHandler onspeeddialchange;
+  /**
+   * To get all groups with given parameter.
+   * @return An array of {id, name}.
+   */
+  DOMCursor getAllGroups(optional ContactFindSortOptions options);
+
+  /**
+   * @return An array of {id, name}
+   */
+  DOMRequest findGroups(optional ContactFindOptions options);
+
+  /**
+   * @param name The group name.
+   * @param id The group id. If no id is given, it means create a new group.
+   */
+  DOMRequest saveGroup(DOMString name, optional DOMString id);
+
+  /**
+   * To remove a group.
+   * @param id The group id to be removed.
+   */
+  DOMRequest removeGroup(DOMString id);
+
+  attribute EventHandler oncontactchange;
+  attribute EventHandler onspeeddialchange;
+  attribute EventHandler oncontactgroupchange;
 };

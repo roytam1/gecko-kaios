@@ -6,7 +6,8 @@
 
 // Everything but "ContactDB" is only exported here for testing.
 this.EXPORTED_SYMBOLS = ["ContactDB", "DB_NAME", "STORE_NAME", "SAVED_GETALL_STORE_NAME",
-                         "SPEED_DIALS_STORE_NAME", "REVISION_STORE", "DB_VERSION"];
+                         "SPEED_DIALS_STORE_NAME", "REVISION_STORE", "DB_VERSION",
+                         "GROUP_STORE_NAME"];
 
 const DEBUG = false;
 function debug(s) { dump("-*- ContactDB component: " + s + "\n"); }
@@ -24,13 +25,14 @@ Cu.importGlobalProperties(["indexedDB"]);
 
 /* all exported symbols need to be bound to this on B2G - Bug 961777 */
 this.DB_NAME = "contacts";
-this.DB_VERSION = 23;
+this.DB_VERSION = 24;
 this.STORE_NAME = "contacts";
 this.SAVED_GETALL_STORE_NAME = "getallcache";
 this.SPEED_DIALS_STORE_NAME = "speeddials";
 const CHUNK_SIZE = 20;
 this.REVISION_STORE = "revision";
 const REVISION_KEY = "revision";
+this.GROUP_STORE_NAME = "group";
 
 const CATEGORY_DEFAULT = ["DEVICE", "KAICONTACT"];
 const CATEGORY_DEVICE = "DEVICE";
@@ -65,7 +67,7 @@ function ContactDispatcher(aContacts, aFullContacts, aCallback, aNewTxn, aClearD
       } catch (e) {
         aClearDispatcher();
       }
-    }
+    };
   } else {
     sendChunk = function() {
       try {
@@ -85,7 +87,7 @@ function ContactDispatcher(aContacts, aFullContacts, aCallback, aNewTxn, aClearD
                 aCallback(chunk);
                 chunk.length = 0;
               }
-            }
+            };
           }
         }, null, function(errorMsg) {
           aFailureCb(errorMsg);
@@ -93,7 +95,7 @@ function ContactDispatcher(aContacts, aFullContacts, aCallback, aNewTxn, aClearD
       } catch (e) {
         aClearDispatcher();
       }
-    }
+    };
   }
 
   return {
@@ -188,9 +190,13 @@ ContactDB.prototype = {
       objectStore.createIndex("phoneticGivenNameLowerCase",  "search.phoneticGivenName",  { multiEntry: true });
       objectStore.createIndex("speedDial", "properties.speedDial", { unique: true });
       objectStore.createIndex("telFuzzy",  "search.telFuzzy",  { multiEntry: true });
+      objectStore.createIndex("group",  "properties.group",  { multiEntry: true });
       aDb.createObjectStore(SAVED_GETALL_STORE_NAME);
       aDb.createObjectStore(SPEED_DIALS_STORE_NAME, {keyPath: "speedDial"});
       aDb.createObjectStore(REVISION_STORE).put(0, REVISION_KEY);
+      let groupObjectStore = aDb.createObjectStore(GROUP_STORE_NAME, { keyPath: "id" });
+      groupObjectStore.createIndex("name", "properties.name", { unique: true });
+      groupObjectStore.createIndex("nameLowerCase", "search.name", { unique: true });
     }
 
     let valueUpgradeSteps = [];
@@ -370,7 +376,7 @@ ContactDB.prototype = {
                     dump("Warning: No international number found for " + duple.value + "\n");
                   }
                 }
-              )
+              );
               cursor.update(cursor.value);
             }
             if (DEBUG) debug("upgrade2 : " + JSON.stringify(cursor.value));
@@ -411,7 +417,7 @@ ContactDB.prototype = {
                     cursor.value.search.exactTel.push(parsedNumber.internationalNumber);
                   }
                 }
-              )
+              );
               cursor.update(cursor.value);
             }
             if (DEBUG) debug("upgrade : " + JSON.stringify(cursor.value));
@@ -799,6 +805,23 @@ ContactDB.prototype = {
 
         next();
       },
+      function upgrade23to24() {
+        if (DEBUG) debug("Adding the group index and create a new ObjectStore for group.");
+        if (!objectStore) {
+          objectStore = aTransaction.objectStore(STORE_NAME);
+        }
+        if (DEBUG) debug("add properties.group to group");
+        objectStore.createIndex("group", "properties.group", { multiEntry: true });
+
+        if (DEBUG) debug('Adding group store');
+        let groupObjectStore = db.createObjectStore(GROUP_STORE_NAME, { keyPath: "id" });
+        if (DEBUG) debug('Adding name');
+        groupObjectStore.createIndex("name", "properties.name", { unique: true });
+        if (DEBUG) debug('Adding nameLowerCase');
+        groupObjectStore.createIndex("nameLowerCase", "search.name", { unique: true });
+
+        next();
+      },
     ];
 
     let index = aOldVersion;
@@ -1062,11 +1085,11 @@ ContactDB.prototype = {
       let newRequest = store.get(contact.id);
       newRequest.onsuccess = function (event) {
         if (!event.target.result) {
-          if (DEBUG) debug("new record!")
+          if (DEBUG) debug("new record!");
           this.updateRecordMetadata(contact);
           store.put(contact);
         } else {
-          if (DEBUG) debug("old record!")
+          if (DEBUG) debug("old record!");
           if (new Date(typeof contact.updated === "undefined" ? 0 : contact.updated) < new Date(event.target.result.updated)) {
             if (DEBUG) debug("rev check fail!");
             txn.abort();
@@ -1095,7 +1118,7 @@ ContactDB.prototype = {
   removeContact: function removeContact(aId, aSuccessCb, aErrorCb) {
     if (DEBUG) debug("removeContact: " + aId);
     this.removeObjectFromCache(aId, function(txn) {
-      let store = txn.objectStore(STORE_NAME)
+      let store = txn.objectStore(STORE_NAME);
       store.delete(aId).onsuccess = function() {
         aSuccessCb();
       };
@@ -1110,6 +1133,8 @@ ContactDB.prototype = {
       getAllStore.clear();
       let store = txn.objectStore(STORE_NAME);
       store.clear();
+      let groupStore = txn.objectStore(GROUP_STORE_NAME);
+      groupStore.clear();
       this.incrementRevision(txn);
     }.bind(this), aSuccessCb, aErrorCb);
   },
@@ -1175,7 +1200,7 @@ ContactDB.prototype = {
   },
 
   getAll: function CDB_getAll(aSuccessCb, aFailureCb, aOptions, aCursorId) {
-    if (DEBUG) debug("getAll")
+    if (DEBUG) debug("getAll");
     let optionStr = JSON.stringify(aOptions);
     this.getCacheForQuery(optionStr, function(aCachedResults, aFullContacts) {
       // aFullContacts is true if the cache didn't exist and had to be created.
@@ -1333,7 +1358,7 @@ ContactDB.prototype = {
     if (options.filterBy.length == 0) {
       if (DEBUG) debug("search in all fields!" + JSON.stringify(store.indexNames));
       for(let myIndex = 0; myIndex < store.indexNames.length; myIndex++) {
-        fields = Array.concat(fields, store.indexNames[myIndex])
+        fields = Array.concat(fields, store.indexNames[myIndex]);
       }
     }
 
@@ -1421,12 +1446,12 @@ ContactDB.prototype = {
         let substringDigits = this._getMinMatchDigits();
         if (filterValue.length >= substringDigits) {
           filterValue = filterValue.slice(-substringDigits);
-          filterValue = filterValue.split("").reverse().join("")
+          filterValue = filterValue.split("").reverse().join("");
           request = index.mozGetAll(IDBKeyRange.bound(filterValue, filterValue + "\uFFFF"), limit);
         } else {
           request = index.mozGetAll(filterValue.split("").reverse().join(""), limit);
         }
-       } else {
+      } else {
         // XXX: "contains" should be handled separately, this is "startsWith"
         if (options.filterOp === 'contains' && key !== 'tel') {
           dump("ContactDB: 'contains' only works for 'tel'. Falling back " +
@@ -1537,6 +1562,31 @@ ContactDB.prototype = {
     }.bind(this), aSuccessCb, aFailureCb);
   },
 
+  saveGroup: function saveGroup(aId, aName, aSuccessCb, aFailureCb) {
+    if (DEBUG) debug("saveGroup: aId " + aId + " aName " + aName);
+    this.newTxn("readwrite", GROUP_STORE_NAME, function (txn, store) {
+      if (!aId || !aName) {
+        dump("ContactDB: aId or aName is empty");
+        txn.abort();
+        return;
+      }
+
+      let group = {
+        id: aId,
+        properties: {
+          name: aName
+        },
+        search: {
+          name: aName.toLowerCase()
+        }
+      };
+
+      store.put(group);
+      this.incrementRevision(txn);
+
+    }.bind(this), aSuccessCb, aFailureCb);
+  },
+
   removeSpeedDial: function removeSpeedDial(aSpeedDial, aSuccessCb, aFailureCb) {
     if (DEBUG) debug("removeSpeedDial: aSpeedDial " + aSpeedDial);
     this.newTxn("readwrite", this.dbStoreNames, function (txn, store) {
@@ -1568,8 +1618,163 @@ ContactDB.prototype = {
     return MIN_MATCH_DIGITS;
   },
 
+  /**
+   * @param aSuccessCb
+   *        Callback function to invoke with result array.
+   * @param aFailureCb [optional]
+   *        Callback function to invoke when there was an error.
+   * @param aOptions [optional]
+   *        Object specifying search options. Possible attributes:
+   *        - filterBy
+   *        - filterOp
+   *        - filterValue
+   *        - filterLimit
+   */
+  findGroups: function findGroups(aSuccessCb, aFailureCb, aOptions) {
+    if (DEBUG) debug("ContactDB:findGroups val:" + aOptions.filterValue + " by: " + aOptions.filterBy + " op: " + aOptions.filterOp);
+    this.newTxn("readonly", GROUP_STORE_NAME, function (txn, store) {
+      let filterOps = ["equals", "startsWith"];
+      if (aOptions && filterOps.indexOf(aOptions.filterOp) >= 0) {
+        this._findGrouopsWithIndex(txn, store, aOptions);
+      } else {
+        this._findAllGroups(txn, store, aOptions);
+      }
+    }.bind(this), aSuccessCb, aFailureCb);
+  },
+
+  removeGroup: function removeGroup(aId, aSuccessCb, aFailureCb) {
+    if (DEBUG) debug("removeContactGroup: aId " + aId);
+    this._removeGroupFromContacts(aId, function(txn) {
+      txn.objectStore(GROUP_STORE_NAME).delete(aId).onsuccess = function() {
+        aSuccessCb();
+      }.bind(this);
+      this.incrementRevision(txn);
+    }.bind(this), aFailureCb);
+  },
+
+  _removeGroupFromContacts: function CDB_removeGroupFromContacts(aGroupId, aCallback, aFailureCb) {
+    if (DEBUG) debug("_removeGroupFromContacts: " + aGroupId);
+    if (!aGroupId) {
+      if (DEBUG) debug("No group ID passed");
+      aFailure("No group ID passed");
+      return;
+    }
+
+    this.newTxn("readwrite", this.dbStoreNames, function (txn, store) {
+      let contactStore = txn.objectStore(STORE_NAME);
+      let groupIndex = contactStore.index("group");
+      let request = groupIndex.mozGetAll(aGroupId);
+
+      request.onsuccess = function(event) {
+        let contacts = event.target.result;
+        contacts.forEach((contact)=> {
+          if (DEBUG) debug("group contact: " + JSON.stringify(contact));
+          if (DEBUG) debug("contact group: " + contact.properties.group);
+          let index = contact.properties.group.indexOf(aGroupId);
+          if (DEBUG) debug("contact group index: " + index);
+          if (index>=0) {
+            contact.properties.group.splice(index, 1);
+            if (DEBUG) debug("contact group after removed: " + contact.properties.group);
+            contactStore.put(contact);
+          }
+        });
+
+        aCallback(txn);
+      }.bind(this);
+
+    }, null, aFailureCb);
+
+  },
+
+  _findGrouopsWithIndex: function _findGrouopsWithIndex(txn, store, options) {
+    if (DEBUG) debug("_findGrouopsWithIndex: " + options.filterValue + " " + options.filterOp + " " + options.filterBy + " ");
+    let fields = options.filterBy;
+    for (let key in fields) {
+      if (DEBUG) debug("key: " + fields[key]);
+      if (!store.indexNames.contains(fields[key]) && fields[key] != "id") {
+        if (DEBUG) debug("Key not valid!" + fields[key] + ", " + JSON.stringify(store.indexNames));
+        txn.abort();
+        return;
+      }
+    }
+
+    let limit = options.sortBy === "undefined" ? options.filterLimit : null;
+    let filter_keys = fields.slice();
+    for (let key = filter_keys.shift(); key; key = filter_keys.shift()) {
+      let request;
+      if (key === "id") {
+        request = store.mozGetAll(options.filterValue, limit);
+      } else if (options.filterOp === "equals") {
+        if (DEBUG) debug("Getting index: " + key);
+        let index = store.index(key);
+        request = index.mozGetAll(options.filterValue, limit);
+      } else {
+        let lowerCase = options.filterValue.toString().toLowerCase();
+        if (DEBUG) debug("lowerCase: " + lowerCase);
+        let range = IDBKeyRange.bound(lowerCase, lowerCase + "\uFFFF");
+        let index = store.index(key + "LowerCase");
+        request = index.mozGetAll(range, limit);
+      }
+      if (!txn.result) {
+        txn.result = {};
+      }
+
+      request.onsuccess = function(event) {
+        if (DEBUG) debug("Request successful. Record count: " + event.target.result.length);
+        let groups = event.target.result;
+        this._sortGroups(groups, options);
+        for (let i in groups) {
+          if (DEBUG) debug("Groups i: " + i);
+          txn.result[groups[i].id] = {
+            id: groups[i].id,
+            name: groups[i].properties.name
+          };
+        }
+      }.bind(this);
+    }
+  },
+
+  _findAllGroups: function _findAllGroups(txn, store, options) {
+    if (!txn.result) {
+      txn.result = {};
+    }
+
+    let req = store.mozGetAll();
+    req.onsuccess = function(event) {
+      let groups = event.target.result;
+      if (DEBUG) debug("Request successful. Groups size: " + groups.length + ", " + JSON.stringify(groups));
+      this._sortGroups(groups, options);
+      for (let i in groups) {
+        if (DEBUG) debug("Groups i: " + i);
+        txn.result[groups[i].id] = {
+          id: groups[i].id,
+          name: groups[i].properties.name
+        };
+      }
+    }.bind(this);
+
+    req.onerror = function (e) {
+      dump("findGroups: " + e);
+    }.bind(this);
+  },
+
+  _sortGroups: function _sortGroups(aGroups, aOptions) {
+    if (aOptions.sortOrder) {
+      let ascending = aOptions.sortOrder == 'ascending';
+      aGroups.sort(function(a, b) {
+        let result = a.search.name.localeCompare(b.search.name);
+        return ascending ? result : -result;
+      });
+    }
+
+    if (aOptions.filterLimit) {
+      aGroups.splice(aOptions.filterLimit, aGroups.length);
+    }
+  },
+
   init: function init() {
     this.initDBHelper(DB_NAME, DB_VERSION, [STORE_NAME, SPEED_DIALS_STORE_NAME,
-                                            SAVED_GETALL_STORE_NAME, REVISION_STORE]);
+                                            SAVED_GETALL_STORE_NAME, REVISION_STORE,
+                                            GROUP_STORE_NAME]);
   }
 };
