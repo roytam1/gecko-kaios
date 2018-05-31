@@ -3073,9 +3073,16 @@ function WifiWorker() {
         self._fireEvent("onwpsoverlap", {});
         break;
       case "AUTHENTICATING":
-        self.currentNetwork.bssid = wifiInfo.bssid;
-        self.currentNetwork.ssid = quote(wifiInfo.wifiSsid);
-        self.currentNetwork.netId = wifiInfo.networkId;
+        if (!self.currentNetwork) {
+          self.currentNetwork =
+            { bssid: wifiInfo.bssid,
+              ssid: quote(wifiInfo.wifiSsid),
+              netId: wifiInfo.networkId };
+        } else {
+          self.currentNetwork.bssid = wifiInfo.bssid;
+          self.currentNetwork.ssid = quote(wifiInfo.wifiSsid);
+          self.currentNetwork.netId = wifiInfo.networkId;
+        }
         self._fireEvent("onauthenticating", {network: netToDOM(self.currentNetwork)});
         break;
       case "SCANNING":
