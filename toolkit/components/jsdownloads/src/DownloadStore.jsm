@@ -122,16 +122,11 @@ this.DownloadStore.prototype = {
         try {
           let download = yield Downloads.createDownload(downloadData);
           try {
-            if (!download.succeeded && !download.canceled && !download.error) {
-              // Try to restart the download if it was in progress during the
-              // previous session.  Ignore errors.
-              download.start().catch(() => {});
-            } else {
-              // If the download was not in progress, try to update the current
-              // progress from disk.  This is relevant in case we retained
-              // partially downloaded data.
-              yield download.refresh();
-            }
+            // If the download was not in progress, try to update the current
+            // progress from disk. This is relevant in case we retained
+            // partially downloaded data; If the download is in progress or
+            // it has been finalized, refresh has no effect.
+            yield download.refresh();
           } finally {
             // Add the download to the list if we succeeded in creating it,
             // after we have updated its initial state.
