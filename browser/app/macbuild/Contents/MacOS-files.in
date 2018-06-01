@@ -1,7 +1,9 @@
 /*.app/***
+/gaia/***
 /*.dylib
 /certutil
-/firefox-bin
+/$(MOZ_APP_NAME)-bin
+/$(MOZ_APP_NAME)
 /gtest/***
 /pk12util
 /ssltunnel

@@ -14,7 +14,7 @@ DIRS += [
     '/b2g/chrome',
     '/b2g/components',
     '/b2g/dev/app',
-
+    '/b2g/gaia',
     # Never add dirs after browser because they apparently won't get
     # packaged properly on Mac.
     '/browser',
