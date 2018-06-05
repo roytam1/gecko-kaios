@@ -52,6 +52,7 @@
 # hiddenWindow.xul.
 #include browser-menubar.inc
 
+#ifndef MOZ_MULET
 <!-- Dock menu -->
 <popupset>
   <menupopup id="menu_mac_dockmenu">
@@ -62,5 +63,5 @@
     <menuitem label="&newPrivateWindow.label;" oncommand="OpenBrowserWindowFromDockMenu({private: true});" />
   </menupopup>
 </popupset>
-
+#endif
 </overlay>

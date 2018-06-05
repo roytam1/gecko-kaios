@@ -9,6 +9,7 @@
                                   this.setAttribute('openedwithkey',
                                                     event.target.parentNode.openedWithKey);"
                 style="border:0px;padding:0px;margin:0px;-moz-appearance:none">
+#ifndef MOZ_MULET
             <menu id="file-menu" label="&fileMenu.label;"
                   accesskey="&fileMenu.accesskey;">
               <menupopup id="menu_FilePopup"
@@ -560,4 +561,7 @@
           <menu id="windowMenu" />
 #endif
           <menu id="helpMenu" />
+#else
+          <menu id="quitMenu" />
+#endif
         </menubar>
