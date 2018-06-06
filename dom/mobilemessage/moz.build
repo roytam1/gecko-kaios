@@ -37,7 +37,7 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk' and CONFIG['MOZ_B2G_RIL']:
         'gonk/MobileMessageDatabaseService.js',
         'gonk/MobileMessageDatabaseService.manifest',
     ]
-    if not CONFIG['DISABLE_MOZ_RIL_GEOLOC']:
+    if not CONFIG['DISABLE_MOZ_RIL_GEOLOC'] and not CONFIG['DISABLE_MOZ_RIL']:
         EXTRA_COMPONENTS += [
             'gonk/SmsService.js',
             'gonk/SmsService.manifest',

@@ -120,7 +120,7 @@ if CONFIG['MOZ_B2G_RIL']:
         'ril_worker_telephony_request_queue.js',
         'RILSystemMessenger.jsm',
     ]
-    if not CONFIG['DISABLE_MOZ_RIL_GEOLOC']:
+    if not CONFIG['DISABLE_MOZ_RIL_GEOLOC'] and not CONFIG['DISABLE_MOZ_RIL']:
         EXTRA_COMPONENTS += [
             'DataCallInterfaceService.js',
             'DataCallInterfaceService.manifest',

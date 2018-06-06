@@ -502,6 +502,7 @@
 @RESPATH@/components/MobileMessageDatabaseService.js
 @RESPATH@/components/MobileMessageDatabaseService.manifest
 #ifndef DISABLE_MOZ_RIL_GEOLOC
+#ifndef DISABLE_MOZ_RIL
 @RESPATH@/components/DataCallInterfaceService.js
 @RESPATH@/components/DataCallInterfaceService.manifest
 @RESPATH@/components/MobileConnectionService.js
@@ -512,7 +513,8 @@
 @RESPATH@/components/SmsService.manifest
 @RESPATH@/components/SubsidyLockService.js
 @RESPATH@/components/SubsidyLockService.manifest
-#endif
+#endif // DISABLE_MOZ_RIL
+#endif // DISABLE_MOZ_RIL_GEOLOC
 @RESPATH@/components/DOMDataCallManager.js
 @RESPATH@/components/DOMDataCallManager.manifest
 @RESPATH@/components/DataCallService.js
@@ -526,11 +528,13 @@
 @RESPATH@/components/USSDReceivedWrapper.js
 @RESPATH@/components/USSDReceivedWrapper.manifest
 #ifndef DISABLE_MOZ_RIL_GEOLOC
+#ifndef DISABLE_MOZ_RIL
 @RESPATH@/components/TelephonyService.js
 @RESPATH@/components/TelephonyService.manifest
 @RESPATH@/components/VoicemailService.js
 @RESPATH@/components/VoicemailService.manifest
-#endif
+#endif // DISABLE_MOZ_RIL
+#endif // DISABLE_MOZ_RIL_GEOLOC
 #endif // MOZ_WIDGET_GONK && MOZ_B2G_RIL
 
 #ifndef MOZ_WIDGET_GONK

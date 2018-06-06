@@ -405,7 +405,7 @@ NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(GamepadServiceTest,
 #endif
 
 #ifdef MOZ_WIDGET_GONK
-#if !defined(DISABLE_MOZ_RIL_GEOLOC) && !defined(KAI_GEOLOC)
+#if !defined(DISABLE_MOZ_RIL_GEOLOC) && !defined(KAI_GEOLOC) && !defined(DISABLE_MOZ_GEOLOC)
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsIGeolocationProvider,
                                          GonkGPSGeolocationProvider::GetSingleton)
 #endif
@@ -865,7 +865,7 @@ NS_DEFINE_NAMED_CID(NS_DEVICE_SENSORS_CID);
 NS_DEFINE_NAMED_CID(NS_HAPTICFEEDBACK_CID);
 #endif
 #endif
-#if !defined(DISABLE_MOZ_RIL_GEOLOC) && !defined(KAI_GEOLOC)
+#if !defined(DISABLE_MOZ_RIL_GEOLOC) && !defined(KAI_GEOLOC) && !defined(DISABLE_MOZ_GEOLOC)
 #ifdef MOZ_WIDGET_GONK
 NS_DEFINE_NAMED_CID(GONK_GPS_GEOLOCATION_PROVIDER_CID);
 #endif
@@ -1217,7 +1217,7 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
   { &kGECKO_MEDIA_PLUGIN_SERVICE_CID, true, nullptr, GeckoMediaPluginServiceConstructor },
   { &kNS_TIMESERVICE_CID, false, nullptr, nsITimeServiceConstructor },
   { &kNS_MEDIASTREAMCONTROLLERSERVICE_CID, false, nullptr, nsIStreamingProtocolControllerServiceConstructor },
-#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC) && !defined(DISABLE_MOZ_RIL_GEOLOC)
+#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC) && !defined(DISABLE_MOZ_RIL_GEOLOC) && !defined(DISABLE_MOZ_GEOLOC)
   { &kGONK_GPS_GEOLOCATION_PROVIDER_CID, false, nullptr, nsIGeolocationProviderConstructor },
 #endif
 #ifdef KAI_GEOLOC
@@ -1397,7 +1397,7 @@ static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
   { "@mozilla.org/udp-socket-child;1", &kUDPSOCKETCHILD_CID },
   { TIMESERVICE_CONTRACTID, &kNS_TIMESERVICE_CID },
   { MEDIASTREAMCONTROLLERSERVICE_CONTRACTID, &kNS_MEDIASTREAMCONTROLLERSERVICE_CID },
-#if defined(MOZ_WIDGET_GONK) && !defined(DISABLE_MOZ_RIL_GEOLOC) && !defined(KAI_GEOLOC)
+#if defined(MOZ_WIDGET_GONK) && !defined(DISABLE_MOZ_RIL_GEOLOC) && !defined(KAI_GEOLOC) && !defined(DISABLE_MOZ_GEOLOC)
   { GONK_GPS_GEOLOCATION_PROVIDER_CONTRACTID, &kGONK_GPS_GEOLOCATION_PROVIDER_CID },
 #endif
 #ifdef KAI_GEOLOC

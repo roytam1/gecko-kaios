@@ -6255,6 +6255,30 @@ fi
 AC_SUBST(DISABLE_MOZ_RIL_GEOLOC)
 
 dnl ========================================================
+dnl = Disable Mozilla's versions of RIL
+dnl ========================================================
+MOZ_ARG_DISABLE_BOOL(mozril,
+[  --disable-mozril         Disable Mozilla's RIL],
+    DISABLE_MOZ_RIL=1,
+    DISABLE_MOZ_RIL= )
+if test -n "$DISABLE_MOZ_RIL"; then
+   AC_DEFINE(DISABLE_MOZ_RIL)
+fi
+AC_SUBST(DISABLE_MOZ_RIL)
+
+dnl ========================================================
+dnl = Disable Mozilla's versions of Geolocation
+dnl ========================================================
+MOZ_ARG_DISABLE_BOOL(moz-geoloc,
+[  --disable-moz-geoloc         Disable Mozilla's geolocation],
+    DISABLE_MOZ_GEOLOC=1,
+    DISABLE_MOZ_GEOLOC= )
+if test -n "$DISABLE_MOZ_GEOLOC"; then
+   AC_DEFINE(DISABLE_MOZ_GEOLOC)
+fi
+AC_SUBST(DISABLE_MOZ_GEOLOC)
+
+dnl ========================================================
 dnl = Use KaiOS Geolocation Provider
 dnl ========================================================
 MOZ_ARG_ENABLE_BOOL(kai-geoloc,

@@ -213,6 +213,8 @@ def old_configure_options(*options):
     '--enable-memory-sanitizer',
     '--enable-mobile-optimize',
     '--enable-more-deterministic',
+    '--enable-moz-geoloc',
+    '--enable-mozril',
     '--enable-mozril-geoloc',
     '--enable-necko-protocols',
     '--enable-necko-wifi',
