@@ -690,6 +690,9 @@ SystemMessageInternal.prototype = {
     // This means the app must be brought to the foreground.
     let showApp = this._getMessageConfigurator(aPage.type).mustShowRunningApp;
 
+    if (typeof aExtra !== 'undefined' && typeof aExtra.showApp === 'boolean') {
+      showApp = showApp || aExtra.showApp;
+    }
     // We should send the open-app message if the system message was
     // not sent, or if it was sent but we should show the app anyway.
     if ((aMsgSentStatus === MSG_SENT_SUCCESS) && !showApp) {
@@ -705,10 +708,6 @@ SystemMessageInternal.prototype = {
           ", target: " + JSON.stringify(aMessage.target) +
           ", showApp: " + showApp + ", onlyShowApp: " + onlyShowApp +
           ", extra: " + JSON.stringify(aExtra));
-
-    if (typeof aExtra !== 'undefined' && typeof aExtra.showApp === 'boolean') {
-        showApp = showApp || aExtra.showApp;
-    }
 
     let glue = Cc["@mozilla.org/dom/messages/system-message-glue;1"]
                  .createInstance(Ci.nsISystemMessageGlue);
