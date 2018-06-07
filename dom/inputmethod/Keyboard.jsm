@@ -147,6 +147,12 @@ this.Keyboard = {
     });
   },
 
+  unregisterKeyboard: function unregisterKeyboard() {
+    KeyboardAppProxy.isIMEActive = false;
+    this._keyboardMM = null;
+    this._keyboardID = -1;
+  },
+
   observe: function keyboardObserve(subject, topic, data) {
     let frameLoader = null;
     let mm = null;
@@ -180,6 +186,7 @@ this.Keyboard = {
           if (this._systemMMs[i] == mm) {
             this._systemMMs.splice(i, 1);
             this.formMM = null;
+            this.unregisterKeyboard();
             break;
           }
         }
@@ -372,9 +379,7 @@ this.Keyboard = {
         }
         break;
       case 'Keyboard:Unregister':
-        KeyboardAppProxy.isIMEActive = false;
-        this._keyboardMM = null;
-        this._keyboardID = -1;
+        this.unregisterKeyboard();
         break;
     }
   },
