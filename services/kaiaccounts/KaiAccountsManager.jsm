@@ -131,7 +131,6 @@ this.KaiAccountsManager = {
         this._activeSession = null;
         return this._kaiAccounts.setSignedInUser(user).then(
           () => {
-            log.debug("User signed in: " + JSON.stringify(this._user));
             return this._kaiAccounts.getAccountInfo().then(
               accountInfo => {
               },
@@ -140,10 +139,15 @@ this.KaiAccountsManager = {
               }
             ).then(
               () => {
-                return Promise.resolve({
-                  accountCreated: false,
-                  user: this._user
-                });
+                return this.getAccount().then(
+                  result => {
+                    log.debug("User signed in: " + JSON.stringify(result));
+                    return Promise.resolve({
+                      accountCreated: false,
+                      user: result
+                    });
+                  }
+                );
               }
             );
           }
@@ -178,10 +182,9 @@ this.KaiAccountsManager = {
           return this._error(error);
         }
 
-        log.debug("User signed Up: " + JSON.stringify(this._user));
+        log.debug("User signed Up: " + JSON.stringify(user));
             return Promise.resolve({
-              accountCreated: true,
-              user: this._user
+              accountCreated: true
         });
       },
       reason => { return this._serverError(reason); }
