@@ -83,18 +83,46 @@ WifiHotspotUtils::sendCommand(struct wpa_ctrl *ctrl, const char *cmd,
 
   // Make the reply printable.
   reply[*reply_len] = '\0';
-  if (strncmp(cmd, "STA-FIRST", 9) == 0 ||
-      strncmp(cmd, "STA-NEXT", 8) == 0) {
-    char *pos = reply;
-
-    while (*pos && *pos != '\n')
-      pos++;
-    *pos = '\0';
-  }
 
   return 0;
 }
 
+int32_t
+WifiHotspotUtils::sendGetStaCommand(struct wpa_ctrl *ctrl, const char *cmd,
+                                    char *addr, size_t addr_len)
+{
+  char buf[4096], *pos;
+  size_t len;
+  int ret;
+
+  if (ctrl_conn == NULL) {
+    NS_WARNING(nsPrintfCString("Not connected to hostapd - \"%s\" command dropped.\n", cmd).get());
+    return -1;
+  }
+
+  len = sizeof(buf) - 1;
+  USE_DLFUNC(wpa_ctrl_request)
+  ret = wpa_ctrl_request(ctrl, cmd, strlen(cmd), buf, &len, nullptr);
+  if (ret == -2) {
+    NS_WARNING(nsPrintfCString("'%s' command timed out.\n", cmd).get());
+    return -2;
+  } else if (ret < 0) {
+    return -1;
+  }
+
+  buf[len] = '\0';
+  if (!len || !strncmp(buf, "FAIL", 4)) {
+    return -1;
+  }
+
+  pos = buf;
+  while (*pos != '\0' && *pos != '\n')
+    pos++;
+  *pos = '\0';
+  strncpy(addr, buf, addr_len);
+
+  return 0;
+}
 
 // static
 void*
@@ -171,15 +199,14 @@ int32_t WifiHotspotUtils::do_wifi_hostapd_get_stations()
 {
   char addr[32], cmd[64];
   int stations = 0;
-  size_t addrLen = sizeof(addr);
 
-  if (sendCommand(ctrl_conn, "STA-FIRST", addr, &addrLen)) {
+  if (sendGetStaCommand(ctrl_conn, "STA-FIRST", addr, sizeof(addr))) {
     return 0;
   }
   stations++;
 
   snprintf_literal(cmd, "STA-NEXT %s", addr);
-  while (sendCommand(ctrl_conn, cmd, addr, &addrLen) == 0) {
+  while (sendGetStaCommand(ctrl_conn, cmd, addr, sizeof(addr)) == 0) {
     stations++;
     snprintf_literal(cmd, "STA-NEXT %s", addr);
   }

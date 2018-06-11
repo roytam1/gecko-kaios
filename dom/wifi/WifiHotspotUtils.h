@@ -31,6 +31,8 @@ private:
   struct wpa_ctrl * openConnection(const char *ifname);
   int32_t sendCommand(struct wpa_ctrl *ctrl, const char *cmd,
                       char *reply, size_t *reply_len);
+  int32_t sendGetStaCommand(struct wpa_ctrl *ctrl, const char *cmd,
+                            char *addr, size_t addr_len);
 };
 
 // Defines a function type with the right arguments and return type.
