@@ -143,13 +143,13 @@
 		</dict>
 	</array>
 	<key>CFBundleExecutable</key>
-	<string>firefox</string>
+	<string>%MOZ_APP_NAME%</string>
 	<key>CFBundleGetInfoString</key>
 	<string>%MAC_APP_NAME% %APP_VERSION%</string>
 	<key>CFBundleIconFile</key>
-	<string>firefox.icns</string>
+	<string>%MOZ_APP_NAME%.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>%MOZ_MACBUNDLE_ID%</string>
+	<string>%MAC_MACBUNDLE_ID%</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
