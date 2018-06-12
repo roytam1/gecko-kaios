@@ -139,6 +139,7 @@ dictionary ContactFindOptions : ContactFindSortOptions {
 interface ContactManager : EventTarget {
   DOMRequest find(optional ContactFindOptions options);
   DOMCursor  getAll(optional ContactFindSortOptions options);
+  DOMCursor  findWithCursor(optional ContactFindOptions options);
   DOMRequest clear();
   DOMRequest save(mozContact contact);
   DOMRequest remove((mozContact or DOMString) contactOrId);

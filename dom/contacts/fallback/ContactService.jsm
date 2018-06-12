@@ -55,7 +55,8 @@ var ContactService = this.ContactService = {
                       "Contacts:GetAllGroups",
                       "Contacts:FindGroups",
                       "Contacts:SaveGroup",
-                      "Contacts:RemoveGroup"];
+                      "Contacts:RemoveGroup",
+                      "Contacts:FindWithCursor"];
     this._children = [];
     this._cursors = new Map();
     this._messages.forEach(function(msgName) {
@@ -452,19 +453,35 @@ var ContactService = this.ContactService = {
           this._cursors.delete(mm);
         }
         break;
-        case "Contacts:GetAllGroups":
-          this._getAllGroups(aMessage);
-          break;
-        case "Contacts:FindGroups":
-          if (DEBUG) debug("Contacts:FindGroups");
-          this._findGroups(aMessage, "Contacts:FindGroups");
-          break;
-        case "Contacts:SaveGroup":
-          this._saveGroup(aMessage);
-          break;
-        case "Contacts:RemoveGroup":
-          this._removeGroup(aMessage);
-          break;
+      case "Contacts:GetAllGroups":
+        this._getAllGroups(aMessage);
+        break;
+      case "Contacts:FindGroups":
+        if (DEBUG) debug("Contacts:FindGroups");
+        this._findGroups(aMessage, "Contacts:FindGroups");
+        break;
+      case "Contacts:SaveGroup":
+        this._saveGroup(aMessage);
+        break;
+      case "Contacts:RemoveGroup":
+        this._removeGroup(aMessage);
+        break;
+      case "Contacts:FindWithCursor":
+        if (!this.assertPermission(aMessage, "contacts-read")) {
+          return null;
+        }
+        let findWithCursorResult = [];
+        this._db.find(
+          function(contacts) {
+            for (let i in contacts) {
+              findWithCursorResult.push(contacts[i]);
+            }
+            if (DEBUG) debug("result:" + JSON.stringify(findWithCursorResult));
+            mm.sendAsyncMessage("Contacts:FindWithCursor:Return:OK", {cursorId: msg.cursorId, contacts: findWithCursorResult});
+          }.bind(this),
+          function(aErrorMsg) { mm.sendAsyncMessage("Contacts:FindWithCursor:Return:KO", { cursorId: msg.cursorId, errorMsg: aErrorMsg }); }.bind(this),
+          msg.findOptions);
+        break;
       default:
         if (DEBUG) debug("WRONG MESSAGE NAME: " + aMessage.name);
     }

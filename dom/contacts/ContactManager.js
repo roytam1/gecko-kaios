@@ -184,15 +184,17 @@ ContactManager.prototype = {
         }
         break;
       case "Contacts:GetAll:Next":
+      case "Contacts:FindWithCursor:Return:OK":
         let data = this.getRequest(msg.cursorId);
         if (!data) {
           break;
         }
-        let result = contacts ? this._convertContacts(contacts) : [null];
+        let result = contacts || [null];
         if (data.waitingForNext) {
           if (DEBUG) debug("cursor waiting for contact, sending");
           data.waitingForNext = false;
           let contact = result.shift();
+          contact = contact ? this._convertContact(contact) : null;
           this._pushArray(data.cachedContacts, result);
           this.nextTick(this._fireSuccessOrDone.bind(this, data.cursor, contact));
           if (!contact) {
@@ -211,7 +213,7 @@ ContactManager.prototype = {
           }
           delete this._cachedContacts[msg.requestID];
         }
-        /* fall through */
+        /* falls through */
       case "Contacts:Clear:Return:OK":
       case "Contact:Remove:Return:OK":
       case "Contacts:RemoveSpeedDial:Return:OK":
@@ -261,6 +263,7 @@ ContactManager.prototype = {
         }
         break;
       case "Contacts:GetAll:Return:KO":
+      case "Contacts:FindWithCursor:Return:KO":
         req = this.getRequest(msg.requestID);
         if (req) {
           Services.DOMRequest.fireError(req.cursor, msg.errorMsg);
@@ -514,17 +517,28 @@ ContactManager.prototype = {
   },
 
   getAll: function CM_getAll(aOptions) {
-    if (DEBUG) debug("getAll: " + JSON.stringify(aOptions));
-    let [cursorId, cursor] = this.createCursor("GetAll");
+    return this._getWithCursor("GetAll", aOptions);
+  },
+
+  findWithCursor: function CM_findWithCursor(aOptions) {
+    return this._getWithCursor("FindWithCursor", aOptions);
+  },
+
+  _getWithCursor: function CM_getWithCursor(aRequest, aOptions) {
+    if (DEBUG) debug(aRequest + ": " + JSON.stringify(aOptions));
+    let [cursorId, cursor] = this.createCursor(aRequest);
 
     let allowCallback = function() {
-      cpmm.sendAsyncMessage("Contacts:GetAll", {
+      if (DEBUG) debug(aRequest + " send finall asyncmessage");
+      let msg = "Contacts:" + aRequest;
+      cpmm.sendAsyncMessage(msg, {
         cursorId: cursorId,
         findOptions: aOptions
       });
     }.bind(this);
 
     let cancelCallback = function(reason) {
+      if (DEBUG) debug(aRequest + " cancelCallback");
       Services.DOMRequest.fireErrorAsync(cursor, reason);
     };
 
@@ -540,39 +554,64 @@ ContactManager.prototype = {
     if (DEBUG) debug("handleContinue: " + aCursorId);
     let data = this.getRequest(aCursorId);
 
-    if (data.request === "GetAllGroups") {
-      this._handleContinueGetAllGroups(aCursorId);
-      return;
+    switch(data.request) {
+      case 'GetAll':
+        this._handleContinueGetAll(aCursorId, data);
+        break;
+      case 'FindWithCursor':
+        this._handleContinueFindWithCursor(aCursorId, data);
+        break;
+      case 'GetAllGroups':
+        this._handleContinueGetAllGroups(aCursorId, data);
+        break;
+      default:
+        if (DEBUG) debug('unexpected request: ' + data.request);
+        break;
     }
+  },
 
-    if (data.cachedContacts.length > 0) {
+  _handleContinueGetAll: function CM_handleContinueGetAll(aCursorId, aData) {
+    if (DEBUG) debug("_handleContinueGetAll: " + aCursorId);
+    if (aData.cachedContacts.length > 0) {
       if (DEBUG) debug("contact in cache");
-      let contact = data.cachedContacts.shift();
-      this.nextTick(this._fireSuccessOrDone.bind(this, data.cursor, contact));
+      let contact = aData.cachedContacts.shift();
+      contact = contact ? this._convertContact(contact) : null;
+      this.nextTick(this._fireSuccessOrDone.bind(this, aData.cursor, contact));
       if (!contact) {
         this.removeRequest(aCursorId);
-      } else if (data.cachedContacts.length === CONTACTS_SENDMORE_MINIMUM) {
+      } else if (aData.cachedContacts.length === CONTACTS_SENDMORE_MINIMUM) {
         cpmm.sendAsyncMessage("Contacts:GetAll:SendNow", { cursorId: aCursorId });
       }
     } else {
       if (DEBUG) debug("waiting for contact");
-      data.waitingForNext = true;
+      aData.waitingForNext = true;
     }
   },
 
-  _handleContinueGetAllGroups: function CM_handleContinueGetAllGroups(aCursorId) {
+  _handleContinueFindWithCursor: function CM__handleContinueFindWithCursor(aCursorId, aData) {
+    if (DEBUG) debug("_handleContinueFindWithCursor: " + aCursorId);
+    let converter = this._convertContact.bind(this);
+    this._handleContinueWithCacheAll(aCursorId, aData, aData.cachedContacts, converter);
+  },
+
+  _handleContinueGetAllGroups: function CM_handleContinueGetAllGroups(aCursorId, aData) {
     if (DEBUG) debug("_handleContinueGetAllGroups: " + aCursorId);
-    let data = this.getRequest(aCursorId);
-    if (data.cachedGroups.length > 0) {
-      let cachedGroup = data.cachedGroups.shift();
-      if (DEBUG) debug("group in cache");
-      let group = this._convertGroup(cachedGroup);
-      this.nextTick(this._fireSuccessOrDone.bind(this, data.cursor, group));
-      if (!group) {
+    let converter = this._convertGroup.bind(this);
+    this._handleContinueWithCacheAll(aCursorId, aData, aData.cachedGroups, converter);
+  },
+
+  _handleContinueWithCacheAll:
+      function CM_handleContinueWithCacheAll(aCursorId, aData, aCachedDatas, aConverter) {
+    if (aCachedDatas.length > 0) {
+      let cacheData = aCachedDatas.shift();
+      if (DEBUG) debug("data in cache");
+      let data = aConverter(cacheData);
+      this.nextTick(this._fireSuccessOrDone.bind(this, aData.cursor, data));
+      if (!data) {
         this.removeRequest(aCursorId);
       }
     } else {
-      this.nextTick(this._fireSuccessOrDone.bind(this, data.cursor, null));
+      this.nextTick(this._fireSuccessOrDone.bind(this, aData.cursor, null));
       this.removeRequest(aCursorId);
     }
   },
@@ -827,7 +866,8 @@ ContactManager.prototype = {
                               "Contacts:FindGroups:Return:OK", "Contacts:FindGroups:Return:KO",
                               "Contacts:SaveGroup:Return:OK", "Contacts:SaveGroup:Return:KO",
                               "Contacts:RemoveGroup:Return:OK", "Contacts:RemoveGroup:Return:KO",
-                              "Contacts:Group:Changed"]);
+                              "Contacts:Group:Changed",
+                              "Contacts:FindWithCursor:Return:OK", "Contacts:FindWithCursor:Return:KO",]);
 
     let allowCallback = function() {
       cpmm.sendAsyncMessage("Contacts:RegisterForMessages");
