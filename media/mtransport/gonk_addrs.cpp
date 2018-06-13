@@ -23,7 +23,7 @@ extern "C" {
 
 namespace {
 struct NetworkInterface {
-  struct sockaddr_in addr;
+  std::vector<sockaddr_storage> addrs;
   std::string name;
   // See NR_INTERFACE_TYPE_* in nICEr/src/net/local_addrs.h
   int type;
@@ -66,30 +66,32 @@ GetInterfaces(std::vector<NetworkInterface>* aInterfaces)
     char16_t **ips = nullptr;
     uint32_t *prefixs = nullptr;
     uint32_t count = 0;
-    bool isAddressGot = false;
     NetworkInterface interface;
-    memset(&(interface.addr), 0, sizeof(interface.addr));
-    interface.addr.sin_family = AF_INET;
 
     if (NS_FAILED(info->GetAddresses(&ips, &prefixs, &count))) {
       continue;
     }
 
     for (uint32_t j = 0; j < count; j++) {
-      nsAutoString ip;
+      NS_ConvertUTF16toUTF8 ip(ips[j]);
+      sockaddr_storage addr; // guaranteed to be large enough to hold any socket address type
+      memset(&addr, 0, sizeof(addr));
+      sockaddr_in* addr4 = reinterpret_cast<sockaddr_in*>(&addr);
+      sockaddr_in6* addr6 = reinterpret_cast<sockaddr_in6*>(&addr);
 
-      ip.Assign(ips[j]);
-      if (inet_pton(AF_INET, NS_ConvertUTF16toUTF8(ip).get(),
-                    &(interface.addr.sin_addr.s_addr)) == 1) {
-        isAddressGot = true;
-        break;
+      if (inet_pton(AF_INET, ip.get(), &(addr4->sin_addr)) == 1) {
+        addr4->sin_family = AF_INET;
+        interface.addrs.push_back(addr);
+      } else if (inet_pton(AF_INET6, ip.get(), &(addr6->sin6_addr)) == 1) {
+        addr6->sin6_family = AF_INET6;
+        interface.addrs.push_back(addr);
       }
     }
 
     free(prefixs);
     NS_FREE_XPCOM_ALLOCATED_POINTER_ARRAY(count, ips);
 
-    if (!isAddressGot) {
+    if (interface.addrs.empty()) {
       continue;
     }
 
@@ -138,19 +140,20 @@ nr_stun_get_addrs(nr_local_addr aAddrs[], int aMaxAddrs,
 
   // Translate to nr_transport_addr.
   int32_t n = 0;
-  size_t num_interface = std::min(interfaces.size(), (size_t)aMaxAddrs);
-  for (size_t i = 0; i < num_interface; ++i) {
-    NetworkInterface &interface = interfaces[i];
-    if (nr_sockaddr_to_transport_addr((sockaddr*)&(interface.addr),
-                                      IPPROTO_UDP, 0, &(aAddrs[n].addr))) {
-      r_log(NR_LOG_STUN, LOG_WARNING, "Problem transforming address");
-      return R_FAILED;
+  for (auto& interface : interfaces) {
+    for (auto& addr : interface.addrs) {
+      if (nr_sockaddr_to_transport_addr(reinterpret_cast<sockaddr*>(&addr),
+                                        IPPROTO_UDP, 0, &(aAddrs[n].addr))) {
+        r_log(NR_LOG_STUN, LOG_WARNING, "Problem transforming address");
+        return R_FAILED;
+      }
+      strlcpy(aAddrs[n].addr.ifname, interface.name.c_str(),
+              sizeof(aAddrs[n].addr.ifname));
+      aAddrs[n].interface.type = interface.type;
+      aAddrs[n].interface.estimated_speed = 0;
+      if (++n >= aMaxAddrs) break;
     }
-    strlcpy(aAddrs[n].addr.ifname, interface.name.c_str(),
-            sizeof(aAddrs[n].addr.ifname));
-    aAddrs[n].interface.type = interface.type;
-    aAddrs[n].interface.estimated_speed = 0;
-    n++;
+    if (n >= aMaxAddrs) break;
   }
 
   *aCount = n;
