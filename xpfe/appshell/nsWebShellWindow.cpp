@@ -78,6 +78,11 @@
 #define USE_NATIVE_MENUS
 #endif
 
+#ifdef MOZ_MULET
+#include "nsIAppStartup.h"
+#include "nsToolkitCompsCID.h"
+#endif
+
 using namespace mozilla;
 using namespace mozilla::dom;
 
@@ -803,5 +808,30 @@ NS_IMETHODIMP nsWebShellWindow::Destroy()
       mSPTimer = nullptr;
     }
   }
-  return nsXULWindow::Destroy();
+
+#ifdef MOZ_MULET
+  nsAutoString startURL;
+  nsCOMPtr<nsIContentViewer> contentViewer;
+  if (mDocShell){
+    mDocShell->GetContentViewer(getter_AddRefs(contentViewer));
+  }
+  if (contentViewer) {
+    nsIDocument* doc = contentViewer->GetDocument();
+    if (doc) {
+      doc->GetURL(startURL);
+    }
+  }
+#endif // MOZ_MULET
+
+  NS_IMETHODIMP result = nsXULWindow::Destroy();
+
+#ifdef MOZ_MULET
+  if (startURL.EqualsLiteral("chrome://browser/content/browser.xul")) {
+    nsCOMPtr<nsIAppStartup> appStartup = do_GetService(NS_APPSTARTUP_CONTRACTID);
+    if (appStartup) {
+      appStartup->Quit(nsIAppStartup::eAttemptQuit);
+    }
+  }
+#endif // MOZ_MULET
+  return result;
 }
