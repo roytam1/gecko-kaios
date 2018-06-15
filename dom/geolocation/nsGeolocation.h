@@ -36,6 +36,10 @@
 #include "nsIContentPermissionPrompt.h"
 #include "mozilla/Attributes.h"
 
+#ifdef HAS_KOOST_MODULES
+#include "mozilla/dom/GnssMonitor.h"
+#endif
+
 class nsGeolocationService;
 class nsGeolocationRequest;
 
@@ -97,6 +101,10 @@ public:
   void     UpdateAccuracy(bool aForceHigh = false);
   bool     HighAccuracyRequested();
 
+#ifdef HAS_KOOST_MODULES
+  // Notify GnssMonitor about the NMEA update
+  void     NotifyGnssNmeaUpdate(const int64_t aTimestamp, const nsCString& aNmea);
+#endif
 private:
 
   ~nsGeolocationService();
@@ -177,6 +185,10 @@ public:
   // Getter for the window that this Geolocation is owned by
   nsIWeakReference* GetOwner() { return mOwner; }
 
+#ifdef HAS_KOOST_MODULES
+  // Getter for its GNSS monitor
+  GnssMonitor* GetGnss() const { return mGnss; }
+#endif
   // Check to see if the window still exists
   bool WindowOwnerStillExists();
 
@@ -227,6 +239,11 @@ private:
 
   // the protocol used to load the content
   ProtocolType mProtocolType;
+
+#ifdef HAS_KOOST_MODULES
+  // Non-standard web interface for monitoring Global Navigation Satellite System
+  RefPtr<GnssMonitor> mGnss;
+#endif
 
   // owning back pointer.
   RefPtr<nsGeolocationService> mService;

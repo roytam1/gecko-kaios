@@ -144,6 +144,10 @@
 #include "SpeakerManagerService.h"
 #endif
 
+#ifdef HAS_KOOST_MODULES
+#include "nsGeolocation.h" // for nsGeolocationService
+#endif
+
 #ifdef XP_WIN
 #include <process.h>
 #define getpid _getpid
@@ -2566,6 +2570,22 @@ ContentChild::RecvGeolocationError(const uint16_t& errorCode)
   gs->NotifyError(errorCode);
   return true;
 }
+
+#ifdef HAS_KOOST_MODULES
+bool
+ContentChild::RecvGnssNmeaUpdate(const int64_t& aTimestamp,
+                                 const nsCString& aNmea)
+{
+  RefPtr<nsGeolocationService> service =
+    nsGeolocationService::GetGeolocationService();
+  if (NS_WARN_IF(!service)) {
+    return false;
+  }
+  service->NotifyGnssNmeaUpdate(aTimestamp, aNmea);
+
+  return true;
+}
+#endif
 
 bool
 ContentChild::RecvUpdateDictionaryList(InfallibleTArray<nsString>&& aDictionaries)

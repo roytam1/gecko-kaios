@@ -10,6 +10,7 @@ GENERATED_WEBIDL_FILES = [
 
 PREPROCESSED_WEBIDL_FILES = [
     'BrowserElement.webidl',
+    'Geolocation.webidl',
     'HTMLMediaElement.webidl',
     'Navigator.webidl',
     'Promise.webidl',
@@ -176,7 +177,6 @@ WEBIDL_FILES = [
     'FormData.webidl',
     'Function.webidl',
     'GainNode.webidl',
-    'Geolocation.webidl',
     'GeometryUtils.webidl',
     'GetUserMediaRequest.webidl',
     'HDMIInputPort.webidl',
@@ -1005,4 +1005,12 @@ if CONFIG['HAS_KOOST_MODULES']:
         'FlipManager.webidl',
         'SoftkeyManager.webidl',
         'VolumeManager.webidl',
+    ]
+
+if CONFIG['HAS_KOOST_MODULES']:
+    WEBIDL_FILES += [
+        'GnssMonitor.webidl',
+    ]
+    GENERATED_EVENTS_WEBIDL_FILES += [
+        'NmeaEvent.webidl',
     ]
