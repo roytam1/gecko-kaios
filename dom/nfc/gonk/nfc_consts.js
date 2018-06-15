@@ -55,5 +55,14 @@ this.LISTEN_MODE_DEACTIVATE_EVENT = 0x0c;
 // This value should sync with |SYSTEM_APP_ID| in nsINfcContentHelper.idl
 this.SYSTEM_APP_ID = 0;
 
+this.NFC_SETCONFIG_SUCCESS = 0;
+this.NFC_SETCONFIG_BUSY = 1;
+this.NFC_SETCONFIG_FAILED = 2;
+
+this.DOMSetConfigResult = {};
+this.DOMSetConfigResult[this.NFC_SETCONFIG_SUCCESS] = "success";
+this.DOMSetConfigResult[this.NFC_SETCONFIG_BUSY] = "busy";
+this.DOMSetConfigResult[this.NFC_SETCONFIG_FAILED] = "failed";
+
 // Allow this file to be imported via Components.utils.import().
 this.EXPORTED_SYMBOLS = Object.keys(this);

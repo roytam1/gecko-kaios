@@ -733,6 +733,7 @@ Nfc.prototype = {
 
     this.nfcService.shutdown();
     this.nfcService = null;
+    this.pendingNfcService = null;
   },
 
   /**

@@ -24,6 +24,12 @@ XPCOMUtils.defineLazyServiceGetter(this,
                                    "@mozilla.org/AppsService;1",
                                    "nsIAppsService");
 
+XPCOMUtils.defineLazyGetter(this, "NFC", function () {
+  let obj = {};
+  Cu.import("resource://gre/modules/nfc_consts.js", obj);
+  return obj;
+});
+
 const NFC_MPOS_EVENTS = [
   "MPOS_READER_MODE_FAILED",
   "MPOS_READER_MODE_START_SUCCESS",
@@ -33,17 +39,6 @@ const NFC_MPOS_EVENTS = [
   "MPOS_READER_MODE_RESTART",
   "MPOS_READER_MODE_INVALID"
 ];
-
-const SetConfigResult = {
-  NFC_SETCONFIG_SUCCESS: 0,
-  NFC_SETCONFIG_BUSY   : 1,
-  NFC_SETCONFIG_FAILED : 2
-};
-
-const DOMSetConfigResult = {};
-DOMSetConfigResult[SetConfigResult.NFC_SETCONFIG_SUCCESS] = "success";
-DOMSetConfigResult[SetConfigResult.NFC_SETCONFIG_BUSY] = "busy";
-DOMSetConfigResult[SetConfigResult.NFC_SETCONFIG_FAILED] = "failed";
 
 function NfcCallback(aWindow) {
   this._window = aWindow;
@@ -119,12 +114,12 @@ NfcCallback.prototype = {
       return;
     }
 
-    if (aResult == SetConfigResult.NFC_SETCONFIG_SUCCESS) {
-      resolver.resolve(DOMSetConfigResult[aResult]);
+    if (aResult != NFC.NFC_SETCONFIG_SUCCESS) {
+      resolver.reject(NFC.DOMSetConfigResult[aResult]);
       return;
     }
 
-    resolver.reject(DOMSetConfigResult[aResult]);
+    resolver.resolve(NFC.DOMSetConfigResult[aResult]);
   },
 
   notifyError: function notifyError(aErrorMsg) {

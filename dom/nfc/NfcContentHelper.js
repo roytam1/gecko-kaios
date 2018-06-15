@@ -347,6 +347,23 @@ NfcContentHelper.prototype = {
     }
     delete this._requestMap[requestId];
 
+    // Return true if the result is invalid.
+    function check(setConfigResult) {
+      let inValid = false;
+
+      if ((result.setConfigResult < NFC.NFC_SETCONFIG_SUCCESS) ||
+          (result.setConfigResult > NFC.NFC_SETCONFIG_FAILED)) {
+        inValid = true;
+      }
+
+      return inValid;
+    }
+
+    if (result.errorMsg || check(result.setConfigResult)) {
+      callback.notifySuccessWithInt(NFC.NFC_SETCONFIG_FAILED);
+      return;
+    }
+
     callback.notifySuccessWithInt(result.setConfigResult);
   },
 
