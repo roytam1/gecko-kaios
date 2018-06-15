@@ -9,6 +9,7 @@ GENERATED_WEBIDL_FILES = [
 ]
 
 PREPROCESSED_WEBIDL_FILES = [
+    'Geolocation.webidl',
     'HTMLMediaElement.webidl',
     'Navigator.webidl',
     'Promise.webidl',
@@ -178,7 +179,6 @@ WEBIDL_FILES = [
     'FormData.webidl',
     'Function.webidl',
     'GainNode.webidl',
-    'Geolocation.webidl',
     'GeometryUtils.webidl',
     'GetUserMediaRequest.webidl',
     'HDMIInputPort.webidl',
@@ -994,4 +994,12 @@ if CONFIG['ENABLE_NUANCE_XT9'] or CONFIG['ENABLE_REVERIE_RT9'] or CONFIG['ENABLE
 if CONFIG['ENABLE_U2F']:
     WEBIDL_FILES += [
         'U2F.webidl'
+    ]
+
+if CONFIG['HAS_KOOST_MODULES']:
+    WEBIDL_FILES += [
+        'GnssMonitor.webidl',
+    ]
+    GENERATED_EVENTS_WEBIDL_FILES += [
+        'NmeaEvent.webidl',
     ]

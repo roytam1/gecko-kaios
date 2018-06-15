@@ -460,6 +460,11 @@ public:
 
   virtual bool RecvGeolocationError(const uint16_t& errorCode) override;
 
+#ifdef HAS_KOOST_MODULES
+  virtual bool RecvGnssNmeaUpdate(const int64_t& aTimestamp,
+                                  const nsCString& aNmea) override;
+#endif
+
   virtual bool RecvUpdateDictionaryList(InfallibleTArray<nsString>&& aDictionaries) override;
 
   virtual bool RecvAddPermission(const IPC::Permission& permission) override;
