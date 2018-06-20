@@ -193,12 +193,6 @@ const NfcNotificationType = {
   DISABLETIMEOUT: "disableTimeout"
 };
 
-const SetConfigResult = {
-  NFC_SETCONFIG_SUCCESS: 0,
-  NFC_SETCONFIG_BUSY   : 1,
-  NFC_SETCONFIG_FAILED : 2
-};
-
 XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
                                    "@mozilla.org/parentprocessmessagemanager;1",
                                    "nsIMessageBroadcaster");
@@ -977,13 +971,16 @@ Nfc.prototype = {
         this.nfcSelfTestResponse(message);
         break;
       case NfcResponseType.SETCONFIG_RSP:
-        if ((message.setConfigResult > SetConfigResult.NFC_SETCONFIG_FAILED) ||
-            (message.setConfigResult < SetConfigResult.NFC_SETCONFIG_SUCCESS)) {
-          message.setConfigResult = SetConfigResult.NFC_SETCONFIG_FAILED;
+        if ((message.setConfigResult > NFC.NFC_SETCONFIG_FAILED) ||
+            (message.setConfigResult < NFC.NFC_SETCONFIG_SUCCESS)) {
+          message.setConfigResult = NFC.NFC_SETCONFIG_FAILED;
         }
 
         this.setConfigResponse(message);
-        if (message.setConfigResult == SetConfigResult.NFC_SETCONFIG_BUSY) {
+
+        // Restart nfcd if it is blocked while restart nfc HAL layer.
+        if ((message.setConfigResult == NFC.NFC_SETCONFIG_BUSY) &&
+              (message.errorMsg == 'Timeout')) {
           Services.obs.notifyObservers(event, TOPIC_NFCD_UNINITIALIZED, null);
           // Restart NFC service.
           this.shutdownNfcService();
