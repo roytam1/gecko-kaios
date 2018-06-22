@@ -7996,10 +7996,9 @@ nsDocument::GetViewportInfo(const ScreenIntSize& aDisplaySize)
       nsAutoString handheldFriendly;
       GetHeaderData(nsGkAtoms::handheldFriendly, handheldFriendly);
       if (handheldFriendly.EqualsLiteral("true")) {
-        mViewportType = DisplayWidthHeight;
-        return nsViewportInfo(aDisplaySize,
-                              defaultScale,
-                              /*allowZoom*/true);
+        // "DisplayWidthHeight" will lead to wrong viewport size at
+        // MobileViewportManager, using a general setting to avoid it.
+        viewport = NS_LITERAL_STRING("width=device-width, user-scalable=no, initial-scale=1.0");
       }
     }
 
