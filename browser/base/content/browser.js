@@ -1717,6 +1717,9 @@ function BrowserBack(aEvent) {
 
   if (where == "current") {
     try {
+      if (gBrowser.currentURI.spec == "chrome://kaios-sdk/content/kairt.xul") {
+        return;
+      }
       gBrowser.goBack();
     }
     catch(ex) {
