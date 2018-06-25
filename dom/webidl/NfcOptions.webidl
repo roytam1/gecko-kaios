@@ -109,6 +109,8 @@ dictionary NfcCommandOptions
   boolean mPOSReaderMode;
 
   NfcSelfTestType selfTestType;
+
+  DOMString rfConfType;
   Blob confBlob;
 };
 

@@ -254,11 +254,12 @@ NfcContentHelper.prototype = {
                            selfTestType: type});
   },
 
-  setConfig: function setConfig(confFile, callback) {
+  setConfig: function setConfig(type, confFile, callback) {
     let requestId = callback.getCallbackId();
     this._requestMap[requestId] = callback;
     cpmm.sendAsyncMessage("NFC:SetConfig",
                           {requestId: requestId,
+                           rfConfType: type,
                            confBlob: confFile});
   },
 

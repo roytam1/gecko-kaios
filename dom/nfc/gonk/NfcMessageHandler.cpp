@@ -763,6 +763,8 @@ NfcMessageHandler::SetConfigRequest(Parcel& aParcel, const CommandOptions& aOpti
   NMH_LOG("Blob buffer size = %llu ", size);
 
   aParcel.writeInt32(static_cast<int32_t>(NfcRequestType::SetConfig));
+  WriteString16(aParcel, aOptions.mRfConfType.get(), aOptions.mRfConfType.Length());
+
   nsString blob = NS_ConvertUTF8toUTF16(blobBuf);
   WriteString16(aParcel, blob.get(), size);
   mRequestIdQueue.AppendElement(aOptions.mRequestId);

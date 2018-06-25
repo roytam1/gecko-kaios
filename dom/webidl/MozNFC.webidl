@@ -59,6 +59,12 @@ enum SetConfigureResult {
   "failed"
 };
 
+enum SetConfigureType {
+  "setTransit",
+  "revertToTransit",
+  "revertToDefault"
+};
+
 [NoInterfaceObject]
 interface MozNFCManager {
   /**
@@ -92,7 +98,7 @@ interface MozNFCManager {
   /**
    * Stop polling for NFC tags or devices. i.e. enter low power mode.
    */
-  [CheckAnyPermissions="nfc-manager", AvailableIn=CertifiedApps]
+  [CheckAnyPermissions="nfc-manager", AvailableIn=PrivilegedApps]
   Promise<void> stopPoll(StopPollPowerMode mode);
 
   /**
@@ -178,7 +184,7 @@ partial interface MozNFC {
   /**
    * Indicate mPOS reader mode is enabled.
    */
-  [CheckAnyPermissions="nfc-manager", AvailableIn=CertifiedApps]
+  [CheckAnyPermissions="nfc-manager", AvailableIn=PrivilegedApps]
   readonly attribute boolean mPOSReaderStatus;
 
   /**
@@ -186,13 +192,13 @@ partial interface MozNFC {
    * Reader mode if enabled is true.
    * Card mode if enabled is false.
    */
-  [CheckAnyPermissions="nfc-manager", AvailableIn=CertifiedApps]
+  [CheckAnyPermissions="nfc-manager", AvailableIn=PrivilegedApps]
   Promise<void> mPOSSetReaderMode(boolean enabled);
 
   /**
    * This event will be fired to indicate mPOS reader mode status.
    */
-  [CheckAnyPermissions="nfc-manager", AvailableIn=CertifiedApps]
+  [CheckAnyPermissions="nfc-manager", AvailableIn=PrivilegedApps]
   attribute EventHandler onmposreaderevent;
 
   /**
@@ -204,8 +210,8 @@ partial interface MozNFC {
   /**
    * Setup and apply configuration file for transit use case.
    */
-  [CheckAnyPermissions="nfc-manager", AvailableIn=CertifiedApps]
-  Promise<SetConfigureResult> setConfig(Blob? configFile);
+  [CheckAnyPermissions="nfc-manager", AvailableIn=PrivilegedApps]
+  Promise<SetConfigureResult> setConfig(SetConfigureType type, optional Blob configFile);
 };
 
 MozNFC implements MozNFCManager;

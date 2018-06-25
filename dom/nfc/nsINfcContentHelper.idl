@@ -393,7 +393,7 @@ interface nsINfcContentHelper : nsISupports
   /**
    * Nfc self test.
    *
-   * @param test type. Possible value is "test_rf_on" or "test_rf_off".
+   * @param type. Possible value is "test_rf_on" or "test_rf_off".
    *
    * @param callback
    *        Called when request is finished
@@ -404,10 +404,12 @@ interface nsINfcContentHelper : nsISupports
   /**
    * Setup nfc configuration file.
    *
-   * @param blob. Possible value is "test_rf_on" or "test_rf_off".
+   * @param type. Possible value is "setTransit" or "revertToTransit" or "revertToDefault"
    *
    * @param callback
    *        Called when request is finished
    */
-  void setConfig(in nsIDOMBlob confFile, in nsINfcRequestCallback callback);
+  void setConfig(in DOMString type,
+                 in nsIDOMBlob confFile,
+                 in nsINfcRequestCallback callback);
 };

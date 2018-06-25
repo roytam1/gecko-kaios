@@ -106,6 +106,7 @@ struct CommandOptions
                  static_cast<int32_t>(aOther.mSelfTestType.Value()) :
                  0;
 
+    COPY_OPT_FIELD(mRfConfType, EmptyString());
     if (aOther.mConfBlob.WasPassed()) {
       mConfBlob = aOther.mConfBlob.InternalValue();
     }
@@ -134,6 +135,8 @@ struct CommandOptions
   bool mMPOSReaderMode;
 
   int32_t mSelfTestType;
+
+  nsString mRfConfType;
   RefPtr<mozilla::dom::Blob> mConfBlob;
 };
 

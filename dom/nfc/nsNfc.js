@@ -494,12 +494,12 @@ MozNFCImpl.prototype = {
     return callback.promise;
   },
 
-  setConfig: function setConfig(confFile) {
+  setConfig: function setConfig(type, confFile) {
     let callback = new NfcCallback(this.window);
     if (!confFile) {
       confFile = new Blob([''], {type: "text/plain"});
     }
-    this._nfcContentHelper.setConfig(confFile, callback);
+    this._nfcContentHelper.setConfig(type, confFile, callback);
     return callback.promise;
   },
 
