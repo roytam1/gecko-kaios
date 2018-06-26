@@ -391,6 +391,15 @@ ACEService.prototype = {
       return Promise.reject(Error("Missing manifest for app: " + localId));
     }
 
+    let appsService = Cc["@mozilla.org/AppsService;1"].getService(Ci.nsIAppsService);
+    let currentApp = appsService.getAppByManifestURL(manifestURL);
+
+    if (currentApp && currentApp.principal &&
+          currentApp.principal.appStatus === Ci.nsIPrincipal.APP_STATUS_CERTIFIED){
+      debug("Allowing access for Certified app:" + currentApp.principal.appStatus);
+      return Promise.resolve(true);
+    }
+
     return new Promise((resolve, reject) => {
       debug("isHCIEventAccessAllowed for " + manifestURL + " to " + aid);
 
