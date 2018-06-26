@@ -151,6 +151,9 @@ public:
   FocusClient(const mozilla::ipc::PrincipalInfo& aPrincipalInfo);
 
   void
+  OpenAppClients(const mozilla::ipc::PrincipalInfo& aPrincipalInfo, const nsAString& aMsg);
+
+  void
   PropagateSoftUpdate(const PrincipalOriginAttributes& aOriginAttributes,
                       const nsAString& aScope);
 

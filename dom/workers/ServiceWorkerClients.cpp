@@ -365,17 +365,14 @@ public:
     WorkerPrivate* workerPrivate = mPromiseProxy->GetWorkerPrivate();
     MOZ_ASSERT(workerPrivate);
 
-    // Get the app manifestUrl for openApp
-    nsresult rv;
-    uint32_t appId = nsIScriptSecurityManager::UNKNOWN_APP_ID;
-    appId = workerPrivate->GetPrincipal()->GetAppId();
-    if (appId != nsIScriptSecurityManager::UNKNOWN_APP_ID) {
-      nsCOMPtr<nsIAppsService> appsService = do_GetService("@mozilla.org/AppsService;1");
-      nsString manifestUrl = EmptyString();
-      rv = appsService->GetManifestURLByLocalId(appId, manifestUrl);
-      if (NS_SUCCEEDED(rv)) {
-        OpenApp(manifestUrl);
-      }
+    nsresult rv = NS_OK;
+    nsCOMPtr<nsIPrincipal> principal = workerPrivate->GetPrincipal();
+    RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
+    PrincipalInfo principalInfo;
+    if (NS_SUCCEEDED(PrincipalToPrincipalInfo(principal, &principalInfo))) {
+      swm->OpenAppClients(principalInfo, mData);
+    } else {
+      rv = NS_ERROR_FAILURE;
     }
 
     RefPtr<ResolveOpenAppRunnable> r =
@@ -383,46 +380,6 @@ public:
 
     r->Dispatch();
     return NS_OK;
-  }
-private:
-  void
-  OpenApp(const nsAString& aManifestUrl)
-  {
-    nsCOMPtr<nsISystemMessagesInternal> systemMessenger =
-      do_GetService("@mozilla.org/system-message-internal;1");
-    MOZ_ASSERT(systemMessenger);
-
-    // This is called with no JS on the stack.
-    // We need to pass a jsval to SendMessage.
-    // Only system code should be looking at the result here,
-    // so we just create it in the System-Principaled Junk Scope.
-    AutoJSContext cx;
-    JSAutoCompartment ac(cx, xpc::PrivilegedJunkScope());
-
-    JS::Rooted<JSObject*> eventObj(cx);
-    eventObj = JS_NewPlainObject(cx);
-
-    JS::Rooted<JSString*> string(cx,
-                                 JS_NewUCStringCopyZ(cx, mData.Data()));
-    JS::Rooted<JS::Value> value(cx);
-    value.setString(string);
-    JS_SetProperty(cx, eventObj, "msg", value);
-    JS::Rooted<JS::Value> event(cx, JS::ObjectValue(*eventObj));
-
-    JS::Rooted<JSObject*> extraObj(cx);
-    extraObj = JS_NewPlainObject(cx);
-    JS::Rooted<JS::Value> showApp(cx, JS::BooleanValue(true));
-    JS_SetProperty(cx, extraObj, "showApp", showApp);
-    JS::Rooted<JS::Value> extra(cx, JS::ObjectValue(*extraObj));
-
-    nsCOMPtr<nsIURI> manifestURI;
-    NS_NewURI(getter_AddRefs(manifestURI), aManifestUrl);
-
-    nsCOMPtr<nsISupports> promise;
-    nsString aEvent;
-    aEvent.Assign(MOZ_UTF16("serviceworker-notification"));
-    systemMessenger->SendMessage(aEvent, event, nullptr, manifestURI,
-                                 extra, getter_AddRefs(promise));
   }
 };
 
@@ -934,9 +891,7 @@ ServiceWorkerClients::OpenApp(const OpenAppOptions& options, ErrorResult& aRv)
   // [[4. If this algorithm is not allowed to show a popup ..]]
   // In Gecko the service worker is allowed to show a popup only if the user
   // just clicked on a notification.
-  // and only allow openApp in chrome process
-  if (!workerPrivate->GlobalScope()->WindowInteractionAllowed()
-      || XRE_IsContentProcess()) {
+  if (!workerPrivate->GlobalScope()->WindowInteractionAllowed()) {
     promise->MaybeReject(NS_ERROR_DOM_INVALID_ACCESS_ERR);
     return promise.forget();
   }

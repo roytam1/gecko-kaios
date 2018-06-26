@@ -8,7 +8,7 @@
 
 #include "domstubs.idl"
 
-[scriptable, uuid(3a8bf186-0aa1-4f35-be73-cbe17b80851e)]
+[scriptable, uuid(37cb9c6e-782c-4259-b959-6ddb5ceab23d)]
 interface nsIServiceWorkerIPCHelper : nsISupports
 {
   /**
@@ -17,6 +17,15 @@ interface nsIServiceWorkerIPCHelper : nsISupports
   * @param aAppID: the id of the app to be foregrounded
   */
   void sendClientFocusEvent(in unsigned long aAppID);
+
+  /**
+  * Sends serviceworker-notification system message to the app,
+  * and brings it to foreground
+  *
+  * @param aAppID: the id of the app to send the system message
+  * @param aMsg: the msg property of the system messge data object
+  */
+  void sendClientsOpenAppEvent(in unsigned long aAppID, in AString aMsg);
 };
 
 %{ C++

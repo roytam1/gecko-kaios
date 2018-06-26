@@ -28,17 +28,20 @@ const NS_SERVICEWORKER_IPCHELPER_CONTRACTID =
   "@mozilla.org/serviceworkers/ipchelper;1";
 
 XPCOMUtils.defineLazyModuleGetter(this, "Services",
-  "resource://gre/modules/Services.jsm");
+                                  "resource://gre/modules/Services.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "SystemAppProxy",
-  "resource://gre/modules/SystemAppProxy.jsm");
+                                  "resource://gre/modules/SystemAppProxy.jsm");
 
 XPCOMUtils.defineLazyServiceGetter(this, "appsService",
-  "@mozilla.org/AppsService;1",
-  "nsIAppsService");
+                                   "@mozilla.org/AppsService;1",
+                                   "nsIAppsService");
+
+XPCOMUtils.defineLazyServiceGetter(this, "SystemMessenger",
+                                   "@mozilla.org/system-message-internal;1",
+                                   "nsISystemMessagesInternal");
 
 debug("loaded");
-
 
 function ServiceWorkerIPCHelper() {
   Services.obs.addObserver(this, "xpcom-shutdown", false);
@@ -85,6 +88,27 @@ ServiceWorkerIPCHelper.prototype = {
 
   sendClientFocusEvent: function (aAppID) {
     this._focusApp(aAppID);
+  },
+
+  sendClientsOpenAppEvent: function (aAppID, aMsg) {
+    let app = appsService.getAppByLocalId(aAppID);
+    if (!app) {
+      debug("no app found with appID: " + aAppID);
+      return;
+    }
+
+    debug("app manifest URL: " + app.manifestURL);
+
+    let manifestURI = Services.io.newURI(app.manifestURL, null, null);
+    let data = {
+      msg: aMsg
+    };
+    let extra = {
+      showApp: true
+    };
+
+    let type = 'serviceworker-notification';
+    SystemMessenger.sendMessage(type, data, null, manifestURI, extra);
   },
 
   classID: Components.ID(NS_SERVICEWORKER_IPCHELPER_CID),

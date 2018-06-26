@@ -148,6 +148,49 @@ private:
   RefPtr<ContentParent> mContentParent;
 };
 
+class DispatchOpenAppClientsCallback final : public nsRunnable
+{
+public:
+  DispatchOpenAppClientsCallback(already_AddRefed<ContentParent> aContentParent,
+                                 const PrincipalInfo& aPrincipalInfo,
+                                 const nsString& aMsg)
+    : mMsg(aMsg)
+    , mPrincipalInfo(aPrincipalInfo)
+    , mContentParent(aContentParent)
+  {
+    AssertIsInMainProcess();
+    AssertIsOnBackgroundThread();
+  }
+
+  NS_IMETHOD
+  Run() override
+  {
+    AssertIsInMainProcess();
+    MOZ_ASSERT(NS_IsMainThread());
+
+    nsCOMPtr<nsIPrincipal> principal = PrincipalInfoToPrincipal(mPrincipalInfo);
+    if (mContentParent) {
+      AssertAppPrincipal(mContentParent, principal);
+      mContentParent = nullptr;
+    }
+
+    nsresult rv;
+    nsCOMPtr<nsIServiceWorkerIPCHelper> helper =
+      do_GetService(NS_SERVICEWORKERIPC_HELPER_CONTRACTID, &rv);
+
+    if(NS_WARN_IF(!helper)) {
+      return rv;
+    }
+    helper->SendClientsOpenAppEvent(principal->GetAppId(), mMsg);
+
+    return NS_OK;
+  }
+private:
+  const nsString mMsg;
+  const PrincipalInfo mPrincipalInfo;
+  RefPtr<ContentParent> mContentParent;
+};
+
 class CheckPrincipalWithCallbackRunnable final : public nsRunnable
 {
 public:
@@ -303,6 +346,30 @@ ServiceWorkerManagerParent::RecvServiceWorkerFocusClient(
 
   RefPtr<DispatchFocusClientCallback> callback =
     new DispatchFocusClientCallback(parent.forget(), aPrincipalInfo);
+
+  nsresult rv = NS_DispatchToMainThread(callback);
+  MOZ_ALWAYS_TRUE(NS_SUCCEEDED(rv));
+
+  return true;
+}
+
+bool
+ServiceWorkerManagerParent::RecvServiceWorkerOpenAppClients(const PrincipalInfo& aPrincipalInfo,
+                                                            const nsString& aMsg)
+{
+  AssertIsInMainProcess();
+  AssertIsOnBackgroundThread();
+
+  if (aPrincipalInfo.type() == PrincipalInfo::TNullPrincipalInfo ||
+      aPrincipalInfo.type() == PrincipalInfo::TSystemPrincipalInfo) {
+    return false;
+  }
+
+  RefPtr<ContentParent> parent =
+    BackgroundParent::GetContentParent(Manager());
+
+  RefPtr<DispatchOpenAppClientsCallback> callback =
+    new DispatchOpenAppClientsCallback(parent.forget(), aPrincipalInfo, aMsg);
 
   nsresult rv = NS_DispatchToMainThread(callback);
   MOZ_ALWAYS_TRUE(NS_SUCCEEDED(rv));

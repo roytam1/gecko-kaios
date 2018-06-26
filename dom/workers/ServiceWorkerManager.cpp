@@ -2570,6 +2570,18 @@ ServiceWorkerManager::FocusClient(const PrincipalInfo& aPrincipalInfo)
 }
 
 void
+ServiceWorkerManager::OpenAppClients(const PrincipalInfo& aPrincipalInfo, const nsAString& aMsg)
+{
+  MOZ_ASSERT(mActor);
+
+  if (!mActor) {
+    return;
+  }
+
+  mActor->SendServiceWorkerOpenAppClients(aPrincipalInfo, nsString(aMsg));
+}
+
+void
 ServiceWorkerManager::SoftUpdate(const PrincipalOriginAttributes& aOriginAttributes,
                                  const nsACString& aScope)
 {

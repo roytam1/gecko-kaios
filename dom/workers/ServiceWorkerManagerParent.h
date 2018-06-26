@@ -55,6 +55,9 @@ private:
 
   virtual bool RecvServiceWorkerFocusClient(const PrincipalInfo& aPrincipalInfo) override;
 
+  virtual bool RecvServiceWorkerOpenAppClients(const PrincipalInfo& aPrincipalInfo,
+                                               const nsString& aMsg) override;
+
   virtual bool RecvPropagateSoftUpdate(const PrincipalOriginAttributes& aOriginAttributes,
                                        const nsString& aScope) override;
 
