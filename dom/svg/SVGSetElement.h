@@ -9,6 +9,7 @@
 
 #include "mozilla/Attributes.h"
 #include "mozilla/dom/SVGAnimationElement.h"
+#include "nsSMILSetAnimationFunction.h"
 
 nsresult NS_NewSVGSetElement(nsIContent **aResult,
                              already_AddRefed<mozilla::dom::NodeInfo>&& aNodeInfo);
@@ -21,6 +22,8 @@ class SVGSetElement final : public SVGAnimationElement
 protected:
   explicit SVGSetElement(already_AddRefed<mozilla::dom::NodeInfo>& aNodeInfo);
 
+  nsSMILSetAnimationFunction mAnimationFunction;
+
   friend nsresult (::NS_NewSVGSetElement(nsIContent **aResult,
                                          already_AddRefed<mozilla::dom::NodeInfo>&& aNodeInfo));
 
@@ -29,6 +32,9 @@ protected:
 public:
   // nsIDOMNode
   virtual nsresult Clone(mozilla::dom::NodeInfo *aNodeInfo, nsINode **aResult) const override;
+
+  // SVGAnimationElement
+  virtual nsSMILAnimationFunction& AnimationFunction() override;
 };
 
 } // namespace dom

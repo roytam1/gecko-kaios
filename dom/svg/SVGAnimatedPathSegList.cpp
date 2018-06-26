@@ -10,6 +10,8 @@
 #include "mozilla/Move.h"
 #include "nsSVGElement.h"
 #include "nsSVGAttrTearoffTable.h"
+#include "nsSMILValue.h"
+#include "SVGPathSegListSMILType.h"
 
 // See the comments in this file's header!
 
@@ -140,6 +142,68 @@ SVGAnimatedPathSegList::ClearAnimValue(nsSVGElement *aElement)
   }
   mAnimVal = nullptr;
   aElement->DidAnimatePathSegList();
+}
+
+nsISMILAttr*
+SVGAnimatedPathSegList::ToSMILAttr(nsSVGElement *aElement)
+{
+  return new SMILAnimatedPathSegList(this, aElement);
+}
+
+nsresult
+SVGAnimatedPathSegList::
+  SMILAnimatedPathSegList::ValueFromString(const nsAString& aStr,
+                               const dom::SVGAnimationElement* /*aSrcElement*/,
+                               nsSMILValue& aValue,
+                               bool& aPreventCachingOfSandwich) const
+{
+  nsSMILValue val(SVGPathSegListSMILType::Singleton());
+  SVGPathDataAndInfo *list = static_cast<SVGPathDataAndInfo*>(val.mU.mPtr);
+  nsresult rv = list->SetValueFromString(aStr);
+  if (NS_SUCCEEDED(rv)) {
+    list->SetElement(mElement);
+    aValue = Move(val);
+  }
+  aPreventCachingOfSandwich = false;
+  return rv;
+}
+
+nsSMILValue
+SVGAnimatedPathSegList::SMILAnimatedPathSegList::GetBaseValue() const
+{
+  // To benefit from Return Value Optimization and avoid copy constructor calls
+  // due to our use of return-by-value, we must return the exact same object
+  // from ALL return points. This function must only return THIS variable:
+  nsSMILValue val;
+
+  nsSMILValue tmp(SVGPathSegListSMILType::Singleton());
+  SVGPathDataAndInfo *list = static_cast<SVGPathDataAndInfo*>(tmp.mU.mPtr);
+  nsresult rv = list->CopyFrom(mVal->mBaseVal);
+  if (NS_SUCCEEDED(rv)) {
+    list->SetElement(mElement);
+    val = Move(tmp);
+  }
+  return val;
+}
+
+nsresult
+SVGAnimatedPathSegList::SMILAnimatedPathSegList::SetAnimValue(const nsSMILValue& aValue)
+{
+  NS_ASSERTION(aValue.mType == SVGPathSegListSMILType::Singleton(),
+               "Unexpected type to assign animated value");
+  if (aValue.mType == SVGPathSegListSMILType::Singleton()) {
+    mVal->SetAnimValue(*static_cast<SVGPathDataAndInfo*>(aValue.mU.mPtr),
+                       mElement);
+  }
+  return NS_OK;
+}
+
+void
+SVGAnimatedPathSegList::SMILAnimatedPathSegList::ClearAnimValue()
+{
+  if (mVal->mAnimVal) {
+    mVal->ClearAnimValue(mElement);
+  }
 }
 
 size_t

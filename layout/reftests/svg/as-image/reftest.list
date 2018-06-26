@@ -15,6 +15,7 @@ skip-if(B2G||Mulet) == background-simple-1.html  lime100x100-ref.html # bug 7734
 == background-resize-1.html  lime100x100-ref.html
 == background-resize-2.html  lime100x100-ref.html
 == background-resize-3.html  lime100x100-ref.html
+== background-resize-4.html  lime100x100-ref.html
 
 # Test for stretching background images by different amounts in each dimension
 == background-stretch-1.html background-stretch-1-ref.html

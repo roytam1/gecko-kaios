@@ -118,6 +118,7 @@
 #include "nsIDOMSVGElement.h"
 #include "nsIDOMSVGLength.h"
 #include "nsIDOMText.h"
+#include "nsIDOMTimeEvent.h"
 #include "nsIDOMTimeRanges.h"
 #include "nsIDOMTransitionEvent.h"
 #include "nsIDOMTreeWalker.h"
@@ -253,6 +254,7 @@
 #include "mozilla/dom/SVGElementBinding.h"
 #include "mozilla/dom/SVGLengthBinding.h"
 #include "mozilla/dom/TextBinding.h"
+#include "mozilla/dom/TimeEventBinding.h"
 #include "mozilla/dom/TimeRangesBinding.h"
 #include "mozilla/dom/TransitionEventBinding.h"
 #include "mozilla/dom/TreeBoxObjectBinding.h"
@@ -328,7 +330,7 @@ const ComponentsInterfaceShimEntry kComponentsInterfaceShimMap[] =
   DEFINE_SHIM(AnimationEvent),
   DEFINE_SHIM(Attr),
   DEFINE_SHIM(BeforeUnloadEvent),
-  DEFINE_SHIM_WITH_CUSTOM_INTERFACE(nsIBrowserBoxObject, ContainerBoxObject),
+  DEFINE_SHIM_WITH_CUSTOM_INTERFACE(nsIBrowserBoxObject, ContainerBoxObject),  
   DEFINE_SHIM(CanvasRenderingContext2D),
   DEFINE_SHIM(CDATASection),
   DEFINE_SHIM(CharacterData),
@@ -431,7 +433,7 @@ const ComponentsInterfaceShimEntry kComponentsInterfaceShimMap[] =
   DEFINE_SHIM(Rect),
   DEFINE_SHIM(Screen),
   DEFINE_SHIM(ScrollAreaEvent),
-  DEFINE_SHIM_WITH_CUSTOM_INTERFACE(nsIScrollBoxObject, ScrollBoxObject),
+  DEFINE_SHIM_WITH_CUSTOM_INTERFACE(nsIScrollBoxObject, ScrollBoxObject),  
   DEFINE_SHIM_WITH_CUSTOM_INTERFACE(nsIDOMSerializer, XMLSerializer),
   DEFINE_SHIM(SimpleGestureEvent),
   DEFINE_SHIM(StyleSheet),
@@ -439,9 +441,10 @@ const ComponentsInterfaceShimEntry kComponentsInterfaceShimMap[] =
   DEFINE_SHIM(SVGElement),
   DEFINE_SHIM(SVGLength),
   DEFINE_SHIM(Text),
+  DEFINE_SHIM(TimeEvent),
   DEFINE_SHIM(TimeRanges),
   DEFINE_SHIM(TransitionEvent),
-  DEFINE_SHIM_WITH_CUSTOM_INTERFACE(nsITreeBoxObject, TreeBoxObject),
+  DEFINE_SHIM_WITH_CUSTOM_INTERFACE(nsITreeBoxObject, TreeBoxObject),  
   DEFINE_SHIM(TreeWalker),
   DEFINE_SHIM(UIEvent),
   DEFINE_SHIM(ValidityState),

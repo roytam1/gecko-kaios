@@ -9,6 +9,7 @@
 
 #include "mozilla/Attributes.h"
 #include "mozilla/dom/SVGAnimationElement.h"
+#include "SVGMotionSMILAnimationFunction.h"
 
 nsresult NS_NewSVGAnimateMotionElement(nsIContent **aResult,
                                        already_AddRefed<mozilla::dom::NodeInfo>&& aNodeInfo);
@@ -21,6 +22,7 @@ class SVGAnimateMotionElement final : public SVGAnimationElement
 protected:
   explicit SVGAnimateMotionElement(already_AddRefed<mozilla::dom::NodeInfo>& aNodeInfo);
 
+  SVGMotionSMILAnimationFunction mAnimationFunction;
   friend nsresult
     (::NS_NewSVGAnimateMotionElement(nsIContent **aResult,
                                      already_AddRefed<mozilla::dom::NodeInfo>&& aNodeInfo));
@@ -32,13 +34,19 @@ public:
   virtual nsresult Clone(mozilla::dom::NodeInfo *aNodeInfo, nsINode **aResult) const override;
 
   // SVGAnimationElement
+  virtual nsSMILAnimationFunction& AnimationFunction() override;
   virtual bool GetTargetAttributeName(int32_t *aNamespaceID,
                                       nsIAtom **aLocalName) const override;
+  virtual nsSMILTargetAttrType GetTargetAttributeType() const override;
 
   // nsSVGElement
   virtual nsIAtom* GetPathDataAttrName() const override {
     return nsGkAtoms::path;
   }
+
+  // Utility method to let our <mpath> children tell us when they've changed,
+  // so we can make sure our mAnimationFunction is marked as having changed.
+  void MpathChanged() { mAnimationFunction.MpathChanged(); }
 };
 
 } // namespace dom

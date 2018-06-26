@@ -59,6 +59,12 @@ NS_IMPL_ELEMENT_CLONE_WITH_INIT(SVGAnimateTransformElement)
 
 //----------------------------------------------------------------------
 
+nsSMILAnimationFunction&
+SVGAnimateTransformElement::AnimationFunction()
+{
+  return mAnimationFunction;
+}
+
 } // namespace dom
 } // namespace mozilla
 

@@ -10,6 +10,8 @@
 #include "mozilla/Move.h"
 #include "nsSVGElement.h"
 #include "nsSVGAttrTearoffTable.h"
+#include "nsSMILValue.h"
+#include "SVGLengthListSMILType.h"
 
 namespace mozilla {
 
@@ -115,6 +117,96 @@ SVGAnimatedLengthList::ClearAnimValue(nsSVGElement *aElement,
   }
   mAnimVal = nullptr;
   aElement->DidAnimateLengthList(aAttrEnum);
+}
+
+nsISMILAttr*
+SVGAnimatedLengthList::ToSMILAttr(nsSVGElement *aSVGElement,
+                                  uint8_t aAttrEnum,
+                                  uint8_t aAxis,
+                                  bool aCanZeroPadList)
+{
+  return new SMILAnimatedLengthList(this, aSVGElement, aAttrEnum, aAxis, aCanZeroPadList);
+}
+
+nsresult
+SVGAnimatedLengthList::
+  SMILAnimatedLengthList::ValueFromString(const nsAString& aStr,
+                               const dom::SVGAnimationElement* /*aSrcElement*/,
+                               nsSMILValue& aValue,
+                               bool& aPreventCachingOfSandwich) const
+{
+  nsSMILValue val(&SVGLengthListSMILType::sSingleton);
+  SVGLengthListAndInfo *llai = static_cast<SVGLengthListAndInfo*>(val.mU.mPtr);
+  nsresult rv = llai->SetValueFromString(aStr);
+  if (NS_SUCCEEDED(rv)) {
+    llai->SetInfo(mElement, mAxis, mCanZeroPadList);
+    aValue = Move(val);
+
+    // If any of the lengths in the list depend on their context, then we must
+    // prevent caching of the entire animation sandwich. This is because the
+    // units of a length at a given index can change from sandwich layer to
+    // layer, and indeed even be different within a single sandwich layer. If
+    // any length in the result of an animation sandwich is the result of the
+    // addition of lengths where one or more of those lengths is context
+    // dependent, then naturally the resultant length is also context
+    // dependent, regardless of whether its actual unit is context dependent or
+    // not. Unfortunately normal invalidation mechanisms won't cause us to
+    // recalculate the result of the sandwich if the context changes, so we
+    // take the (substantial) performance hit of preventing caching of the
+    // sandwich layer, causing the animation sandwich to be recalculated every
+    // single sample.
+
+    aPreventCachingOfSandwich = false;
+    for (uint32_t i = 0; i < llai->Length(); ++i) {
+      uint8_t unit = (*llai)[i].GetUnit();
+      if (unit == nsIDOMSVGLength::SVG_LENGTHTYPE_PERCENTAGE ||
+          unit == nsIDOMSVGLength::SVG_LENGTHTYPE_EMS ||
+          unit == nsIDOMSVGLength::SVG_LENGTHTYPE_EXS) {
+        aPreventCachingOfSandwich = true;
+        break;
+      }
+    }
+  }
+  return rv;
+}
+
+nsSMILValue
+SVGAnimatedLengthList::SMILAnimatedLengthList::GetBaseValue() const
+{
+  // To benefit from Return Value Optimization and avoid copy constructor calls
+  // due to our use of return-by-value, we must return the exact same object
+  // from ALL return points. This function must only return THIS variable:
+  nsSMILValue val;
+
+  nsSMILValue tmp(&SVGLengthListSMILType::sSingleton);
+  SVGLengthListAndInfo *llai = static_cast<SVGLengthListAndInfo*>(tmp.mU.mPtr);
+  nsresult rv = llai->CopyFrom(mVal->mBaseVal);
+  if (NS_SUCCEEDED(rv)) {
+    llai->SetInfo(mElement, mAxis, mCanZeroPadList);
+    val = Move(tmp);
+  }
+  return val;
+}
+
+nsresult
+SVGAnimatedLengthList::SMILAnimatedLengthList::SetAnimValue(const nsSMILValue& aValue)
+{
+  NS_ASSERTION(aValue.mType == &SVGLengthListSMILType::sSingleton,
+               "Unexpected type to assign animated value");
+  if (aValue.mType == &SVGLengthListSMILType::sSingleton) {
+    mVal->SetAnimValue(*static_cast<SVGLengthListAndInfo*>(aValue.mU.mPtr),
+                       mElement,
+                       mAttrEnum);
+  }
+  return NS_OK;
+}
+
+void
+SVGAnimatedLengthList::SMILAnimatedLengthList::ClearAnimValue()
+{
+  if (mVal->mAnimVal) {
+    mVal->ClearAnimValue(mElement, mAttrEnum);
+  }
 }
 
 } // namespace mozilla

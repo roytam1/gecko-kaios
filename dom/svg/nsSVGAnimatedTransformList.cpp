@@ -11,7 +11,9 @@
 #include "mozilla/Move.h"
 #include "nsCharSeparatedTokenizer.h"
 #include "nsSVGTransform.h"
+#include "nsSMILValue.h"
 #include "SVGContentUtils.h"
+#include "SVGTransformListSMILType.h"
 #include "nsIDOMMutationEvent.h"
 
 namespace mozilla {
@@ -163,6 +165,159 @@ nsSVGAnimatedTransformList::IsExplicitlySet() const
   //    the list.
   // 3) Animation -- which will cause the mAnimVal member to be allocated
   return mIsAttrSet || !mBaseVal.IsEmpty() || mAnimVal;
+}
+
+nsISMILAttr*
+nsSVGAnimatedTransformList::ToSMILAttr(nsSVGElement* aSVGElement)
+{
+  return new SMILAnimatedTransformList(this, aSVGElement);
+}
+
+nsresult
+nsSVGAnimatedTransformList::SMILAnimatedTransformList::ValueFromString(
+  const nsAString& aStr,
+  const dom::SVGAnimationElement* aSrcElement,
+  nsSMILValue& aValue,
+  bool& aPreventCachingOfSandwich) const
+{
+  NS_ENSURE_TRUE(aSrcElement, NS_ERROR_FAILURE);
+  MOZ_ASSERT(aValue.IsNull(),
+             "aValue should have been cleared before calling ValueFromString");
+
+  const nsAttrValue* typeAttr = aSrcElement->GetAnimAttr(nsGkAtoms::type);
+  const nsIAtom* transformType = nsGkAtoms::translate; // default val
+  if (typeAttr) {
+    if (typeAttr->Type() != nsAttrValue::eAtom) {
+      // Recognized values of |type| are parsed as an atom -- so if we have
+      // something other than an atom, then we know already our |type| is
+      // invalid.
+      return NS_ERROR_FAILURE;
+    }
+    transformType = typeAttr->GetAtomValue();
+  }
+
+  ParseValue(aStr, transformType, aValue);
+  aPreventCachingOfSandwich = false;
+  return aValue.IsNull() ? NS_ERROR_FAILURE : NS_OK;
+}
+
+void
+nsSVGAnimatedTransformList::SMILAnimatedTransformList::ParseValue(
+  const nsAString& aSpec,
+  const nsIAtom* aTransformType,
+  nsSMILValue& aResult)
+{
+  MOZ_ASSERT(aResult.IsNull(), "Unexpected type for SMIL value");
+
+  static_assert(SVGTransformSMILData::NUM_SIMPLE_PARAMS == 3,
+                "nsSVGSMILTransform constructor should be expecting array "
+                "with 3 params");
+
+  float params[3] = { 0.f };
+  int32_t numParsed = ParseParameterList(aSpec, params, 3);
+  uint16_t transformType;
+
+  if (aTransformType == nsGkAtoms::translate) {
+    // tx [ty=0]
+    if (numParsed != 1 && numParsed != 2)
+      return;
+    transformType = SVG_TRANSFORM_TRANSLATE;
+  } else if (aTransformType == nsGkAtoms::scale) {
+    // sx [sy=sx]
+    if (numParsed != 1 && numParsed != 2)
+      return;
+    if (numParsed == 1) {
+      params[1] = params[0];
+    }
+    transformType = SVG_TRANSFORM_SCALE;
+  } else if (aTransformType == nsGkAtoms::rotate) {
+    // r [cx=0 cy=0]
+    if (numParsed != 1 && numParsed != 3)
+      return;
+    transformType = SVG_TRANSFORM_ROTATE;
+  } else if (aTransformType == nsGkAtoms::skewX) {
+    // x-angle
+    if (numParsed != 1)
+      return;
+    transformType = SVG_TRANSFORM_SKEWX;
+  } else if (aTransformType == nsGkAtoms::skewY) {
+    // y-angle
+    if (numParsed != 1)
+      return;
+    transformType = SVG_TRANSFORM_SKEWY;
+  } else {
+    return;
+  }
+
+  nsSMILValue val(SVGTransformListSMILType::Singleton());
+  SVGTransformSMILData transform(transformType, params);
+  if (NS_FAILED(SVGTransformListSMILType::AppendTransform(transform, val))) {
+    return; // OOM
+  }
+
+  // Success! Populate our outparam with parsed value.
+  aResult = Move(val);
+}
+
+int32_t
+nsSVGAnimatedTransformList::SMILAnimatedTransformList::ParseParameterList(
+  const nsAString& aSpec,
+  float* aVars,
+  int32_t aNVars)
+{
+  nsCharSeparatedTokenizerTemplate<IsSVGWhitespace>
+    tokenizer(aSpec, ',', nsCharSeparatedTokenizer::SEPARATOR_OPTIONAL);
+
+  int numArgsFound = 0;
+
+  while (tokenizer.hasMoreTokens()) {
+    float f;
+    if (!SVGContentUtils::ParseNumber(tokenizer.nextToken(), f)) {
+      return -1;    
+    }
+    if (numArgsFound < aNVars) {
+      aVars[numArgsFound] = f;
+    }
+    numArgsFound++;
+  }
+  return numArgsFound;
+}
+
+nsSMILValue
+nsSVGAnimatedTransformList::SMILAnimatedTransformList::GetBaseValue() const
+{
+  // To benefit from Return Value Optimization and avoid copy constructor calls
+  // due to our use of return-by-value, we must return the exact same object
+  // from ALL return points. This function must only return THIS variable:
+  nsSMILValue val(SVGTransformListSMILType::Singleton());
+  if (!SVGTransformListSMILType::AppendTransforms(mVal->mBaseVal, val)) {
+    val = nsSMILValue();
+  }
+
+  return val;
+}
+
+nsresult
+nsSVGAnimatedTransformList::SMILAnimatedTransformList::SetAnimValue(
+  const nsSMILValue& aNewAnimValue)
+{
+  MOZ_ASSERT(aNewAnimValue.mType == SVGTransformListSMILType::Singleton(),
+             "Unexpected type to assign animated value");
+  SVGTransformList animVal;
+  if (!SVGTransformListSMILType::GetTransforms(aNewAnimValue,
+                                               animVal.mItems)) {
+    return NS_ERROR_FAILURE;
+  }
+
+  return mVal->SetAnimValue(animVal, mElement);
+}
+
+void
+nsSVGAnimatedTransformList::SMILAnimatedTransformList::ClearAnimValue()
+{
+  if (mVal->mAnimVal) {
+    mVal->ClearAnimValue(mElement);
+  }
 }
 
 } // namespace mozilla

@@ -11,6 +11,8 @@
 #include "mozilla/dom/SVGSVGElement.h"
 #include "nsContentUtils.h" // NS_ENSURE_FINITE
 #include "nsIFrame.h"
+#include "nsSMILFloatType.h"
+#include "nsSMILValue.h"
 #include "nsSVGAttrTearoffTable.h"
 #include "nsSVGIntegrationUtils.h"
 #include "nsTextFormatter.h"
@@ -67,9 +69,9 @@ GetUnitString(nsAString& unit, uint16_t unitType)
 static uint16_t
 GetUnitTypeForString(const nsAString& unitStr)
 {
-  if (unitStr.IsEmpty())
+  if (unitStr.IsEmpty()) 
     return nsIDOMSVGLength::SVG_LENGTHTYPE_NUMBER;
-
+                   
   nsIAtom *unitAtom = NS_GetStaticAtom(unitStr);
   if (unitAtom) {
     for (uint32_t i = 0 ; i < ArrayLength(unitMap) ; i++) {
@@ -461,4 +463,63 @@ nsSVGLength2::ToDOMAnimatedLength(nsSVGElement* aSVGElement)
 SVGAnimatedLength::~SVGAnimatedLength()
 {
   sSVGAnimatedLengthTearoffTable.RemoveTearoff(mVal);
+}
+
+nsISMILAttr*
+nsSVGLength2::ToSMILAttr(nsSVGElement *aSVGElement)
+{
+  return new SMILLength(this, aSVGElement);
+}
+
+nsresult
+nsSVGLength2::SMILLength::ValueFromString(const nsAString& aStr,
+                                 const SVGAnimationElement* /*aSrcElement*/,
+                                 nsSMILValue& aValue,
+                                 bool& aPreventCachingOfSandwich) const
+{
+  float value;
+  uint16_t unitType;
+  
+  if (!GetValueFromString(aStr, value, &unitType)) {
+    return NS_ERROR_DOM_SYNTAX_ERR;
+  }
+
+  nsSMILValue val(nsSMILFloatType::Singleton());
+  val.mU.mDouble = value / mVal->GetUnitScaleFactor(mSVGElement, unitType);
+  aValue = val;
+  aPreventCachingOfSandwich =
+              (unitType == nsIDOMSVGLength::SVG_LENGTHTYPE_PERCENTAGE ||
+               unitType == nsIDOMSVGLength::SVG_LENGTHTYPE_EMS ||
+               unitType == nsIDOMSVGLength::SVG_LENGTHTYPE_EXS);
+
+  return NS_OK;
+}
+
+nsSMILValue
+nsSVGLength2::SMILLength::GetBaseValue() const
+{
+  nsSMILValue val(nsSMILFloatType::Singleton());
+  val.mU.mDouble = mVal->GetBaseValue(mSVGElement);
+  return val;
+}
+
+void
+nsSVGLength2::SMILLength::ClearAnimValue()
+{
+  if (mVal->mIsAnimated) {
+    mVal->mIsAnimated = false;
+    mVal->mAnimVal = mVal->mBaseVal;
+    mSVGElement->DidAnimateLength(mVal->mAttrEnum);
+  }  
+}
+
+nsresult
+nsSVGLength2::SMILLength::SetAnimValue(const nsSMILValue& aValue)
+{
+  NS_ASSERTION(aValue.mType == nsSMILFloatType::Singleton(),
+    "Unexpected type to assign animated value");
+  if (aValue.mType == nsSMILFloatType::Singleton()) {
+    mVal->SetAnimValue(float(aValue.mU.mDouble), mSVGElement);
+  }
+  return NS_OK;
 }

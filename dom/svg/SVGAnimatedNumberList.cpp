@@ -10,6 +10,8 @@
 #include "mozilla/Move.h"
 #include "nsSVGElement.h"
 #include "nsSVGAttrTearoffTable.h"
+#include "nsSMILValue.h"
+#include "SVGNumberListSMILType.h"
 
 namespace mozilla {
 
@@ -117,6 +119,70 @@ SVGAnimatedNumberList::ClearAnimValue(nsSVGElement *aElement,
   }
   mAnimVal = nullptr;
   aElement->DidAnimateNumberList(aAttrEnum);
+}
+
+nsISMILAttr*
+SVGAnimatedNumberList::ToSMILAttr(nsSVGElement *aSVGElement,
+                                  uint8_t aAttrEnum)
+{
+  return new SMILAnimatedNumberList(this, aSVGElement, aAttrEnum);
+}
+
+nsresult
+SVGAnimatedNumberList::
+  SMILAnimatedNumberList::ValueFromString(const nsAString& aStr,
+                               const dom::SVGAnimationElement* /*aSrcElement*/,
+                               nsSMILValue& aValue,
+                               bool& aPreventCachingOfSandwich) const
+{
+  nsSMILValue val(&SVGNumberListSMILType::sSingleton);
+  SVGNumberListAndInfo *nlai = static_cast<SVGNumberListAndInfo*>(val.mU.mPtr);
+  nsresult rv = nlai->SetValueFromString(aStr);
+  if (NS_SUCCEEDED(rv)) {
+    nlai->SetInfo(mElement);
+    aValue = Move(val);
+  }
+  aPreventCachingOfSandwich = false;
+  return rv;
+}
+
+nsSMILValue
+SVGAnimatedNumberList::SMILAnimatedNumberList::GetBaseValue() const
+{
+  // To benefit from Return Value Optimization and avoid copy constructor calls
+  // due to our use of return-by-value, we must return the exact same object
+  // from ALL return points. This function must only return THIS variable:
+  nsSMILValue val;
+
+  nsSMILValue tmp(&SVGNumberListSMILType::sSingleton);
+  SVGNumberListAndInfo *nlai = static_cast<SVGNumberListAndInfo*>(tmp.mU.mPtr);
+  nsresult rv = nlai->CopyFrom(mVal->mBaseVal);
+  if (NS_SUCCEEDED(rv)) {
+    nlai->SetInfo(mElement);
+    Swap(val, tmp);
+  }
+  return val;
+}
+
+nsresult
+SVGAnimatedNumberList::SMILAnimatedNumberList::SetAnimValue(const nsSMILValue& aValue)
+{
+  NS_ASSERTION(aValue.mType == &SVGNumberListSMILType::sSingleton,
+               "Unexpected type to assign animated value");
+  if (aValue.mType == &SVGNumberListSMILType::sSingleton) {
+    mVal->SetAnimValue(*static_cast<SVGNumberListAndInfo*>(aValue.mU.mPtr),
+                       mElement,
+                       mAttrEnum);
+  }
+  return NS_OK;
+}
+
+void
+SVGAnimatedNumberList::SMILAnimatedNumberList::ClearAnimValue()
+{
+  if (mVal->mAnimVal) {
+    mVal->ClearAnimValue(mElement, mAttrEnum);
+  }
 }
 
 } // namespace mozilla

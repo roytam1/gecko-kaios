@@ -8,6 +8,8 @@
 
 #include "mozilla/Move.h"
 #include "nsSVGAttrTearoffTable.h"
+#include "nsSMILValue.h"
+#include "SMILStringType.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -93,4 +95,52 @@ nsSVGString::ToDOMAnimatedString(nsSVGElement* aSVGElement)
 nsSVGString::DOMAnimatedString::~DOMAnimatedString()
 {
   SVGAnimatedStringTearoffTable().RemoveTearoff(mVal);
+}
+
+nsISMILAttr*
+nsSVGString::ToSMILAttr(nsSVGElement *aSVGElement)
+{
+  return new SMILString(this, aSVGElement);
+}
+
+nsresult
+nsSVGString::SMILString::ValueFromString(const nsAString& aStr,
+                                         const dom::SVGAnimationElement* /*aSrcElement*/,
+                                         nsSMILValue& aValue,
+                                         bool& aPreventCachingOfSandwich) const
+{
+  nsSMILValue val(SMILStringType::Singleton());
+
+  *static_cast<nsAString*>(val.mU.mPtr) = aStr;
+  aValue = Move(val);
+  aPreventCachingOfSandwich = false;
+  return NS_OK;
+}
+
+nsSMILValue
+nsSVGString::SMILString::GetBaseValue() const
+{
+  nsSMILValue val(SMILStringType::Singleton());
+  mSVGElement->GetStringBaseValue(mVal->mAttrEnum, *static_cast<nsAString*>(val.mU.mPtr));
+  return val;
+}
+
+void
+nsSVGString::SMILString::ClearAnimValue()
+{
+  if (mVal->mAnimVal) {
+    mVal->mAnimVal = nullptr;
+    mSVGElement->DidAnimateString(mVal->mAttrEnum);
+  }
+}
+
+nsresult
+nsSVGString::SMILString::SetAnimValue(const nsSMILValue& aValue)
+{
+  NS_ASSERTION(aValue.mType == SMILStringType::Singleton(),
+               "Unexpected type to assign animated value");
+  if (aValue.mType == SMILStringType::Singleton()) {
+    mVal->SetAnimValue(*static_cast<nsAString*>(aValue.mU.mPtr), mSVGElement);
+  }
+  return NS_OK;
 }

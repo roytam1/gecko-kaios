@@ -7,6 +7,8 @@
 #include "nsError.h"
 #include "nsSVGAttrTearoffTable.h"
 #include "nsSVGInteger.h"
+#include "nsSMILValue.h"
+#include "SMILIntegerType.h"
 #include "SVGContentUtils.h"
 
 using namespace mozilla;
@@ -94,4 +96,58 @@ nsSVGInteger::ToDOMAnimatedInteger(nsSVGElement *aSVGElement)
 nsSVGInteger::DOMAnimatedInteger::~DOMAnimatedInteger()
 {
   sSVGAnimatedIntegerTearoffTable.RemoveTearoff(mVal);
+}
+
+nsISMILAttr*
+nsSVGInteger::ToSMILAttr(nsSVGElement *aSVGElement)
+{
+  return new SMILInteger(this, aSVGElement);
+}
+
+nsresult
+nsSVGInteger::SMILInteger::ValueFromString(const nsAString& aStr,
+                                           const dom::SVGAnimationElement* /*aSrcElement*/,
+                                           nsSMILValue& aValue,
+                                           bool& aPreventCachingOfSandwich) const
+{
+  int32_t val;
+
+  if (!SVGContentUtils::ParseInteger(aStr, val)) {
+    return NS_ERROR_DOM_SYNTAX_ERR;
+  }
+
+  nsSMILValue smilVal(SMILIntegerType::Singleton());
+  smilVal.mU.mInt = val;
+  aValue = smilVal;
+  aPreventCachingOfSandwich = false;
+  return NS_OK;
+}
+
+nsSMILValue
+nsSVGInteger::SMILInteger::GetBaseValue() const
+{
+  nsSMILValue val(SMILIntegerType::Singleton());
+  val.mU.mInt = mVal->mBaseVal;
+  return val;
+}
+
+void
+nsSVGInteger::SMILInteger::ClearAnimValue()
+{
+  if (mVal->mIsAnimated) {
+    mVal->mIsAnimated = false;
+    mVal->mAnimVal = mVal->mBaseVal;
+    mSVGElement->DidAnimateInteger(mVal->mAttrEnum);
+  }
+}
+
+nsresult
+nsSVGInteger::SMILInteger::SetAnimValue(const nsSMILValue& aValue)
+{
+  NS_ASSERTION(aValue.mType == SMILIntegerType::Singleton(),
+               "Unexpected type to assign animated value");
+  if (aValue.mType == SMILIntegerType::Singleton()) {
+    mVal->SetAnimValue(int(aValue.mU.mInt), mSVGElement);
+  }
+  return NS_OK;
 }
