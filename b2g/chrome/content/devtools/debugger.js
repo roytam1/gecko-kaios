@@ -169,6 +169,9 @@ var RemoteDebugger = {
     if (detail.type === "devtools-auth" && this._handleAuthEvent) {
       this._handleAuthEvent(detail);
     }
+    if (detail.type === "transport-closed") {
+      this._promptingForAllow = null;
+    }
   },
 
   initServer: function() {
