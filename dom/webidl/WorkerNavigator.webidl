@@ -13,8 +13,10 @@ WorkerNavigator implements NavigatorOnLine;
 WorkerNavigator implements NavigatorDataStore;
 WorkerNavigator implements NavigatorConcurrentHardware;
 
+#ifdef HAS_KOOST_MODULES
 [Exposed=(Worker)]
 partial interface WorkerNavigator {
     [Throws, Func="WorkerNavigator::HasExternalAPISupport"]
     readonly attribute ExternalAPI externalapi;
 };
+#endif

@@ -13,7 +13,9 @@
 #include "mozilla/dom/PromiseWorkerProxy.h"
 #include "mozilla/dom/WorkerNavigator.h"
 #include "mozilla/dom/WorkerNavigatorBinding.h"
+#ifdef HAS_KOOST_MODULES
 #include "mozilla/dom/ExternalAPI.h"
+#endif
 
 #include "nsProxyRelease.h"
 #include "RuntimeService.h"
@@ -29,7 +31,11 @@ namespace dom {
 
 using namespace mozilla::dom::workers;
 
+#ifdef HAS_KOOST_MODULES
 NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(WorkerNavigator, mExternalAPI);
+#else
+NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE_0(WorkerNavigator)
+#endif
 
 NS_IMPL_CYCLE_COLLECTION_ROOT_NATIVE(WorkerNavigator, AddRef)
 NS_IMPL_CYCLE_COLLECTION_UNROOT_NATIVE(WorkerNavigator, Release)
@@ -55,6 +61,7 @@ WorkerNavigator::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
   return WorkerNavigatorBinding::Wrap(aCx, this, aGivenProto);
 }
 
+#ifdef HAS_KOOST_MODULES
 class HasExternalAPISupportRunnable final
   : public WorkerCheckAPIExposureOnMainThreadRunnable
 {
@@ -86,6 +93,7 @@ protected:
 private:
   bool mResult;
 };
+#endif
 
 // A WorkerMainThreadRunnable to synchronously add DataStoreChangeEventProxy on
 // the main thread. We need this because we have to access |mBackingStore| on
@@ -444,6 +452,7 @@ WorkerNavigator::HardwareConcurrency() const
   return rts->ClampedHardwareConcurrency();
 }
 
+#ifdef HAS_KOOST_MODULES
 ExternalAPI*
 WorkerNavigator::GetExternalapi(ErrorResult& aRv)
 {
@@ -473,6 +482,7 @@ WorkerNavigator::HasExternalAPISupport(JSContext* aCx, JSObject* aGlobal)
     new HasExternalAPISupportRunnable(workerPrivate);
   return runnable->Dispatch() && runnable->IsGranted();
 }
+#endif
 
 } // namespace dom
 } // namespace mozilla

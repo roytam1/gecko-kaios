@@ -139,6 +139,7 @@ partial interface Navigator {
   readonly attribute BatteryManager? battery;
 };
 
+#ifdef HAS_KOOST_MODULES
 partial interface Navigator {
   [Throws, Pref="dom.flip.enabled", CheckAnyPermissions="flip", AvailableIn=CertifiedApps]
   Promise<FlipManager> getFlipManager();
@@ -148,6 +149,7 @@ partial interface Navigator {
   [Throws, Pref="dom.flashlight.enabled", CheckAnyPermissions="flashlight", AvailableIn=CertifiedApps]
   Promise<FlashlightManager> getFlashlightManager();
 };
+#endif
 
 [NoInterfaceObject]
 interface NavigatorUsb {
@@ -492,10 +494,12 @@ partial interface Navigator {
   readonly attribute LegacyMozTCPSocket mozTCPSocket;
 };
 
+#ifdef HAS_KOOST_MODULES
 partial interface Navigator {
   [Throws, Pref="dom.softkey.enabled", CheckAnyPermissions="softkey", AvailableIn=CertifiedApps]
   readonly attribute SoftkeyManager softkeyManager;
 };
+#endif
 
 #ifdef MOZ_EME
 partial interface Navigator {
@@ -536,6 +540,7 @@ partial interface Navigator {
   readonly attribute boolean largeTextEnabled;
 };
 
+#ifdef HAS_KOOST_MODULES
 partial interface Navigator {
   // This is a safety catch for System App.
   // Return the current flip status. This attribute is only available for apps
@@ -544,7 +549,6 @@ partial interface Navigator {
   readonly attribute boolean flipOpened;
 };
 
-#ifdef HAS_KOOST_MODULES
 partial interface Navigator {
   [Throws]
   readonly attribute VolumeManager volumeManager;
@@ -567,6 +571,11 @@ partial interface Navigator {
   [Pref="dom.spatialnavigation.enabled", CheckAnyPermissions="spatialnavigation-app-manage", AvailableIn=PrivilegedApps]
   attribute boolean spatialNavigationEnabled;
 };
+
+partial interface Navigator {
+  [Throws, Func="Navigator::HasExternalAPISupport"]
+  readonly attribute ExternalAPI externalapi;
+};
 #endif
 #ifdef ENABLE_FOTA
 partial interface Navigator {
@@ -575,7 +584,3 @@ partial interface Navigator {
 };
 #endif
 
-partial interface Navigator {
-  [Throws, Func="Navigator::HasExternalAPISupport"]
-  readonly attribute ExternalAPI externalapi;
-};

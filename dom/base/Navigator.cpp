@@ -52,14 +52,15 @@
 #include "mozilla/dom/Telephony.h"
 #include "mozilla/dom/Voicemail.h"
 #include "mozilla/dom/TVManager.h"
-#include "mozilla/dom/SoftkeyManager.h"
 #ifdef HAS_KOOST_MODULES
+#include "mozilla/dom/SoftkeyManager.h"
 #include "mozilla/dom/VolumeManager.h"
 #include "SpatialNavigationServiceChild.h"
-#endif
-#include "mozilla/dom/VRDevice.h"
 #include "mozilla/dom/FlashlightManager.h"
 #include "mozilla/dom/FlipManager.h"
+#include "DeviceCapability.h"
+#endif
+#include "mozilla/dom/VRDevice.h"
 #include "mozilla/dom/workers/RuntimeService.h"
 #include "mozilla/Hal.h"
 #include "nsISiteSpecificUserAgent.h"
@@ -146,13 +147,14 @@
 #include "mozilla/dom/DOMRequest.h"
 #endif
 
-#include "DeviceCapability.h"
 #ifdef ENABLE_FOTA
 #include "mozilla/dom/fota/FotaEngine.h"
 #endif
 
 namespace mozilla {
+#ifdef HAS_KOOST_MODULES
 using namespace toolkit;
+#endif
 namespace dom {
 #ifdef ENABLE_FOTA
 using namespace fota;
@@ -214,8 +216,11 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Navigator)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mNotification)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBatteryManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBatteryPromise)
+#ifdef HAS_KOOST_MODULES
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFlipManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFlashlightManager)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mSoftkeyManager)
+#endif
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mUsbManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPowerSupplyManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPowerManager)
@@ -225,7 +230,6 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Navigator)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mTelephony)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mVoicemail)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mTVManager)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mSoftkeyManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mInputPortManager)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mConnection)
 #ifdef MOZ_B2G_RIL
@@ -255,11 +259,11 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Navigator)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mVRGetDevicesPromises)
 #ifdef HAS_KOOST_MODULES
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mVolumeManager)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mExternalAPI)
 #endif
 #ifdef ENABLE_FOTA
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFotaEngine)
 #endif
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mExternalAPI)
 
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE_SCRIPT_OBJECTS
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
@@ -299,6 +303,7 @@ Navigator::Invalidate()
 
   mBatteryPromise = nullptr;
 
+#ifdef HAS_KOOST_MODULES
   if (mFlipManager) {
     mFlipManager->Shutdown();
     mFlipManager = nullptr;
@@ -308,6 +313,19 @@ Navigator::Invalidate()
     mFlashlightManager->Shutdown();
     mFlashlightManager = nullptr;
   }
+
+  if (mSoftkeyManager) {
+    mSoftkeyManager = nullptr;
+  }
+
+  if (mVolumeManager) {
+    mVolumeManager = nullptr;
+  }
+
+  if (mExternalAPI) {
+    mExternalAPI = nullptr;
+  }
+#endif
 
   if (mPowerSupplyManager) {
     mPowerSupplyManager->Shutdown();
@@ -360,10 +378,6 @@ Navigator::Invalidate()
 
   if (mInputPortManager) {
     mInputPortManager = nullptr;
-  }
-
-  if (mSoftkeyManager) {
-    mSoftkeyManager = nullptr;
   }
 
   if (mConnection) {
@@ -438,15 +452,6 @@ Navigator::Invalidate()
 #endif
   mVRGetDevicesPromises.Clear();
 
-#ifdef HAS_KOOST_MODULES
-  if (mVolumeManager) {
-    mVolumeManager = nullptr;
-  }
-#endif
-
-  if (mExternalAPI) {
-    mExternalAPI = nullptr;
-  }
 }
 
 //*****************************************************************************
@@ -1670,6 +1675,7 @@ Navigator::GetPowersupply(ErrorResult& aRv)
   return mPowerSupplyManager;
 }
 
+#ifdef HAS_KOOST_MODULES
 already_AddRefed<Promise>
 Navigator::GetFlipManager(ErrorResult& aRv)
 {
@@ -1703,6 +1709,7 @@ Navigator::GetFlashlightManager(ErrorResult& aRv)
   RefPtr<Promise> p = mFlashlightManager->GetPromise(aRv);
   return p.forget();
 }
+#endif
 
 /* static */ already_AddRefed<Promise>
 Navigator::GetDataStores(nsPIDOMWindowInner* aWindow,
@@ -1826,9 +1833,11 @@ Navigator::HasFeature(const nsAString& aName, ErrorResult& aRv)
     }
   }
 
+#ifdef HAS_KOOST_MODULES
   if (DeviceCapability::FeatureExistsAndResolve(aName, p)) {
     return p.forget();
   }
+#endif
 
   // Flag to decide if device support primay SIM switch.
   if (aName.EqualsLiteral("ril.support.primarysim.switch")) {
@@ -2015,20 +2024,6 @@ Navigator::MozTCPSocket()
 {
   RefPtr<LegacyMozTCPSocket> socket = new LegacyMozTCPSocket(GetWindow());
   return socket.forget();
-}
-
-SoftkeyManager*
-Navigator::GetSoftkeyManager(ErrorResult& aRv)
-{
-  if (!mSoftkeyManager) {
-    if (!mWindow) {
-      aRv.Throw(NS_ERROR_UNEXPECTED);
-      return nullptr;
-    }
-    mSoftkeyManager = SoftkeyManager::Create(mWindow);
-  }
-
-  return mSoftkeyManager;
 }
 
 #ifdef MOZ_B2G
@@ -2699,25 +2694,6 @@ Navigator::HasPresentationSupport(JSContext* aCx, JSObject* aGlobal)
 
 /* static */
 bool
-Navigator::HasExternalAPISupport(JSContext* aCx, JSObject* aGlobal)
-{
-  JS::Rooted<JSObject*> global(aCx, aGlobal);
-
-  nsCOMPtr<nsPIDOMWindowInner> inner = GetWindowFromGlobal(global);
-  if (NS_WARN_IF(!inner)) {
-    return false;
-  }
-
-  nsIDocument* doc = inner->GetExtantDoc();
-  if (!doc || !doc->NodePrincipal()) {
-    return false;
-  }
-
-  return ExternalAPI::CheckPermission(doc->NodePrincipal());
-}
-
-/* static */
-bool
 Navigator::IsE10sEnabled(JSContext* aCx, JSObject* aGlobal)
 {
   return XRE_IsContentProcess();
@@ -3057,6 +3033,20 @@ Navigator::LargeTextEnabled()
 }
 
 #ifdef HAS_KOOST_MODULES
+SoftkeyManager*
+Navigator::GetSoftkeyManager(ErrorResult& aRv)
+{
+  if (!mSoftkeyManager) {
+    if (!mWindow) {
+      aRv.Throw(NS_ERROR_UNEXPECTED);
+      return nullptr;
+    }
+    mSoftkeyManager = SoftkeyManager::Create(mWindow);
+  }
+
+  return mSoftkeyManager;
+}
+
 VolumeManager*
 Navigator::GetVolumeManager(ErrorResult& aRv)
 {
@@ -3091,7 +3081,24 @@ Navigator::SpatialNavigationEnabled() const
   return enabled;
 }
 
-#endif
+/* static */
+bool
+Navigator::HasExternalAPISupport(JSContext* aCx, JSObject* aGlobal)
+{
+  JS::Rooted<JSObject*> global(aCx, aGlobal);
+
+  nsCOMPtr<nsPIDOMWindowInner> inner = GetWindowFromGlobal(global);
+  if (NS_WARN_IF(!inner)) {
+    return false;
+  }
+
+  nsIDocument* doc = inner->GetExtantDoc();
+  if (!doc || !doc->NodePrincipal()) {
+    return false;
+  }
+
+  return ExternalAPI::CheckPermission(doc->NodePrincipal());
+}
 
 ExternalAPI*
 Navigator::GetExternalapi(ErrorResult& aRv)
@@ -3107,6 +3114,7 @@ Navigator::GetExternalapi(ErrorResult& aRv)
 
   return mExternalAPI;
 }
+#endif // HAS_KOOST_MODULES
 
 } // namespace dom
 } // namespace mozilla

@@ -89,6 +89,7 @@ SOURCES += [
 ]
 
 PREPROCESSED_IPDL_SOURCES += [
+    'PBrowser.ipdl',
     'PContent.ipdl',
 ]
 
@@ -97,7 +98,6 @@ IPDL_SOURCES += [
     'DOMTypes.ipdlh',
     'PBlob.ipdl',
     'PBlobStream.ipdl',
-    'PBrowser.ipdl',
     'PBrowserOrId.ipdlh',
     'PColorPicker.ipdl',
     'PContentBridge.ipdl',

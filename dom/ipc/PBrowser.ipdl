@@ -68,7 +68,9 @@ using nsEventStatus from "mozilla/EventForwards.h";
 using nsSizeMode from "nsIWidgetListener.h";
 using mozilla::widget::CandidateWindowPosition from "ipc/nsGUIEventIPC.h";
 using class mozilla::NativeEventData from "ipc/nsGUIEventIPC.h";
+#ifdef HAS_KOOST_MODULES
 using mozilla::dom::Softkey from "mozilla/dom/SoftkeyManagerIPC.h";
+#endif
 
 namespace mozilla {
 namespace dom {
@@ -517,6 +519,7 @@ parent:
     async AudioChannelActivityNotification(uint32_t aAudioChannel,
                                            bool aActive);
 
+#ifdef HAS_KOOST_MODULES
     async SoftkeyRegister(Softkey[] keys);
     async SoftkeyVisibleChange(bool visible);
     async UpdateSpatialNavigationCursorPosition(LayoutDeviceIntPoint aPoint);
@@ -529,6 +532,7 @@ parent:
 
     async RequestVolumeChange(bool up);
     async RequestVolumeShow();
+#endif
 
     async HangMonitorNotify();
 child:
@@ -770,9 +774,11 @@ child:
     async HandledWindowedPluginKeyEvent(NativeEventData aKeyEventData,
                                         bool aIsConsumed);
 
+#ifdef HAS_KOOST_MODULES
     async ActivateSpatialNavigation();
     async DeactivateSpatialNavigation();
     async UpdateSpatialNavigationTPSPanMode(bool aEnabled);
+#endif
 
 /*
  * FIXME: write protocol!

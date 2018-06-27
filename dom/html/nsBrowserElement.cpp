@@ -750,6 +750,7 @@ nsBrowserElement::SetNFCFocus(bool aIsFocus,
   }
 }
 
+#ifdef HAS_KOOST_MODULES
 void
 nsBrowserElement::SetSpatialNavigationEnabled(bool aEnabled,
                                               ErrorResult& aRv)
@@ -807,6 +808,7 @@ nsBrowserElement::GetTouchPanningSimulationEnabled(ErrorResult& aRv)
 
   return enabled;
 }
+#endif
 
 void
 nsBrowserElement::SetCanTakeFocus(bool aCanTake, ErrorResult& aRv)

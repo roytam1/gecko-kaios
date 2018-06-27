@@ -441,6 +441,7 @@ NotifyBatteryChange(const BatteryInformation& aInfo)
   BatteryObservers().BroadcastCachedInformation();
 }
 
+#ifdef HAS_KOOST_MODULES
 class FlipObserversManager : public ObserversManager<bool>
 {
 protected:
@@ -545,6 +546,7 @@ SetFlashlightEnabled(bool aEnabled)
   AssertMainThread();
   PROXY_IF_SANDBOXED(SetFlashlightEnabled(aEnabled));
 }
+#endif
 
 void
 RegisterPowerSupplyObserver(PowerSupplyObserver* aPowerSupplyObserver)

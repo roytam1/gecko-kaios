@@ -9,6 +9,7 @@ GENERATED_WEBIDL_FILES = [
 ]
 
 PREPROCESSED_WEBIDL_FILES = [
+    'BrowserElement.webidl',
     'HTMLMediaElement.webidl',
     'Navigator.webidl',
     'Promise.webidl',
@@ -18,6 +19,7 @@ PREPROCESSED_WEBIDL_FILES = [
     'Telephony.webidl',
     'TelephonyCall.webidl',
     'Window.webidl',
+    'WorkerNavigator.webidl',
 ]
 
 WEBIDL_FILES = [
@@ -62,7 +64,6 @@ WEBIDL_FILES = [
     'Blob.webidl',
     'BoxObject.webidl',
     'BroadcastChannel.webidl',
-    'BrowserElement.webidl',
     'BrowserElementAudioChannel.webidl',
     'BrowserElementDictionaries.webidl',
     'BrowserElementProxy.webidl',
@@ -160,7 +161,6 @@ WEBIDL_FILES = [
     'EventTarget.webidl',
     'ExtendableEvent.webidl',
     'ExtendableMessageEvent.webidl',
-    'ExternalAPI.webidl',
     'FakePluginTagInit.webidl',
     'Fetch.webidl',
     'FetchEvent.webidl',
@@ -169,8 +169,6 @@ WEBIDL_FILES = [
     'FileMode.webidl',
     'FileReader.webidl',
     'FileReaderSync.webidl',
-    'FlashlightManager.webidl',
-    'FlipManager.webidl',
     'FocusEvent.webidl',
     'FontFace.webidl',
     'FontFaceSet.webidl',
@@ -428,7 +426,6 @@ WEBIDL_FILES = [
     'SimpleGestureEvent.webidl',
     'SmsMessage.webidl',
     'SocketCommon.webidl',
-    'SoftkeyManager.webidl',
     'SourceBuffer.webidl',
     'SourceBufferList.webidl',
     'StereoPannerNode.webidl',
@@ -593,7 +590,6 @@ WEBIDL_FILES = [
     'VideoStreamTrack.webidl',
     'VideoTrack.webidl',
     'VideoTrackList.webidl',
-    'VolumeManager.webidl',
     'VRDevice.webidl',
     'VTTCue.webidl',
     'VTTRegion.webidl',
@@ -610,7 +606,6 @@ WEBIDL_FILES = [
     'WorkerDebuggerGlobalScope.webidl',
     'WorkerGlobalScope.webidl',
     'WorkerLocation.webidl',
-    'WorkerNavigator.webidl',
     'XMLDocument.webidl',
     'XMLHttpRequest.webidl',
     'XMLHttpRequestEventTarget.webidl',
@@ -1001,4 +996,13 @@ if CONFIG['MOZ_PRESENTATION']:
     GENERATED_EVENTS_WEBIDL_FILES += [
         'PresentationConnectionAvailableEvent.webidl',
         'PresentationConnectionClosedEvent.webidl',
+    ]
+
+if CONFIG['HAS_KOOST_MODULES']:
+    WEBIDL_FILES += [
+        'ExternalAPI.webidl',
+        'FlashlightManager.webidl',
+        'FlipManager.webidl',
+        'SoftkeyManager.webidl',
+        'VolumeManager.webidl',
     ]

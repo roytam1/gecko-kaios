@@ -21,8 +21,10 @@
 #include "mozilla/dom/DataTransfer.h"
 #include "mozilla/dom/Event.h"
 #include "mozilla/dom/indexedDB/ActorsParent.h"
+#ifdef HAS_KOOST_MODULES
 #include "mozilla/dom/SoftkeyManager.h"
 #include "mozilla/dom/VolumeManager.h"
+#endif
 #include "mozilla/plugins/PluginWidgetParent.h"
 #include "mozilla/EventStateManager.h"
 #include "mozilla/gfx/2D.h"
@@ -100,7 +102,9 @@
 #include "UnitTransforms.h"
 #include <algorithm>
 #include "mozilla/WebBrowserPersistDocumentParent.h"
+#ifdef HAS_KOOST_MODULES
 #include "SpatialNavigationService.h"
+#endif
 
 using namespace mozilla::dom;
 using namespace mozilla::ipc;
@@ -109,7 +113,9 @@ using namespace mozilla::layout;
 using namespace mozilla::services;
 using namespace mozilla::widget;
 using namespace mozilla::jsipc;
+#ifdef HAS_KOOST_MODULES
 using namespace mozilla::toolkit;
+#endif
 
 // The flags passed by the webProgress notifications are 16 bits shifted
 // from the ones registered by webProgressListeners.
@@ -2060,6 +2066,7 @@ TabParent::RecvReplyKeyEvent(const WidgetKeyboardEvent& event)
   return true;
 }
 
+#ifdef HAS_KOOST_MODULES
 bool
 TabParent::RecvSoftkeyRegister(nsTArray<Softkey>&& aKeys)
 {
@@ -2077,6 +2084,7 @@ TabParent::RecvSoftkeyVisibleChange(const bool& aVisible)
   SoftkeyManager::DispatchSoftkeyVisibleChange(mFrameElement, aVisible);
   return true;
 }
+#endif
 
 bool
 TabParent::RecvDispatchAfterKeyboardEvent(const WidgetKeyboardEvent& aEvent)
@@ -2703,6 +2711,7 @@ TabParent::RecvRespondStartSwipeEvent(const uint64_t& aInputBlockId,
   return true;
 }
 
+#ifdef HAS_KOOST_MODULES
 bool
 TabParent::RecvSetSpatialNavigationEnabled(const bool& aEnabled)
 {
@@ -2773,6 +2782,7 @@ TabParent::RecvTriggerSpatialNavigationContextMenu()
 
   return true;
 }
+#endif
 
 already_AddRefed<nsILoadContext>
 TabParent::GetLoadContext()
@@ -3398,6 +3408,7 @@ TabParent::RecvGetTabCount(uint32_t* aValue)
   return true;
 }
 
+#ifdef HAS_KOOST_MODULES
 bool
 TabParent::RecvRequestVolumeChange(const bool& aUp)
 {
@@ -3411,6 +3422,7 @@ TabParent::RecvRequestVolumeShow()
   VolumeManager::Notify(VolumeManager::VOLUME_SHOW);
   return true;
 }
+#endif
 
 bool
 TabParent::RecvHangMonitorNotify()

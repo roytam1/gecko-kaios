@@ -193,7 +193,9 @@
 #include "mozilla/StyleSetHandleInlines.h"
 #include "mozilla/StyleSheetHandle.h"
 #include "mozilla/StyleSheetHandleInlines.h"
+#ifdef HAS_KOOST_MODULES
 #include "nsIKeyboardAppProxy.h"
+#endif
 
 #ifdef ANDROID
 #include "nsIDocShellTreeOwner.h"
@@ -7152,6 +7154,7 @@ PresShell::CanDispatchEvent(const WidgetGUIEvent* aEvent) const
   return rv;
 }
 
+#ifdef HAS_KOOST_MODULES
 void
 PresShell::HandleEventRejectedByKeyboardApp(
   nsIContent* aTarget, WidgetKeyboardEvent& aEvent)
@@ -7222,6 +7225,7 @@ PresShell::TryRelayToKeyboardApp(WidgetKeyboardEvent& aEvent,
 
   return false;
 }
+#endif
 
 void
 PresShell::HandleKeyboardEvent(nsINode* aTarget,
@@ -7237,9 +7241,11 @@ PresShell::HandleKeyboardEvent(nsINode* aTarget,
       aEvent.IsKeyEventOnPlugin() ||
       !BeforeAfterKeyboardEventEnabled() ||
       aEvent.mFlags.mGeneratedFromIME) {
+#ifdef HAS_KOOST_MODULES
     if (TryRelayToKeyboardApp(aEvent, aStatus, aTarget)) {
       return;
     }
+#endif
     EventDispatcher::Dispatch(aTarget, mPresContext,
                               &aEvent, nullptr, aStatus, aEventCB);
     return;
@@ -7277,12 +7283,14 @@ PresShell::HandleKeyboardEvent(nsINode* aTarget,
     return;
   }
 
+#ifdef HAS_KOOST_MODULES
   // If Keyboard App is active then it should have a chance to process
   // this keyboard event first. Whether this event will be blocked or continued
   // depends on the async reply of Keyboard App.
   if (TryRelayToKeyboardApp(aEvent, aStatus, aTarget)) {
     return;
   }
+#endif
 
   // Dispatch actual key event to event target.
   EventDispatcher::Dispatch(aTarget, mPresContext,

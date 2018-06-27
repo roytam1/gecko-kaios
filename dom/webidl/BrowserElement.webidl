@@ -195,6 +195,7 @@ interface BrowserElementPrivileged {
 
 };
 
+#ifdef HAS_KOOST_MODULES
 partial interface BrowserElementPrivileged {
   // The following attributes are for app with browser permission (i.e. System app)
   // to enable spatial navigation service on an iframe, please note that:
@@ -221,6 +222,7 @@ partial interface BrowserElementPrivileged {
    CheckAllPermissions="browser"]
   attribute boolean touchPanningSimulationEnabled;
 };
+#endif
 
 partial interface BrowserElementPrivileged {
   // Default to true, setting this value to false makes this browser

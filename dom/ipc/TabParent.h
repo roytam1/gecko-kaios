@@ -165,9 +165,11 @@ public:
 
   virtual bool RecvReplyKeyEvent(const WidgetKeyboardEvent& aEvent) override;
 
+#ifdef HAS_KOOST_MODULES
   virtual bool RecvSoftkeyRegister(nsTArray<Softkey>&& aKeys) override;
 
   virtual bool RecvSoftkeyVisibleChange(const bool& aVisible) override;
+#endif
 
   virtual bool
   RecvDispatchAfterKeyboardEvent(const WidgetKeyboardEvent& aEvent) override;
@@ -316,6 +318,7 @@ public:
   virtual bool RecvRespondStartSwipeEvent(const uint64_t& aInputBlockId,
                                           const bool& aStartSwipe) override;
 
+#ifdef HAS_KOOST_MODULES
   virtual bool RecvSetSpatialNavigationEnabled(const bool& aEnabled) override;
   virtual bool RecvGetSpatialNavigationEnabled(bool* aEnabled) override;
   virtual bool RecvUpdateSpatialNavigationCursorPosition(const LayoutDeviceIntPoint& aPoint) override;
@@ -324,6 +327,7 @@ public:
   virtual bool RecvTriggerSpatialNavigationCursorOut() override;
   virtual bool RecvTriggerSpatialNavigationCursorMove() override;
   virtual bool RecvTriggerSpatialNavigationContextMenu() override;
+#endif
 
   virtual bool
   RecvDispatchWheelEvent(const mozilla::WidgetWheelEvent& aEvent) override;
@@ -434,8 +438,10 @@ public:
   virtual bool
   RecvClearNativeTouchSequence(const uint64_t& aObserverId) override;
 
+#ifdef HAS_KOOST_MODULES
   virtual bool RecvRequestVolumeChange(const bool& aUp) override;
   virtual bool RecvRequestVolumeShow() override;
+#endif
 
   virtual bool RecvHangMonitorNotify() override;
 

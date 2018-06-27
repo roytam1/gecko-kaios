@@ -11,8 +11,10 @@
 #include "base/platform_thread.h"
 #include "nsTArray.h"
 #include "mozilla/dom/battery/Types.h"
+#ifdef HAS_KOOST_MODULES
 #include "mozilla/dom/FlashlightManager.h"
 #include "mozilla/dom/FlipManager.h"
+#endif
 #include "mozilla/dom/MozPowerManagerBinding.h"
 #include "mozilla/dom/network/Types.h"
 #include "mozilla/dom/power/Types.h"
@@ -162,6 +164,7 @@ void GetCurrentUsbStatus(hal::UsbStatus* aUsbStatus);
 void NotifyUsbStatus(const hal::UsbStatus& aUsbStatus);
 
 
+#ifdef HAS_KOOST_MODULES
 /**
  * Inform the flipmanager backend there is a new flip observer.
  * @param aFlipObserver The observer that should be added.
@@ -225,6 +228,7 @@ bool GetFlashlightEnabled();
  * Enable or disable flashlight.
  */
 void SetFlashlightEnabled(bool aEnabled);
+#endif
 
 /**
  * Determine whether the device's screen is currently enabled.

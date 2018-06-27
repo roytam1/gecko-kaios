@@ -8,7 +8,6 @@
 #define mozilla_dom_Navigator_h
 
 #include "mozilla/MemoryReporting.h"
-#include "mozilla/dom/ExternalAPI.h"
 #include "mozilla/dom/Nullable.h"
 #include "mozilla/ErrorResult.h"
 #include "nsIDOMNavigator.h"
@@ -20,6 +19,9 @@
 #include "nsString.h"
 #include "nsTArray.h"
 #include "nsWeakPtr.h"
+#ifdef HAS_KOOST_MODULES
+#include "mozilla/dom/ExternalAPI.h"
+#endif
 #ifdef MOZ_EME
 #include "mozilla/dom/MediaKeySystemAccessManager.h"
 #endif
@@ -112,10 +114,10 @@ class DeviceStorageAreaListener;
 class Presentation;
 #endif
 class LegacyMozTCPSocket;
+#ifdef HAS_KOOST_MODULES
 class FlashlightManager;
 class FlipManager;
 class SoftkeyManager;
-#ifdef HAS_KOOST_MODULES
 class VolumeManager;
 #endif
 
@@ -190,8 +192,10 @@ public:
   Promise* GetBattery(ErrorResult& aRv);
   battery::BatteryManager* GetDeprecatedBattery(ErrorResult& aRv);
 
+#ifdef HAS_KOOST_MODULES
   already_AddRefed<Promise> GetFlipManager(ErrorResult& aRv);
   already_AddRefed<Promise> GetFlashlightManager(ErrorResult& aRv);
+#endif
   usb::UsbManager* GetUsb(ErrorResult& aRv);
   powersupply::PowerSupplyManager* GetPowersupply(ErrorResult& aRv);
 
@@ -279,7 +283,6 @@ public:
   Telephony* GetMozTelephony(ErrorResult& aRv);
   Voicemail* GetMozVoicemail(ErrorResult& aRv);
   TVManager* GetTv();
-  SoftkeyManager* GetSoftkeyManager(ErrorResult& aRv);
   InputPortManager* GetInputPortManager(ErrorResult& aRv);
   already_AddRefed<LegacyMozTCPSocket> MozTCPSocket();
   network::Connection* GetConnection(ErrorResult& aRv);
@@ -291,12 +294,14 @@ public:
   bool MozHasPendingMessage(const nsAString& aType, ErrorResult& aRv);
   void MozSetMessageHandlerPromise(Promise& aPromise, ErrorResult& aRv);
 #ifdef HAS_KOOST_MODULES
+  SoftkeyManager* GetSoftkeyManager(ErrorResult& aRv);
   VolumeManager* GetVolumeManager(ErrorResult& aRv);
   bool SpatialNavigationEnabled() const;
   void SetSpatialNavigationEnabled(bool enabled);
+  ExternalAPI* GetExternalapi(ErrorResult& aRv);
+  static bool HasExternalAPISupport(JSContext* aCx, JSObject* aGlobal);
 #endif
 
-  ExternalAPI* GetExternalapi(ErrorResult& aRv);
 
 #ifdef MOZ_B2G
   already_AddRefed<Promise> GetMobileIdAssertion(const MobileIdOptions& options,
@@ -382,7 +387,6 @@ public:
   static bool HasPresentationSupport(JSContext* aCx, JSObject* aGlobal);
 #endif
 
-  static bool HasExternalAPISupport(JSContext* aCx, JSObject* aGlobal);
 
   static bool IsE10sEnabled(JSContext* aCx, JSObject* aGlobal);
 
@@ -423,12 +427,14 @@ private:
   RefPtr<Geolocation> mGeolocation;
   RefPtr<DesktopNotificationCenter> mNotification;
   RefPtr<battery::BatteryManager> mBatteryManager;
+#ifdef HAS_KOOST_MODULES
   RefPtr<FlipManager> mFlipManager;
   RefPtr<FlashlightManager> mFlashlightManager;
+  RefPtr<SoftkeyManager> mSoftkeyManager;
+#endif
   RefPtr<Promise> mBatteryPromise;
   RefPtr<usb::UsbManager> mUsbManager;
   RefPtr<powersupply::PowerSupplyManager> mPowerSupplyManager;
-  RefPtr<SoftkeyManager> mSoftkeyManager;
 #ifdef MOZ_B2G_FM
   RefPtr<FMRadio> mFMRadio;
 #endif
@@ -468,9 +474,9 @@ private:
   nsTArray<RefPtr<Promise> > mVRGetDevicesPromises;
 #ifdef HAS_KOOST_MODULES
   RefPtr<VolumeManager> mVolumeManager;
+  RefPtr<ExternalAPI> mExternalAPI;
 #endif
 
-  RefPtr<ExternalAPI> mExternalAPI;
 };
 
 } // namespace dom

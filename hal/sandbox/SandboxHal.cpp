@@ -418,6 +418,7 @@ NotifySwitchStateFromInputDevice(SwitchDevice aDevice, SwitchState aState)
   NS_RUNTIMEABORT("Only the main process may notify switch state change.");
 }
 
+#ifdef HAS_KOOST_MODULES
 void
 NotifyFlipStateFromInputDevice(bool aFlipStatus)
 {
@@ -471,6 +472,7 @@ SetFlashlightEnabled(bool aEnabled)
 {
   Hal()->SendSetFlashlightEnabled(aEnabled);
 }
+#endif
 
 bool
 EnableAlarm()
@@ -653,8 +655,10 @@ class HalParent : public PHalParent
                 , public SwitchObserver
                 , public SystemClockChangeObserver
                 , public SystemTimezoneChangeObserver
+#ifdef HAS_KOOST_MODULES
                 , public FlipObserver
                 , public FlashlightObserver
+#endif
 {
 public:
   virtual void
@@ -676,8 +680,10 @@ public:
          switchDevice < NUM_SWITCH_DEVICE; ++switchDevice) {
       hal::UnregisterSwitchObserver(SwitchDevice(switchDevice), this);
     }
+#ifdef HAS_KOOST_MODULES
     hal::UnregisterFlipObserver(this);
     hal::UnregisterFlashlightObserver(this);
+#endif
     hal::UnregisterUsbObserver(this);
     hal::UnregisterPowerSupplyObserver(this);
   }
@@ -712,6 +718,7 @@ public:
     return true;
   }
 
+#ifdef HAS_KOOST_MODULES
   virtual bool
   RecvEnableFlipNotifications() override
   {
@@ -775,6 +782,7 @@ public:
   {
     Unused << SendNotifyFlashlightState(aFlashlightInfo);
   }
+#endif
 
   virtual bool
   RecvEnableBatteryNotifications() override {
@@ -1273,6 +1281,7 @@ public:
     return true;
   }
 
+#ifdef HAS_KOOST_MODULES
   virtual bool
   RecvNotifyFlipState(const bool& aFlipState) override {
     hal::UpdateFlipState(aFlipState);
@@ -1284,6 +1293,7 @@ public:
     hal::UpdateFlashlightState(aFlashlightState);
     return true;
   }
+#endif
 };
 
 bool

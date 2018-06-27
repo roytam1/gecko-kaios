@@ -111,7 +111,9 @@
 #include "nsDeviceContext.h"
 #include "nsSandboxFlags.h"
 #include "FrameLayerBuilder.h"
+#ifdef HAS_KOOST_MODULES
 #include "SpatialNavigationServiceChild.h"
+#endif
 
 #define BROWSER_ELEMENT_CHILD_SCRIPT \
     NS_LITERAL_STRING("chrome://global/content/BrowserElementChild.js")
@@ -129,7 +131,9 @@ using namespace mozilla::layout;
 using namespace mozilla::docshell;
 using namespace mozilla::widget;
 using namespace mozilla::jsipc;
+#ifdef HAS_KOOST_MODULES
 using namespace mozilla::toolkit;
+#endif
 
 NS_IMPL_ISUPPORTS(ContentListener, nsIDOMEventListener)
 
@@ -1674,11 +1678,13 @@ TabChild::RecvUpdateDimensions(const CSSRect& rect, const CSSSize& size,
                           screenRect.y + clientOffset.y + chromeDisp.y,
                           screenSize.width, screenSize.height, true);
 
+#ifdef HAS_KOOST_MODULES
     RefPtr<SpatialNavigationServiceChild> service =
       SpatialNavigationServiceChild::Get();
     if (service) {
       service->RecvUpdateDimensions(mChromeDisp);
     }
+#endif
 
     return true;
 }
@@ -2318,6 +2324,7 @@ TabChild::RecvAppOfflineStatus(const uint32_t& aId, const bool& aOffline)
   return true;
 }
 
+#ifdef HAS_KOOST_MODULES
 bool
 TabChild::RecvActivateSpatialNavigation()
 {
@@ -2351,6 +2358,7 @@ TabChild::RecvUpdateSpatialNavigationTPSPanMode(const bool& aEnabled)
 
   return true;
 }
+#endif
 
 bool
 TabChild::RecvSwappedWithOtherRemoteLoader()

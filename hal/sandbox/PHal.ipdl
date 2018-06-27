@@ -128,13 +128,16 @@ child:
 
     async NotifySystemClockChange(int64_t aClockDeltaMS);
     async NotifySystemTimezoneChange(SystemTimezoneChangeInformation aSystemTimezoneChangeInfo);
+#ifdef HAS_KOOST_MODULES
     async NotifyFlipState(bool aFlipState);
     async NotifyFlashlightState(FlashlightInformation aFlashlightInfo);
+#endif
 
 parent:
     async Vibrate(uint32_t[] pattern, uint64_t[] id, PBrowser browser);
     async CancelVibrate(uint64_t[] id, PBrowser browser);
 
+#ifdef HAS_KOOST_MODULES
     async EnableFlipNotifications();
     async DisableFlipNotifications();
     async GetFlipState();
@@ -143,6 +146,7 @@ parent:
     async DisableFlashlightNotifications();
     async GetFlashlightEnabled();
     async SetFlashlightEnabled(bool enabled);
+#endif
 
     async EnableBatteryNotifications();
     async DisableBatteryNotifications();

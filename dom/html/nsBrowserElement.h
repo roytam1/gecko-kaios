@@ -119,6 +119,7 @@ public:
   void SetNFCFocus(bool isFocus,
                    ErrorResult& aRv);
 
+#ifdef HAS_KOOST_MODULES
   void SetSpatialNavigationEnabled(bool aEnabled, ErrorResult& aRv);
 
   bool GetSpatialNavigationEnabled(ErrorResult& aRv);
@@ -126,6 +127,7 @@ public:
   void SetTouchPanningSimulationEnabled(bool aEnabled, ErrorResult& aRv);
 
   bool GetTouchPanningSimulationEnabled(ErrorResult& aRv);
+#endif
 
   void SetCanTakeFocus(bool aCanTake, ErrorResult& aRv);
 

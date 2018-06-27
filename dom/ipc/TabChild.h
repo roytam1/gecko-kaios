@@ -417,11 +417,13 @@ public:
   virtual bool RecvAppOfflineStatus(const uint32_t& aId,
                                     const bool& aOffline) override;
 
+#ifdef HAS_KOOST_MODULES
   virtual bool RecvActivateSpatialNavigation() override;
 
   virtual bool RecvDeactivateSpatialNavigation() override;
 
   virtual bool RecvUpdateSpatialNavigationTPSPanMode(const bool& aEnabled) override;
+#endif
 
   virtual bool RecvSwappedWithOtherRemoteLoader() override;
 

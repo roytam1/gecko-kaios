@@ -98,10 +98,12 @@ public:
   // BeforeAfterKeyboardEvent preference
   static bool BeforeAfterKeyboardEventEnabled();
 
+#ifdef HAS_KOOST_MODULES
   // After KeyboardAppProxy handled the interaction with IME, it will send
   // event back to presShell for processing it if IME didn't take it.
   void HandleEventRejectedByKeyboardApp(nsIContent* aTarget,
     mozilla::WidgetKeyboardEvent& aEvent);
+#endif
 
   void Init(nsIDocument* aDocument, nsPresContext* aPresContext,
             nsViewManager* aViewManager, mozilla::StyleSetHandle aStyleSet);
@@ -833,6 +835,7 @@ protected:
   nsresult SetResolutionImpl(float aResolution, bool aScaleToResolution);
 
 private:
+#ifdef HAS_KOOST_MODULES
   /*
    * Return true if aEvent is relayed to keyboard app by KeyboardAppProxy.
    *
@@ -848,6 +851,7 @@ private:
   bool TryRelayToKeyboardApp(mozilla::WidgetKeyboardEvent& aEvent,
                              nsEventStatus* aStatus,
                              nsINode* aTarget);
+#endif
 
 protected:
 #ifdef DEBUG

@@ -25,7 +25,9 @@ class WorkerNavigator final : public nsWrapperCache
   typedef struct workers::RuntimeService::NavigatorProperties NavigatorProperties;
 
   NavigatorProperties mProperties;
+#ifdef HAS_KOOST_MODULES
   RefPtr<ExternalAPI> mExternalAPI;
+#endif
   bool mOnline;
 
   WorkerNavigator(const NavigatorProperties& aProperties,
@@ -112,8 +114,10 @@ public:
 
   uint64_t HardwareConcurrency() const;
 
+#ifdef HAS_KOOST_MODULES
   ExternalAPI* GetExternalapi(ErrorResult& aRv);
   static bool HasExternalAPISupport(JSContext* aCx, JSObject* aGlobal);
+#endif
 };
 
 } // namespace dom
