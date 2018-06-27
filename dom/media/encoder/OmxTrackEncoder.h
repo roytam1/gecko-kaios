@@ -77,8 +77,9 @@ protected:
 class OmxAMRAudioTrackEncoder final : public OmxAudioTrackEncoder
 {
 public:
-  OmxAMRAudioTrackEncoder()
-    : OmxAudioTrackEncoder()
+  OmxAMRAudioTrackEncoder(bool aAmrWb)
+    : OmxAudioTrackEncoder(),
+      mAMR_WB(aAmrWb)
   {}
 
   enum {
@@ -88,6 +89,7 @@ public:
 
 protected:
   nsresult Init(int aChannels, int aSamplingRate) override;
+  bool mAMR_WB;
 };
 
 class OmxEVRCAudioTrackEncoder final : public OmxAudioTrackEncoder

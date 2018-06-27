@@ -754,8 +754,9 @@ private:
     // At this stage, the API doesn't allow UA to choose the output mimeType format.
 
     // Make sure the application has permission to assign AUDIO_3GPP
-    if (mRecorder->mMimeType.EqualsLiteral(AUDIO_3GPP) && CheckPermission("audio-capture:3gpp")) {
-      mEncoder = MediaEncoder::CreateEncoder(NS_LITERAL_STRING(AUDIO_3GPP),
+    if ((mRecorder->mMimeType.EqualsLiteral(AUDIO_3GPP) || mRecorder->mMimeType.EqualsLiteral(AUDIO_AMR_WB))
+         && CheckPermission("audio-capture:3gpp")) {
+      mEncoder = MediaEncoder::CreateEncoder(mRecorder->mMimeType,
                                              mRecorder->GetAudioBitrate(),
                                              mRecorder->GetVideoBitrate(),
                                              mRecorder->GetBitrate(),
@@ -1324,6 +1325,7 @@ MediaRecorder::IsTypeSupported(const nsAString& aMIMEType)
     // We're working on MP4 encoder support for desktop
   else if (mimeType.EqualsLiteral(VIDEO_MP4) ||
            mimeType.EqualsLiteral(AUDIO_3GPP) ||
+           mimeType.EqualsLiteral(AUDIO_AMR_WB) ||
            mimeType.EqualsLiteral(AUDIO_3GPP2)) {
     if (MediaEncoder::IsOMXEncoderEnabled()) {
       // XXX check codecs for MP4/3GPP

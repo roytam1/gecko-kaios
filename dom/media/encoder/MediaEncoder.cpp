@@ -167,8 +167,9 @@ MediaEncoder::CreateEncoder(const nsAString& aMIMEType, uint32_t aAudioBitrate,
     NS_ENSURE_TRUE(videoEncoder, nullptr);
     mimeType = NS_LITERAL_STRING(VIDEO_MP4);
   } else if (MediaEncoder::IsOMXEncoderEnabled() &&
-            (aMIMEType.EqualsLiteral(AUDIO_3GPP))) {
-    audioEncoder = new OmxAMRAudioTrackEncoder();
+            (aMIMEType.EqualsLiteral(AUDIO_3GPP) || aMIMEType.EqualsLiteral(AUDIO_AMR_WB))) {
+    // OmxAMRAudioTrackEncoder needs to know whether to encode nb or wb.
+    audioEncoder = new OmxAMRAudioTrackEncoder(aMIMEType.EqualsLiteral(AUDIO_AMR_WB));
     NS_ENSURE_TRUE(audioEncoder, nullptr);
 
     writer = new ISOMediaWriter(aTrackTypes, ISOMediaWriter::TYPE_FRAG_3GP);

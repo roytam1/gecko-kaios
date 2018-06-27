@@ -100,6 +100,16 @@ OMXCodecWrapper::CreateAMRNBEncoder()
 }
 
 OMXAudioEncoder*
+OMXCodecWrapper::CreateAMRWBEncoder()
+{
+  nsAutoPtr<OMXAudioEncoder> amr(new OMXAudioEncoder(CodecType::AMR_WB_ENC));
+  // Return the object only when media codec is valid.
+  NS_ENSURE_TRUE(amr->IsValid(), nullptr);
+
+  return amr.forget();
+}
+
+OMXAudioEncoder*
 OMXCodecWrapper::CreateEVRCEncoder()
 {
   nsAutoPtr<OMXAudioEncoder> evrc(new OMXAudioEncoder(CodecType::EVRC_ENC));
@@ -134,6 +144,8 @@ OMXCodecWrapper::OMXCodecWrapper(CodecType aCodecType)
     mCodec = MediaCodec::CreateByType(mLooper, MEDIA_MIMETYPE_VIDEO_AVC, true);
   } else if (aCodecType == CodecType::AMR_NB_ENC) {
     mCodec = MediaCodec::CreateByType(mLooper, MEDIA_MIMETYPE_AUDIO_AMR_NB, true);
+  } else if (aCodecType == CodecType::AMR_WB_ENC) {
+    mCodec = MediaCodec::CreateByType(mLooper, MEDIA_MIMETYPE_AUDIO_AMR_WB, true);
   } else if (aCodecType == CodecType::AAC_ENC) {
     mCodec = MediaCodec::CreateByType(mLooper, MEDIA_MIMETYPE_AUDIO_AAC, true);
   } else if (aCodecType == CodecType::EVRC_ENC) {
@@ -660,6 +672,10 @@ OMXAudioEncoder::Configure(int aChannels, int aInputSampleRate,
     format->setString("mime", MEDIA_MIMETYPE_AUDIO_AMR_NB);
     format->setInt32("bitrate", AMRNB_BITRATE);
     format->setInt32("sample-rate", aEncodedSampleRate);
+  } else if (mCodecType == AMR_WB_ENC) {
+    format->setString("mime", MEDIA_MIMETYPE_AUDIO_AMR_WB);
+    format->setInt32("bitrate", AMRNB_BITRATE);
+    format->setInt32("sample-rate", aEncodedSampleRate);
   } else if (mCodecType == EVRC_ENC) {
     format->setString("mime", MEDIA_MIMETYPE_AUDIO_EVRC);
     format->setInt32("bitrate", EVRC_BITRATE);
@@ -1087,7 +1103,7 @@ OMXCodecWrapper::GetNextEncodedFrame(nsTArray<uint8_t>* aOutputBuf,
         mCodec->releaseOutputBuffer(index);
         return NS_ERROR_FAILURE;
       }
-    } else if ((mCodecType == AMR_NB_ENC) && !mAMRCSDProvided){
+    } else if ((mCodecType == AMR_NB_ENC || mCodecType == AMR_WB_ENC) && !mAMRCSDProvided){
       // OMX AMR codec won't provide csd data, need to generate a fake one.
       RefPtr<EncodedFrame> audiodata = new EncodedFrame();
       // Decoder config descriptor

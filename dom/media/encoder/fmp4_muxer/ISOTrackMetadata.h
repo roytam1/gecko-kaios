@@ -92,11 +92,12 @@ public:
   uint32_t GetAudioChannels() override { return AMR_CHANNELS; }
 
   // TrackMetadataBase member
-  MetadataKind GetKind() const override { return METADATA_AMR; }
+  MetadataKind GetKind() const override { return mWB ? METADATA_AMR_WB : METADATA_AMR; }
 
   // AMRTrackMetadata members
-  AMRTrackMetadata() { MOZ_COUNT_CTOR(AMRTrackMetadata); }
+  AMRTrackMetadata(bool aWB) : mWB(aWB) { MOZ_COUNT_CTOR(AMRTrackMetadata); }
   ~AMRTrackMetadata() { MOZ_COUNT_DTOR(AMRTrackMetadata); }
+  bool mWB;
 };
 
 // EVRC sample rate is 8000 samples/s.

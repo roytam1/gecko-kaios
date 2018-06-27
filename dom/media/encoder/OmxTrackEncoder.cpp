@@ -192,7 +192,8 @@ OmxAudioTrackEncoder::AppendEncodedFrames(EncodedFrameContainer& aContainer)
     if (mEncoder->GetCodecType() == OMXCodecWrapper::AAC_ENC) {
       audiodata->SetFrameType(isCSD ?
         EncodedFrame::AAC_CSD : EncodedFrame::AAC_AUDIO_FRAME);
-    } else if (mEncoder->GetCodecType() == OMXCodecWrapper::AMR_NB_ENC){
+    } else if (mEncoder->GetCodecType() == OMXCodecWrapper::AMR_NB_ENC ||
+               mEncoder->GetCodecType() == OMXCodecWrapper::AMR_WB_ENC){
       audiodata->SetFrameType(isCSD ?
         EncodedFrame::AMR_AUDIO_CSD : EncodedFrame::AMR_AUDIO_FRAME);
     } else if (mEncoder->GetCodecType() == OMXCodecWrapper::EVRC_ENC){
@@ -309,7 +310,7 @@ OmxAMRAudioTrackEncoder::Init(int aChannels, int aSamplingRate)
   mChannels = aChannels;
   mSamplingRate = aSamplingRate;
 
-  mEncoder = OMXCodecWrapper::CreateAMRNBEncoder();
+  mEncoder = mAMR_WB ? OMXCodecWrapper::CreateAMRWBEncoder() : OMXCodecWrapper::CreateAMRNBEncoder();
   NS_ENSURE_TRUE(mEncoder, NS_ERROR_FAILURE);
 
   nsresult rv = mEncoder->Configure(mChannels, mSamplingRate, AMR_NB_SAMPLERATE);
@@ -338,7 +339,7 @@ OmxAMRAudioTrackEncoder::GetMetadata()
     return nullptr;
   }
 
-  RefPtr<AMRTrackMetadata> meta = new AMRTrackMetadata();
+  RefPtr<AMRTrackMetadata> meta = new AMRTrackMetadata(mAMR_WB);
   return meta.forget();
 }
 

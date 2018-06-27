@@ -41,7 +41,7 @@ public:
   nsresult Write() override;
 
   // AMRSampleEntry methods
-  AMRSampleEntry(ISOControl* aControl);
+  AMRSampleEntry(ISOControl* aControl, bool aWB = false);
   ~AMRSampleEntry();
 };
 

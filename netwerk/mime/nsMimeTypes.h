@@ -82,6 +82,7 @@
 #define AUDIO_MP3                           "audio/mpeg"
 #define AUDIO_MP4                           "audio/mp4"
 #define AUDIO_AMR                           "audio/amr"
+#define AUDIO_AMR_WB                        "audio/amr-wb"
 #define AUDIO_FLAC                          "audio/flac"
 #define AUDIO_3GPP                          "audio/3gpp"
 #define AUDIO_3GPP2                         "audio/3gpp2"

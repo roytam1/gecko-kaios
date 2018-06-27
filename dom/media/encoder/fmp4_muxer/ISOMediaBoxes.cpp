@@ -665,6 +665,8 @@ SampleDescriptionBox::CreateAudioSampleEntry(RefPtr<SampleEntryBox>& aSampleEntr
 {
   if (mAudioMeta->GetKind() == TrackMetadataBase::METADATA_AMR) {
     aSampleEntry = new AMRSampleEntry(mControl);
+  } else if (mAudioMeta->GetKind() == TrackMetadataBase::METADATA_AMR_WB) {
+    aSampleEntry = new AMRSampleEntry(mControl, true);
   } else if (mAudioMeta->GetKind() == TrackMetadataBase::METADATA_AAC) {
     aSampleEntry = new MP4AudioSampleEntry(mControl);
   } else if (mAudioMeta->GetKind() == TrackMetadataBase::METADATA_EVRC) {

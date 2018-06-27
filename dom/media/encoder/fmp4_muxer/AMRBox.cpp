@@ -35,8 +35,9 @@ AMRSampleEntry::Write()
   return NS_OK;
 }
 
-AMRSampleEntry::AMRSampleEntry(ISOControl* aControl)
-  : AudioSampleEntry(NS_LITERAL_CSTRING("samr"), aControl)
+AMRSampleEntry::AMRSampleEntry(ISOControl* aControl, bool aWB)
+  : AudioSampleEntry(aWB ? NS_LITERAL_CSTRING("sawb") : NS_LITERAL_CSTRING("samr"),
+                     aControl)
 {
   amr_special_box = new AMRSpecificBox(aControl);
   MOZ_COUNT_CTOR(AMRSampleEntry);

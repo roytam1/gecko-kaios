@@ -215,6 +215,7 @@ ISOMediaWriter::SetMetadata(TrackMetadataBase* aMetadata)
     js::ProfileEntry::Category::OTHER);
   if (aMetadata->GetKind() == TrackMetadataBase::METADATA_AAC ||
       aMetadata->GetKind() == TrackMetadataBase::METADATA_AMR ||
+      aMetadata->GetKind() == TrackMetadataBase::METADATA_AMR_WB ||
       aMetadata->GetKind() == TrackMetadataBase::METADATA_EVRC) {
     mControl->SetMetadata(aMetadata);
     mAudioFragmentBuffer = new FragmentBuffer(Audio_Track, FRAG_DURATION);

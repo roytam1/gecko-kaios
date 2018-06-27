@@ -87,6 +87,7 @@ public:
   enum CodecType {
     AAC_ENC, // AAC encoder.
     AMR_NB_ENC, // AMR_NB encoder.
+    AMR_WB_ENC, // AMR_WB encoder.
     AVC_ENC, // AVC/H.264 encoder.
     EVRC_ENC, // EVRC encoder
     TYPE_COUNT
@@ -120,6 +121,9 @@ public:
 
   /** Create a AMR audio encoder. Returns nullptr when failed. */
   static OMXAudioEncoder* CreateAMRNBEncoder();
+
+  /** Create a AMR WB audio encoder. Returns nullptr when failed. */
+  static OMXAudioEncoder* CreateAMRWBEncoder();
 
   /** Create a EVRC audio encoder. Returns nullptr when failed. */
   static OMXAudioEncoder* CreateEVRCEncoder();
