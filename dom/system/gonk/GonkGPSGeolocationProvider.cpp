@@ -51,12 +51,6 @@
 #include "nsIDataCallManager.h"
 #endif
 
-#ifdef HAS_KOOST_MODULES
-#include "mozilla/dom/ContentParent.h"
-#include "mozilla/dom/PContentParent.h" // for SendGnssNmeaUpdate
-#include "mozilla/unused.h"
-#endif
-
 #define FLUSH_AIDE_DATA 0
 #define SUPL_NI_NOTIFY  "supl-ni-notify"
 #define SUPL_NI_VERIFY  "supl-ni-verify"
@@ -290,41 +284,12 @@ GonkGPSGeolocationProvider::SvStatusCallback(GpsSvStatus* sv_info)
   }
 }
 
-#ifdef HAS_KOOST_MODULES
-class NotifyNmeaUpdateTask final : public nsRunnable
-{
-public:
-  NotifyNmeaUpdateTask(const int64_t aTimestamp, const char* aNmea)
-    : mTimestamp(aTimestamp)
-    , mNmea(aNmea)
-  {}
-  NS_IMETHOD Run() override {
-    // Notify the child processes.
-    nsTArray<ContentParent*> children;
-    ContentParent::GetAll(children);
-    for (uint32_t i = 0; i < children.Length(); i++) {
-      if (children[i]->HasGeolocationWatcher()) {
-        Unused << children[i]->SendGnssNmeaUpdate(mTimestamp, mNmea);
-      }
-    }
-    return NS_OK;
-  }
-private:
-  int64_t mTimestamp;
-  nsCString mNmea;
-};
-#endif
-
 void
 GonkGPSGeolocationProvider::NmeaCallback(GpsUtcTime timestamp, const char* nmea, int length)
 {
   if (gDebug_isLoggingEnabled) {
     DBG("NMEA: timestamp:\t%lld, length: %d, %s", timestamp, length, nmea);
   }
-
-#ifdef HAS_KOOST_MODULES
-  NS_DispatchToMainThread(new NotifyNmeaUpdateTask(timestamp, nmea));
-#endif
 }
 
 void

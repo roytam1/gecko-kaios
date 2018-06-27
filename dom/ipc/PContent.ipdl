@@ -551,10 +551,6 @@ child:
 
     async GeolocationError(uint16_t errorCode);
 
-#ifdef HAS_KOOST_MODULES
-    async GnssNmeaUpdate(int64_t aTimestamp, nsCString aNmea);
-#endif
-
     async UpdateDictionaryList(nsString[] dictionaries);
 
     // nsIPermissionManager messages

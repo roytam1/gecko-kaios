@@ -865,9 +865,6 @@ GK_ATOM(onmapsetmessagestatusreq, "onmapsetmessagestatusreq")
 GK_ATOM(onmapsendmessagereq, "onmapsendmessagereq")
 GK_ATOM(onmapmessageupdatereq, "onmapmessageupdatereq")
 GK_ATOM(onnewrdsgroup, "onnewrdsgroup")
-#ifdef HAS_KOOST_MODULES
-GK_ATOM(onnmeaupdate, "onnmeaupdate")
-#endif
 GK_ATOM(onnotificationclick, "onnotificationclick")
 GK_ATOM(onnotificationclose, "onnotificationclose")
 GK_ATOM(onnoupdate, "onnoupdate")

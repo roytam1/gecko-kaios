@@ -239,11 +239,6 @@ pref("geo.provider.ondemand_cleanup", false);
 // enable geo
 pref("geo.enabled", true);
 
-#ifdef HAS_KOOST_MODULES
-// enable GNSS monitor
-pref("geo.gnssMonitor.enabled", true);
-#endif
-
 // content sink control -- controls responsiveness during page load
 // see https://bugzilla.mozilla.org/show_bug.cgi?id=481566#c9
 pref("content.sink.enable_perf_mode",  2); // 0 - switch, 1 - interactive, 2 - perf

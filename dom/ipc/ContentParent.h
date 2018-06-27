@@ -499,8 +499,6 @@ public:
 
   bool HasGamepadListener() const { return mHasGamepadListener; }
 
-  bool HasGeolocationWatcher() const { return mGeolocationWatchID != -1; }
-
   void SetNuwaParent(NuwaParent* aNuwaParent) { mNuwaParent = aNuwaParent; }
 
   void ForkNewProcess(bool aBlocking);

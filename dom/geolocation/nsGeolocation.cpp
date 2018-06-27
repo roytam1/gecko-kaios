@@ -1176,19 +1176,6 @@ nsGeolocationService::UpdateAccuracy(bool aForceHigh)
   mHigherAccuracy = highRequired;
 }
 
-#ifdef HAS_KOOST_MODULES
-void
-nsGeolocationService::NotifyGnssNmeaUpdate(const int64_t aTimestamp, const nsCString& aNmea)
-{
-  for (uint32_t i = 0; i < mGeolocators.Length(); i++) {
-    GnssMonitor* gnss = mGeolocators[i]->GetGnss();
-    if (gnss) {
-      gnss->DispatchNmeaEvent(aTimestamp, aNmea);
-    }
-  }
-}
-#endif
-
 void
 nsGeolocationService::StopDevice()
 {
@@ -1271,9 +1258,6 @@ NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(Geolocation,
 
 Geolocation::Geolocation()
 : mProtocolType(ProtocolType::OTHER)
-#ifdef HAS_KOOST_MODULES
-, mGnss(nullptr)
-#endif
 , mLastWatchId(0)
 {
 }
@@ -1331,9 +1315,6 @@ Geolocation::Init(nsPIDOMWindowInner* aContentDom)
         mProtocolType = ProtocolType::HTTPS;
       }
     }
-#ifdef HAS_KOOST_MODULES
-    mGnss = GnssMonitor::Create(aContentDom);
-#endif
   }
 
   // If no aContentDom was passed into us, we are being used

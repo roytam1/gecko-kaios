@@ -29,12 +29,6 @@ interface Geolocation {
                      optional PositionOptions options);
 
   void clearWatch(long watchId);
-
-#ifdef HAS_KOOST_MODULES
-  // [Non-standard], an interface for monitoring status of Global Navigation Satellite System
-  [Pref="geo.gnssMonitor.enabled"]
-  readonly attribute GnssMonitor? gnss;
-#endif
 };
 
 callback PositionCallback = void (Position position);

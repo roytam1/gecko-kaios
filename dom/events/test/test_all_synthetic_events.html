@@ -417,10 +417,6 @@ const kEventConstructors = {
                                                          return e;
                                                        },
                                              },
-  NmeaEvent:                                 { create: function (aName, aProps) {
-                                                          return new NmeaEvent(aName, aProps);
-                                                       },
-                                             },
   NotifyPaintEvent:                          { create: function (aName, aProps) {
                                                          var e = document.createEvent("notifypaintevent");
                                                          e.initEvent(aName, aProps.bubbles, aProps.cancelable);
