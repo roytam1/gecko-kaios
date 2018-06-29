@@ -511,6 +511,7 @@ XPCOMUtils.defineLazyGetter(this, "gMessageManager", function () {
       if (message.name == "child-process-shutdown") {
         this.removePeerTarget(message.target);
         this.nfc.removeTarget(message.target);
+        this.nfc.onChildProcessShutdown(message.target);
         this.removeEventListener(message.target);
         return null;
       }
@@ -692,6 +693,8 @@ Nfc.prototype = {
   isLoaderService: 0,
   pendingRequestMessage: null,
 
+  _domRequest: [],
+
   /**
    * Start NFC service
    */
@@ -730,6 +733,37 @@ Nfc.prototype = {
     this.pendingNfcService = null;
   },
 
+  /**
+   *  Handle child process shutdown.
+   */
+  onChildProcessShutdown: function onChildProcessShutdown(target) {
+    if (this._domRequest.length <= 0) return;
+
+    for (let i = this._domRequest.length - 1; i >= 0; i--) {
+      if (this._domRequest[i].msg.manager === target) {
+        this._domRequest.splice(i, 1);
+      }
+    }
+
+    if (this._domRequest.length <= 0) {
+      if(!Services.prefs.getBoolPref("dom.nfc.revertTransit.enabled")) {
+        debug("Revert to transit is disabled.");
+        return;
+      }
+
+      let command = CommandMsgTable["NFC:SetConfig"];
+      if (!command) {
+        debug("Unknown message");
+        return;
+      }
+      let confFile = new Blob([''], {type: "text/plain"});
+      this.sendToNfcService(command, {
+        requestId: this._getRandomId(),
+        rfConfType: "revertToTransit",
+        confBlob: confFile
+      });
+    }
+  },
   /**
    * Send arbitrary message to Nfc service.
    *
@@ -1041,6 +1075,14 @@ Nfc.prototype = {
         this.sendNfcErrorResponse(message, "NotInitialize");
       }
       return;
+    }
+
+    let msg = message.data || {};
+    msg.manager = message.target;
+
+    // We are interested in SetConfig DOMRequests only.
+    if (message.name == "NFC:SetConfig") {
+      this._domRequest.push({name: message.name, msg:msg});
     }
 
     // NFC Service is running and we have a message for it. This

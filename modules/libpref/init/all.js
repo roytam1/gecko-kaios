@@ -5270,6 +5270,11 @@ pref("dom.secureelement.enabled", true);
 pref("dom.secureelement.ace.enabled", true);
 #endif
 
+// Revert the RF configuration to transit mode.
+#ifdef MOZ_NFC
+pref("dom.nfc.revertTransit.enabled", false);
+#endif
+
 // Allow control characters appear in composition string.
 // When this is false, control characters except
 // CHARACTER TABULATION (horizontal tab) are removed from
