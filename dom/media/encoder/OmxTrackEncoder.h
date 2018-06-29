@@ -84,6 +84,7 @@ public:
 
   enum {
     AMR_NB_SAMPLERATE = 8000,
+    AMR_WB_SAMPLERATE = 16000,
   };
   already_AddRefed<TrackMetadataBase> GetMetadata() override;
 

@@ -313,7 +313,8 @@ OmxAMRAudioTrackEncoder::Init(int aChannels, int aSamplingRate)
   mEncoder = mAMR_WB ? OMXCodecWrapper::CreateAMRWBEncoder() : OMXCodecWrapper::CreateAMRNBEncoder();
   NS_ENSURE_TRUE(mEncoder, NS_ERROR_FAILURE);
 
-  nsresult rv = mEncoder->Configure(mChannels, mSamplingRate, AMR_NB_SAMPLERATE);
+  int outputSamplingRate = mAMR_WB ? AMR_WB_SAMPLERATE : AMR_NB_SAMPLERATE;
+  nsresult rv = mEncoder->Configure(mChannels, mSamplingRate, outputSamplingRate);
   ReentrantMonitorAutoEnter mon(mReentrantMonitor);
   mInitialized = (rv == NS_OK);
 
