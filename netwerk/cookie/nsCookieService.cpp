@@ -118,6 +118,34 @@ static const char kPrefMaxCookiesPerHost[]  = "network.cookie.maxPerHost";
 static const char kPrefCookiePurgeAge[]     = "network.cookie.purgeAge";
 static const char kPrefThirdPartySession[]  = "network.cookie.thirdparty.sessionOnly";
 
+static NeckoOriginAttributes
+MaybeOverrideOriginAttributes(const NeckoOriginAttributes& aOriginAttrs)
+{
+  // Preference "apps.sandboxed.cookies.enabled" sets the favorite of whether to
+  // have independent cookies per apps, however, if an app specifically sets
+  // permission "sandboxed-cookies" in its manifest, we will force reading/writing
+  // cookies of this app individually, a.k.a. no SSO service.
+  bool useSandboxedCookies =
+    Preferences::GetBool("apps.sandboxed.cookies.enabled", true);
+
+  nsCOMPtr<nsIAppsService> appsService = do_GetService(APPS_SERVICE_CONTRACTID);
+  if (appsService) {
+    bool allowed = false;
+    nsCOMPtr<mozIApplication> app;
+    nsresult rv = appsService->GetAppByLocalId(aOriginAttrs.mAppId, getter_AddRefs(app));
+    if (NS_SUCCEEDED(rv) && app) {
+      rv = app->HasPermission("sandboxed-cookies", &allowed);
+    }
+    if (NS_SUCCEEDED(rv) && allowed) {
+      useSandboxedCookies = true;
+    }
+  }
+
+  return useSandboxedCookies ?
+         aOriginAttrs :
+         NeckoOriginAttributes(NECKO_NO_APP_ID, true);
+}
+
 static void
 bindCookieParameters(mozIStorageBindingParamsArray *aParamsArray,
                      const nsCookieKey &aKey,
@@ -2027,9 +2055,7 @@ nsCookieService::SetCookieStringInternal(nsIURI                 *aHostURI,
     return;
   }
 
-  nsCookieKey key(baseDomain, Preferences::GetBool("apps.sandboxed.cookies.enabled", true) ?
-                              aOriginAttrs :
-                              NeckoOriginAttributes(NECKO_NO_APP_ID, true));
+  nsCookieKey key(baseDomain, MaybeOverrideOriginAttributes(aOriginAttrs));
 
   // check default prefs
   CookieStatus cookieStatus = CheckPrefs(aHostURI, aIsForeign, requireHostMatch,
@@ -3037,9 +3063,8 @@ nsCookieService::GetCookieStringInternal(nsIURI *aHostURI,
   int64_t currentTime = currentTimeInUsec / PR_USEC_PER_SEC;
   bool stale = false;
 
-  nsCookieKey key(baseDomain, Preferences::GetBool("apps.sandboxed.cookies.enabled", true) ?
-                              aOriginAttrs :
-                              NeckoOriginAttributes(NECKO_NO_APP_ID, true));
+  nsCookieKey key(baseDomain, MaybeOverrideOriginAttributes(aOriginAttrs));
+
   EnsureReadDomain(key);
 
   // perform the hash lookup

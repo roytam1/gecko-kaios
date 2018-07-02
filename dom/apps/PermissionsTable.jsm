@@ -595,6 +595,11 @@ this.PermissionsTable =  { geolocation: {
                              app: DENY_ACTION,
                              privileged: ALLOW_ACTION,
                              certified: ALLOW_ACTION
+                           },
+                           "sandboxed-cookies": {
+                             app: ALLOW_ACTION,
+                             privileged: ALLOW_ACTION,
+                             certified: ALLOW_ACTION
                            }
                          };
 
