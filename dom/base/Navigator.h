@@ -8,6 +8,7 @@
 #define mozilla_dom_Navigator_h
 
 #include "mozilla/MemoryReporting.h"
+#include "mozilla/dom/ExternalAPI.h"
 #include "mozilla/dom/Nullable.h"
 #include "mozilla/ErrorResult.h"
 #include "nsIDOMNavigator.h"
@@ -115,7 +116,6 @@ class SoftkeyManager;
 #ifdef HAS_KOOST_MODULES
 class VolumeManager;
 #endif
-class ExternalAPI;
 
 namespace time {
 class TimeManager;

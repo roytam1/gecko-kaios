@@ -19,7 +19,6 @@
 namespace mozilla {
 namespace dom {
 class Promise;
-class ExternalAPI;
 
 class WorkerNavigator final : public nsWrapperCache
 {

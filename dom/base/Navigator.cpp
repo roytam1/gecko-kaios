@@ -148,8 +148,6 @@
 #include "mozilla/dom/fota/FotaEngine.h"
 #endif
 
-#include "mozilla/dom/ExternalAPI.h"
-
 namespace mozilla {
 using namespace toolkit;
 namespace dom {
