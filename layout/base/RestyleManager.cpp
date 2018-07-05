@@ -12,6 +12,7 @@
 
 #include <algorithm> // For std::max
 #include "mozilla/EventStates.h"
+#include "mozilla/css/StyleRule.h" // For nsCSSSelector
 #include "nsLayoutUtils.h"
 #include "AnimationCommon.h" // For GetLayerAnimationInfo
 #include "FrameLayerBuilder.h"
@@ -44,7 +45,6 @@
 #include "ActiveLayerTracker.h"
 #include "nsDisplayList.h"
 #include "RestyleTrackerInlines.h"
-#include "nsSMILAnimationController.h"
 #include "nsCSSRuleProcessor.h"
 #include "ChildIterator.h"
 #include "Layers.h"
@@ -646,7 +646,7 @@ RestyleManager::StyleChangeReflow(nsIFrame* aFrame, nsChangeHint aHint)
 }
 
 void
-RestyleManager::AddSubtreeToOverflowTracker(nsIFrame* aFrame) 
+RestyleManager::AddSubtreeToOverflowTracker(nsIFrame* aFrame)
 {
   if (aFrame->FrameMaintainsOverflow()) {
     mOverflowChangedTracker.AddFrame(aFrame,
@@ -1852,15 +1852,7 @@ RestyleManager::UpdateOnlyAnimationStyles()
 {
   bool doCSS = mPresContext->EffectCompositor()->HasPendingStyleUpdates();
 
-  nsIDocument* document = mPresContext->Document();
-  nsSMILAnimationController* animationController =
-    document->HasAnimationController() ?
-    document->GetAnimationController() :
-    nullptr;
-  bool doSMIL = animationController &&
-                animationController->MightHavePendingStyleUpdates();
-
-  if (!doCSS && !doSMIL) {
+  if (!doCSS) {
     return;
   }
 
@@ -1878,10 +1870,6 @@ RestyleManager::UpdateOnlyAnimationStyles()
     // (i.e., animating on the compositor with main-thread style updates
     // suppressed).
     mPresContext->EffectCompositor()->AddStyleUpdatesTo(tracker);
-  }
-
-  if (doSMIL) {
-    animationController->AddStyleUpdatesTo(tracker);
   }
 
   ProcessRestyles(tracker);

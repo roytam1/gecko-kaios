@@ -20,7 +20,6 @@
 #include "mozilla/dom/Element.h"
 #include "nsCycleCollectionParticipant.h"
 
-#include "nsISMILAttr.h"
 #include "mozilla/dom/ShadowRoot.h"
 
 class nsIDocument;
@@ -325,7 +324,7 @@ public:
   {
     mRefCnt.RemovePurple();
   }
-  
+
 private:
   already_AddRefed<nsIAtom> GetCurrentValueAtom();
 };

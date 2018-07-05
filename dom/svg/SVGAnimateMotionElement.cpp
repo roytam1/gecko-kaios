@@ -33,12 +33,6 @@ NS_IMPL_ELEMENT_CLONE_WITH_INIT(SVGAnimateMotionElement)
 
 //----------------------------------------------------------------------
 
-nsSMILAnimationFunction&
-SVGAnimateMotionElement::AnimationFunction()
-{
-  return mAnimationFunction;
-}
-
 bool
 SVGAnimateMotionElement::GetTargetAttributeName(int32_t *aNamespaceID,
                                                 nsIAtom **aLocalName) const
@@ -49,15 +43,6 @@ SVGAnimateMotionElement::GetTargetAttributeName(int32_t *aNamespaceID,
   *aNamespaceID = kNameSpaceID_None;
   *aLocalName = nsGkAtoms::mozAnimateMotionDummyAttr;
   return true;
-}
-
-nsSMILTargetAttrType
-SVGAnimateMotionElement::GetTargetAttributeType() const
-{
-  // <animateMotion> doesn't take an attributeType, since it doesn't target an
-  // 'attribute' per se.  We'll just return 'XML' for simplicity.  (This just
-  // needs to match what we expect in nsSVGElement::GetAnimAttr.)
-  return eSMILTargetAttrType_XML;
 }
 
 } // namespace dom

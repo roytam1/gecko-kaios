@@ -42,8 +42,6 @@ function addTransform()
        pattern should look DIFFERENT to patternBase. -->
   <pattern xlink:href="#patternBase" id="patternRefWithTransform"
     patternTransform=""/>
-  <!-- The case of a patternTransform being supplied by animation is covered by
-       SMIL reftest anim-pattern-attr-presence-01.svg -->
 </defs>
 <rect width="100" height="100" stroke="black"
   fill="url(#patternBase)"/>

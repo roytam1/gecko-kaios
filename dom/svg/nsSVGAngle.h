@@ -9,11 +9,9 @@
 
 #include "nsCOMPtr.h"
 #include "nsError.h"
-#include "nsISMILAttr.h"
 #include "mozilla/Attributes.h"
 
 class nsISupports;
-class nsSMILValue;
 class nsSVGElement;
 
 namespace mozilla {
@@ -70,8 +68,6 @@ public:
   static nsresult ToDOMSVGAngle(nsISupports **aResult);
   already_AddRefed<mozilla::dom::SVGAnimatedAngle>
     ToDOMAnimatedAngle(nsSVGElement* aSVGElement);
-  // Returns a new nsISMILAttr object that the caller must delete
-  nsISMILAttr* ToSMILAttr(nsSVGElement* aSVGElement);
 
   static float GetDegreesPerUnit(uint8_t aUnit);
 
@@ -90,40 +86,6 @@ private:
   nsresult ConvertToSpecifiedUnits(uint16_t aUnitType, nsSVGElement *aSVGElement);
   already_AddRefed<mozilla::dom::SVGAngle> ToDOMBaseVal(nsSVGElement* aSVGElement);
   already_AddRefed<mozilla::dom::SVGAngle> ToDOMAnimVal(nsSVGElement* aSVGElement);
-
-public:
-  // We do not currently implemente a SMILAngle struct because in SVG 1.1 the
-  // only *animatable* attribute that takes an <angle> is 'orient', on the
-  // 'marker' element, and 'orient' must be special cased since it can also
-  // take the value 'auto', making it a more complex type.
-
-  struct SMILOrient final : public nsISMILAttr
-  {
-  public:
-    SMILOrient(mozilla::dom::nsSVGOrientType* aOrientType,
-               nsSVGAngle* aAngle,
-               nsSVGElement* aSVGElement)
-      : mOrientType(aOrientType)
-      , mAngle(aAngle)
-      , mSVGElement(aSVGElement)
-    {}
-
-    // These will stay alive because a nsISMILAttr only lives as long
-    // as the Compositing step, and DOM elements don't get a chance to
-    // die during that.
-    mozilla::dom::nsSVGOrientType* mOrientType;
-    nsSVGAngle* mAngle;
-    nsSVGElement* mSVGElement;
-
-    // nsISMILAttr methods
-    virtual nsresult ValueFromString(const nsAString& aStr,
-                                     const mozilla::dom::SVGAnimationElement* aSrcElement,
-                                     nsSMILValue& aValue,
-                                     bool& aPreventCachingOfSandwich) const override;
-    virtual nsSMILValue GetBaseValue() const override;
-    virtual void ClearAnimValue() override;
-    virtual nsresult SetAnimValue(const nsSMILValue& aValue) override;
-  };
 };
 
 #endif //__NS_SVGANGLE_H__

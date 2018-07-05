@@ -116,7 +116,7 @@ nsStyledElementNotElementCSSInlineStyle::Style()
     // Just in case...
     ReparseStyleAttribute(true);
 
-    slots->mStyle = new nsDOMCSSAttributeDeclaration(this, false);
+    slots->mStyle = new nsDOMCSSAttributeDeclaration(this);
     SetMayHaveStyle();
   }
 
@@ -130,7 +130,7 @@ nsStyledElementNotElementCSSInlineStyle::ReparseStyleAttribute(bool aForceInData
     return NS_OK;
   }
   const nsAttrValue* oldVal = mAttrsAndChildren.GetAttr(nsGkAtoms::style);
-  
+
   if (oldVal && oldVal->Type() != nsAttrValue::eCSSDeclaration) {
     nsAttrValue attrValue;
     nsAutoString stringValue;
@@ -141,7 +141,7 @@ nsStyledElementNotElementCSSInlineStyle::ReparseStyleAttribute(bool aForceInData
     nsresult rv = mAttrsAndChildren.SetAndSwapAttr(nsGkAtoms::style, attrValue);
     NS_ENSURE_SUCCESS(rv, rv);
   }
-  
+
   return NS_OK;
 }
 

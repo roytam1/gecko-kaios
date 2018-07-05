@@ -10,10 +10,8 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/MemoryReporting.h"
 #include "nsAutoPtr.h"
-#include "nsISMILAttr.h"
 #include "SVGPathData.h"
 
-class nsSMILValue;
 class nsSVGElement;
 
 namespace mozilla {
@@ -82,13 +80,10 @@ public:
   void *GetAnimValKey() const {
     return (void*)&mAnimVal;
   }
-  
+
   bool IsAnimating() const {
     return !!mAnimVal;
   }
-
-  /// Callers own the returned nsISMILAttr
-  nsISMILAttr* ToSMILAttr(nsSVGElement* aElement);
 
   size_t SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const;
 
@@ -101,31 +96,6 @@ private:
 
   SVGPathData mBaseVal;
   nsAutoPtr<SVGPathData> mAnimVal;
-
-  struct SMILAnimatedPathSegList : public nsISMILAttr
-  {
-  public:
-    SMILAnimatedPathSegList(SVGAnimatedPathSegList* aVal,
-                            nsSVGElement* aElement)
-      : mVal(aVal)
-      , mElement(aElement)
-    {}
-
-    // These will stay alive because a nsISMILAttr only lives as long
-    // as the Compositing step, and DOM elements don't get a chance to
-    // die during that.
-    SVGAnimatedPathSegList *mVal;
-    nsSVGElement *mElement;
-
-    // nsISMILAttr methods
-    virtual nsresult ValueFromString(const nsAString& aStr,
-                                     const dom::SVGAnimationElement* aSrcElement,
-                                     nsSMILValue& aValue,
-                                     bool& aPreventCachingOfSandwich) const override;
-    virtual nsSMILValue GetBaseValue() const override;
-    virtual void ClearAnimValue() override;
-    virtual nsresult SetAnimValue(const nsSMILValue& aValue) override;
-  };
 };
 
 } // namespace mozilla

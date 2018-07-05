@@ -36,6 +36,5 @@ fuzzy-if(Android,4,34) == image-opacity-02.svg image-opacity-02-ref.svg # Bug 77
 == image-preserveAspectRatio-01-svg.svg    image-preserveAspectRatio-01-ref.svg
 == image-preserveAspectRatio-02-raster.svg image-preserveAspectRatio-02-ref.svg
 == image-preserveAspectRatio-02-svg.svg    image-preserveAspectRatio-02-ref.svg
-== image-preserveAspectRatio-03.svg        image-preserveAspectRatio-03-ref.svg
 == image-preserveAspectRatio-04.svg        image-preserveAspectRatio-04-ref.svg
 == image-preserveAspectRatio-05.svg ../pass.svg

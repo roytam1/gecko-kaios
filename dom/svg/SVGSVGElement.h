@@ -22,7 +22,6 @@ nsresult NS_NewSVGSVGElement(nsIContent **aResult,
                              already_AddRefed<mozilla::dom::NodeInfo>&& aNodeInfo,
                              mozilla::dom::FromParser aFromParser);
 
-class nsSMILTimeContainer;
 class nsSVGOuterSVGFrame;
 class nsSVGInnerSVGFrame;
 
@@ -145,8 +144,6 @@ public:
    */
   const SVGPoint& GetPreviousTranslate() { return mPreviousTranslate; }
   float GetPreviousScale() { return mPreviousScale; }
-
-  nsSMILTimeContainer* GetTimedDocumentRoot();
 
   // nsIContent interface
   NS_IMETHOD_(bool) IsAttributeMapped(const nsIAtom* aAttribute) const override;
@@ -328,7 +325,7 @@ private:
            !parent->IsSVGElement(nsGkAtoms::foreignObject);
   }
 
-  /* 
+  /*
    * While binding to the tree we need to determine if we will be the outermost
    * <svg> element _before_ the children are bound (as they want to know what
    * timed document root to register with) and therefore _before_ our parent is
@@ -394,10 +391,6 @@ private:
   // flag this as an inner <svg> to save the overhead of GetCtx calls?
   // XXXjwatt our frame should probably reset these when it's destroyed.
   float mViewportWidth, mViewportHeight;
-
-  // The time container for animations within this SVG document fragment. Set
-  // for all outermost <svg> elements (not nested <svg> elements).
-  nsAutoPtr<nsSMILTimeContainer> mTimedDocumentRoot;
 
   // zoom and pan
   // IMPORTANT: see the comment in RecordCurrentScaleTranslate before writing

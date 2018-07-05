@@ -8,10 +8,8 @@
 
 #include "SVGAnimatedPreserveAspectRatio.h"
 #include "mozilla/dom/SVGAnimatedPreserveAspectRatioBinding.h"
-#include "nsSMILValue.h"
 #include "nsSVGAttrTearoffTable.h"
 #include "nsWhitespaceTokenizer.h"
-#include "SMILEnumType.h"
 #include "SVGContentUtils.h"
 
 using namespace mozilla;
@@ -294,60 +292,4 @@ SVGAnimatedPreserveAspectRatio::ToDOMAnimatedPreserveAspectRatio(
 DOMSVGAnimatedPreserveAspectRatio::~DOMSVGAnimatedPreserveAspectRatio()
 {
   sSVGAnimatedPAspectRatioTearoffTable.RemoveTearoff(mVal);
-}
-
-nsISMILAttr*
-SVGAnimatedPreserveAspectRatio::ToSMILAttr(nsSVGElement *aSVGElement)
-{
-  return new SMILPreserveAspectRatio(this, aSVGElement);
-}
-
-// typedef for inner class, to make function signatures shorter below:
-typedef SVGAnimatedPreserveAspectRatio::SMILPreserveAspectRatio
-  SMILPreserveAspectRatio;
-
-nsresult
-SMILPreserveAspectRatio::ValueFromString(const nsAString& aStr,
-                                         const SVGAnimationElement* /*aSrcElement*/,
-                                         nsSMILValue& aValue,
-                                         bool& aPreventCachingOfSandwich) const
-{
-  SVGPreserveAspectRatio par;
-  nsresult res = ToPreserveAspectRatio(aStr, &par);
-  NS_ENSURE_SUCCESS(res, res);
-
-  nsSMILValue val(SMILEnumType::Singleton());
-  val.mU.mUint = PackPreserveAspectRatio(par);
-  aValue = val;
-  aPreventCachingOfSandwich = false;
-  return NS_OK;
-}
-
-nsSMILValue
-SMILPreserveAspectRatio::GetBaseValue() const
-{
-  nsSMILValue val(SMILEnumType::Singleton());
-  val.mU.mUint = PackPreserveAspectRatio(mVal->GetBaseValue());
-  return val;
-}
-
-void
-SMILPreserveAspectRatio::ClearAnimValue()
-{
-  if (mVal->mIsAnimated) {
-    mVal->mIsAnimated = false;
-    mVal->mAnimVal = mVal->mBaseVal;
-    mSVGElement->DidAnimatePreserveAspectRatio();
-  }
-}
-
-nsresult
-SMILPreserveAspectRatio::SetAnimValue(const nsSMILValue& aValue)
-{
-  NS_ASSERTION(aValue.mType == SMILEnumType::Singleton(),
-               "Unexpected type to assign animated value");
-  if (aValue.mType == SMILEnumType::Singleton()) {
-    mVal->SetAnimValue(aValue.mU.mUint, mSVGElement);
-  }
-  return NS_OK;
 }

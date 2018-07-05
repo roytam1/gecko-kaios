@@ -10,9 +10,6 @@ include sizing/reftest.list
 # filter tests
 include filters/reftest.list
 
-# smil / animation tests
-include smil/reftest.list
-
 # text tests
 include text/reftest.list
 
@@ -38,7 +35,6 @@ fuzzy-if(/^Windows\x20NT\x2010\.0/.test(http.oscpu)||/^Windows\x20NT\x206\.[12]/
 == clipPath-basic-01.svg pass.svg
 == clipPath-basic-02.svg pass.svg
 == clipPath-basic-03.svg pass.svg
-== clipPath-basic-04.svg pass.svg
 == clipPath-basic-05.svg pass.svg
 == clipPath-basic-06.svg pass.svg
 == clipPath-basic-07.svg pass.svg
@@ -221,7 +217,6 @@ fuzzy(27,28) == mask-and-clipPath.html mask-and-clipPath-ref.html
 pref(layout.css.masking.enabled,true) fuzzy-if(d2d||skiaContent,1,6400) == mask-type-01.svg mask-type-01-ref.svg
 pref(layout.css.masking.enabled,true) fuzzy-if(d2d||skiaContent,1,6400) == mask-type-02.svg mask-type-01-ref.svg
 pref(layout.css.masking.enabled,true) fuzzy-if(d2d||skiaContent,1,6400) == mask-type-03.svg mask-type-01-ref.svg
-pref(layout.css.masking.enabled,true) fuzzy-if(d2d||skiaContent,1,6400) == mask-type-04.svg mask-type-01-ref.svg
 == nested-viewBox-01.svg pass.svg
 fuzzy-if(skiaContent,3,448000) == nesting-invalid-01.svg nesting-invalid-01-ref.svg
 fuzzy-if(d2d&&/^Windows\x20NT\x20(6\.1|10\.0)/.test(http.oscpu),63,168) fuzzy-if(cocoaWidget,1,122) fuzzy-if(skiaContent,2,1000) == non-scaling-stroke-01.svg non-scaling-stroke-01-ref.svg # bug 1074161 for Win7 and OSX 10.8

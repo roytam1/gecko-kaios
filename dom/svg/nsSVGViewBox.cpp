@@ -8,10 +8,8 @@
 
 #include "mozilla/Move.h"
 #include "nsCharSeparatedTokenizer.h"
-#include "nsSMILValue.h"
 #include "nsTextFormatter.h"
 #include "SVGContentUtils.h"
-#include "SVGViewBoxSMILType.h"
 
 #define NUM_VIEWBOX_COMPONENTS 4
 using namespace mozilla;
@@ -280,59 +278,4 @@ nsSVGViewBox::DOMBaseVal::SetHeight(float aHeight, ErrorResult& aRv)
   nsSVGViewBoxRect rect = mVal->GetBaseValue();
   rect.height = aHeight;
   mVal->SetBaseValue(rect, mSVGElement);
-}
-
-nsISMILAttr*
-nsSVGViewBox::ToSMILAttr(nsSVGElement *aSVGElement)
-{
-  return new SMILViewBox(this, aSVGElement);
-}
-
-nsresult
-nsSVGViewBox::SMILViewBox
-            ::ValueFromString(const nsAString& aStr,
-                              const dom::SVGAnimationElement* /*aSrcElement*/,
-                              nsSMILValue& aValue,
-                              bool& aPreventCachingOfSandwich) const
-{
-  nsSVGViewBoxRect viewBox;
-  nsresult res = ToSVGViewBoxRect(aStr, &viewBox);
-  if (NS_FAILED(res)) {
-    return res;
-  }
-  nsSMILValue val(&SVGViewBoxSMILType::sSingleton);
-  *static_cast<nsSVGViewBoxRect*>(val.mU.mPtr) = viewBox;
-  aValue = Move(val);
-  aPreventCachingOfSandwich = false;
-  
-  return NS_OK;
-}
-
-nsSMILValue
-nsSVGViewBox::SMILViewBox::GetBaseValue() const
-{
-  nsSMILValue val(&SVGViewBoxSMILType::sSingleton);
-  *static_cast<nsSVGViewBoxRect*>(val.mU.mPtr) = mVal->mBaseVal;
-  return val;
-}
-
-void
-nsSVGViewBox::SMILViewBox::ClearAnimValue()
-{
-  if (mVal->mAnimVal) {
-    mVal->mAnimVal = nullptr;
-    mSVGElement->DidAnimateViewBox();
-  }
-}
-
-nsresult
-nsSVGViewBox::SMILViewBox::SetAnimValue(const nsSMILValue& aValue)
-{
-  NS_ASSERTION(aValue.mType == &SVGViewBoxSMILType::sSingleton,
-               "Unexpected type to assign animated value");
-  if (aValue.mType == &SVGViewBoxSMILType::sSingleton) {
-    nsSVGViewBoxRect &vb = *static_cast<nsSVGViewBoxRect*>(aValue.mU.mPtr);
-    mVal->SetAnimValue(vb, mSVGElement);
-  }
-  return NS_OK;
 }
