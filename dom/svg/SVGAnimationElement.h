@@ -10,19 +10,12 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/dom/SVGTests.h"
 #include "nsReferencedElement.h"
-#include "nsSMILTimedElement.h"
 #include "nsSVGElement.h"
 
 typedef nsSVGElement SVGAnimationElementBase;
 
 namespace mozilla {
 namespace dom {
-
-enum nsSMILTargetAttrType {
-  eSMILTargetAttrType_auto,
-  eSMILTargetAttrType_CSS,
-  eSMILTargetAttrType_XML
-};
 
 class SVGAnimationElement : public SVGAnimationElementBase,
                             public SVGTests
@@ -66,10 +59,6 @@ public:
   Element* GetTargetElementContent();
   virtual bool GetTargetAttributeName(int32_t* aNamespaceID,
                                       nsIAtom** aLocalName) const;
-  virtual nsSMILTargetAttrType GetTargetAttributeType() const;
-  nsSMILTimedElement& TimedElement();
-  nsSMILTimeContainer* GetTimeContainer();
-  virtual nsSMILAnimationFunction& AnimationFunction() = 0;
 
   virtual bool IsEventAttributeName(nsIAtom* aName) override;
 
@@ -114,7 +103,6 @@ public:
   };
 
   TargetReference      mHrefTarget;
-  nsSMILTimedElement   mTimedElement;
 };
 
 } // namespace dom

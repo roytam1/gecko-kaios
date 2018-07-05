@@ -9,11 +9,9 @@
 
 #include "mozilla/Attributes.h"
 #include "nsAutoPtr.h"
-#include "nsISMILAttr.h"
 #include "SVGTransformList.h"
 
 class nsIAtom;
-class nsSMILValue;
 class nsSVGElement;
 
 namespace mozilla {
@@ -109,9 +107,6 @@ public:
     return mHadTransformBeforeLastBaseValChange;
   }
 
-  /// Callers own the returned nsISMILAttr
-  nsISMILAttr* ToSMILAttr(nsSVGElement* aSVGElement);
-
 private:
 
   // mAnimVal is a pointer to allow us to determine if we're being animated or
@@ -124,38 +119,6 @@ private:
   bool mIsAttrSet;
    // (See documentation for accessor, HadTransformBeforeLastBaseValChange.)
   bool mHadTransformBeforeLastBaseValChange;
-
-  struct SMILAnimatedTransformList : public nsISMILAttr
-  {
-  public:
-    SMILAnimatedTransformList(nsSVGAnimatedTransformList* aVal,
-                              nsSVGElement* aSVGElement)
-      : mVal(aVal)
-      , mElement(aSVGElement)
-    {}
-
-    // nsISMILAttr methods
-    virtual nsresult ValueFromString(const nsAString& aStr,
-                                     const dom::SVGAnimationElement* aSrcElement,
-                                     nsSMILValue& aValue,
-                                     bool& aPreventCachingOfSandwich) const override;
-    virtual nsSMILValue GetBaseValue() const override;
-    virtual void ClearAnimValue() override;
-    virtual nsresult SetAnimValue(const nsSMILValue& aValue) override;
-
-  protected:
-    static void ParseValue(const nsAString& aSpec,
-                           const nsIAtom* aTransformType,
-                           nsSMILValue& aResult);
-    static int32_t ParseParameterList(const nsAString& aSpec, float* aVars,
-                                      int32_t aNVars);
-
-    // These will stay alive because a nsISMILAttr only lives as long
-    // as the Compositing step, and DOM elements don't get a chance to
-    // die during that.
-    nsSVGAnimatedTransformList* mVal;
-    nsSVGElement* mElement;
-  };
 };
 
 } // namespace mozilla

@@ -562,7 +562,6 @@ WEBIDL_FILES = [
     'TextTrackCueList.webidl',
     'TextTrackList.webidl',
     'ThreadSafeChromeUtils.webidl',
-    'TimeEvent.webidl',
     'TimeRanges.webidl',
     'Touch.webidl',
     'TouchEvent.webidl',

@@ -114,7 +114,6 @@ public:
   virtual bool IsNodeOfType(uint32_t aFlags) const override;
 
   NS_IMETHOD WalkContentStyleRules(nsRuleWalker* aRuleWalker) override;
-  void WalkAnimatedContentStyleRules(nsRuleWalker* aRuleWalker);
 
   NS_IMETHOD_(bool) IsAttributeMapped(const nsIAtom* aAttribute) const override;
 
@@ -283,7 +282,6 @@ public:
     return nullptr;
   }
 
-  virtual nsISMILAttr* GetAnimatedAttr(int32_t aNamespaceID, nsIAtom* aName) override;
   void AnimationNeedsResample();
   void FlushAnimations();
 
@@ -342,8 +340,6 @@ protected:
                                               const nsAString& aValue);
 
   void UpdateContentStyleRule();
-  void UpdateAnimatedContentStyleRule();
-  mozilla::css::StyleRule* GetAnimatedContentStyleRule();
 
   nsAttrValue WillChangeValue(nsIAtom* aName);
   // aNewValue is set to the old value. This value may be invalid if

@@ -4,70 +4,14 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-if CONFIG['MOZ_BUILD_APP'] == 'browser':
-    MOCHITEST_MANIFESTS += ['test/mochitest.ini']
-
+# SMIL animation has been removed from KaiOS
+# However, nsSMILKeySpline is still requried by few files.
 EXPORTS += [
-    'nsISMILAttr.h',
-    'nsISMILType.h',
-    'nsSMILAnimationController.h',
-    'nsSMILAnimationFunction.h',
-    'nsSMILCompositorTable.h',
-    'nsSMILCSSProperty.h',
-    'nsSMILInstanceTime.h',
-    'nsSMILInterval.h',
     'nsSMILKeySpline.h',
-    'nsSMILMappedAttribute.h',
-    'nsSMILMilestone.h',
-    'nsSMILNullType.h',
-    'nsSMILRepeatCount.h',
-    'nsSMILSetAnimationFunction.h',
-    'nsSMILTargetIdentifier.h',
-    'nsSMILTimeContainer.h',
-    'nsSMILTimedElement.h',
-    'nsSMILTimeValue.h',
-    'nsSMILTimeValueSpec.h',
-    'nsSMILTimeValueSpecParams.h',
-    'nsSMILTypes.h',
-    'nsSMILValue.h',
-]
-
-EXPORTS.mozilla.dom += [
-    'TimeEvent.h',
 ]
 
 UNIFIED_SOURCES += [
-    'nsSMILAnimationController.cpp',
-    'nsSMILAnimationFunction.cpp',
-    'nsSMILCompositor.cpp',
-    'nsSMILCSSProperty.cpp',
-    'nsSMILCSSValueType.cpp',
-    'nsSMILFloatType.cpp',
-    'nsSMILInstanceTime.cpp',
-    'nsSMILInterval.cpp',
     'nsSMILKeySpline.cpp',
-    'nsSMILMappedAttribute.cpp',
-    'nsSMILNullType.cpp',
-    'nsSMILParserUtils.cpp',
-    'nsSMILRepeatCount.cpp',
-    'nsSMILSetAnimationFunction.cpp',
-    'nsSMILTimeContainer.cpp',
-    'nsSMILTimedElement.cpp',
-    'nsSMILTimeValue.cpp',
-    'nsSMILTimeValueSpec.cpp',
-    'nsSMILValue.cpp',
-    'SMILBoolType.cpp',
-    'SMILEnumType.cpp',
-    'SMILIntegerType.cpp',
-    'SMILStringType.cpp',
-    'TimeEvent.cpp',
-]
-
-LOCAL_INCLUDES += [
-    '/dom/base',
-    '/dom/svg',
-    '/layout/base',
-    '/layout/style',
 ]
 
 FINAL_LIBRARY = 'xul'

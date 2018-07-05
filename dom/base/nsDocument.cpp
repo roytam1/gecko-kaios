@@ -169,7 +169,6 @@
 #include "mozilla/dom/EncodingUtils.h"
 #include "nsDOMNavigationTiming.h"
 
-#include "nsSMILAnimationController.h"
 #include "imgIContainer.h"
 #include "nsSVGUtils.h"
 #include "SVGElementFactory.h"
@@ -182,7 +181,6 @@
 #include "mozilla/dom/nsCSPService.h"
 #include "nsHTMLStyleSheet.h"
 #include "nsHTMLCSSStyleSheet.h"
-#include "SVGAttrAnimationRuleProcessor.h"
 #include "mozilla/dom/DOMImplementation.h"
 #include "mozilla/dom/ShadowRoot.h"
 #include "mozilla/dom/Comment.h"
@@ -1616,10 +1614,6 @@ nsDocument::~nsDocument()
     mStyleSheetSetList->Disconnect();
   }
 
-  if (mAnimationController) {
-    mAnimationController->Disconnect();
-  }
-
   MOZ_ASSERT(mTimelines.isEmpty());
 
   mParentDocument = nullptr;
@@ -1892,11 +1886,6 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INTERNAL(nsDocument)
     cb.NoteXPCOMChild(tmp->mFrameRequestCallbacks[i].mCallback);
   }
 
-  // Traverse animation components
-  if (tmp->mAnimationController) {
-    tmp->mAnimationController->Traverse(&cb);
-  }
-
   if (tmp->mSubDocuments) {
     for (auto iter = tmp->mSubDocuments->Iter(); !iter.Done(); iter.Next()) {
       auto entry = static_cast<SubDocMapEntry*>(iter.Get());
@@ -2018,10 +2007,6 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(nsDocument)
 
   tmp->mIdentifierMap.Clear();
   tmp->mExpandoAndGeneration.Unlink();
-
-  if (tmp->mAnimationController) {
-    tmp->mAnimationController->Unlink();
-  }
 
   tmp->mPendingTitleChangeEvent.Revoke();
 
@@ -2396,11 +2381,6 @@ nsDocument::ResetStylesheetsToURI(nsIURI* aURI)
 
   if (!mStyleAttrStyleSheet) {
     mStyleAttrStyleSheet = new nsHTMLCSSStyleSheet();
-  }
-
-  if (!mSVGAttrAnimationRuleProcessor) {
-    mSVGAttrAnimationRuleProcessor =
-      new mozilla::SVGAttrAnimationRuleProcessor();
   }
 
   // Now set up our style sets
@@ -4666,12 +4646,6 @@ nsDocument::SetScriptGlobalObject(nsIScriptGlobalObject *aScriptGlobalObject)
                  "Script global object must be an inner window!");
   }
 #endif
-  MOZ_ASSERT(aScriptGlobalObject || !mAnimationController ||
-             mAnimationController->IsPausedByType(
-               nsSMILTimeContainer::PAUSE_PAGEHIDE |
-               nsSMILTimeContainer::PAUSE_BEGIN),
-             "Clearing window pointer while animations are unpaused");
-
   if (mScriptGlobalObject && !aScriptGlobalObject) {
     // We're detaching from the window.  We need to grab a pointer to
     // our layout history state now.
@@ -7549,40 +7523,6 @@ nsDocument::EnumerateExternalResources(nsSubDocEnumFunc aCallback, void* aData)
   mExternalResourceMap.EnumerateResources(aCallback, aData);
 }
 
-nsSMILAnimationController*
-nsDocument::GetAnimationController()
-{
-  // We create the animation controller lazily because most documents won't want
-  // one and only SVG documents and the like will call this
-  if (mAnimationController)
-    return mAnimationController;
-  // Refuse to create an Animation Controller for data documents.
-  if (mLoadedAsData || mLoadedAsInteractiveData)
-    return nullptr;
-
-  mAnimationController = new nsSMILAnimationController(this);
-
-  // If there's a presContext then check the animation mode and pause if
-  // necessary.
-  nsIPresShell *shell = GetShell();
-  if (mAnimationController && shell) {
-    nsPresContext *context = shell->GetPresContext();
-    if (context &&
-        context->ImageAnimationMode() == imgIContainer::kDontAnimMode) {
-      mAnimationController->Pause(nsSMILTimeContainer::PAUSE_USERPREF);
-    }
-  }
-
-  // If we're hidden (or being hidden), notify the newly-created animation
-  // controller. (Skip this check for SVG-as-an-image documents, though,
-  // because they don't get OnPageShow / OnPageHide calls).
-  if (!mIsShowing && !mIsBeingUsedAsImage) {
-    mAnimationController->OnPageHide();
-  }
-
-  return mAnimationController;
-}
-
 PendingAnimationTracker*
 nsDocument::GetOrCreatePendingAnimationTracker()
 {
@@ -9308,10 +9248,6 @@ nsDocument::OnPageShow(bool aPersisted,
     mIsShowing = true;
   }
 
-  if (mAnimationController) {
-    mAnimationController->OnPageShow();
-  }
-
   if (aPersisted) {
     SetImagesNeedAnimating(true);
   }
@@ -9396,10 +9332,6 @@ nsDocument::OnPageHide(bool aPersisted,
     // Set mIsShowing before firing events, in case those event handlers
     // move us around.
     mIsShowing = false;
-  }
-
-  if (mAnimationController) {
-    mAnimationController->OnPageHide();
   }
 
   // We do not stop the animations (bug 1024343)
@@ -12974,12 +12906,6 @@ nsDocument::DocAddSizeOfExcludingThis(nsWindowSizes* aWindowSizes) const
   aWindowSizes->mDOMOtherSize +=
     mAttrStyleSheet ?
     mAttrStyleSheet->DOMSizeOfIncludingThis(aWindowSizes->mMallocSizeOf) :
-    0;
-
-  aWindowSizes->mDOMOtherSize +=
-    mSVGAttrAnimationRuleProcessor ?
-    mSVGAttrAnimationRuleProcessor->DOMSizeOfIncludingThis(
-                                      aWindowSizes->mMallocSizeOf) :
     0;
 
   aWindowSizes->mDOMOtherSize +=

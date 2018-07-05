@@ -26,7 +26,6 @@
 #include "nsHostObjectProtocolHandler.h"
 #include "nsContentUtils.h"
 #include "gfxFont.h"
-#include "nsSMILAnimationController.h"
 #include "gfxContext.h"
 #include "harfbuzz/hb.h"
 
@@ -81,7 +80,7 @@ gfxSVGGlyphs::DidRefresh()
  * The total ordering here is guaranteed by
  *   (1) the index ranges being disjoint; and
  *   (2) the (sole) key always being a singleton, so intersection => containment
- *       (note that this is wrong if we have more than one intersection or two 
+ *       (note that this is wrong if we have more than one intersection or two
  *        sets intersecting of size > 1 -- so... don't do that)
  */
 /* static */ int
@@ -166,10 +165,6 @@ gfxSVGGlyphsDocument::SetupPresentation()
 
     mDocument->FlushPendingNotifications(Flush_Layout);
 
-    nsSMILAnimationController* controller = mDocument->GetAnimationController();
-    if (controller) {
-      controller->Resume(nsSMILTimeContainer::PAUSE_IMAGE);
-    }
     mDocument->SetImagesNeedAnimating(true);
 
     mViewer = viewer;
@@ -289,12 +284,6 @@ gfxSVGGlyphsDocument::gfxSVGGlyphsDocument(const uint8_t *aBuffer,
 
 gfxSVGGlyphsDocument::~gfxSVGGlyphsDocument()
 {
-    if (mDocument) {
-        nsSMILAnimationController* controller = mDocument->GetAnimationController();
-        if (controller) {
-            controller->Pause(nsSMILTimeContainer::PAUSE_PAGEHIDE);
-        }
-    }
     if (mPresShell) {
         mPresShell->RemovePostRefreshObserver(this);
     }
@@ -338,7 +327,7 @@ gfxSVGGlyphsDocument::ParseDocument(const uint8_t *aBuffer, uint32_t aBufLen)
     nsHostObjectProtocolHandler::GenerateURIString(NS_LITERAL_CSTRING(FONTTABLEURI_SCHEME),
                                                    nullptr,
                                                    mSVGGlyphsDocumentURI);
- 
+
     rv = NS_NewURI(getter_AddRefs(uri), mSVGGlyphsDocumentURI);
     NS_ENSURE_SUCCESS(rv, rv);
 

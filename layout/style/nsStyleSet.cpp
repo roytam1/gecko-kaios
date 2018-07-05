@@ -35,7 +35,6 @@
 #include "GeckoProfiler.h"
 #include "nsHTMLCSSStyleSheet.h"
 #include "nsHTMLStyleSheet.h"
-#include "SVGAttrAnimationRuleProcessor.h"
 #include "nsCSSRules.h"
 #include "nsPrintfCString.h"
 #include "nsIFrame.h"
@@ -451,9 +450,7 @@ nsStyleSet::GatherRuleProcessors(SheetType aType)
         PresContext()->Document()->GetAttributeStyleSheet();
       return NS_OK;
     case SheetType::SVGAttrAnimation:
-      MOZ_ASSERT(mSheets[aType].IsEmpty());
-      mRuleProcessors[aType] =
-        PresContext()->Document()->GetSVGAttrAnimationRuleProcessor();
+      // do nothing since KaiOS doesn't support SVG animation anymore
       return NS_OK;
     default:
       // keep going
@@ -1593,13 +1590,7 @@ nsStyleSet::RuleNodeWithReplacement(Element* aElement,
           break;
         }
         case SheetType::SVGAttrAnimation: {
-          SVGAttrAnimationRuleProcessor* ruleProcessor =
-            static_cast<SVGAttrAnimationRuleProcessor*>(
-              mRuleProcessors[SheetType::SVGAttrAnimation].get());
-          if (ruleProcessor &&
-              aPseudoType == CSSPseudoElementType::NotPseudo) {
-            ruleProcessor->ElementRulesMatching(aElement, &ruleWalker);
-          }
+          // do nothing since KaiOS doesn't support SVG animation anymore
           break;
         }
         case SheetType::StyleAttr: {

@@ -55,7 +55,6 @@
 #include "mozilla/dom/Element.h"
 #include "nsIMessageManager.h"
 #include "mozilla/dom/MediaQueryList.h"
-#include "nsSMILAnimationController.h"
 #include "mozilla/css/ImageLoader.h"
 #include "mozilla/dom/PBrowserParent.h"
 #include "mozilla/dom/TabChild.h"
@@ -1199,28 +1198,6 @@ void nsPresContext::SetImgAnimations(nsIContent *aParent, uint16_t aMode)
 }
 
 void
-nsPresContext::SetSMILAnimations(nsIDocument *aDoc, uint16_t aNewMode,
-                                 uint16_t aOldMode)
-{
-  if (aDoc->HasAnimationController()) {
-    nsSMILAnimationController* controller = aDoc->GetAnimationController();
-    switch (aNewMode)
-    {
-      case imgIContainer::kNormalAnimMode:
-      case imgIContainer::kLoopOnceAnimMode:
-        if (aOldMode == imgIContainer::kDontAnimMode)
-          controller->Resume(nsSMILTimeContainer::PAUSE_USERPREF);
-        break;
-
-      case imgIContainer::kDontAnimMode:
-        if (aOldMode != imgIContainer::kDontAnimMode)
-          controller->Pause(nsSMILTimeContainer::PAUSE_USERPREF);
-        break;
-    }
-  }
-}
-
-void
 nsPresContext::SetImageAnimationModeInternal(uint16_t aMode)
 {
   NS_ASSERTION(aMode == imgIContainer::kNormalAnimMode ||
@@ -1242,7 +1219,6 @@ nsPresContext::SetImageAnimationModeInternal(uint16_t aMode)
       if (rootElement) {
         SetImgAnimations(rootElement, aMode);
       }
-      SetSMILAnimations(doc, aMode, mImageAnimationMode);
     }
   }
 
