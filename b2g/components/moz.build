@@ -10,7 +10,6 @@ EXTRA_COMPONENTS += [
     'ActivitiesGlue.js',
     'AlertsService.js',
     'B2GAboutRedirector.js',
-    'B2GPresentationDevicePrompt.js',
     'BootstrapCommandLine.js',
     'ContentPermissionPrompt.js',
     'FilePicker.js',
@@ -23,13 +22,18 @@ EXTRA_COMPONENTS += [
     'OMAContentHandler.js',
     'PaymentGlue.js',
     'PaymentProviderStrategy.js',
-    'PresentationRequestUIGlue.js',
     'ProcessGlobal.js',
     'SmsProtocolHandler.js',
     'SystemMessageGlue.js',
     'TelProtocolHandler.js',
     'WebappsUpdateTimer.js',
 ]
+
+if CONFIG['MOZ_PRESENTATION']:
+    EXTRA_COMPONENTS += [
+        'B2GPresentationDevicePrompt.js',
+        'PresentationRequestUIGlue.js'
+    ]
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'gonk' and CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
     EXTRA_COMPONENTS += [

@@ -68,8 +68,10 @@
 #include "mozilla/dom/mobilemessage/SmsParent.h"
 #include "mozilla/dom/power/PowerManagerService.h"
 #include "mozilla/dom/Permissions.h"
+#ifdef MOZ_PRESENTATION
 #include "mozilla/dom/PresentationParent.h"
 #include "mozilla/dom/PPresentationParent.h"
+#endif
 #include "mozilla/dom/quota/QuotaManagerService.h"
 #include "mozilla/dom/telephony/TelephonyParent.h"
 #include "mozilla/dom/time/DateCacheCleaner.h"
@@ -4187,6 +4189,7 @@ ContentParent::DeallocPFMRadioParent(PFMRadioParent* aActor)
 #endif
 }
 
+#ifdef MOZ_PRESENTATION
 PPresentationParent*
 ContentParent::AllocPPresentationParent()
 {
@@ -4207,6 +4210,7 @@ ContentParent::RecvPPresentationConstructor(PPresentationParent* aActor)
 {
   return static_cast<PresentationParent*>(aActor)->Init();
 }
+#endif
 
 PTVParent*
 ContentParent::AllocPTVParent()

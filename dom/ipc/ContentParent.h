@@ -881,11 +881,13 @@ private:
 
   virtual bool DeallocPFMRadioParent(PFMRadioParent* aActor) override;
 
+#ifdef MOZ_PRESENTATION
   virtual PPresentationParent* AllocPPresentationParent() override;
 
   virtual bool DeallocPPresentationParent(PPresentationParent* aActor) override;
 
   virtual bool RecvPPresentationConstructor(PPresentationParent* aActor) override;
+#endif
 
   virtual PTVParent* AllocPTVParent() override;
 

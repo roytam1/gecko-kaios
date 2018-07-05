@@ -57,7 +57,9 @@ include protocol PJavaScript;
 include protocol PRemoteSpellcheckEngine;
 include protocol PWebBrowserPersistDocument;
 include protocol PWebrtcGlobal;
+#ifdef MOZ_PRESENTATION
 include protocol PPresentation;
+#endif
 include protocol PVRManager;
 include protocol PTV;
 #ifdef ENABLE_FOTA
@@ -447,7 +449,9 @@ prio(normal upto urgent) sync protocol PContent
     manages PRemoteSpellcheckEngine;
     manages PWebBrowserPersistDocument;
     manages PWebrtcGlobal;
+#ifdef MOZ_PRESENTATION
     manages PPresentation;
+#endif
     manages PTV;
 #ifdef ENABLE_FOTA
     manages PFota;
@@ -656,6 +660,7 @@ child:
      */
     async GamepadUpdate(GamepadChangeEvent aGamepadEvent);
 
+#ifdef MOZ_PRESENTATION
     /**
      * Notify the child that presentation receiver has been launched with the
      * correspondent iframe.
@@ -667,6 +672,7 @@ child:
      * cleaned up.
      */
     async NotifyPresentationReceiverCleanUp(nsString aSessionId);
+#endif
 
     /**
      * Notify the child that the Gecko Media Plugins installed changed.
@@ -893,7 +899,9 @@ parent:
 
     async PWebrtcGlobal();
 
+#ifdef MOZ_PRESENTATION
     async PPresentation();
+#endif
 
     async PTV();
 #ifdef ENABLE_FOTA

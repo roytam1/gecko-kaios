@@ -44,7 +44,9 @@
 #include "mozilla/dom/InputPortManager.h"
 #include "mozilla/dom/MobileMessageManager.h"
 #include "mozilla/dom/Permissions.h"
+#ifdef MOZ_PRESENTATION
 #include "mozilla/dom/Presentation.h"
+#endif
 #include "mozilla/dom/ServiceWorkerContainer.h"
 #include "mozilla/dom/TCPSocket.h"
 #include "mozilla/dom/Telephony.h"
@@ -89,8 +91,9 @@
 #include "nsIAppsService.h"
 #include "mozIApplication.h"
 #include "WidgetUtils.h"
+#ifdef MOZ_PRESENTATION
 #include "nsIPresentationService.h"
-
+#endif
 #include "mozilla/dom/MediaDevices.h"
 #include "MediaManager.h"
 #ifdef MOZ_B2G_BT
@@ -246,7 +249,9 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Navigator)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mMediaKeySystemAccessManager)
 #endif
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mDeviceStorageAreaListener)
+#ifdef MOZ_PRESENTATION
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPresentation)
+#endif
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mVRGetDevicesPromises)
 #ifdef HAS_KOOST_MODULES
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mVolumeManager)
@@ -408,9 +413,11 @@ Navigator::Invalidate()
     mTimeManager = nullptr;
   }
 
+#ifdef MOZ_PRESENTATION
   if (mPresentation) {
     mPresentation = nullptr;
   }
+#endif
 
   mServiceWorkerContainer = nullptr;
 
@@ -2636,6 +2643,7 @@ Navigator::HasMobileIdSupport(JSContext* aCx, JSObject* aGlobal)
 }
 #endif
 
+#ifdef MOZ_PRESENTATION
 /* static */
 bool
 Navigator::HasPresentationSupport(JSContext* aCx, JSObject* aGlobal)
@@ -2687,6 +2695,7 @@ Navigator::HasPresentationSupport(JSContext* aCx, JSObject* aGlobal)
                                                           docURI,
                                                           false));
 }
+#endif
 
 /* static */
 bool
@@ -3025,6 +3034,7 @@ Navigator::RequestMediaKeySystemAccess(const nsAString& aKeySystem,
 }
 #endif
 
+#ifdef MOZ_PRESENTATION
 Presentation*
 Navigator::GetPresentation(ErrorResult& aRv)
 {
@@ -3038,6 +3048,7 @@ Navigator::GetPresentation(ErrorResult& aRv)
 
   return mPresentation;
 }
+#endif
 
 bool
 Navigator::LargeTextEnabled()

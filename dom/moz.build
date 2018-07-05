@@ -160,7 +160,8 @@ if CONFIG['MOZ_B2G']:
         'engineeringmode'
     ]
 
-DIRS += ['presentation']
+if CONFIG['MOZ_PRESENTATION']:
+    DIRS += ['presentation']
 
 if CONFIG['ENABLE_NUANCE_XT9']:
     DIRS += ['imeconnect/xt9']

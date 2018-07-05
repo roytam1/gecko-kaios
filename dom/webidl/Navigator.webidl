@@ -480,10 +480,12 @@ partial interface Navigator {
   readonly attribute InputPortManager inputPortManager;
 };
 
+#ifdef MOZ_PRESENTATION
 partial interface Navigator {
   [Throws, Pref="dom.presentation.enabled", Func="Navigator::HasPresentationSupport", SameObject]
   readonly attribute Presentation? presentation;
 };
+#endif
 
 partial interface Navigator {
   [NewObject, Pref="dom.mozTCPSocket.enabled", CheckAnyPermissions="tcp-socket"]

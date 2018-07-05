@@ -180,8 +180,10 @@
 #include "mozilla/dom/devicestorage/DeviceStorageRequestChild.h"
 #include "mozilla/dom/bluetooth/PBluetoothChild.h"
 #include "mozilla/dom/PFMRadioChild.h"
+#ifdef MOZ_PRESENTATION
 #include "mozilla/dom/PPresentationChild.h"
 #include "mozilla/dom/PresentationIPCService.h"
+#endif
 #include "mozilla/dom/subsidylock/SubsidyLockChild.h"
 #include "mozilla/dom/PTVChild.h"
 #include "mozilla/ipc/InputStreamUtils.h"
@@ -1680,6 +1682,7 @@ ContentChild::SendPBlobConstructor(PBlobChild* aActor,
   return PContentChild::SendPBlobConstructor(aActor, aParams);
 }
 
+#ifdef MOZ_PRESENTATION
 PPresentationChild*
 ContentChild::AllocPPresentationChild()
 {
@@ -1722,6 +1725,7 @@ ContentChild::RecvNotifyPresentationReceiverCleanUp(const nsString& aSessionId)
 
   return true;
 }
+#endif
 
 PTVChild*
 ContentChild::AllocPTVChild()

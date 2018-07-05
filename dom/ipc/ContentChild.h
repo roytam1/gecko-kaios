@@ -383,6 +383,7 @@ public:
 
   virtual bool DeallocPFMRadioChild(PFMRadioChild* aActor) override;
 
+#ifdef MOZ_PRESENTATION
   virtual PPresentationChild* AllocPPresentationChild() override;
 
   virtual bool DeallocPPresentationChild(PPresentationChild* aActor) override;
@@ -393,6 +394,7 @@ public:
 
   virtual bool
   RecvNotifyPresentationReceiverCleanUp(const nsString& aSessionId) override;
+#endif
 
   virtual PTVChild* AllocPTVChild() override;
 

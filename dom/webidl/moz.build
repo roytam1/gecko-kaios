@@ -398,13 +398,6 @@ WEBIDL_FILES = [
     'Position.webidl',
     'PositionError.webidl',
     'PowerSupplyManager.webidl',
-    'Presentation.webidl',
-    'PresentationAvailability.webidl',
-    'PresentationConnection.webidl',
-    'PresentationConnectionList.webidl',
-    'PresentationDeviceInfoManager.webidl',
-    'PresentationReceiver.webidl',
-    'PresentationRequest.webidl',
     'ProcessingInstruction.webidl',
     'ProfileTimelineMarker.webidl',
     'RadioNodeList.webidl',
@@ -839,8 +832,6 @@ GENERATED_EVENTS_WEBIDL_FILES = [
     'PopStateEvent.webidl',
     'PopupBlockedEvent.webidl',
     'PowerSupplyEvent.webidl',
-    'PresentationConnectionAvailableEvent.webidl',
-    'PresentationConnectionClosedEvent.webidl',
     'ProgressEvent.webidl',
     'RecordErrorEvent.webidl',
     'RingbackToneEvent.webidl',
@@ -995,4 +986,19 @@ if CONFIG['ENABLE_NUANCE_XT9'] or CONFIG['ENABLE_REVERIE_RT9'] or CONFIG['ENABLE
 if CONFIG['ENABLE_U2F']:
     WEBIDL_FILES += [
         'U2F.webidl'
+    ]
+
+if CONFIG['MOZ_PRESENTATION']:
+    WEBIDL_FILES += [
+        'Presentation.webidl',
+        'PresentationAvailability.webidl',
+        'PresentationConnection.webidl',
+        'PresentationConnectionList.webidl',
+        'PresentationDeviceInfoManager.webidl',
+        'PresentationReceiver.webidl',
+        'PresentationRequest.webidl',
+    ]
+    GENERATED_EVENTS_WEBIDL_FILES += [
+        'PresentationConnectionAvailableEvent.webidl',
+        'PresentationConnectionClosedEvent.webidl',
     ]

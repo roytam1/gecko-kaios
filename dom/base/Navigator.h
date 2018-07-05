@@ -108,7 +108,9 @@ class Voicemail;
 class TVManager;
 class InputPortManager;
 class DeviceStorageAreaListener;
+#ifdef MOZ_PRESENTATION
 class Presentation;
+#endif
 class LegacyMozTCPSocket;
 class FlashlightManager;
 class FlipManager;
@@ -321,8 +323,9 @@ public:
 #ifdef MOZ_AUDIO_CHANNEL_MANAGER
   system::AudioChannelManager* GetMozAudioChannelManager(ErrorResult& aRv);
 #endif // MOZ_AUDIO_CHANNEL_MANAGER
-
+#ifdef MOZ_PRESENTATION
   Presentation* GetPresentation(ErrorResult& aRv);
+#endif
 #ifdef ENABLE_FOTA
   fota::FotaEngine* GetFota(ErrorResult& aRv);
 #endif
@@ -375,7 +378,9 @@ public:
   static bool HasMobileIdSupport(JSContext* aCx, JSObject* aGlobal);
 #endif
 
+#ifdef MOZ_PRESENTATION
   static bool HasPresentationSupport(JSContext* aCx, JSObject* aGlobal);
+#endif
 
   static bool HasExternalAPISupport(JSContext* aCx, JSObject* aGlobal);
 
@@ -454,7 +459,9 @@ private:
   RefPtr<ServiceWorkerContainer> mServiceWorkerContainer;
   nsCOMPtr<nsPIDOMWindowInner> mWindow;
   RefPtr<DeviceStorageAreaListener> mDeviceStorageAreaListener;
+#ifdef MOZ_PRESENTATION
   RefPtr<Presentation> mPresentation;
+#endif
 #ifdef ENABLE_FOTA
   RefPtr<fota::FotaEngine> mFotaEngine;
 #endif
