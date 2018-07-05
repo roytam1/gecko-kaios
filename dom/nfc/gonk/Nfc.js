@@ -842,7 +842,7 @@ Nfc.prototype = {
 
   reStartTimer: null,
 
-  createRestartTimer: function (rfState, timeout) {
+  createRestartTimer: function createRestartTimer(rfState, timeout) {
     // Clean up previous timer.
     if (this.reStartTimer) {
       this.reStartTimer.cancel();
@@ -892,16 +892,25 @@ Nfc.prototype = {
         this.createRestartTimer(NFC.NFC_RF_STATE_DISCOVERY, 1000);
         break;
       case NfcNotificationType.ENABLETIMEOUT:
-        Services.obs.notifyObservers(event, TOPIC_NFCD_UNINITIALIZED, null);
-        // Restart NFC service.
-        this.shutdownNfcService();
-        this.createRestartTimer(NFC.NFC_RF_STATE_DISCOVERY, 1000);
-        break;
-      case NfcNotificationType.DISABLETIMEOUT:
-        // Notify application RF state.
+        // Notify application the error.
         message.type = NfcResponseType.CHANGE_RF_STATE_RSP;
         message.rfState = NFC.NFC_RF_STATE_IDLE;
+        message.errorMsg = "ErrorConnect";
         this.sendNfcResponse(message);
+
+        gMessageManager.onRFStateChanged(NFC.NFC_RF_STATE_IDLE);
+
+        Services.obs.notifyObservers(event, TOPIC_NFCD_UNINITIALIZED, null);
+
+        this.shutdownNfcService();
+        break;
+      case NfcNotificationType.DISABLETIMEOUT:
+        // Notify application the error.
+        message.type = NfcResponseType.CHANGE_RF_STATE_RSP;
+        message.rfState = NFC.NFC_RF_STATE_IDLE;
+        message.errorMsg = "ErrorConnect";
+        this.sendNfcResponse(message);
+
         gMessageManager.onRFStateChanged(NFC.NFC_RF_STATE_IDLE);
 
         Services.obs.notifyObservers(null, TOPIC_CHANGE_RF_STATE, NFC.NFC_RF_STATE_IDLE);
