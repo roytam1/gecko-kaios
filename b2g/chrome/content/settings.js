@@ -599,6 +599,15 @@ SettingsListener.observe("theme.selected",
   setPAC();
 })();
 
+Cu.import('resource://gre/modules/PostUpdate.jsm');
+(function ProcessPostUpdate() {
+  // After system(FOTA) update, some setting/pref need to be migrated.
+  // Post processing logic can be added in PostUpdate.jsm.
+  if (PostUpdate) {
+    PostUpdate(navigator.mozSettings.createLock(), Services.prefs);
+  }
+})();
+
 // =================== Various simple mapping  ======================
 var settingsToObserve = {
   'accessibility.large_text': {
