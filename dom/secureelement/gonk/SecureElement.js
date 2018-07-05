@@ -364,8 +364,7 @@ SecureElementManager.prototype = {
       return;
     }
 
-    connector.openChannel(SEUtils.byteArrayToHexString(msg.aid), {
-      notifyOpenChannelSuccess: (channelNumber, openResponse) => {
+    let notifySuccess = (channelNumber, openResponse) => {
         // Add the new 'channel' to the map upon success
         let channelToken =
           gMap.addChannel(msg.appId, msg.type, msg.aid, channelNumber);
@@ -379,8 +378,9 @@ SecureElementManager.prototype = {
         } else {
           callback({ error: SE.ERROR_GENERIC });
         }
-      },
-      notifyError: (reason) => {
+      };
+
+    let notifyError = (reason) => {
         if (gMap.isChannels()) {
           debug("Failed to open channel to AID : " +
                 SEUtils.byteArrayToHexString(msg.aid) +
@@ -400,6 +400,21 @@ SecureElementManager.prototype = {
             callback({ error: SE.ERROR_GENERIC, reason: reason, response: [] });
           }
         });
+      };
+
+    connector.getAtr({
+      notifyGetAtrSuccess: (response) => {
+        connector.openChannel(SEUtils.byteArrayToHexString(msg.aid), {
+          notifyOpenChannelSuccess: notifySuccess,
+          notifyError: notifyError
+        });
+      },
+
+      notifyError: (reason) => {
+        connector.openChannel(SEUtils.byteArrayToHexString(msg.aid), {
+          notifyOpenChannelSuccess: notifySuccess,
+          notifyError: notifyError
+        });
       }
     });
   },
@@ -418,8 +433,7 @@ SecureElementManager.prototype = {
       return;
     }
 
-    connector.openBasicChannel(SEUtils.byteArrayToHexString(msg.aid), {
-      notifyOpenChannelSuccess: (channelNumber, openResponse) => {
+    let notifySuccess = (channelNumber, openResponse) => {
         // Add the new 'channel' to the map upon success
         let channelToken =
           gMap.addChannel(msg.appId, msg.type, msg.aid, channelNumber);
@@ -433,8 +447,9 @@ SecureElementManager.prototype = {
         } else {
           callback({ error: SE.ERROR_GENERIC });
         }
-      },
-      notifyError: (reason) => {
+      };
+
+    let notifyError = (reason) => {
         if (gMap.isChannels()) {
           debug("Failed to open basic channel to AID : " +
                 SEUtils.byteArrayToHexString(msg.aid) +
@@ -453,6 +468,21 @@ SecureElementManager.prototype = {
             debug("Failed to close secure element connection");
             callback({ error: SE.ERROR_GENERIC, reason: reason, response: [] });
           }
+        });
+      };
+
+    connector.getAtr({
+      notifyGetAtrSuccess: (response) => {
+        connector.openBasicChannel(SEUtils.byteArrayToHexString(msg.aid), {
+          notifyOpenChannelSuccess: notifySuccess,
+          notifyError: notifyError
+        });
+      },
+
+      notifyError: (reason) => {
+        connector.openBasicChannel(SEUtils.byteArrayToHexString(msg.aid), {
+          notifyOpenChannelSuccess: notifySuccess,
+          notifyError: notifyError
         });
       }
     });
