@@ -2991,7 +2991,9 @@ BackgroundCursorChild::RecvResponse(const CursorResponse& aResponse)
       MOZ_CRASH("Should never get here!");
   }
 
-  mTransaction->OnRequestFinished(/* aActorDestroyedNormally */ true);
+  if (mTransaction) {
+    mTransaction->OnRequestFinished(/* aActorDestroyedNormally */ true);
+  }
 
   return true;
 }
