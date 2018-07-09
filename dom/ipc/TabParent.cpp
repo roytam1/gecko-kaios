@@ -799,8 +799,11 @@ TabParent::Show(const ScreenIntSize& size, bool aParentIsActive)
     baseWindow->GetMainWidget(getter_AddRefs(mainWidget));
     mSizeMode = mainWidget ? mainWidget->SizeMode() : nsSizeMode_Normal;
 
-    Unused << SendShow(size, GetShowInfo(), textureFactoryIdentifier,
-                       layersId, renderFrame, aParentIsActive, mSizeMode);
+    // To make sure actor exists when sending message
+    if (!mIsDestroyed) {
+        Unused << SendShow(size, GetShowInfo(), textureFactoryIdentifier,
+                           layersId, renderFrame, aParentIsActive, mSizeMode);
+    }
 }
 
 bool
