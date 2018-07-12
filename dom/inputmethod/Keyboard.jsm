@@ -410,6 +410,7 @@ this.Keyboard = {
       SystemAppProxy.dispatchEvent({
         type: 'inputmethod-contextchange',
         inputType: msg.data.inputType,
+        inputMode: msg.data.inputMode,
         value: msg.data.value,
         choices: JSON.stringify(msg.data.choices),
         min: msg.data.min,
