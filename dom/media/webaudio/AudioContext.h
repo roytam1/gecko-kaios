@@ -361,6 +361,8 @@ private:
   nsTHashtable<nsPtrHashKey<AudioNode> > mAllNodes;
   // Raw (non-owning) references to all AudioParams for this AudioContext.
   nsTHashtable<nsPtrHashKey<AudioParam> > mAllParams;
+  // Map MediaElementAudioSourceNode to its input stream.
+  nsDataHashtable<nsPtrHashKey<AudioNode>, DOMMediaStream*> mMediaElementStreams;
   // Hashsets containing all the PannerNodes, to compute the doppler shift.
   // These are weak pointers.
   nsTHashtable<nsPtrHashKey<PannerNode> > mPannerNodes;

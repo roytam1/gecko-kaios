@@ -373,7 +373,13 @@ AudioContext::CreateMediaElementSource(HTMLMediaElement& aMediaElement,
   if (aRv.Failed()) {
     return nullptr;
   }
-  return MediaElementAudioSourceNode::Create(this, stream, aRv);
+  RefPtr<MediaElementAudioSourceNode> node = MediaElementAudioSourceNode::Create(this, stream, aRv);
+  if (!aRv.Failed()) {
+    // Workaround for ringtone preview case. See the note in GetAllStreams().
+    MOZ_ASSERT(mAllNodes.Contains(node.get()));
+    mMediaElementStreams.Put(node.get(), stream);
+  }
+  return node.forget();
 }
 
 already_AddRefed<MediaStreamAudioSourceNode>
@@ -853,6 +859,15 @@ AudioContext::GetAllStreams() const
       streams.AppendElement(s);
     }
   }
+  // Workaround for ringtone preview case. After leaving preview page, need to
+  // close AudioContext and suspend MediaStreams get from HTMLMediaElement, in
+  // order to close the cubeb stream created by MediaStreamGraph immediately.
+  for (auto iter = mMediaElementStreams.ConstIter(); !iter.Done(); iter.Next()) {
+    DOMMediaStream* s = iter.Data();
+    streams.AppendElement(s->GetInputStream());
+    streams.AppendElement(s->GetOwnedStream());
+    streams.AppendElement(s->GetPlaybackStream());
+  }
   return streams;
 }
 
@@ -1012,6 +1027,7 @@ AudioContext::UnregisterNode(AudioNode* aNode)
 {
   MOZ_ASSERT(mAllNodes.Contains(aNode));
   mAllNodes.RemoveEntry(aNode);
+  mMediaElementStreams.Remove(aNode);
   // mDestinationNode may be null when we're destroying nodes unlinked by CC
   if (mDestination) {
     mDestination->SetIsOnlyNodeForContext(mAllNodes.Count() == 1);
