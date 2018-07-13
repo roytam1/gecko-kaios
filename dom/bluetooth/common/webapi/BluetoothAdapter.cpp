@@ -1283,6 +1283,11 @@ BluetoothAdapter::HandleDevicePaired(const BluetoothValue& aValue)
     index = mDevices.Length(); // the new device's index
     mDevices.AppendElement(
       BluetoothDevice::Create(GetOwner(), aValue));
+
+    // Refresh device properties, result will be handled by device objects.
+    nsTArray<nsString> pairedArray;
+    pairedArray.AppendElement(addressStr);
+    GetPairedDeviceProperties(pairedArray);
   }
 
   // Notify application of paired device
