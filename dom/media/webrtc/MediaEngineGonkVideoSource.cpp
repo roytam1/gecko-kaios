@@ -421,34 +421,15 @@ MediaEngineGonkVideoSource::DeallocImpl() {
 
 // The same algorithm from bug 840244
 static int
-GetRotateAmount(ScreenOrientationInternal aScreen, int aCameraMountAngle, bool aBackCamera) {
-  int screenAngle = 0;
-  switch (aScreen) {
-    case eScreenOrientation_PortraitPrimary:
-      screenAngle = 0;
-      break;
-    case eScreenOrientation_PortraitSecondary:
-      screenAngle = 180;
-      break;
-   case eScreenOrientation_LandscapePrimary:
-      screenAngle = 90;
-      break;
-   case eScreenOrientation_LandscapeSecondary:
-      screenAngle = 270;
-      break;
-   default:
-      MOZ_ASSERT(false);
-      break;
-  }
-
+GetRotateAmount(int aScreenAngle, int aCameraMountAngle, bool aBackCamera) {
   int result;
 
   if (aBackCamera) {
     // back camera
-    result = (aCameraMountAngle - screenAngle + 360) % 360;
+    result = (aCameraMountAngle - aScreenAngle + 360) % 360;
   } else {
     // front camera
-    result = (aCameraMountAngle + screenAngle) % 360;
+    result = (aCameraMountAngle + aScreenAngle) % 360;
   }
   return result;
 }
@@ -462,7 +443,7 @@ MediaEngineGonkVideoSource::Notify(const hal::ScreenConfiguration& aConfiguratio
   if (mHasDirectListeners) {
     // aka hooked to PeerConnection
     MonitorAutoLock enter(mMonitor);
-    mRotation = GetRotateAmount(aConfiguration.orientation(), mCameraAngle, mBackCamera);
+    mRotation = GetRotateAmount(aConfiguration.angle(), mCameraAngle, mBackCamera);
 
     LOG(("*** New orientation: %d (Camera %d Back %d MountAngle: %d)",
          mRotation, mCaptureIndex, mBackCamera, mCameraAngle));
@@ -547,7 +528,7 @@ MediaEngineGonkVideoSource::GetRotation()
     mBackCamera = true;
   }
 
-  mRotation = GetRotateAmount(config.orientation(), mCameraAngle, mBackCamera);
+  mRotation = GetRotateAmount(config.angle(), mCameraAngle, mBackCamera);
   LOG(("*** Initial orientation: %d (Camera %d Back %d MountAngle: %d)",
        mRotation, mCaptureIndex, mBackCamera, mCameraAngle));
 }
