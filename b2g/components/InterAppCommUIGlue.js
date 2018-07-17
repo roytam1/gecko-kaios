@@ -28,59 +28,20 @@ function InterAppCommUIGlue() {
   //   "callerID1" : deferred1,
   //   "callerID2" : deferred2
   // }
-  this._deferreds = {};
-
-  // Listen to the result of selected apps from front-end.
-  SystemAppProxy.addEventListener ("mozIACContentEvent", function (aEvent) {
-    let detail = aEvent.detail;
-    if (detail.type != "inter-app-comm-permission") {
-      return;
-    }
-
-    if (DEBUG) {
-      debug("mozIACContentEvent: " + JSON.stringify(detail));
-    }
-
-    let callerID = detail.chromeEventID;
-    let deferred = this._deferreds[callerID];
-    if (!deferred) {
-      if (DEBUG) {
-        debug("Error! Cannot find the deferred for callerID: " + callerID);
-      }
-      return;
-    }
-
-    delete this._deferreds[callerID];
-    deferred.resolve({ callerID: callerID,
-                       keyword: detail.keyword,
-                       manifestURL: detail.manifestURL,
-                       selectedApps: detail.peers });
-  }.bind(this));
 }
 
 InterAppCommUIGlue.prototype = {
   selectApps: function(aCallerID, aPubAppManifestURL, aKeyword, aAppsToSelect) {
-    let deferred = Promise.defer();
-    this._deferreds[aCallerID] = deferred;
-
-    SystemAppProxy._sendCustomEvent("mozIACChromeEvent",
-                                    { type: "inter-app-comm-permission",
-                                      chromeEventID: aCallerID,
-                                      manifestURL: aPubAppManifestURL,
-                                      keyword: aKeyword,
-                                      peers: aAppsToSelect });
-
     // TODO Bug 897169 Simulate the return of the app-selected result by
     // the prompt, which always allows the connection. This dummy codes
     // will be removed when the UX/UI for the prompt is ready.
-    SystemAppProxy._sendCustomEvent("mozIACContentEvent",
-                                    { type: "inter-app-comm-permission",
-                                      chromeEventID: aCallerID,
-                                      manifestURL: aPubAppManifestURL,
-                                      keyword: aKeyword,
-                                      peers: aAppsToSelect });
 
-    return deferred.promise;
+    return Promise.resolve({
+      callerID: aCallerID,
+      keyword: aKeyword,
+      manifestURL: aPubAppManifestURL,
+      selectedApps: aAppsToSelect
+    });
   },
 
   classID: Components.ID("{879ee66c-e246-11e3-9910-74d02b97e723}"),
