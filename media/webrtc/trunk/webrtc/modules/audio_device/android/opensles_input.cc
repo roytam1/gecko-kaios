@@ -633,12 +633,16 @@ void OpenSlesInput::DestroyAudioRecorder() {
     OPENSL_RETURN_ON_FAILURE(
         (*sles_recorder_sbq_itf_)->Clear(sles_recorder_sbq_itf_),
         VOID_RETURN);
-    sles_recorder_sbq_itf_ = NULL;
   }
-  sles_recorder_itf_ = NULL;
 
   if (sles_recorder_) {
+    // To prevent buffer queue callback from accessing null interface, the
+    // interface pointers must be cleared after Destroy() returns. Destroy()
+    // internally makes sure that all callbacks leave and stop before itself
+    // leaves.
     (*sles_recorder_)->Destroy(sles_recorder_);
+    sles_recorder_sbq_itf_ = NULL;
+    sles_recorder_itf_ = NULL;
     sles_recorder_ = NULL;
   }
 }
