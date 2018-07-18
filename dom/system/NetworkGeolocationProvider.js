@@ -776,7 +776,6 @@ WifiGeoPositionProvider.prototype = {
 
     // From here on, do a network geolocation request //
     let url = this.generateUrl(data.cellTowers, data.wifiAccessPoints);
-    LOG("Sending request");
 
     let xhr = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
                         .createInstance(Ci.nsIXMLHttpRequest);
@@ -788,6 +787,7 @@ WifiGeoPositionProvider.prototype = {
         xhr.open("GET", url, true);
       }
     } catch (e) {
+      LOG("Failed to open XHR.");
       this.notifyListener("notifyError",
                           [POSITION_UNAVAILABLE]);
       return;
@@ -851,7 +851,7 @@ WifiGeoPositionProvider.prototype = {
       LOG("sending HTTP POST with " + requestData);
       xhr.send(requestData);
     } else {
-      LOG("sending HTTP GET based on " + requestData);
+      LOG("sending HTTP GET: " + url);
       xhr.send(null);
     }
   },
