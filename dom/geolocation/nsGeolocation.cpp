@@ -152,12 +152,13 @@ class nsGeolocationRequest final
 static PositionOptions*
 CreatePositionOptionsCopy(const PositionOptions& aOptions)
 {
-  GEO_LOGI("highAccuracy: %d, maximunAge: %u, timeout, %u",
+  GEO_LOGI("highAccuracy: %d (set to 1 by force), maximunAge: %u, timeout, %u",
     aOptions.mEnableHighAccuracy, aOptions.mMaximumAge, aOptions.mTimeout);
 
   nsAutoPtr<PositionOptions> geoOptions(new PositionOptions());
 
-  geoOptions->mEnableHighAccuracy = aOptions.mEnableHighAccuracy;
+  // Set mEnableHighAccuracy to true to enable GPS/AGPS by force
+  geoOptions->mEnableHighAccuracy = true;
   geoOptions->mMaximumAge = aOptions.mMaximumAge;
   geoOptions->mTimeout = aOptions.mTimeout;
 #if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
