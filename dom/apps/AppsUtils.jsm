@@ -122,6 +122,7 @@ function _setAppProperties(aObj, aApp) {
   aObj.storeId = aApp.storeId || "";
   aObj.storeVersion = aApp.storeVersion || 0;
   aObj.role = aApp.role || "";
+  aObj.userAgentInfo = aApp.userAgentInfo || "";
   aObj.redirects = aApp.redirects;
   aObj.widgetPages = aApp.widgetPages || [];
   aObj.kind = aApp.kind;
@@ -491,6 +492,11 @@ this.AppsUtils = {
 
     // The 'role' field must be a string.
     if (aManifest.role && (typeof aManifest.role !== "string")) {
+      return false;
+    }
+
+    // The 'userAgentInfo' field must be a string.
+    if (aManifest.userAgentInfo && (typeof aManifest.userAgentInfo !== "string")) {
       return false;
     }
     return true;
@@ -1001,5 +1007,9 @@ ManifestHelper.prototype = {
 
   get csp() {
     return this._manifest.csp || "";
+  },
+
+  get userAgentInfo() {
+    return this._manifest.userAgentInfo || "";
   }
 }

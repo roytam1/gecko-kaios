@@ -46,7 +46,7 @@ native TabChildRef(already_AddRefed<nsITabChild>);
 
 typedef unsigned long nsLoadFlags;
 
-[scriptable, builtinclass, uuid(049234fe-da10-478b-bc5d-bc6f9a1ba63d)]
+[scriptable, builtinclass, uuid(eec88666-7f60-47be-a468-c54631dc021f)]
 interface nsIDocShell : nsIDocShellTreeItem
 {
   /**
@@ -848,6 +848,8 @@ interface nsIDocShell : nsIDocShellTreeItem
    * If there is no associated app in our hierarchy, we return empty string.
    */
   readonly attribute DOMString appManifestURL;
+
+  readonly attribute DOMString appUserAgentInfo;
 
   /**
    * Like nsIDocShellTreeItem::GetSameTypeParent, except this ignores <iframe

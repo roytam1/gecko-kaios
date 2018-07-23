@@ -464,12 +464,14 @@ Navigator::GetUserAgent(nsAString& aUserAgent)
   nsCOMPtr<nsIURI> codebaseURI;
   nsCOMPtr<nsPIDOMWindowInner> window;
 
+  nsString appUserAgentInfo;
   if (mWindow) {
     window = mWindow;
     nsIDocShell* docshell = window->GetDocShell();
     nsString customUserAgent;
     if (docshell) {
       docshell->GetCustomUserAgent(customUserAgent);
+      docshell->GetAppUserAgentInfo(appUserAgentInfo);
 
       if (!customUserAgent.IsEmpty()) {
         aUserAgent = customUserAgent;
@@ -483,8 +485,13 @@ Navigator::GetUserAgent(nsAString& aUserAgent)
     }
   }
 
-  return GetUserAgent(window, codebaseURI, nsContentUtils::IsCallerChrome(),
-                      aUserAgent);
+  nsresult rv = GetUserAgent(window, codebaseURI, nsContentUtils::IsCallerChrome(), aUserAgent);
+
+  if (NS_SUCCEEDED(rv)) {
+    aUserAgent.Append(appUserAgentInfo);
+  }
+
+  return rv;
 }
 
 NS_IMETHODIMP

@@ -2549,6 +2549,39 @@ HttpBaseChannel::ShouldIntercept(nsIURI* aURI)
 }
 
 void
+HttpBaseChannel::AppendAppSpecificUserAgentInfo()
+{
+  nsCOMPtr<nsILoadContext> loadContext;
+  NS_QueryNotificationCallbacks(this, loadContext);
+  if (!loadContext) {
+    return;
+  }
+
+  nsCOMPtr<mozIDOMWindowProxy> domWindow;
+  loadContext->GetAssociatedWindow(getter_AddRefs(domWindow));
+  if (!domWindow) {
+    return;
+  }
+
+  auto* pDomWindow = nsPIDOMWindowOuter::From(domWindow);
+  nsIDocShell* docshell = pDomWindow->GetDocShell();
+  if (!docshell) {
+    return;
+  }
+
+  nsString appUserAgentInfo;
+  docshell->GetAppUserAgentInfo(appUserAgentInfo);
+  if (appUserAgentInfo.IsEmpty()) {
+    return;
+  }
+
+  nsCString ua;
+  GetRequestHeader(NS_LITERAL_CSTRING("User-Agent"), ua);
+  ua.Append(NS_ConvertUTF16toUTF8(appUserAgentInfo));
+  SetRequestHeader(NS_LITERAL_CSTRING("User-Agent"), ua, false);
+}
+
+void
 HttpBaseChannel::SetLoadGroupUserAgentOverride()
 {
   nsCOMPtr<nsIURI> uri;

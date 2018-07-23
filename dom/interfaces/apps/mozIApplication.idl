@@ -13,7 +13,7 @@ interface nsIPrincipal;
  * We expose Gecko-internal helpers related to "web apps" through this
  * sub-interface.
  */
-[scriptable, uuid(e76aa5e0-80b2-404f-bccc-1067828bb6ed)]
+[scriptable, uuid(29868c5b-eac4-438d-b688-b2f0e4b6415f)]
 interface mozIApplication: nsISupports
 {
   /* Return true if this app has |permission|. */
@@ -63,4 +63,7 @@ interface mozIApplication: nsISupports
 
   /* Returns the app's principal */
   readonly attribute nsIPrincipal principal;
+
+  /* userAgentInfo copied from manifest, will be appended to user agent. */
+  readonly attribute DOMString userAgentInfo;
 };

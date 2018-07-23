@@ -5353,6 +5353,8 @@ nsHttpChannel::BeginConnect()
       HttpBaseChannel::SetLoadGroupUserAgentOverride();
     }
 
+    HttpBaseChannel::AppendAppSpecificUserAgentInfo();
+
     // Check to see if we should redirect this channel elsewhere by
     // nsIHttpChannel.redirectTo API request
     if (mAPIRedirectToURI) {

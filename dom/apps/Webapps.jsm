@@ -334,6 +334,11 @@ this.DOMApplicationRegistry = {
           app.role = "";
         }
 
+        // Default userAgentInfo to "".
+        if (app.userAgentInfo === undefined) {
+          app.userAgentInfo = "";
+        }
+
         if (app.widgetPages === undefined) {
           app.widgetPages = [];
         }
@@ -446,6 +451,7 @@ this.DOMApplicationRegistry = {
         let app = this.webapps[aResult.id];
         app.csp = aResult.manifest.csp || "";
         app.role = aResult.manifest.role || "";
+        app.userAgentInfo = aResult.manifest.userAgentInfo || "";
 
         let localeManifest = new ManifestHelper(aResult.manifest, app.origin, app.manifestURL);
         this._saveWidgetsFullPath(localeManifest, app);
@@ -1245,6 +1251,7 @@ this.DOMApplicationRegistry = {
         app.name = manifest.name;
         app.csp = manifest.csp || "";
         app.role = localeManifest.role;
+        app.userAgentInfo = manifest.userAgentInfo || "";
         this._saveWidgetsFullPath(localeManifest, app);
 
         if (app.appStatus >= Ci.nsIPrincipal.APP_STATUS_PRIVILEGED) {
@@ -2642,6 +2649,7 @@ this.DOMApplicationRegistry = {
 
       aApp.name = aNewManifest.name;
       aApp.csp = manifest.csp || "";
+      aApp.userAgentInfo = manifest.userAgentInfo || "";
       aApp.updateTime = Date.now();
     }
 
@@ -3205,6 +3213,8 @@ this.DOMApplicationRegistry = {
     app.name = aManifest.name;
 
     app.csp = aManifest.csp || "";
+
+    app.userAgentInfo = aManifest.userAgentInfo || "";
 
     let aLocaleManifest = new ManifestHelper(aManifest, app.origin, app.manifestURL);
     this._saveWidgetsFullPath(aLocaleManifest, app);

@@ -355,6 +355,8 @@ protected:
 
   void SetLoadGroupUserAgentOverride();
 
+  void AppendAppSpecificUserAgentInfo();
+
   friend class PrivateBrowsingChannel<HttpBaseChannel>;
   friend class InterceptFailedOnStop;
 

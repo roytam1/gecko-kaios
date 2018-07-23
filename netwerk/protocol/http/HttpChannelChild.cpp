@@ -1100,9 +1100,9 @@ HttpChannelChild::FailedAsyncOpen(const nsresult& status)
   if (mIPCOpen) {
     PHttpChannelChild::Send__delete__(this);
   }
-  // WARNING:  DO NOT RELY ON |THIS| EXISTING ANY MORE! 
-  // 
-  // NeckoChild::DeallocPHttpChannelChild() may have been called, which deletes 
+  // WARNING:  DO NOT RELY ON |THIS| EXISTING ANY MORE!
+  //
+  // NeckoChild::DeallocPHttpChannelChild() may have been called, which deletes
   // |this| if IPDL holds the last reference.
 }
 
@@ -1744,7 +1744,7 @@ HttpChannelChild::AsyncOpen(nsIStreamListener *listener, nsISupports *aContext)
   uri->GetSpec(urispec);
   tasktracer::AddLabel("HttpChannelChild::AsyncOpen %s", urispec.get());
 #endif
-  
+
 
   // Port checked in parent, but duplicate here so we can return with error
   // immediately
@@ -1793,6 +1793,8 @@ HttpChannelChild::AsyncOpen(nsIStreamListener *listener, nsISupports *aContext)
 
   // Set user agent override from loadgroup
   HttpBaseChannel::SetLoadGroupUserAgentOverride();
+
+  HttpBaseChannel::AppendAppSpecificUserAgentInfo();
 
   MOZ_ASSERT_IF(mPostRedirectChannelShouldUpgrade,
                 mPostRedirectChannelShouldIntercept);

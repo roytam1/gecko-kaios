@@ -14130,6 +14130,37 @@ nsDocShell::GetAppManifestURL(nsAString& aAppManifestURL)
 }
 
 NS_IMETHODIMP
+nsDocShell::GetAppUserAgentInfo(nsAString& aAppUserAgentInfo)
+{
+  aAppUserAgentInfo.SetLength(0);
+
+  uint32_t appId = nsIDocShell::GetAppId();
+  if (appId != nsIScriptSecurityManager::NO_APP_ID &&
+      appId != nsIScriptSecurityManager::UNKNOWN_APP_ID) {
+    nsCOMPtr<nsIAppsService> appsService =
+      do_GetService(APPS_SERVICE_CONTRACTID);
+    NS_ASSERTION(appsService, "No AppsService available");
+
+    nsCOMPtr<mozIApplication> app;
+    nsresult rv = appsService->GetAppByLocalId(appId, getter_AddRefs(app));
+    if (NS_FAILED(rv) || !app) {
+      return NS_OK;
+    }
+
+    nsAutoString appUserAgentInfo;
+    rv = app->GetUserAgentInfo(appUserAgentInfo);
+    if (NS_FAILED(rv) || appUserAgentInfo.IsEmpty()) {
+      return NS_OK;
+    }
+
+    aAppUserAgentInfo.AssignLiteral(" ");
+    aAppUserAgentInfo.Append(appUserAgentInfo);
+  }
+
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 nsDocShell::GetAsyncPanZoomEnabled(bool* aOut)
 {
   if (nsIPresShell* presShell = GetPresShell()) {
