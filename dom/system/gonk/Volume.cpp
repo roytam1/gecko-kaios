@@ -441,7 +441,11 @@ Volume::StartMount(VolumeResponseCallback* aCallback)
   MOZ_ASSERT(XRE_IsParentProcess());
   MOZ_ASSERT(MessageLoop::current() == XRE_GetIOMessageLoop());
 
+#if ANDROID_VERSION >= 23
+  StartCommand(new VolumeActionCommand(this, "mount", "1", aCallback));
+#else
   StartCommand(new VolumeActionCommand(this, "mount", "", aCallback));
+#endif
 }
 
 void
