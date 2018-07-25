@@ -86,7 +86,7 @@ protected:
   RecvSetTtyMode(const uint16_t& aEnabled) override;
 
 private:
-  bool mActorDestroyed;
+  Atomic<bool> mActorDestroyed;
   bool mRegistered;
 };
 
