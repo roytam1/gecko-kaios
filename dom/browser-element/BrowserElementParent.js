@@ -1186,9 +1186,7 @@ BrowserElementParent.prototype = {
   },
 
   setSpatialNavigationEnabled: defineNoReturnMethod(function(enabled) {
-    if (!this._mm.assertAppHasPermission("spatialnavigation-app-manage")) {
-      this._frameLoader.spatialNavigationEnabled = enabled;
-    }
+    this._frameLoader.spatialNavigationEnabled = enabled;
   }),
 
   getSpatialNavigationEnabled: function() {

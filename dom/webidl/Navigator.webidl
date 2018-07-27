@@ -556,14 +556,12 @@ partial interface Navigator {
 
   // Set true to turn on spatial navigation service, please note that
   // 1. Only available for oop apps.
-  // 2. Granting permission to enable this interface tells System app stay out
-  //    of controlling spatial navigation.
-  // 3. Spatial navigation prevent default and stop propagation on key events of
+  // 2. Spatial navigation prevent default and stop propagation on key events of
   //    Enter, Up, Right, Down, Left key. App should be aware of this behavior
   //    if it expects to handle key events, and if any system UI pops up, or
   //    focus on an input element (IME is active), app should turn spatial
   //    navigation off.
-  // 4. Spatial navigation do not prevent default or stop propagation on key
+  // 3. Spatial navigation do not prevent default or stop propagation on key
   //    event of RSK, but in non-TPS mode, spatial navigation will trigger
   //    contextmenu event on key event of RSK.
 

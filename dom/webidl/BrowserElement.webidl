@@ -200,12 +200,9 @@ partial interface BrowserElementPrivileged {
   // The following attributes are for app with browser permission (i.e. System app)
   // to enable spatial navigation service on an iframe, please note that:
   //   1. Only supports for remote iframe (oop apps).
-  //   2. If target app has permission of "spatialnavigation-app-manage",
-  //      setter of these two attributes does nothing,
-  //      please see navigation.spatialNavigationEnabled for more details.
-  //   3. When spatial navigation is enabled, key events of Enter, Up, Right, Down, Left
+  //   2. When spatial navigation is enabled, key events of Enter, Up, Right, Down, Left
   //      are default prevented and propagation stopped.
-  //   4. When spatial navigation is enabled and is not in touch pan simulation mode,
+  //   3. When spatial navigation is enabled and is not in touch pan simulation mode,
   //      key event of RSK will trigger context menu event,
   //      but will not be default prevented or propagation stopped by spatial navigation.
 
