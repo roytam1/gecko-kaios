@@ -2277,7 +2277,6 @@ this.DOMApplicationRegistry = {
           sendError("INSTALL_FROM_DENIED");
           return;
         } else {
-          AppsUtils.ensureSameAppName(oldManifest, manifest, app);
 
           let hash = this.computeManifestHash(manifest);
           debug("Manifest hash = " + hash);
@@ -4100,16 +4099,6 @@ this.DOMApplicationRegistry = {
 
     if (!AppsUtils.checkManifest(newManifest, aOldApp)) {
       throw "INVALID_MANIFEST";
-    }
-
-    // For app updates we don't forbid apps to rename themselves but
-    // we still retain the old name of the app. In the future we
-    // will use UI to allow updates to rename an app after we check
-    // with the user that the rename is ok.
-    if (aIsUpdate) {
-      // Call ensureSameAppName before compareManifests as `manifest`
-      // has been normalized to avoid app rename.
-      AppsUtils.ensureSameAppName(aManifest._manifest, newManifest, aOldApp);
     }
 
     if (!AppsUtils.compareManifests(newManifest, aManifest._manifest)) {
