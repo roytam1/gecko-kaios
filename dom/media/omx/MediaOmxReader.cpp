@@ -22,6 +22,11 @@
 // Try not to spend more than this much time in a single call to DecodeVideoFrame.
 #define MAX_VIDEO_DECODE_SECONDS 0.1
 
+#define MAX_MP3_HEADER_BYTE 1000000
+// If we still can't find a valid mp3 header in the first 1M byte
+// assume it is not a valid mp3
+// https://bugzilla.kaiostech.com/show_bug.cgi?id=40218
+
 using namespace mozilla::gfx;
 using namespace mozilla::media;
 using namespace android;
@@ -473,10 +478,18 @@ void MediaOmxReader::NotifyDataArrivedInternal()
   mLastCachedRanges = byteRanges;
 
   for (const auto& interval : intervals) {
+    // Test if it is mp3. Although we can choose to scan through the whole file.
+    // however if the file is too big(200MB), we would run out of memory
+    // also the loading time would be long.
+    // Since we only need a few valid mp3 frame we can just test the first 1MB data.
+    // Side effect is the first valid frame show up after the first 1MB, we would
+    // treat it as not a mp3 file.
+    // (This case is rare because that means the file starts with 1MB garbage data)
+    // https://bugzilla.kaiostech.com/show_bug.cgi?id=40218
     RefPtr<MediaByteBuffer> bytes =
-      resource->MediaReadAt(interval.mStart, interval.Length());
+      resource->MediaReadAt(interval.mStart, std::min<int64_t>(MAX_MP3_HEADER_BYTE,interval.Length()));
     NS_ENSURE_TRUE_VOID(bytes);
-    mMP3FrameParser.Parse(bytes->Elements(), interval.Length(), interval.mStart);
+    mMP3FrameParser.Parse(bytes->Elements(), std::min<int64_t>(MAX_MP3_HEADER_BYTE,interval.Length()), interval.mStart);
     if (!mMP3FrameParser.IsMP3()) {
       return;
     }
