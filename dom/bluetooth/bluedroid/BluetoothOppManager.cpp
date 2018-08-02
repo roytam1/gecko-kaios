@@ -752,7 +752,26 @@ BluetoothOppManager::CreateFile()
   // the file name again.
   mDummyDsFile->mFile->GetLeafName(mFileName);
 
-  BT_LOGR("mFileName: %s", NS_ConvertUTF16toUTF8(mFileName).get());
+  BT_LOGR("mFileName: %s, mContentType: %s",
+    NS_ConvertUTF16toUTF8(mFileName).get(),
+    NS_ConvertUTF16toUTF8(mContentType).get());
+
+  // If the filename doesn't include file extension, append a file extension
+  // based on the MIME type of OBEX header.
+  if (!mContentType.IsEmpty() && mFileName.RFindChar('.') == kNotFound) {
+    nsCOMPtr<nsIMIMEService> mimeSvc = do_GetService(NS_MIMESERVICE_CONTRACTID);
+    if (mimeSvc) {
+      nsCString extension;
+      nsresult rv =
+        mimeSvc->GetPrimaryExtension(NS_LossyConvertUTF16toASCII(mContentType),
+                                     EmptyCString(),
+                                     extension);
+      if (NS_SUCCEEDED(rv)) {
+        mFileName.Append('.');
+        AppendUTF8toUTF16(extension, mFileName);
+      }
+    }
+  }
 
   // Prepare the entire file path for the .part file
   path.Truncate();
