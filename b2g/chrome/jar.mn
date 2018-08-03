@@ -96,7 +96,9 @@ chrome.jar:
   content/screen.js                     (content/screen.js)
   content/runapp.js                     (content/runapp.js)
 #endif
+#ifndef MOZ_MULET
 * content/content.css                   (content/content.css)
+#endif
   content/touchcontrols.css             (content/touchcontrols.css)
 
   content/identity.js                   (content/identity.js)
