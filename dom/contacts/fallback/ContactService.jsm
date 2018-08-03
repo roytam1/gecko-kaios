@@ -565,7 +565,7 @@ var ContactService = this.ContactService = {
       let familyName = [];
       aContact.properties.name.forEach((name) => {
         let segs = name.split(' ');
-        givenName.push([segs.shift()]);
+        givenName.push(segs.shift());
         familyName.push(segs.join(' '));
       });
 
