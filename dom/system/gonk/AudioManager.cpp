@@ -1016,8 +1016,18 @@ NS_IMETHODIMP
 AudioManager::SetForceForUse(int32_t aUsage, int32_t aForce)
 {
 #if ANDROID_VERSION >= 15
+  audio_policy_force_use_t forceUse;
+  switch (aUsage) {
+#ifdef PRODUCT_MANUFACTURER_SPRD
+    case USE_FM:
+      forceUse = AUDIO_POLICY_FORCE_FOR_FM; break;
+#endif
+    default:
+      forceUse = (audio_policy_force_use_t)aUsage; break;
+  }
+
   status_t status = AudioSystem::setForceUse(
-                      (audio_policy_force_use_t)aUsage,
+                      forceUse,
                       (audio_policy_forced_cfg_t)aForce);
 
   bool enableRadio = false;
