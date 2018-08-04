@@ -1,27 +1,8 @@
-An explanation of the Mozilla Source Code Directory Structure and links to
-project pages with documentation can be found at:
+This is Gecko source code maintained by KaiOS, which was forked from:
+https://github.com/mozilla-b2g/gecko-b2g
 
-    https://developer.mozilla.org/en/Mozilla_Source_Code_Directory_Structure
+If you have question about developing KaiOS, please see:
+https://www.kaiostech.com/technical-details/
 
-For information on how to build Mozilla from the source code, see:
-
-    http://developer.mozilla.org/en/docs/Build_Documentation
-
-To have your bug fix / feature added to Mozilla, you should create a patch and
-submit it to Bugzilla (https://bugzilla.mozilla.org). Instructions are at:
-
-    http://developer.mozilla.org/en/docs/Creating_a_patch
-    http://developer.mozilla.org/en/docs/Getting_your_patch_in_the_tree
-
-If you have a question about developing Mozilla, and can't find the solution
-on http://developer.mozilla.org, you can try asking your question in a
-mozilla.* Usenet group, or on IRC at irc.mozilla.org. [The Mozilla news groups
-are accessible on Google Groups, or news.mozilla.org with a NNTP reader.]
-
-You can download nightly development builds from the Mozilla FTP server.
-Keep in mind that nightly builds, which are used by Mozilla developers for
-testing, may be buggy. Firefox nightlies, for example, can be found at:
-
-    https://archive.mozilla.org/pub/firefox/nightly/latest-mozilla-central/
-            - or -
-    http://nightly.mozilla.org/
+You can also find more information about Gecko at:
+http://developer.mozilla.org/
