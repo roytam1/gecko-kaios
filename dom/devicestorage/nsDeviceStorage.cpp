@@ -3470,10 +3470,17 @@ nsDOMDeviceStorage::LowDiskSpace()
 already_AddRefed<Promise>
 nsDOMDeviceStorage::GetRoot(ErrorResult& aRv)
 {
-  if (!mFileSystem) {
+  nsString storagePath;
+  GetStoragePath(storagePath);
+  nsString rootDirPath;
+  mRootDirectory->GetPath(rootDirPath);
+
+  if (!mFileSystem || !storagePath.Equals(rootDirPath)) {
+    SetRootDirectoryForType(mStorageType, mStorageName);
     mFileSystem = new DeviceStorageFileSystem(mStorageType, mStorageName);
     mFileSystem->Init(this);
   }
+
   return mozilla::dom::Directory::GetRoot(mFileSystem, aRv);
 }
 
