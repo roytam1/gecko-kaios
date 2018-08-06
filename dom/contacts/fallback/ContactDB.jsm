@@ -1265,6 +1265,7 @@ ContactDB.prototype = {
     if (aFindOptions.sortBy != "undefined") {
       const sortOrder = aFindOptions.sortOrder;
       const sortBy = this.getSortByParam(aFindOptions);
+      const sortLanguage = aFindOptions.sortLanguage;
 
       aResults.sort(function (a, b) {
         let x, y;
@@ -1293,7 +1294,7 @@ ContactDB.prototype = {
               px = JSON.stringify(a.published);
               py = JSON.stringify(b.published);
               if (px && py) {
-                return px.localeCompare(py);
+                return px.localeCompare(py, sortLanguage);
               }
             } else {
               return sortOrder == 'descending' ? 1 : -1;
@@ -1303,7 +1304,7 @@ ContactDB.prototype = {
             return sortOrder == "ascending" ? 1 : -1;
           }
 
-          result = x.localeCompare(y);
+          result = x.localeCompare(y, sortLanguage);
           x = null;
           y = null;
         } while (result == 0);
@@ -1762,7 +1763,7 @@ ContactDB.prototype = {
     if (aOptions.sortOrder) {
       let ascending = aOptions.sortOrder == 'ascending';
       aGroups.sort(function(a, b) {
-        let result = a.search.name.localeCompare(b.search.name);
+        let result = a.search.name.localeCompare(b.search.name, aOptions.sortLanguage);
         return ascending ? result : -result;
       });
     }

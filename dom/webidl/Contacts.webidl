@@ -117,6 +117,7 @@ dictionary ContactFindSortOptions {
    */
   DOMString sortBy;
   DOMString sortOrder = "ascending";   // e.g. "descending"
+  DOMString sortLanguage = "en";       // e.g. "de", "zh-Hant-TW"
 };
 
 dictionary ContactFindOptions : ContactFindSortOptions {
