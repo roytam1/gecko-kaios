@@ -400,6 +400,16 @@ ACEService.prototype = {
       return Promise.resolve(true);
     }
 
+    // seType could be eSE/eSE1/eSE2... for embedded secure element,
+    // or SIM/SIM1/SIM2 for uicc, convert it to internal type.
+    if (seType.startsWith("eSE")) {
+      seType = SE.TYPE_ESE;
+    } else if (seType.startWith("SIM")){
+      seType = SE.TYPE_UICC;
+    } else {
+      return Promise.reject(Error("UnSupported seType: " + seType));
+    }
+
     return new Promise((resolve, reject) => {
       debug("isHCIEventAccessAllowed for " + manifestURL + " to " + aid);
 
