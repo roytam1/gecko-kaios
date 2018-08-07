@@ -160,8 +160,9 @@ pref("browser.formfill.enable", false);
 /* spellcheck */
 pref("layout.spellcheckDefault", 0);
 
-/* block popups by default, and notify the user about blocked popups */
-pref("dom.disable_open_during_load", true);
+/* Don't block popups as default*/
+pref("dom.disable_open_during_load", false);
+/* Notify the user about blocked popups */
 pref("privacy.popups.showBrowserMessage", true);
 
 pref("keyword.enabled", true);
