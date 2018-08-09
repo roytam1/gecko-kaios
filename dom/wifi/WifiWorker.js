@@ -38,7 +38,6 @@ const NS_PREFBRANCH_PREFCHANGE_TOPIC_ID   = "nsPref:changed";
 const kWifiCaptivePortalResult            = "wifi-captive-portal-result";
 const kOpenCaptivePortalLoginEvent        = "captive-portal-login";
 
-const MAX_RETRIES_ON_AUTHENTICATION_FAILURE = 1;
 const MAX_SUPPLICANT_LOOP_ITERATIONS = 4;
 const MAX_RETRIES_ON_DHCP_FAILURE = 2;
 const MAX_RETRIES_ON_ASSOCIATION_REJECT = 5;
@@ -878,7 +877,6 @@ var WifiManager = (function() {
   }
 
   manager.clearDisableReasonCounter = function (callback) {
-    manager.authenticationFailuresCount = 0;
     manager.associationRejectCount = 0;
     manager.loopDetectionCount = 0;
     manager.dhcpFailuresCount = 0;
@@ -886,18 +884,6 @@ var WifiManager = (function() {
   }
 
   function handleWpaEapEvents(event) {
-    if (event.indexOf("CTRL-EVENT-EAP-FAILURE") !== -1) {
-      if (event.indexOf("EAP authentication failed") !== -1 &&
-          !manager.wpsStarted) {
-        notify("networkdisable", {reason: "DISABLED_AUTHENTICATION_FAILURE"});
-      }
-      return true;
-    }
-    if (event.indexOf("CTRL-EVENT-EAP-TLS-CERT-ERROR") !== -1) {
-      // Cert Error
-      notify("networkdisable", {reason: "DISABLED_AUTHENTICATION_FAILURE"});
-      return true;
-    }
     if (event.indexOf("CTRL-EVENT-EAP-STARTED") !== -1) {
       notifyStateChange({ state: "AUTHENTICATING" });
       return true;
@@ -910,13 +896,6 @@ var WifiManager = (function() {
   function handleEvent(event) {
     debug("Event coming in: " + event);
     if (event.indexOf("CTRL-EVENT-") !== 0 && event.indexOf("WPS") !== 0) {
-      if (event.indexOf("Authentication with") == 0 &&
-          event.indexOf("timed out") != -1 &&
-          !manager.wpsStarted) {
-        notify("networkdisable", {reason: "DISABLED_AUTHENTICATION_FAILURE"});
-        return true;
-      }
-
       if (event.indexOf("CTRL-REQ-") == 0) {
         const REQUEST_PREFIX_STR = "CTRL-REQ-";
         let requestName = event.substring(REQUEST_PREFIX_STR.length);
@@ -2915,15 +2894,13 @@ function WifiWorker() {
         });
         break;
       case "DISABLED_AUTHENTICATION_FAILURE":
-        WifiManager.authenticationFailuresCount++;
-        if (WifiManager.authenticationFailuresCount >= MAX_RETRIES_ON_AUTHENTICATION_FAILURE) {
-          WifiManager.clearDisableReasonCounter(function(){});
-          self.handleNetworkConnectionFailure(configNetwork.netId, function() {
-            self.handleWrongPassword(configNetwork.netId);
-            self._fireEvent("onauthenticationfailed",
+        WifiManager.clearDisableReasonCounter(function(){});
+        self.handleNetworkConnectionFailure(configNetwork.netId, function() {
+             self.handleWrongPassword(configNetwork.netId);
+             self._fireEvent("onauthenticationfailed",
               {network: netToDOM(configNetwork)});
-          });
-        }
+        });
+
         break;
       case "DISABLED_ASSOCIATION_REJECTION":
         self.bssidToNetwork(this.bssid, function(network) {
@@ -3002,7 +2979,6 @@ function WifiWorker() {
 
         var _oncompleted = function() {
           // The full authentication process is completed, reset the count.
-          WifiManager.authenticationFailuresCount = 0;
           WifiManager.loopDetectionCount = 0;
           WifiManager.associationRejectCount = 0;
           self._startConnectionInfoTimer();
