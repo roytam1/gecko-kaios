@@ -97,6 +97,8 @@ private:
   void SetReferenceLocation();
 #endif
 
+  NS_METHOD DeleteGpsData(uint16_t deleteType);
+
   const GpsInterface* GetGPSInterface();
 
   static GonkGPSGeolocationProvider* sSingleton;

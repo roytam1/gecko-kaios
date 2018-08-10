@@ -1237,6 +1237,17 @@ nsGeolocationService::GetGeolocationService()
   return result.forget();
 }
 
+#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
+void
+nsGeolocationService::DeleteGpsData(uint16_t deleteType)
+{
+  if (!mProvider) {
+    mProvider = do_GetService(GONK_GPS_GEOLOCATION_PROVIDER_CONTRACTID);
+  }
+  mProvider->DeleteGpsData(deleteType);
+}
+#endif
+
 void
 nsGeolocationService::AddLocator(Geolocation* aLocator)
 {
@@ -1852,6 +1863,14 @@ Geolocation::NotifyAllowedRequest(nsGeolocationRequest* aRequest)
     mPendingCallbacks.AppendElement(aRequest);
   }
 }
+
+#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
+void
+Geolocation::DeleteGpsData(uint16_t deleteType)
+{
+  mService->DeleteGpsData(deleteType);
+}
+#endif
 
 bool
 Geolocation::RegisterRequestWithPrompt(nsGeolocationRequest* request)

@@ -101,6 +101,10 @@ public:
   void     UpdateAccuracy(bool aForceHigh = false);
   bool     HighAccuracyRequested();
 
+#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
+  void DeleteGpsData(uint16_t deleteType);
+#endif
+
 #ifdef HAS_KOOST_MODULES
   // Notify GnssMonitor about the NMEA update
   void     NotifyGnssNmeaUpdate(const int64_t aTimestamp, const nsCString& aNmea);
@@ -194,6 +198,10 @@ public:
 
   // Check to see if any active request requires high accuracy
   bool HighAccuracyRequested();
+
+  #if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
+    void DeleteGpsData(uint16_t deleteType);
+  #endif
 
   // Notification from the service:
   void ServiceReady();

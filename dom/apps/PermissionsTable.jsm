@@ -44,6 +44,11 @@ this.PermissionsTable =  { geolocation: {
                              certified: ALLOW_ACTION,
                              substitute: ["geolocation"]
                            },
+                           "mmi-test": {
+                             app: DENY_ACTION,
+                             privileged: DENY_ACTION,
+                             certified: ALLOW_ACTION
+                           },
                            camera: {
                              app: DENY_ACTION,
                              privileged: PROMPT_ACTION,

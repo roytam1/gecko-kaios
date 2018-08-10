@@ -30,6 +30,14 @@ interface Geolocation {
 
   void clearWatch(long watchId);
 
+#if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
+  // Delete  specified aiding data for GPS testing
+  // 0xFFFF is passed for a cold start.
+  // 0x0001 is passed for a warm start.
+  [CheckAnyPermissions="mmi-test"]
+  void deleteGpsData(unsigned short deleteType);
+#endif
+
 #ifdef HAS_KOOST_MODULES
   // [Non-standard], an interface for monitoring status of Global Navigation Satellite System
   [Pref="geo.gnssMonitor.enabled"]

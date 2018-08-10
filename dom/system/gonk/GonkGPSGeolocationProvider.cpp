@@ -1330,6 +1330,27 @@ GonkGPSGeolocationProvider::ShutdownGPS()
 }
 
 NS_IMETHODIMP
+GonkGPSGeolocationProvider::DeleteGpsData(uint16_t deleteType)
+{
+  if (!mGpsInterface) {
+    mGpsInterface = GetGPSInterface();
+  }
+
+  if (mGpsInterface) {
+    switch (deleteType) {
+    case GPS_DELETE_ALL:
+      mGpsInterface->delete_aiding_data(GPS_DELETE_ALL);
+      break;
+    case GPS_DELETE_EPHEMERIS:
+      mGpsInterface->delete_aiding_data(GPS_DELETE_EPHEMERIS);
+      break;
+    }
+    //mGpsInterface->stop();
+   }
+   return NS_OK;
+}
+
+NS_IMETHODIMP
 GonkGPSGeolocationProvider::SetHighAccuracy(bool)
 {
   return NS_OK;
