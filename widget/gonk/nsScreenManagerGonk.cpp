@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include <cutils/log.h>
+
 #include "android/log.h"
 #include "GLContext.h"
 #include "gfxPrefs.h"
@@ -38,7 +40,6 @@
 #include "nsTArray.h"
 #include "pixelflinger/format.h"
 #include "nsIDisplayInfo.h"
-#include "libui/cutils_log.h"
 
 #if ANDROID_VERSION >= 17
 #include "libdisplay/DisplaySurface.h"
