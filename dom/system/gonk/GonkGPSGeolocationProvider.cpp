@@ -253,28 +253,51 @@ GonkGPSGeolocationProvider::SvStatusCallback(GpsSvStatus* sv_info)
     static uint32_t numAlmanac = 0;
     static uint32_t numUsedInFix = 0;
 
-    unsigned int i = 1;
+    uint32_t i = 1;
     uint32_t svAlmanacCount = 0;
+    uint32_t svEphemerisCount = 0;
+    uint32_t svUsedCount = 0;
+#if !defined(PRODUCT_MANUFACTURER_SPRD) || ANDROID_VERSION != 19
     for (i = 1; i > 0; i <<= 1) {
       if (i & sv_info->almanac_mask) {
         svAlmanacCount++;
       }
     }
 
-    uint32_t svEphemerisCount = 0;
     for (i = 1; i > 0; i <<= 1) {
       if (i & sv_info->ephemeris_mask) {
         svEphemerisCount++;
       }
     }
 
-    uint32_t svUsedCount = 0;
     for (i = 1; i > 0; i <<= 1) {
       if (i & sv_info->used_in_fix_mask) {
         svUsedCount++;
       }
     }
+#else
+    // KitKat HAL is modified by SPRD for supporting multi-gnss
+    int multiGnss = sizeof(sv_info->almanac_mask) / sizeof(uint32_t);
+    for (int k = 0; k < multiGnss; ++k) {
+      for (i = 1; i > 0; i <<= 1) {
+        if (i & sv_info->almanac_mask[k]) {
+          svAlmanacCount++;
+        }
+      }
 
+      for (i = 1; i > 0; i <<= 1) {
+        if (i & sv_info->ephemeris_mask[k]) {
+          svEphemerisCount++;
+        }
+      }
+
+      for (i = 1; i > 0; i <<= 1) {
+        if (i & sv_info->used_in_fix_mask[k]) {
+          svUsedCount++;
+        }
+      }
+    }
+#endif
     // Log the message only if the the status changed.
     if (sv_info->num_svs != numSvs ||
         svAlmanacCount != numAlmanac ||
@@ -320,9 +343,16 @@ GonkGPSGeolocationProvider::SvStatusCallback(GpsSvStatus* sv_info)
         fprintf(fp, "{");
 
         fprintf(fp, "\"num\": %d", num);
+#if !defined(PRODUCT_MANUFACTURER_SPRD) || ANDROID_VERSION != 19
         fprintf(fp, ", \"almanac_mask\": %d", sv_info->almanac_mask);
         fprintf(fp, ", \"ephemeris_mask\": %d", sv_info->ephemeris_mask);
         fprintf(fp, ", \"used_in_fix_mask\": %d", sv_info->used_in_fix_mask);
+#else
+        // only print the 1st mask since mmi-test app can't handle multi-gnss
+        fprintf(fp, ", \"almanac_mask\": %d", sv_info->almanac_mask[0]);
+        fprintf(fp, ", \"ephemeris_mask\": %d", sv_info->ephemeris_mask[0]);
+        fprintf(fp, ", \"used_in_fix_mask\": %d", sv_info->used_in_fix_mask[0]);
+#endif
         LOG("cck sv_info->num_svs = %d, num = %d\n",sv_info->num_svs, num);
         if (sv_info->num_svs != 0) {
           fprintf(fp, ",");
