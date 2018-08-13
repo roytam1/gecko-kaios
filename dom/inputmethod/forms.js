@@ -687,6 +687,12 @@ var FormAssistant = {
         let event = target.ownerDocument.createEvent('HTMLEvents');
         event.initEvent('input', true, false);
         target.dispatchEvent(event);
+
+        if (isDateTimeType(target)) {
+          let event = target.ownerDocument.createEvent('HTMLEvents');
+          event.initEvent('change', true, false);
+          target.dispatchEvent(event);
+        }
         break;
       }
 
@@ -1077,6 +1083,15 @@ function isNumberType(element) {
   }
 
   return (element.getAttribute("type").toLowerCase() == "number");
+}
+
+function isDateTimeType(element) {
+  if (!element) {
+    return false;
+  }
+  let type = element.getAttribute('type').toLowerCase();
+
+  return ['datetime', 'datetime-local', 'time', 'date'].indexOf(type) >= 0;
 }
 
 function getJSON(element) {
