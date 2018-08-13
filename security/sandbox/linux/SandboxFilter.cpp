@@ -524,6 +524,7 @@ public:
     case __NR_umask:
     case __NR_mkdirat:
     case __NR_eventfd2:
+    case __NR_mkdir:
       return Allow();
 #endif
 
