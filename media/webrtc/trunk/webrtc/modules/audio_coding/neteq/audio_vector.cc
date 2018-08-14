@@ -284,6 +284,14 @@ bool AudioVector::Empty() const {
   return begin_index_ == end_index_;
 }
 
+const int16_t& AudioVector::operator[](size_t index) const {
+  return array_[(begin_index_ + index) % capacity_];
+}
+
+int16_t& AudioVector::operator[](size_t index) {
+  return array_[(begin_index_ + index) % capacity_];
+}
+
 void AudioVector::Reserve(size_t n) {
   if (capacity_ > n)
     return;
