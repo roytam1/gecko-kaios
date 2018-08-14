@@ -60,9 +60,9 @@ int Merge::Process(int16_t* input, size_t input_length,
   int16_t best_correlation_index = 0;
   size_t output_length = 0;
 
-  std::unique_ptr<int16_t[]> input_channel(
+  rtc::scoped_ptr<int16_t[]> input_channel(
       new int16_t[input_length_per_channel]);
-  std::unique_ptr<int16_t[]> expanded_channel(new int16_t[expanded_length]);
+  rtc::scoped_ptr<int16_t[]> expanded_channel(new int16_t[expanded_length]);
   for (size_t channel = 0; channel < num_channels_; ++channel) {
     input_vector[channel].CopyTo(
         input_length_per_channel, 0, input_channel.get());

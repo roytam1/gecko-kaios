@@ -108,10 +108,10 @@ int Expand::Process(AudioMultiVector* output) {
       parameters.expand_vector0.CopyTo(temp_length, expansion_vector_position,
                                        voiced_vector_storage);
     } else if (current_lag_index_ == 1) {
-      std::unique_ptr<int16_t[]> temp_0(new int16_t[temp_length]);
+      rtc::scoped_ptr<int16_t[]> temp_0(new int16_t[temp_length]);
       parameters.expand_vector0.CopyTo(temp_length, expansion_vector_position,
                                        temp_0.get());
-      std::unique_ptr<int16_t[]> temp_1(new int16_t[temp_length]);
+      rtc::scoped_ptr<int16_t[]> temp_1(new int16_t[temp_length]);
       parameters.expand_vector1.CopyTo(temp_length, expansion_vector_position,
                                        temp_1.get());
       // Mix 3/4 of expand_vector0 with 1/4 of expand_vector1.
@@ -124,10 +124,10 @@ int Expand::Process(AudioMultiVector* output) {
       assert(expansion_vector_position + temp_length <=
              parameters.expand_vector1.Size());
 
-      std::unique_ptr<int16_t[]> temp_0(new int16_t[temp_length]);
+      rtc::scoped_ptr<int16_t[]> temp_0(new int16_t[temp_length]);
       parameters.expand_vector0.CopyTo(temp_length, expansion_vector_position,
                                        temp_0.get());
-      std::unique_ptr<int16_t[]> temp_1(new int16_t[temp_length]);
+      rtc::scoped_ptr<int16_t[]> temp_1(new int16_t[temp_length]);
       parameters.expand_vector1.CopyTo(temp_length, expansion_vector_position,
                                        temp_1.get());
       WebRtcSpl_ScaleAndAddVectorsWithRound(temp_0.get(), 1, temp_1.get(), 1, 1,
@@ -370,7 +370,7 @@ void Expand::AnalyzeSignal(int16_t* random_vector) {
   const size_t signal_length = 256 * fs_mult;
 
   const size_t audio_history_position = sync_buffer_->Size() - signal_length;
-  std::unique_ptr<int16_t[]> audio_history(new int16_t[signal_length]);
+  rtc::scoped_ptr<int16_t[]> audio_history(new int16_t[signal_length]);
   (*sync_buffer_)[0].CopyTo(signal_length, audio_history_position,
                             audio_history.get());
 
@@ -540,7 +540,7 @@ void Expand::AnalyzeSignal(int16_t* random_vector) {
         parameters.expand_vector1.Extend(
             expansion_length - parameters.expand_vector1.Size());
       }
-      std::unique_ptr<int16_t[]> temp_1(new int16_t[expansion_length]);
+      rtc::scoped_ptr<int16_t[]> temp_1(new int16_t[expansion_length]);
       WebRtcSpl_AffineTransformVector(temp_1.get(),
                                       const_cast<int16_t*>(vector2),
                                       amplitude_ratio,

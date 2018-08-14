@@ -12,6 +12,7 @@
 
 #include <assert.h>
 
+#include "webrtc/base/scoped_ptr.h"
 #include "webrtc/modules/audio_coding/codecs/audio_decoder.h"
 #include "webrtc/modules/audio_coding/codecs/cng/include/webrtc_cng.h"
 #include "webrtc/modules/audio_coding/neteq/decoder_database.h"
@@ -74,7 +75,7 @@ int ComfortNoise::Generate(size_t requested_length,
   }
   CNG_dec_inst* cng_inst = cng_decoder->CngDecoderInstance();
 
-  std::unique_ptr<int16_t[]> temp(new int16_t[number_of_samples]);
+  rtc::scoped_ptr<int16_t[]> temp(new int16_t[number_of_samples]);
   if (WebRtcCng_Generate(cng_inst, temp.get(),
                          static_cast<int16_t>(number_of_samples),
                          new_period) < 0) {

@@ -14,6 +14,7 @@
 
 #include <algorithm>  // min
 
+#include "webrtc/base/scoped_ptr.h"
 #include "webrtc/common_audio/signal_processing/include/signal_processing_library.h"
 #include "webrtc/modules/audio_coding/codecs/audio_decoder.h"
 #include "webrtc/modules/audio_coding/codecs/cng/include/webrtc_cng.h"
@@ -64,7 +65,7 @@ int Normal::Process(const int16_t* input,
     expand_->Reset();
 
     size_t length_per_channel = length / output->Channels();
-    std::unique_ptr<int16_t[]> signal(new int16_t[length_per_channel]);
+    rtc::scoped_ptr<int16_t[]> signal(new int16_t[length_per_channel]);
     for (size_t channel_ix = 0; channel_ix < output->Channels(); ++channel_ix) {
       // Adjust muting factor (main muting factor times expand muting factor).
       external_mute_factor_array[channel_ix] = static_cast<int16_t>(

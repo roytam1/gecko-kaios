@@ -291,7 +291,7 @@ void AudioVector::Reserve(size_t n) {
   // full vector. Therefore |begin_index_| == |end_index_| indicates empty
   // vector, and |begin_index_| == (|end_index_| + 1) % capacity indicates
   // full vector.
-  std::unique_ptr<int16_t[]> temp_array(new int16_t[n + 1]);
+  rtc::scoped_ptr<int16_t[]> temp_array(new int16_t[n + 1]);
   CopyTo(length, 0, temp_array.get());
   array_.swap(temp_array);
   begin_index_ = 0;
@@ -303,7 +303,7 @@ void AudioVector::InsertByPushBack(const int16_t* insert_this,
                                    size_t length,
                                    size_t position) {
   const size_t move_chunk_length = Size() - position;
-  std::unique_ptr<int16_t[]> temp_array(nullptr);
+  rtc::scoped_ptr<int16_t[]> temp_array(nullptr);
   if (move_chunk_length > 0) {
     // TODO(minyue): see if it is possible to avoid copying to a buffer.
     temp_array.reset(new int16_t[move_chunk_length]);
@@ -320,7 +320,7 @@ void AudioVector::InsertByPushBack(const int16_t* insert_this,
 void AudioVector::InsertByPushFront(const int16_t* insert_this,
                                    size_t length,
                                    size_t position) {
-  std::unique_ptr<int16_t[]> temp_array(nullptr);
+  rtc::scoped_ptr<int16_t[]> temp_array(nullptr);
   if (position > 0) {
     // TODO(minyue): see if it is possible to avoid copying to a buffer.
     temp_array.reset(new int16_t[position]);
@@ -337,7 +337,7 @@ void AudioVector::InsertByPushFront(const int16_t* insert_this,
 void AudioVector::InsertZerosByPushBack(size_t length,
                                         size_t position) {
   const size_t move_chunk_length = Size() - position;
-  std::unique_ptr<int16_t[]> temp_array(nullptr);
+  rtc::scoped_ptr<int16_t[]> temp_array(nullptr);
   if (move_chunk_length > 0) {
     temp_array.reset(new int16_t[move_chunk_length]);
     CopyTo(move_chunk_length, position, temp_array.get());
@@ -360,7 +360,7 @@ void AudioVector::InsertZerosByPushBack(size_t length,
 
 void AudioVector::InsertZerosByPushFront(size_t length,
                                          size_t position) {
-  std::unique_ptr<int16_t[]> temp_array(nullptr);
+  rtc::scoped_ptr<int16_t[]> temp_array(nullptr);
   if (position > 0) {
     temp_array.reset(new int16_t[position]);
     CopyTo(position, 0, temp_array.get());
