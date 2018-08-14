@@ -13,7 +13,6 @@
 #include <assert.h>
 
 #include <algorithm>
-#include <memory>
 
 #include "webrtc/typedefs.h"
 
@@ -181,7 +180,7 @@ int16_t& AudioVector::operator[](size_t index) {
 
 void AudioVector::Reserve(size_t n) {
   if (capacity_ < n) {
-    std::unique_ptr<int16_t[]> temp_array(new int16_t[n]);
+    rtc::scoped_ptr<int16_t[]> temp_array(new int16_t[n]);
     memcpy(temp_array.get(), array_.get(), Size() * sizeof(int16_t));
     array_.swap(temp_array);
     capacity_ = n;

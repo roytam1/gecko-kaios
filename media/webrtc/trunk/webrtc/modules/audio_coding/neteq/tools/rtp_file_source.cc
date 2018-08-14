@@ -18,8 +18,6 @@
 #include <netinet/in.h>
 #endif
 
-#include <memory>
-
 #include "webrtc/base/checks.h"
 #include "webrtc/modules/audio_coding/neteq/tools/packet.h"
 #include "webrtc/modules/rtp_rtcp/interface/rtp_header_parser.h"
@@ -54,9 +52,9 @@ Packet* RtpFileSource::NextPacket() {
       // Read the next one.
       continue;
     }
-    std::unique_ptr<uint8_t[]> packet_memory(new uint8_t[temp_packet.length]);
+    rtc::scoped_ptr<uint8_t[]> packet_memory(new uint8_t[temp_packet.length]);
     memcpy(packet_memory.get(), temp_packet.data, temp_packet.length);
-    std::unique_ptr<Packet> packet(new Packet(
+    rtc::scoped_ptr<Packet> packet(new Packet(
         packet_memory.release(), temp_packet.length,
         temp_packet.original_length, temp_packet.time_ms, *parser_.get()));
     if (!packet->valid_header()) {

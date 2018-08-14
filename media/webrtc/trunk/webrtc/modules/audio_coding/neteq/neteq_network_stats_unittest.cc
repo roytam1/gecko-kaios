@@ -8,9 +8,8 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include <memory>
-
 #include "testing/gmock/include/gmock/gmock.h"
+#include "webrtc/base/scoped_ptr.h"
 #include "webrtc/modules/audio_coding/neteq/audio_decoder_impl.h"
 #include "webrtc/modules/audio_coding/neteq/tools/neteq_external_decoder_test.h"
 #include "webrtc/modules/audio_coding/neteq/tools/rtp_generator.h"
@@ -262,7 +261,7 @@ struct NetEqNetworkStatsCheck {
   MockAudioDecoderOpus* external_decoder_;
   const int samples_per_ms_;
   const size_t frame_size_samples_;
-  std::unique_ptr<test::RtpGenerator> rtp_generator_;
+  rtc::scoped_ptr<test::RtpGenerator> rtp_generator_;
   WebRtcRTPHeader rtp_header_;
   uint32_t last_lost_time_;
   uint32_t packet_loss_interval_;
