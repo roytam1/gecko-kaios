@@ -35,8 +35,15 @@ if CONFIG['ANDROID_VERSION'] >= '23':
         'GonkNativeWindowM.h',
         'IGonkGraphicBufferConsumerM.h',
     ]
+elif CONFIG['ANDROID_VERSION'] == '19':
+    EXPORTS += [
+        'GonkBufferQueueKK.h',
+        'GonkConsumerBaseKK.h',
+        'GonkNativeWindowKK.h',
+        'IGonkGraphicBufferConsumerKK.h',
+    ]
 else:
-    error('KaiOS only supports ANDROID_VERSION >= 23')
+	error('KaiOS only supports ANDROID_VERSION >= 23 or 19')
 
 if CONFIG['MOZ_B2G_CAMERA'] or CONFIG['MOZ_OMX_DECODER'] or CONFIG['MOZ_WEBRTC']:
     if CONFIG['ANDROID_VERSION'] >= '23':
@@ -52,9 +59,15 @@ if CONFIG['MOZ_B2G_CAMERA'] or CONFIG['MOZ_OMX_DECODER'] or CONFIG['MOZ_WEBRTC']
             'GonkNativeWindowM.cpp',
             'IGonkGraphicBufferConsumerM.cpp',
         ]
+    elif CONFIG['ANDROID_VERSION'] == '19':
+        SOURCES += [
+            'GonkBufferQueueKK.cpp',
+            'GonkConsumerBaseKK.cpp',
+            'GonkNativeWindowKK.cpp',
+            'IGonkGraphicBufferConsumerKK.cpp',
+        ]
     else:
-        error('KaiOS only supports ANDROID_VERSION >= 23')
-
+        error('KaiOS only supports ANDROID_VERSION >= 23 or 19')
 if CONFIG['ANDROID_VERSION'] >= '18':
     SOURCES += [
         'FakeSurfaceComposer.cpp',

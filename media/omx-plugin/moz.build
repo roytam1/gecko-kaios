@@ -23,7 +23,7 @@ SharedLibrary('omxplugin')
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
     pass
 else:
-    error('KaiOS only supports ANDROID_VERSION >= 23')
+    error('KaiOS only supports ANDROID_VERSION >= 23 or 19')
 
 if CONFIG['GNU_CXX']:
     # Stagefright header files define many multichar constants.

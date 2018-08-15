@@ -3,19 +3,19 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-DIST_INSTALL = False
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'gonk':
-    SOURCES += [
-        'libvideoeditorplayer.cpp',
-    ]
+SOURCES += [
+    'OmxPluginKitKat.cpp',
+]
 
-SharedLibrary('videoeditorplayer')
+SharedLibrary('omxpluginkk')
+USE_LIBS += [
+    'videoeditorplayer'
+]
 
 # Don't use STL wrappers; this isn't Gecko code
 DISABLE_STL_WRAPPING = True
 NO_VISIBILITY_FLAGS = True
 
-LOCAL_INCLUDES += [
-    '/media/omx-plugin/include/ics',
-]
+# Suppress warnings in third-party code.
+CXXFLAGS += ['-Wno-multichar']

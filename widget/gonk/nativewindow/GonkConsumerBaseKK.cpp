@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2010 The Android Open Source Project
- * Copyright (C) 2014 Mozilla Foundation
+ * Copyright (C) 2013 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-#include <inttypes.h>
-
 #define LOG_TAG "GonkConsumerBase"
 #define ATRACE_TAG ATRACE_TAG_GRAPHICS
 //#define LOG_NDEBUG 0
@@ -26,11 +24,10 @@
 #include <hardware/hardware.h>
 
 #include <gui/IGraphicBufferAlloc.h>
-
 #include <utils/Log.h>
 #include <utils/String8.h>
 
-#include "GonkConsumerBaseLL.h"
+#include "GonkConsumerBaseKK.h"
 
 namespace android {
 
@@ -40,7 +37,7 @@ static int32_t createProcessUniqueId() {
     return android_atomic_inc(&globalCounter);
 }
 
-GonkConsumerBase::GonkConsumerBase(const sp<IGonkGraphicBufferConsumer>& bufferQueue, bool controlledByApp) :
+GonkConsumerBase::GonkConsumerBase(const sp<GonkBufferQueue>& bufferQueue, bool controlledByApp) :
         mAbandoned(false),
         mConsumer(bufferQueue) {
     // Choose a name using the PID and a process-unique ID.
@@ -74,7 +71,7 @@ GonkConsumerBase::~GonkConsumerBase() {
         "consumer is not abandoned!", mName.string());
 }
 
-void GonkConsumerBase::onLastStrongRef(const void* id __attribute__((unused))) {
+void GonkConsumerBase::onLastStrongRef(const void* id) {
     abandon();
 }
 
@@ -85,11 +82,13 @@ void GonkConsumerBase::freeBufferLocked(int slotIndex) {
     mSlots[slotIndex].mFrameNumber = 0;
 }
 
-#if ANDROID_VERSION == 21
+// Used for refactoring, should not be in final interface
+sp<GonkBufferQueue> GonkConsumerBase::getBufferQueue() const {
+    Mutex::Autolock lock(mMutex);
+    return mConsumer;
+}
+
 void GonkConsumerBase::onFrameAvailable() {
-#else
-void GonkConsumerBase::onFrameAvailable(const ::android::BufferItem& item) {
-#endif
     ALOGV("onFrameAvailable");
 
     sp<FrameAvailableListener> listener;
@@ -114,16 +113,13 @@ void GonkConsumerBase::onBuffersReleased() {
         return;
     }
 
-    uint64_t mask = 0;
+    uint32_t mask = 0;
     mConsumer->getReleasedBuffers(&mask);
     for (int i = 0; i < GonkBufferQueue::NUM_BUFFER_SLOTS; i++) {
-        if (mask & (1ULL << i)) {
+        if (mask & (1 << i)) {
             freeBufferLocked(i);
         }
     }
-}
-
-void GonkConsumerBase::onSidebandStreamChanged() {
 }
 
 void GonkConsumerBase::abandon() {
@@ -137,7 +133,7 @@ void GonkConsumerBase::abandon() {
 }
 
 void GonkConsumerBase::abandonLocked() {
-    ALOGV("abandonLocked");
+	ALOGV("abandonLocked");
     for (int i =0; i < GonkBufferQueue::NUM_BUFFER_SLOTS; i++) {
         freeBufferLocked(i);
     }
@@ -170,7 +166,7 @@ void GonkConsumerBase::dumpLocked(String8& result, const char* prefix) const {
     }
 }
 
-status_t GonkConsumerBase::acquireBufferLocked(GonkBufferQueue::BufferItem *item,
+status_t GonkConsumerBase::acquireBufferLocked(IGonkGraphicBufferConsumer::BufferItem *item,
         nsecs_t presentWhen) {
     status_t err = mConsumer->acquireBuffer(item, presentWhen);
     if (err != NO_ERROR) {
@@ -184,8 +180,7 @@ status_t GonkConsumerBase::acquireBufferLocked(GonkBufferQueue::BufferItem *item
     mSlots[item->mBuf].mFrameNumber = item->mFrameNumber;
     mSlots[item->mBuf].mFence = item->mFence;
 
-    ALOGV("acquireBufferLocked: -> slot=%d/%" PRIu64,
-            item->mBuf, item->mFrameNumber);
+    ALOGV("acquireBufferLocked: -> slot=%d", item->mBuf);
 
     return OK;
 }
@@ -233,10 +228,10 @@ status_t GonkConsumerBase::releaseBufferLocked(int slot, const sp<GraphicBuffer>
         return OK;
     }
 
-    ALOGV("releaseBufferLocked: slot=%d/%" PRIu64,
+    ALOGV("releaseBufferLocked: slot=%d/%llu",
             slot, mSlots[slot].mFrameNumber);
     status_t err = mConsumer->releaseBuffer(slot, mSlots[slot].mFrameNumber, mSlots[slot].mFence);
-    if (err == IGonkGraphicBufferConsumer::STALE_BUFFER_SLOT) {
+    if (err == GonkBufferQueue::STALE_BUFFER_SLOT) {
         freeBufferLocked(slot);
     }
 

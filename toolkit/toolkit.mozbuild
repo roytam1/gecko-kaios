@@ -64,6 +64,7 @@ if CONFIG['MOZ_WEBRTC']:
 if CONFIG['MOZ_OMX_PLUGIN']:
     DIRS += [
         '/media/omx-plugin',
+        '/media/omx-plugin/kk',
     ]
 
 if CONFIG['ENABLE_TESTS']:
