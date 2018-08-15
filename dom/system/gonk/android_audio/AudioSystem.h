@@ -352,6 +352,13 @@ enum {
     AUDIO_DEVICE_OUT_PROXY                     = 0x40000,
     AUDIO_DEVICE_OUT_FM                        = 0x80000,
     AUDIO_DEVICE_OUT_FM_TX                     = 0x100000,
+    // This is only for SPRD on Kitkat
+#if (ANDROID_VERSION == 19)
+    #ifdef PRODUCT_MANUFACTURER_SPRD
+    AUDIO_DEVICE_OUT_FM_HEADSET                = 0x1000000,
+    AUDIO_DEVICE_OUT_FM_SPEAKER                = 0x2000000,
+    #endif
+#endif //ANDROID_VERSION == 19
     AUDIO_DEVICE_OUT_DEFAULT                   = AUDIO_DEVICE_BIT_DEFAULT,
     AUDIO_DEVICE_OUT_ALL      = (AUDIO_DEVICE_OUT_EARPIECE |
                                  AUDIO_DEVICE_OUT_SPEAKER |
