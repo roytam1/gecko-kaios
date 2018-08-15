@@ -249,7 +249,7 @@ MediaEngineGonkVideoSource::Start(SourceMediaStream* aStream, TrackID aID,
 
   // XXX some devices support recording camera frame only in metadata mode.
   // But GonkCameraSource requests non-metadata recording mode.
-#if ANDROID_VERSION < 21
+#if ANDROID_VERSION < 21 && !defined(PRODUCT_MANUFACTURER_SPRD)
   if (NS_FAILED(InitDirectMediaBuffer())) {
     return NS_ERROR_FAILURE;
   }
