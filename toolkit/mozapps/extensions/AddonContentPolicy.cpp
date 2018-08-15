@@ -297,13 +297,30 @@ class CSPValidator final : public nsCSPSrcVisitor {
 
 
     // Formatters
+#if (__GNUC__ == 4 && __GNUC_MINOR__ == 8)
+    // gcc 4.8 has deduction problems when handling variadic parameters.
+    // see https://stackoverflow.com/questions/15692112/gcc-4-8-is-reversing-variadic-template-parameter-pack
+    // Here is to prevent variadic parameters. 
+    template <typename T>
+    inline void FormatError(const char* aName, const T aParams)
+    {
+      const char16_t* params[] = { mDirective.get(), aParams.get() };
+      FormatErrorParams(aName, params, MOZ_ARRAY_LENGTH(params));
+    };
 
+    inline void FormatError(const char* aName)
+    {
+      const char16_t* params[] = { mDirective.get()};
+      FormatErrorParams(aName, params, 1);
+    };
+#else
     template <typename... T>
     inline void FormatError(const char* aName, const T ...aParams)
     {
       const char16_t* params[] = { mDirective.get(), aParams.get()... };
       FormatErrorParams(aName, params, MOZ_ARRAY_LENGTH(params));
     };
+#endif
 
   private:
     // Validators
