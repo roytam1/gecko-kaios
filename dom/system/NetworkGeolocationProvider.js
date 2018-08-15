@@ -471,7 +471,7 @@ WifiGeoPositionProvider.prototype = {
     };
 
     function encode(ap) {
-      return { 'macAddress': ap.mac, 'signal': ap.signal, 'ssid': ap.ssid };
+      return { 'macAddress': ap.mac, 'signalStrength': ap.signal, 'ssid': ap.ssid };
     };
 
     let wifiData = null;
@@ -533,7 +533,7 @@ WifiGeoPositionProvider.prototype = {
                       mobileNetworkCode: voice.network.mnc,
                       locationAreaCode: cell.gsmLocationAreaCode,
                       cellId: cell.gsmCellId,
-                      signal: mobileSignal });
+                      signalStrength: mobileSignal });
         }
       }
       return result;
@@ -682,7 +682,7 @@ WifiGeoPositionProvider.prototype = {
                   + cellTowers[0].mobileNetworkCode + ","
                   + cellTowers[0].locationAreaCode + ","
                   + cellTowers[0].cellId + ","
-                  + cellTowers[0].signal;
+                  + cellTowers[0].signalStrength;
           url += "&bts=" + bts
         }
 
@@ -698,7 +698,7 @@ WifiGeoPositionProvider.prototype = {
           var length = Math.min(wifiAccessPoints.length, 30);
           for (let i = 0; i < length && i < 30; i++) {
               macs += wifiAccessPoints[i].macAddress + ","
-                    + wifiAccessPoints[i].signal + ","
+                    + wifiAccessPoints[i].signalStrength + ","
                     + wifiAccessPoints[i].ssid + '|';
           }
           macs = macs.slice(0, -1); // cut the last '|'
