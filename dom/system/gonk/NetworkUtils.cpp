@@ -745,6 +745,12 @@ void NetworkUtils::cleanUpStreamInterfaceForwarding(CommandChain* aChain,
                                                     CommandCallback aCallback,
                                                     NetworkResultOptions& aResult)
 {
+  // Skip the command for sdk version < 20.
+  if (SDK_VERSION < 20) {
+    next(aChain, false, aResult);
+    return;
+  }
+
   char command[MAX_COMMAND_SIZE];
   if (!strcmp(GET_CHAR(mPreExternalIfname), "rmnet0")) {
     NU_DBG("%s : ignore interface - %s", __FUNCTION__, GET_CHAR(mPreExternalIfname));
@@ -777,6 +783,12 @@ void NetworkUtils::createUpStreamInterfaceForwarding(CommandChain* aChain,
                                                      CommandCallback aCallback,
                                                      NetworkResultOptions& aResult)
 {
+  // Skip the command for sdk version < 20.
+  if (SDK_VERSION < 20) {
+    next(aChain, false, aResult);
+    return;
+  }
+
   char command[MAX_COMMAND_SIZE];
   if (!strcmp(GET_CHAR(mCurExternalIfname), "rmnet0")) {
     NU_DBG("%s : ignore interface - %s", __FUNCTION__, GET_CHAR(mCurExternalIfname));
@@ -948,6 +960,12 @@ void NetworkUtils::addIPv6RouteToLocalNetwork(CommandChain* aChain,
                                               CommandCallback aCallback,
                                               NetworkResultOptions& aResult)
 {
+  // Skip the command for sdk version < 20.
+  if (SDK_VERSION < 20) {
+    next(aChain, false, aResult);
+    return;
+  }
+
   if (GET_FIELD(mLoopIndex) >= GET_FIELD(mIPv6Routes).Length()) {
     aCallback(aChain, false, aResult);
     return;
@@ -984,6 +1002,12 @@ void NetworkUtils::removeIPv6LocalNetworkRoute(CommandChain* aChain,
                                                CommandCallback aCallback,
                                                NetworkResultOptions& aResult)
 {
+  // Skip the command for sdk version < 20.
+  if (SDK_VERSION < 20) {
+    next(aChain, false, aResult);
+    return;
+  }
+
   if (strlen(gPreIPv6Prefix) == 0) {
     NU_DBG("%s: No previous IPv6 route need to remove.", __FUNCTION__);
     aCallback(aChain, false, aResult);
@@ -1087,6 +1111,12 @@ void NetworkUtils::setInterfaceForwardingEnabled(CommandChain* aChain,
                                                  CommandCallback aCallback,
                                                  NetworkResultOptions& aResult)
 {
+  // Skip the command for sdk version < 20.
+  if (SDK_VERSION < 20) {
+    next(aChain, false, aResult);
+    return;
+  }
+
   char command[MAX_COMMAND_SIZE];
   if (!strcmp(GET_CHAR(mExternalIfname), "rmnet0")) {
     NU_DBG("%s : ignore interface - %s", __FUNCTION__, GET_CHAR(mExternalIfname));
@@ -1104,6 +1134,12 @@ void NetworkUtils::setInterfaceForwardingDisabled(CommandChain* aChain,
                                                   CommandCallback aCallback,
                                                   NetworkResultOptions& aResult)
 {
+  // Skip the command for sdk version < 20.
+  if (SDK_VERSION < 20) {
+    next(aChain, false, aResult);
+    return;
+  }
+
   char command[MAX_COMMAND_SIZE];
   if (!strcmp(GET_CHAR(mExternalIfname),"rmnet0")) {
     NU_DBG("%s : ignore interface - %s", __FUNCTION__, GET_CHAR(mExternalIfname));
@@ -1704,6 +1740,12 @@ void NetworkUtils::startIPv6Tethering(CommandChain* aChain,
                                       CommandCallback aCallback,
                                       NetworkResultOptions& aResult)
 {
+  // Skip the command for sdk version < 20.
+  if (SDK_VERSION < 20) {
+    next(aChain, false, aResult);
+    return;
+  }
+
   nsCString externalIface(GET_CHAR(mExternalIfname));
   nsCString internalIface(GET_CHAR(mInternalIfname));
   nsCString network_prefix(GET_CHAR(mIPv6Prefix));
