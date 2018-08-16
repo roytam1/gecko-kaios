@@ -563,6 +563,9 @@ StumblerInfo::Onready(uint32_t count, nsIWifiScanResult** results)
     mWifiDesc += "\"macAddress\":\"";
     mWifiDesc += NS_ConvertUTF16toUTF8(bssid);
 
+    mWifiDesc += "\",\"ssid\":\"";
+    mWifiDesc += NS_ConvertUTF16toUTF8(ssid);
+
     int32_t signal;
     results[i]->GetSignalStrength(&signal);
     mWifiDesc += "\",\"signalStrength\":";
