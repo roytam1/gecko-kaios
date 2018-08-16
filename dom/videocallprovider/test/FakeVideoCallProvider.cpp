@@ -21,10 +21,10 @@
 #include <binder/IServiceManager.h>
 #include <camera/CameraParameters.h>
 
-#ifdef MY_LOG
-#undef MY_LOG
+#ifdef FAKE_VIDEOCALL_PROVIDER_LOG
+#undef FAKE_VIDEOCALL_PROVIDER_LOG
 #endif
-#define MY_LOG(args...) __android_log_print(ANDROID_LOG_INFO, "FakeVideoCallProvider", ##args)
+#define FAKE_VIDEOCALL_PROVIDER_LOG(args...) __android_log_print(ANDROID_LOG_INFO, "FakeVideoCallProvider", ##args)
 
 
 using namespace android;
@@ -84,7 +84,7 @@ FakeVideoCallProvider::FakeVideoCallProvider()
   , mResultDisplayHeight(RESULT_DISPLAY_HEIGHT)
   , mDisplayStarted(false)
 {
-  MY_LOG("FakeVideoCallProvider()");
+  FAKE_VIDEOCALL_PROVIDER_LOG("FakeVideoCallProvider()");
 }
 
 /* void setCamera (in short cameraId); */
@@ -98,32 +98,33 @@ nsresult FakeVideoCallProvider::SetCamera(int16_t cameraId)
 nsresult FakeVideoCallProvider::SetPreviewSurface(android::sp<android::IGraphicBufferProducer> & aProducer, uint16_t aPreferWidth, uint16_t aPreferHeight)
 {
   if(aProducer != NULL) {
-    MY_LOG("SetPreviewSurface aPreferWidth:%d, aPreferHeight:%d, mResultPreviewWidth:%d, mResultPreviewHeight:%d", 
+    FAKE_VIDEOCALL_PROVIDER_LOG("SetPreviewSurface aPreferWidth:%d, aPreferHeight:%d, mResultPreviewWidth:%d, mResultPreviewHeight:%d",
       aPreferWidth, aPreferHeight, mResultPreviewWidth, mResultPreviewHeight);
 
     if (mCamera == NULL) {
       const uint32_t CAMERASERVICE_POLL_DELAY = 1000000;
-      const uint32_t DEFAULT_USER_ID  = 0;
 
       sp<IServiceManager> sm = defaultServiceManager();
       sp<IBinder> binder;
-      sp<ICameraService> gCameraService;
       do {
         binder = sm->getService(String16("media.camera"));
         if (binder != 0) {
           break;
         }
-        MY_LOG("CameraService not published, waiting...");
+        FAKE_VIDEOCALL_PROVIDER_LOG("CameraService not published, waiting...");
         usleep(CAMERASERVICE_POLL_DELAY);
       } while(true);
 
-      gCameraService = interface_cast<ICameraService>(binder);
+#if ANDROID_VERSION >= 23
+      const uint32_t DEFAULT_USER_ID  = 0;
+      sp<ICameraService> gCameraService = interface_cast<ICameraService>(binder);
       int32_t args[1];
       args[0] = DEFAULT_USER_ID;
       int32_t event = 1;
       size_t length = 1;
 
       gCameraService->notifySystemEvent(event, args, length);
+#endif
       mCamera = Camera::connect(0, /* clientPackageName */String16("gonk.camera"), Camera::USE_CALLING_UID);
     }
 
@@ -132,17 +133,17 @@ nsresult FakeVideoCallProvider::SetPreviewSurface(android::sp<android::IGraphicB
         mPreferPreviewWidth = aPreferWidth;
         mPreferPreviewHeight = aPreferHeight;
         if(mVideoCallCallback) {
-          MY_LOG("OnChangeCameraCapabilities");
+          FAKE_VIDEOCALL_PROVIDER_LOG("OnChangeCameraCapabilities");
           mVideoCallCallback->OnChangeCameraCapabilities(mVideoCallCameraCapabilities);
         }
     } else {
-      MY_LOG("SetPreviewSurface without valid camera");
+      FAKE_VIDEOCALL_PROVIDER_LOG("SetPreviewSurface without valid camera");
     }
 
     //Start preview
     if ((mCamera != NULL) && !mPreviewStarted) {
       SetCameraParameters();
-      MY_LOG("startPreview");
+      FAKE_VIDEOCALL_PROVIDER_LOG("startPreview");
       mCamera->startPreview();
       mPreviewStarted = true;
     }
@@ -156,7 +157,7 @@ nsresult FakeVideoCallProvider::SetPreviewSurface(android::sp<android::IGraphicB
 nsresult FakeVideoCallProvider::SetDisplaySurface(android::sp<android::IGraphicBufferProducer> & aProducer, uint16_t aPreferWidth, uint16_t aPreferHeight)
 {
   if(aProducer != NULL) {
-    MY_LOG("SetDisplaySurface aPreferWidth:%d, aPreferHeight:%d, mResultDisplayWidth:%d, mResultDisplayHeight:%d", 
+    FAKE_VIDEOCALL_PROVIDER_LOG("SetDisplaySurface aPreferWidth:%d, aPreferHeight:%d, mResultDisplayWidth:%d, mResultDisplayHeight:%d",
       aPreferWidth, aPreferHeight, mResultDisplayWidth, mResultDisplayHeight);
     //Do nothing, since we are TestDataSource"Camera", can only open 1 camera a time.
     mFakeImageProducer = aProducer;
@@ -167,10 +168,10 @@ nsresult FakeVideoCallProvider::SetDisplaySurface(android::sp<android::IGraphicB
     //Start sending fake images.
     if ((mFakeImageProducer != NULL) && !mDisplayStarted) {
       if (mFakeYUVFeederLooper == NULL) {
-        mFakeYUVFeederLooper = new ALooper;MY_LOG("line:%d", __LINE__);
-        mFakeYUVFeeder = new FakeYUVFeeder(this);MY_LOG("line:%d", __LINE__);
-        mFakeYUVFeederLooper->registerHandler(mFakeYUVFeeder);MY_LOG("line:%d", __LINE__);
-        mFakeYUVFeederLooper->setName("FakeImageLooper");MY_LOG("line:%d", __LINE__);
+        mFakeYUVFeederLooper = new ALooper;
+        mFakeYUVFeeder = new FakeYUVFeeder(this);
+        mFakeYUVFeederLooper->registerHandler(mFakeYUVFeeder);
+        mFakeYUVFeederLooper->setName("FakeImageLooper");
         mFakeYUVFeederLooper->start(  
           false, // runOnCallingThread  
           false, // canCallJava  
@@ -239,7 +240,7 @@ nsresult FakeVideoCallProvider::UnregisterCallback(nsIVideoCallCallback *callbac
 void 
 FakeVideoCallProvider::SetCameraParameters()
 {
-  MY_LOG("SetCameraParameters");
+  FAKE_VIDEOCALL_PROVIDER_LOG("SetCameraParameters");
   if (mCamera != NULL) {  
     CameraParameters params;
     // Initialize our camera configuration database.
@@ -247,20 +248,20 @@ FakeVideoCallProvider::SetCameraParameters()
     params.unflatten(s1);
     // Set preferred preview frame format.
     params.setPreviewFormat("yuv420sp");
-    MY_LOG("PushParameters: ResultWidth:%d ResultHeight:%d", mResultPreviewWidth, mResultPreviewHeight);
+    FAKE_VIDEOCALL_PROVIDER_LOG("PushParameters: ResultWidth:%d ResultHeight:%d", mResultPreviewWidth, mResultPreviewHeight);
     params.setPreviewSize(mResultPreviewWidth, mResultPreviewHeight);
     // Set parameter back to camera.
     String8 s2 = params.flatten();
-    MY_LOG("PushParameters:%s Line:%d", s2.string(), __LINE__);
+    FAKE_VIDEOCALL_PROVIDER_LOG("PushParameters:%s Line:%d", s2.string(), __LINE__);
     mCamera->setParameters(s2);
   } else {
-    MY_LOG("SetCameraParameters without valid camera");
+    FAKE_VIDEOCALL_PROVIDER_LOG("SetCameraParameters without valid camera");
   }
 }
 
 void FakeVideoCallProvider::StopPreview()
 {
-  MY_LOG("StopPreview");
+  FAKE_VIDEOCALL_PROVIDER_LOG("StopPreview");
   //Stop Preview
   if (mCamera != NULL) {
     mCamera->stopPreview();
@@ -272,7 +273,7 @@ void FakeVideoCallProvider::StopPreview()
 
 void FakeVideoCallProvider::StopDisplay()
 {
-  MY_LOG("StopDisplay");
+  FAKE_VIDEOCALL_PROVIDER_LOG("StopDisplay");
   //Stop Display
   mIsTestRunning = false;
   mDisplayStarted = false;
@@ -290,7 +291,7 @@ void FakeVideoCallProvider::StopDisplay()
 
 FakeVideoCallProvider::~FakeVideoCallProvider()
 {
-  MY_LOG("~FakeVideoCallProvider");
+  FAKE_VIDEOCALL_PROVIDER_LOG("~FakeVideoCallProvider");
   if (mCamera != NULL) {
     mCamera->disconnect();
     mCamera.clear();
@@ -356,8 +357,11 @@ FakeVideoCallProvider::StartFakeImage()
   }
 
   mIsTestRunning = true;
-
+#if ANDROID_VERSION >= 23
   sp<AMessage> msg = new AMessage(FakeYUVFeeder::kWhatSendFakeImage, mFakeYUVFeeder);
+#elif ANDROID_VERSION == 19
+  sp<AMessage> msg = new AMessage(FakeYUVFeeder::kWhatSendFakeImage, mFakeYUVFeeder->id());
+#endif
   msg->post();
 
   return NS_OK;
@@ -375,8 +379,6 @@ FakeYUVFeeder::~FakeYUVFeeder()
 void 
 FakeYUVFeeder::onMessageReceived(const sp<AMessage> &msg)
 {
-  //MY_LOG("onMessageReceived");
-
     switch (msg->what()) {
         case kWhatSendFakeImage:
         {
@@ -392,7 +394,6 @@ FakeYUVFeeder::onMessageReceived(const sp<AMessage> &msg)
 void
 FakeYUVFeeder::SendFakeImage(FakeVideoCallProvider* aFakeVideoCallProvider)
 {
-  //MY_LOG("SendFakeImage");
   if (!aFakeVideoCallProvider->mIsTestRunning) {
     return;
   }
@@ -450,6 +451,10 @@ FakeYUVFeeder::SendFakeImage(FakeVideoCallProvider* aFakeVideoCallProvider)
 
   //Next round
   usleep(100000);
+#if ANDROID_VERSION >= 23
   sp<AMessage> msg = new AMessage(kWhatSendFakeImage, this);
+#elif ANDROID_VERSION == 19
+  sp<AMessage> msg = new AMessage(kWhatSendFakeImage, id());
+#endif
   msg->post();
 }

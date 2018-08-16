@@ -24,6 +24,7 @@
 #include <camera/Camera.h>
 #include <media/stagefright/foundation/AHandler.h>
 #include <utils/StrongPointer.h>
+#include <media/stagefright/foundation/AMessage.h>
 
 using namespace android;
 

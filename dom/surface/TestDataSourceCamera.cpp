@@ -21,10 +21,10 @@
 #include <binder/IServiceManager.h>
 #include <camera/CameraParameters.h>
 
-#ifdef MY_LOG
-#undef MY_LOG
+#ifdef TEST_DATASOURCE_CAMERA_LOG
+#undef TEST_DATASOURCE_CAMERA_LOG
 #endif
-#define MY_LOG(args...) __android_log_print(ANDROID_LOG_INFO, "TestDataSourceCamera", ##args)
+#define TEST_DATASOURCE_CAMERA_LOG(args...) __android_log_print(ANDROID_LOG_INFO, "TestDataSourceCamera", ##args)
 
 
 using namespace android;
@@ -46,7 +46,7 @@ TestDataSourceCamera::TestDataSourceCamera(ITestDataSourceResolutionResultListen
   , mResultDisplayHeight(144)
   , mDisplayStarted(false)
 {
-  MY_LOG("TestDataSourceCamera()");
+  TEST_DATASOURCE_CAMERA_LOG("TestDataSourceCamera()");
 }
 
 void 
@@ -54,32 +54,34 @@ TestDataSourceCamera::SetPreviewSurface(android::sp<android::IGraphicBufferProdu
                                         uint32_t aPreferWidth,
                                         uint32_t aPreferHeight)
 {
-  MY_LOG("SetPreviewSurface aPreferWidth:%d, aPreferHeight:%d, mResultPreviewWidth:%d, mResultPreviewHeight:%d", 
+  TEST_DATASOURCE_CAMERA_LOG("SetPreviewSurface aPreferWidth:%d, aPreferHeight:%d, mResultPreviewWidth:%d, mResultPreviewHeight:%d",
     aPreferWidth, aPreferHeight, mResultPreviewWidth, mResultPreviewHeight);
 
   if (mCamera == NULL) {
     const uint32_t CAMERASERVICE_POLL_DELAY = 1000000;
-    const uint32_t DEFAULT_USER_ID  = 0;
 
     sp<IServiceManager> sm = defaultServiceManager();
     sp<IBinder> binder;
-    sp<ICameraService> gCameraService;
     do {
       binder = sm->getService(String16("media.camera"));
       if (binder != 0) {
         break;
       }
-      MY_LOG("CameraService not published, waiting...");
+      TEST_DATASOURCE_CAMERA_LOG("CameraService not published, waiting...");
       usleep(CAMERASERVICE_POLL_DELAY);
     } while(true);
 
-    gCameraService = interface_cast<ICameraService>(binder);
-    int32_t args[1];
-    args[0] = DEFAULT_USER_ID;
-    int32_t event = 1;
-    size_t length = 1;
+#if ANDROID_VERSION >= 23
+      const uint32_t DEFAULT_USER_ID  = 0;
+      sp<ICameraService> gCameraService = interface_cast<ICameraService>(binder);
+      int32_t args[1];
+      args[0] = DEFAULT_USER_ID;
+      int32_t event = 1;
+      size_t length = 1;
 
-    gCameraService->notifySystemEvent(event, args, length);
+      gCameraService->notifySystemEvent(event, args, length);
+#endif
+
     mCamera = Camera::connect(0, /* clientPackageName */String16("gonk.camera"), Camera::USE_CALLING_UID);
   }
 
@@ -88,17 +90,17 @@ TestDataSourceCamera::SetPreviewSurface(android::sp<android::IGraphicBufferProdu
       mPreferPreviewWidth = aPreferWidth;
       mPreferPreviewHeight = aPreferHeight;
       if(mTestDataSourceResolutionResultListener) {
-        MY_LOG("onChangeCameraCapabilities");
+        TEST_DATASOURCE_CAMERA_LOG("onChangeCameraCapabilities");
         mTestDataSourceResolutionResultListener->onChangeCameraCapabilities(mResultPreviewWidth, mResultPreviewHeight);
       }
   } else {
-    MY_LOG("SetPreviewSurface without valid camera");
+    TEST_DATASOURCE_CAMERA_LOG("SetPreviewSurface without valid camera");
   }
 
   //Start preview
   if ((mCamera != NULL) && !mPreviewStarted) {
     SetCameraParameters();
-    MY_LOG("startPreview");
+    TEST_DATASOURCE_CAMERA_LOG("startPreview");
     mCamera->startPreview();
     mPreviewStarted = true;
   }
@@ -110,7 +112,7 @@ TestDataSourceCamera::SetDisplaySurface(android::sp<android::IGraphicBufferProdu
                                         uint32_t aPreferWidth,
                                         uint32_t aPreferHeight)
 {
-  MY_LOG("SetDisplaySurface aPreferWidth:%d, aPreferHeight:%d, mResultDisplayWidth:%d, mResultDisplayHeight:%d", 
+  TEST_DATASOURCE_CAMERA_LOG("SetDisplaySurface aPreferWidth:%d, aPreferHeight:%d, mResultDisplayWidth:%d, mResultDisplayHeight:%d",
     aPreferWidth, aPreferHeight, mResultDisplayWidth, mResultDisplayHeight);
   //Do nothing, since we are TestDataSource"Camera", can only open 1 camera a time.
   mFakeImageProducer = aProducer;
@@ -121,10 +123,10 @@ TestDataSourceCamera::SetDisplaySurface(android::sp<android::IGraphicBufferProdu
   //Start sending fake images.
   if ((mFakeImageProducer != NULL) && !mDisplayStarted) {
     if (mFakeImageFeederLooper == NULL) {
-      mFakeImageFeederLooper = new ALooper;MY_LOG("line:%d", __LINE__);
-      mFakeImageFeeder = new FakeImageFeeder(this);MY_LOG("line:%d", __LINE__);
-      mFakeImageFeederLooper->registerHandler(mFakeImageFeeder);MY_LOG("line:%d", __LINE__);
-      mFakeImageFeederLooper->setName("FakeImageLooper");MY_LOG("line:%d", __LINE__);
+      mFakeImageFeederLooper = new ALooper;
+      mFakeImageFeeder = new FakeImageFeeder(this);
+      mFakeImageFeederLooper->registerHandler(mFakeImageFeeder);
+      mFakeImageFeederLooper->setName("FakeImageLooper");
       mFakeImageFeederLooper->start(  
          false, // runOnCallingThread  
          false, // canCallJava  
@@ -138,7 +140,7 @@ TestDataSourceCamera::SetDisplaySurface(android::sp<android::IGraphicBufferProdu
 void 
 TestDataSourceCamera::SetCameraParameters()
 {
-  MY_LOG("SetCameraParameters");
+  TEST_DATASOURCE_CAMERA_LOG("SetCameraParameters");
   if (mCamera != NULL) {  
     CameraParameters params;
     // Initialize our camera configuration database.
@@ -146,20 +148,20 @@ TestDataSourceCamera::SetCameraParameters()
     params.unflatten(s1);
     // Set preferred preview frame format.
     params.setPreviewFormat("yuv420sp");
-    MY_LOG("PushParameters: ResultWidth:%d ResultHeight:%d", mResultPreviewWidth, mResultPreviewHeight);
+    TEST_DATASOURCE_CAMERA_LOG("PushParameters: ResultWidth:%d ResultHeight:%d", mResultPreviewWidth, mResultPreviewHeight);
     params.setPreviewSize(mResultPreviewWidth, mResultPreviewHeight);
     // Set parameter back to camera.
     String8 s2 = params.flatten();
-    MY_LOG("PushParameters:%s Line:%d", s2.string(), __LINE__);
+    TEST_DATASOURCE_CAMERA_LOG("PushParameters:%s Line:%d", s2.string(), __LINE__);
     mCamera->setParameters(s2);
   } else {
-    MY_LOG("SetCameraParameters without valid camera");
+    TEST_DATASOURCE_CAMERA_LOG("SetCameraParameters without valid camera");
   }
 }
 
 void TestDataSourceCamera::Stop()
 {
-  MY_LOG("Stop");
+  TEST_DATASOURCE_CAMERA_LOG("Stop");
   //Stop Preview
   if (mCamera != NULL) {
     mCamera->stopPreview();
@@ -173,7 +175,7 @@ void TestDataSourceCamera::Stop()
 
 TestDataSourceCamera::~TestDataSourceCamera()
 {
-  MY_LOG("~TestDataSourceCamera");
+  TEST_DATASOURCE_CAMERA_LOG("~TestDataSourceCamera");
   if (mCamera != NULL) {
     mCamera->disconnect();
     mCamera.clear();
@@ -240,7 +242,11 @@ TestDataSourceCamera::StartFakeImage()
 
   mIsTestRunning = true;
 
+#if ANDROID_VERSION >= 23
   sp<AMessage> msg = new AMessage(FakeImageFeeder::kWhatSendFakeImage, mFakeImageFeeder);
+#elif ANDROID_VERSION == 19
+  sp<AMessage> msg = new AMessage(FakeImageFeeder::kWhatSendFakeImage, mFakeImageFeeder->id());
+#endif
   msg->post();
 
   return NS_OK;
@@ -258,8 +264,6 @@ FakeImageFeeder::~FakeImageFeeder()
 void 
 FakeImageFeeder::onMessageReceived(const sp<AMessage> &msg)
 {
-  //MY_LOG("onMessageReceived");
-
     switch (msg->what()) {
         case kWhatSendFakeImage:
         {
@@ -275,7 +279,6 @@ FakeImageFeeder::onMessageReceived(const sp<AMessage> &msg)
 void
 FakeImageFeeder::SendFakeImage(TestDataSourceCamera* aTestDataSourceCamera)
 {
-  //MY_LOG("SendFakeImage");
   if (!aTestDataSourceCamera->mIsTestRunning) {
     return;
   }
@@ -333,6 +336,10 @@ FakeImageFeeder::SendFakeImage(TestDataSourceCamera* aTestDataSourceCamera)
 
   //Next round
   usleep(100000);
+#if ANDROID_VERSION >= 23
   sp<AMessage> msg = new AMessage(kWhatSendFakeImage, this);
+#elif ANDROID_VERSION == 19
+  sp<AMessage> msg = new AMessage(kWhatSendFakeImage, id());
+#endif
   msg->post();
 }
