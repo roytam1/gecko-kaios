@@ -5071,29 +5071,18 @@ this.DOMApplicationRegistry = {
   receiveAppMessage: function(appId, message) {
     switch (message.name) {
       case "Webapps:ClearBrowserData":
+        try {
+          if (!Services.prefs.getBoolPref('apps.sandboxed.cookies.enabled')) {
+            appId = Ci.nsIScriptSecurityManager.NO_APP_ID;
+          }
+        } catch (e) {}
+
         this._clearPrivateData(appId, true, message.data);
         break;
     }
   },
 
   _clearPrivateData: function(appId, browserOnly, msg) {
-    let useSandboxedCookies = true;
-    try {
-      if (!Services.prefs.getBoolPref('apps.sandboxed.cookies.enabled')) {
-        useSandboxedCookies = false;
-      }
-    } catch (e) {}
-    let app = appsService.getAppByLocalId(appId);
-    if (app) {
-      if (app.hasPermission("sandboxed-cookies")) {
-        useSandboxedCookies = true;
-      }
-    }
-
-    if (!useSandboxedCookies) {
-      appId = Ci.nsIScriptSecurityManager.NO_APP_ID;
-    }
-
     let subject = {
       appId: appId,
       browserOnly: browserOnly,
