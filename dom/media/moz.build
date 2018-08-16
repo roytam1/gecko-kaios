@@ -153,11 +153,22 @@ EXPORTS += [
     'XiphExtradata.h',
 ]
 
-EXPORTS.mozilla += [
-    'MediaManager.h',
+if CONFIG['ANDROID_VERSION'] == '19':
+  EXPORTS += [
     'MediaResource.h',
     'MediaResourceCallback.h',
+  ]
+
+EXPORTS.mozilla += [
+    'MediaManager.h',
 ]
+
+if CONFIG['ANDROID_VERSION'] >= '23':
+  EXPORTS.mozilla += [
+    'MediaResource.h',
+    'MediaResourceCallback.h',
+  ]
+
 
 EXPORTS.mozilla.media.webrtc += [
     'webrtc/WebrtcGlobal.h',

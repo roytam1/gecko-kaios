@@ -7,7 +7,13 @@
 #define MediaOmxReader_h_
 
 #include "MediaOmxCommonReader.h"
+#if defined(MOZ_WIDGET_GONK)
+#if ANDROID_VERSION >= 23
 #include "mozilla/MediaResource.h"
+#elif ANDROID_VERSION == 19
+#include "MediaResource.h"
+#endif
+#endif
 #include "MediaDecoderReader.h"
 #include "nsMimeTypes.h"
 #include "MP3FrameParser.h"

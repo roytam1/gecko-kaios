@@ -10,7 +10,13 @@
 #include "mp4_demuxer/SinfParser.h"
 #include "mp4_demuxer/Stream.h"
 #include "mp4_demuxer/Interval.h"
+#if defined(MOZ_WIDGET_GONK)
+#if ANDROID_VERSION >= 23
 #include "mozilla/MediaResource.h"
+#elif ANDROID_VERSION == 19
+#include "MediaResource.h"
+#endif
+#endif
 
 namespace mp4_demuxer {
 typedef int64_t Microseconds;

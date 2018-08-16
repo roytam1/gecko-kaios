@@ -4,7 +4,13 @@
 
 #include "mp4_demuxer/BufferStream.h"
 #include "MediaData.h"
+#if defined(MOZ_WIDGET_GONK)
+#if ANDROID_VERSION >= 23
 #include "mozilla/MediaResource.h"
+#elif ANDROID_VERSION == 19
+#include "MediaResource.h"
+#endif
+#endif
 #include <algorithm>
 
 using namespace mozilla;

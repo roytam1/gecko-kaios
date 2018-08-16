@@ -17,7 +17,13 @@
 #include "Intervals.h"
 #include "MediaCache.h"
 #include "MediaData.h"
+#if defined(MOZ_WIDGET_GONK)
+#if ANDROID_VERSION >= 23
 #include "mozilla/MediaResourceCallback.h"
+#elif ANDROID_VERSION == 19
+#include "MediaResourceCallback.h"
+#endif
+#endif
 #include "mozilla/Atomics.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/TimeStamp.h"

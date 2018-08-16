@@ -14,7 +14,13 @@
 #include <vorbis/codec.h>
 #endif
 #include "MediaDecoderReader.h"
+#if defined(MOZ_WIDGET_GONK)
+#if ANDROID_VERSION >= 23
 #include "mozilla/MediaResource.h"
+#elif ANDROID_VERSION == 19
+#include "MediaResource.h"
+#endif
+#endif
 #include "OggCodecState.h"
 #include "VideoUtils.h"
 #include "mozilla/Monitor.h"

@@ -6,7 +6,13 @@
 #if !defined(RtspMediaResource_h_)
 #define RtspMediaResource_h_
 
+#if defined(MOZ_WIDGET_GONK)
+#if ANDROID_VERSION >= 23
 #include "mozilla/MediaResource.h"
+#elif ANDROID_VERSION == 19
+#include "MediaResource.h"
+#endif
+#endif
 #include "mozilla/Monitor.h"
 #include "nsITimer.h"
 #include "VideoUtils.h"

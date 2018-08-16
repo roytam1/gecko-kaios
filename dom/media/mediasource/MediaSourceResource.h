@@ -7,7 +7,13 @@
 #ifndef MOZILLA_MEDIASOURCERESOURCE_H_
 #define MOZILLA_MEDIASOURCERESOURCE_H_
 
+#if defined(MOZ_WIDGET_GONK)
+#if ANDROID_VERSION >= 23
 #include "mozilla/MediaResource.h"
+#elif ANDROID_VERSION == 19
+#include "MediaResource.h"
+#endif
+#endif
 #include "mozilla/Monitor.h"
 #include "mozilla/Logging.h"
 

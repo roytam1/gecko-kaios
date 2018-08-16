@@ -6,8 +6,15 @@
 
 #include "mozilla/DebugOnly.h"
 
+#if defined(MOZ_WIDGET_GONK)
+#if ANDROID_VERSION >= 23
 #include "mozilla/MediaResource.h"
 #include "mozilla/MediaResourceCallback.h"
+#elif ANDROID_VERSION == 19
+#include "MediaResource.h"
+#include "MediaResourceCallback.h"
+#endif
+#endif
 #include "RtspMediaResource.h"
 
 #include "mozilla/Mutex.h"
