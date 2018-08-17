@@ -901,6 +901,18 @@ GonkGPSGeolocationProvider::RequestDataConnection()
     // We just get supl APN and make AGPS data connection state updated.
     RequestSettingValue("ril.supl.apn");
   } else {
+
+    if (!mObservingNetworkConnStateChange) {
+      LOG("Add network state changed observer before updating mRilDataServiceId");
+
+      nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
+      if (!obs || NS_FAILED(obs->AddObserver(this, kNetworkConnStateChangedTopic, false))) {
+        NS_WARNING("Failed to add network state changed observer!");
+      } else {
+        mObservingNetworkConnStateChange = true;
+      }
+    }
+
     mRadioInterface->SetupDataCallByType(nsINetworkInfo::NETWORK_TYPE_MOBILE_SUPL);
   }
 }
@@ -1221,6 +1233,11 @@ GonkGPSGeolocationProvider::SetupAGPS()
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(mAGpsInterface);
 
+  // Request RIL date service ID for correct RadioInterface object first due to
+  // multi-SIM case needs it to handle AGPS related stuffs. For single SIM, 0
+  // will be returned as default RIL data service ID.
+  RequestSettingValue(kSettingRilDefaultServiceId);
+
   const nsAdoptingCString& suplServer = Preferences::GetCString("geo.gps.supl_server");
   int32_t suplPort = Preferences::GetInt("geo.gps.supl_port", -1);
   if (!suplServer.IsEmpty() && suplPort > 0) {
@@ -1229,11 +1246,6 @@ GonkGPSGeolocationProvider::SetupAGPS()
     NS_WARNING("Cannot get SUPL server settings");
     return;
   }
-
-  // Request RIL date service ID for correct RadioInterface object first due to
-  // multi-SIM case needs it to handle AGPS related stuffs. For single SIM, 0
-  // will be returned as default RIL data service ID.
-  RequestSettingValue(kSettingRilDefaultServiceId);
 }
 
 void
@@ -1691,7 +1703,10 @@ GonkGPSGeolocationProvider::Handle(const nsAString& aName,
     mRilDataServiceId = id;
     UpdateRadioInterface();
 
-    MOZ_ASSERT(!mObservingNetworkConnStateChange);
+    // Observer may have been addded if RequestDataConnection() called first
+    if (mObservingNetworkConnStateChange) {
+      return NS_OK;
+    }
 
     // Now we know which service ID to deal with, observe necessary topic then
     nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
