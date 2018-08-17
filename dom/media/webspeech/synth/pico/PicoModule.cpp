@@ -5,7 +5,6 @@
 #include "mozilla/ModuleUtils.h"
 #include "nsIClassInfoImpl.h"
 
-#ifdef MOZ_WEBRTC
 
 #include "nsPicoService.h"
 
@@ -55,4 +54,3 @@ static const mozilla::Module kModule = {
 };
 
 NSMODULE_DEFN(synthpico) = &kModule;
-#endif

@@ -3849,8 +3849,6 @@ dnl enable once PeerConnection lands
     if test -n "$MOZ_X11"; then
       MOZ_WEBRTC_X11_LIBS="-lXext -lXdamage -lXfixes -lXcomposite"
     fi
-else
-    MOZ_SYNTH_PICO=
 fi
 
 dnl ========================================================
