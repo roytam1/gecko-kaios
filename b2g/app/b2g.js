@@ -1292,6 +1292,15 @@ pref("metrics.token.uri", "https://api.kaiostech.com/v3.0/applications/fAAuSR-dA
 // The secret API key of KaiOS apps service
 pref("metrics.authorization.key", "%KAIOS_METRICS_API_KEY%");
 
+// The end point to get a access token for crash report service
+pref("crashreport.api.url", "https://api.kaiostech.com/");
+
+// The application id of KaiOS crash report service
+pref("crashreport.token.appid", "ZW8svGSlaw1ZLCxWZPQA");
+
+// The secret API key of KaiOS crash report service
+pref("crashreport.authorization.key", "%KAIOS_CRASHREPORTER_API_KEY%");
+
 // Disable sandboxed cookies for apps.
 // Turning this off treat apps as mozbrowser iframe when inserting cookies
 // into DB, allow us to do single-sign-on with services like Google, Facebook.

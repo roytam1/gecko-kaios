@@ -7,6 +7,7 @@ const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/KeyValueParser.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+Cu.import("resource://gre/modules/DeviceUtils.jsm");
 Cu.importGlobalProperties(['File']);
 
 XPCOMUtils.defineLazyModuleGetter(this, "PromiseUtils",
@@ -211,8 +212,167 @@ function Submitter(id, recordSubmission, noThrottle, extraExtraKeyVals) {
 }
 
 Submitter.prototype = {
-  submitSuccess: function Submitter_submitSuccess(ret)
-  {
+  reportSubmitSuccess: function Submitter_reportSubmitSuccess() {
+    let deferred = PromiseUtils.defer();
+
+    let appid, keyname, appkey;
+    try {
+      appid = Services.prefs.getCharPref("crashreport.token.appid");
+      keyname = Services.prefs.getCharPref("crashreport.authorization.key");
+    } catch(e) {
+      dump("crash Submitter can't find crashreport.token.appid or crashreport.authorization.key");
+      return deferred.reject();
+    }
+    try {
+      appkey = Services.urlFormatter.formatURL(keyname);
+    } catch (e) {
+      dump("crash Submitter can't find app key");
+      return deferred.reject();
+    }
+
+    if (typeof appkey !== 'string' ||
+      appkey.length == 0 ||
+      appkey == 'no-kaios-crashreporter-api-key') {
+      deferred.reject();
+      dump("crash Submitter without API Key");
+      return;
+    }
+
+    let api = 'v1.0/crash_reports';
+    let url = 'https://api.kaiostech.com/';
+    try {
+      url = Services.prefs.getCharPref("crashreport.api.url");
+    } catch(e) {
+      dump("crash Submitter can't find crashreport.api.url");
+    }
+    if(!url.endsWith('/')) {
+      url += '/';
+    }
+    let urlApi = url + api;
+
+    let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
+              .createInstance(Ci.nsIXMLHttpRequest);
+    xhr.open("PUT", urlApi, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.setRequestHeader('Authorization', 'Key ' + appkey);
+
+    xhr.addEventListener("readystatechange", (evt) => {
+      if (xhr.readyState == 4) {
+        if(xhr.status == 200 || xhr.status == 201) {
+          deferred.resolve();
+          dump('crash Submitter reportSubmitSuccess ' +  xhr.status);
+        } else {
+          dump('crash Submitter reportSubmitSuccess '
+            + xhr.status + ', xhr.responseText, ' + xhr.responseText);
+          deferred.reject();
+        }
+      }
+    }, false);
+
+    xhr.addEventListener("error", () => {
+      dump('crash Submitter reportSubmitSuccess NETWORK_ERROR');
+      deferred.reject();
+    }, false);
+
+    xhr.timeout = 60000;
+    xhr.addEventListener("timeout", () => {
+      dump('crash Submitter reportSubmitSuccess NETWORK_TIMEOUT');
+      deferred.reject();
+    }, false);
+
+    let payload = {};
+    payload.crash_id = this.id;
+    payload.application_id = appid;
+
+    xhr.send(JSON.stringify(payload));
+
+    return deferred.promise;
+  },
+
+  getSubmitUrl: function Submitter_getSubmitUrl() {
+    let defererdSubmitUrl = PromiseUtils.defer();
+
+    let appid, keyname, appkey;
+    try {
+      appid = Services.prefs.getCharPref("crashreport.token.appid");
+      keyname = Services.prefs.getCharPref("crashreport.authorization.key");
+    } catch(e) {
+      dump("crash Submitter can't find crashreport.token.appid or crashreport.authorization.key");
+      return defererdSubmitUrl.reject();
+    }
+    try {
+      appkey = Services.urlFormatter.formatURL(keyname);
+    } catch (e) {
+      dump("crash Submitter can't find app key");
+      return defererdSubmitUrl.reject();
+    }
+
+    if (typeof appkey !== 'string' ||
+      appkey.length == 0 ||
+      appkey == 'no-kaios-crashreporter-api-key') {
+      defererdSubmitUrl.reject();
+      dump("crash Submitter without API Key");
+      return;
+    }
+
+    let api = 'v1.0/applications/' + appid + '/signed_urls';
+    let url = 'https://api.kaiostech.com/';
+    try {
+      url = Services.prefs.getCharPref("crashreport.api.url");
+    } catch(e) {
+      dump("crash Submitter can't find crashreport.api.url");
+    }
+    if(!url.endsWith('/')) {
+      url += '/';
+    }
+    let urlApi = url + api;
+
+    let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
+              .createInstance(Ci.nsIXMLHttpRequest);
+    xhr.open("POST", urlApi, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.setRequestHeader('Authorization', 'Key ' + appkey);
+
+    xhr.addEventListener("readystatechange", (evt) => {
+      if (xhr.readyState == 4) {
+        if(xhr.status == 200) {
+          defererdSubmitUrl.resolve(xhr.responseText);
+        } else {
+          dump('crash Submitter url get xhr.status '
+            + xhr.status + ', xhr.responseText, ' + xhr.responseText);
+          defererdSubmitUrl.reject();
+        }
+      }
+    }, false);
+
+    xhr.addEventListener("error", () => {
+      dump('crash Submitter NETWORK_ERROR');
+      defererdSubmitUrl.reject();
+    }, false);
+
+    xhr.timeout = 60000;
+    xhr.addEventListener("timeout", () => {
+      dump('crash Submitter NETWORK_TIMEOUT');
+      defererdSubmitUrl.reject();
+    }, false);
+
+    DeviceUtils.getTDeviceObject().then(device_info => {
+      device_info.crash_id = this.id;
+      for(var k in this.extraKeyVals) {
+        if (k != "ServerURL") {
+          device_info[k] = this.extraKeyVals[k];
+        }
+      }
+      xhr.send(JSON.stringify(device_info));
+    }, e => {
+      dump('crash Submitter device_info can not get');
+      defererdSubmitUrl.reject();
+    });
+
+    return defererdSubmitUrl.promise;
+  },
+
+  submitSuccess: function Submitter_submitSuccess(ret) {
     // Write out the details file to submitted/
     writeSubmittedReport(ret.CrashID, ret.ViewURL);
 
@@ -250,15 +410,8 @@ Submitter.prototype = {
       CrashSubmit._activeSubmissions.splice(idx, 1);
   },
 
-  submitForm: function Submitter_submitForm()
-  {
-    if (!('ServerURL' in this.extraKeyVals)) {
-      return false;
-    }
-    let serverURL = this.extraKeyVals.ServerURL;
-
+  submitForm: function Submitter_submitForm(serverURL) {
     // Override the submission URL from the environment
-
     var envOverride = Cc['@mozilla.org/process/environment;1'].
       getService(Ci.nsIEnvironment).get("MOZ_CRASHREPORTER_URL");
     if (envOverride != '') {
@@ -267,7 +420,7 @@ Submitter.prototype = {
 
     let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
               .createInstance(Ci.nsIXMLHttpRequest);
-    xhr.open("POST", serverURL, true);
+    xhr.open("PUT", serverURL, true);
 
     let formData = Cc["@mozilla.org/files/formdata;1"]
                    .createInstance(Ci.nsIDOMFormData);
@@ -298,11 +451,23 @@ Submitter.prototype = {
     let manager = Services.crashmanager;
     let submissionID = manager.generateSubmissionID();
 
+    let parseCrashID = function(url) {
+      // https://kai-crash-na2.s3.amazonaws.com/
+      // KaiOS2.5-B2G-qcom-20180806230748/jbhC_5sShd0WeI5K7wSl?xxxxx
+      // the id is between first '/' and '?' in path
+      let uri = Services.io.newURI(url, null, null)
+      let path = uri.path;
+      let idxEnd = path.indexOf('?');
+      // skip first '/'
+      let tmpStr = path.substring(1, idxEnd);
+
+      return tmpStr.substring(tmpStr.indexOf('/') + 1);
+    };
+
     xhr.addEventListener("readystatechange", (evt) => {
       if (xhr.readyState == 4) {
-        let ret =
-          xhr.status == 200 ? parseKeyValuePairs(xhr.responseText) : {};
-        let submitted = !!ret.CrashID;
+        let ret = {"CrashID": parseCrashID(serverURL), "ViewURL": ""};
+        let submitted = xhr.status == 200;
 
         if (this.recordSubmission) {
           let result = submitted ? manager.SUBMISSION_RESULT_OK :
@@ -315,7 +480,12 @@ Submitter.prototype = {
         }
 
         if (submitted) {
-          this.submitSuccess(ret);
+          this.reportSubmitSuccess().then(() => {
+            this.submitSuccess(ret);
+          }, () => {
+            this.notifyStatus(FAILED);
+            this.cleanup();
+          });
         }
         else {
            this.notifyStatus(FAILED);
@@ -328,11 +498,9 @@ Submitter.prototype = {
       manager.addSubmissionAttempt(this.id, submissionID, new Date());
     }
     xhr.send(formData);
-    return true;
   },
 
-  notifyStatus: function Submitter_notify(status, ret)
-  {
+  notifyStatus: function Submitter_notify(status, ret) {
     let propBag = Cc["@mozilla.org/hash-property-bag;1"].
                   createInstance(Ci.nsIWritablePropertyBag2);
     propBag.setPropertyAsAString("minidumpID", this.id);
@@ -361,8 +529,7 @@ Submitter.prototype = {
     }
   },
 
-  submit: function Submitter_submit()
-  {
+  submit: function Submitter_submit() {
     let [dump, extra, memory] = getPendingMinidump(this.id);
 
     if (!dump.exists() || !extra.exists()) {
@@ -403,10 +570,13 @@ Submitter.prototype = {
 
     this.additionalDumps = additionalDumps;
 
-    if (!this.submitForm()) {
-       this.notifyStatus(FAILED);
-       this.cleanup();
-    }
+    this.getSubmitUrl().then(url => {
+      this.submitForm(url);
+    }, () => {
+      this.notifyStatus(FAILED);
+      this.cleanup();
+    });
+
     return this.deferredSubmit.promise;
   }
 };
@@ -438,8 +608,7 @@ this.CrashSubmit = {
    *  @return a Promise that is fulfilled with the server crash ID when the
    *          submission succeeds and rejected otherwise.
    */
-  submit: function CrashSubmit_submit(id, params)
-  {
+  submit: function CrashSubmit_submit(id, params) {
     params = params || {};
     let recordSubmission = false;
     let submitSuccess = null;

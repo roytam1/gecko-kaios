@@ -346,6 +346,7 @@ def old_configure_options(*options):
     '--with-kaios-geo-submit-api-keyfile',
     '--with-kaios-apps-api-keyfile',
     '--with-kaios-metrics-api-keyfile',
+    '--with-kaios-crashreporter-api-keyfile',
     '--with-kaios-release-tag',
     '--with-kaios-font-config-file',
     '--with-thumb',
