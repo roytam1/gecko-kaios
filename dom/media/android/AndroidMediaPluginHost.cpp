@@ -4,12 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include "mozilla/Preferences.h"
-#if defined(MOZ_WIDGET_GONK)
-#if ANDROID_VERSION >= 23
-#include "mozilla/MediaResource.h"
-#elif ANDROID_VERSION == 19
+#if defined(MOZ_WIDGET_GONK) && (ANDROID_VERSION == 19)
 #include "MediaResource.h"
-#endif
+#else
+#include "mozilla/MediaResource.h"
 #endif
 #include "mozilla/dom/HTMLMediaElement.h"
 #include "mozilla/Services.h"

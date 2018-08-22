@@ -6,12 +6,10 @@
 
 #include "MediaDecoderReader.h"
 #include "AbstractMediaDecoder.h"
-#if defined(MOZ_WIDGET_GONK)
-#if ANDROID_VERSION >= 23
-#include "mozilla/MediaResource.h"
-#elif ANDROID_VERSION == 19
+#if defined(MOZ_WIDGET_GONK) && (ANDROID_VERSION == 19)
 #include "MediaResource.h"
-#endif
+#else
+#include "mozilla/MediaResource.h"
 #endif
 #include "VideoUtils.h"
 #include "ImageContainer.h"

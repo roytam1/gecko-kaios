@@ -158,17 +158,15 @@ if CONFIG['ANDROID_VERSION'] == '19':
     'MediaResource.h',
     'MediaResourceCallback.h',
   ]
-
-EXPORTS.mozilla += [
-    'MediaManager.h',
-]
-
-if CONFIG['ANDROID_VERSION'] >= '23':
+else:
   EXPORTS.mozilla += [
     'MediaResource.h',
     'MediaResourceCallback.h',
   ]
 
+EXPORTS.mozilla += [
+    'MediaManager.h',
+]
 
 EXPORTS.mozilla.media.webrtc += [
     'webrtc/WebrtcGlobal.h',
