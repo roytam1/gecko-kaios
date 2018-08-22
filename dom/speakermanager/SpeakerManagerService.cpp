@@ -104,15 +104,6 @@ SpeakerManagerService::TurnOnSpeaker(bool aOn)
   int32_t forceuse = (phoneState == nsIAudioManager::PHONE_STATE_IN_CALL ||
                       phoneState == nsIAudioManager::PHONE_STATE_IN_COMMUNICATION)
                         ? nsIAudioManager::USE_COMMUNICATION : nsIAudioManager::USE_MEDIA;
-#ifdef PRODUCT_MANUFACTURER_SPRD
-  bool audioFmEnabled;
-  audioManager->GetFmRadioAudioEnabled(&audioFmEnabled);
-  if (forceuse == nsIAudioManager::USE_MEDIA) {
-    if (audioFmEnabled || (!audioFmEnabled && !aOn)) {
-      forceuse = nsIAudioManager::USE_FM;
-    }
-  }
-#endif
   if (aOn) {
     audioManager->SetForceForUse(forceuse, nsIAudioManager::FORCE_SPEAKER);
   } else {

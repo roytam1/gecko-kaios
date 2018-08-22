@@ -1019,6 +1019,14 @@ AudioManager::SetForceForUse(int32_t aUsage, int32_t aForce)
   status_t status = AudioSystem::setForceUse(
                       (audio_policy_force_use_t)aUsage,
                       (audio_policy_forced_cfg_t)aForce);
+#ifdef PRODUCT_MANUFACTURER_SPRD
+  // Sync force use between MEDIA and FM
+  if (aUsage == USE_MEDIA && status == NO_ERROR) {
+    status = AudioSystem::setForceUse(
+               AUDIO_POLICY_FORCE_FOR_FM,
+               (audio_policy_forced_cfg_t)aForce);
+  }
+#endif
 
   bool enableRadio = false;
   GetFmRadioAudioEnabled(&enableRadio);
@@ -1073,14 +1081,6 @@ AudioManager::SetFmRadioAudioEnabled(bool aFmRadioAudioEnabled)
                               AUDIO_DEVICE_OUT_FM,
                               NS_LITERAL_CSTRING(""));
 #else
-  //Bug 17313,Sync ForceForUse FORCE_SPEAKER between
-  //nsIAudioManager::USE_MEDIA and nsIAudioManager::USE_FM
-  int32_t aForce = nsIAudioManager::FORCE_NONE;
-  if (GetForceForUse(nsIAudioManager::USE_MEDIA, &aForce) == NS_OK) {
-    SetForceForUse(nsIAudioManager::USE_FM, aForce);
-    LOG("SetFmRadioAudioEnabled() Sync SetForceForUse nsIAudioManager::USE_FM : %d", aForce);
-  }
-
   UpdateDeviceConnectionState(aFmRadioAudioEnabled,
                               AUDIO_DEVICE_OUT_FM_HEADSET,
                               NS_LITERAL_CSTRING(""));

@@ -172,11 +172,6 @@ FMRadioService::~FMRadioService()
 void
 FMRadioService::EnableFMRadio()
 {
-  #ifdef PRODUCT_MANUFACTURER_SPRD
-  //Bug 17313,Update ForceForUse in AudioManager before enable FM hardware.
-  //This prevent from leak FM sound from incorrect audio path.
-  EnableAudio(true);
-  #endif
   hal::FMRadioSettings info;
   info.upperLimit() = mUpperBoundInKHz;
   info.lowerLimit() = mLowerBoundInKHz;
