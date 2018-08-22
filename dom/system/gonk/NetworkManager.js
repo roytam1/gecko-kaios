@@ -1101,13 +1101,14 @@ NetworkManager.prototype = {
     }
 
     let currentExtraRoutes = currentNetworkLinks.extraRoutes;
+    let currentInterfaceName = currentNetworkLinks.interfaceName;
     return this._cleanupAllHostRoutes(networkId)
       .then(() => {
         // If gateways have changed, re-add extra host routes with new gateways.
         if (currentExtraRoutes.length > 0) {
           this._setHostRoutes(true,
                               currentExtraRoutes,
-                              currentNetworkLinks.interfaceName,
+                              currentInterfaceName,
                               gateways)
           .then(() => {
             currentNetworkLinks.extraRoutes = currentExtraRoutes;
