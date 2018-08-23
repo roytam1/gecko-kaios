@@ -1270,6 +1270,7 @@ var WifiManager = (function() {
 
   function simIdentityRequest(networkId, eapMethod) {
     wifiCommand.getNetworkVariable(networkId, "sim_num", function(sim_num) {
+      sim_num = sim_num || 1;
       // For SIM & AKA/AKA' EAP method Only, get identity from ICC
       let icc = gIccService.getIccByServiceId(sim_num - 1);
       if (!icc || !icc.iccInfo || !icc.iccInfo.mcc || !icc.iccInfo.mnc) {
@@ -1306,6 +1307,7 @@ var WifiManager = (function() {
       let count = 0;
 
       wifiCommand.getNetworkVariable(networkId, "sim_num", function(sim_num) {
+        sim_num = sim_num || 1;
         let icc = gIccService.getIccByServiceId(sim_num - 1);
         for (let value in data) {
           let challenge = data[value];
@@ -1788,6 +1790,11 @@ var WifiManager = (function() {
     var netId = config.netId;
     var done = 0;
     var errors = 0;
+
+    // Dual sim not support for JB/KK
+    if (sdkVersion < 20) {
+      config["sim_num"] = null;
+    }
 
     function hasValidProperty(name) {
       return ((name in config) &&
