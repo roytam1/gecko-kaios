@@ -216,8 +216,9 @@ pref("geo.cell.scan", true);
 // URL for geolocating service, the original URL of B2G OS is
 // "https://location.services.mozilla.com/v1/geolocate?key=%MOZILLA_API_KEY%"
 // KaiOS supports the following location servers
+// - Combain server, "https://cps.combain.com"
 // - Kai experimental server, "https://lbs.kaiostech.com/v2.0/lbs/locate"
-// - amap server, "http://apilocate.amap.com/position"
+// - Amap server, "http://apilocate.amap.com/position"
 // Empty string would disable WiFi/cell geolocating service
 pref("geo.wifi.uri", "");
 

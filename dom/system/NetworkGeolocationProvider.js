@@ -28,8 +28,9 @@ const HTTP_CODE_BAD_REQUEST = 400;
 const HTTP_CODE_UNAUTHORIZED = 401;
 
 // Supported location servers
-const KAI_SERVER_URI = "https://lbs.kaiostech.com/v2.0/lbs/locate";
 const AMAP_SERVER_URI = "http://apilocate.amap.com/position";
+const COMBAIN_SERVER_URI = "https://cps.combain.com";
+const KAI_SERVER_URI = "https://lbs.kaiostech.com/v2.0/lbs/locate";
 
 // Define a cooldown to prevent overly retrying in case the location server
 // have any internal errors.
@@ -626,8 +627,9 @@ WifiGeoPositionProvider.prototype = {
     switch (this.serverUri) {
       case AMAP_SERVER_URI:
         return false;
+      case COMBAIN_SERVER_URI:
       case KAI_SERVER_URI:
-      return true;
+        return true;
     }
     return true;
   },
@@ -635,11 +637,6 @@ WifiGeoPositionProvider.prototype = {
   // gennerate the URL of HTTP request with parameters
   generateUrl: function (cellTowers, wifiAccessPoints) {
     let url = this.serverUri;
-
-    // POST request don't add parameters via request url
-    if (this.isPostReq()) {
-      return url;
-    }
 
     switch (this.serverUri) {
       case AMAP_SERVER_URI: {
@@ -706,6 +703,12 @@ WifiGeoPositionProvider.prototype = {
         }
         break;
       }
+      case COMBAIN_SERVER_URI:
+        url += "?key=" + Services.urlFormatter.formatURLPref("geo.authorization.key");
+        break;
+      case KAI_SERVER_URI:
+        // Kai server doesn't add any parameter via request url
+        break;
     }
     return url;
   },
@@ -717,6 +720,7 @@ WifiGeoPositionProvider.prototype = {
     switch (this.serverUri) {
       case AMAP_SERVER_URI:
         return !!response.result && !!response.result.location;
+      case COMBAIN_SERVER_URI:
       case KAI_SERVER_URI:
         return !!response.location;
     }
@@ -736,11 +740,12 @@ WifiGeoPositionProvider.prototype = {
         accuracy = response.result.radius;
         break;
       }
+      case COMBAIN_SERVER_URI:
       case KAI_SERVER_URI:
         latitude = response.location.lat;
         longtitude = response.location.lng;
         accuracy = response.accuracy;
-        return
+        break;
     }
     return new WifiGeoPositionObject(latitude, longtitude, accuracy);
   },
