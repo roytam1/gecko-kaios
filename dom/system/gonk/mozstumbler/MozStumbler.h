@@ -38,10 +38,12 @@ private:
   ~StumblerInfo() {}
   void DumpStumblerInfo();
   nsresult LocationInfoToString(nsACString& aLocDesc);
-  void CellNetworkInfoToString(nsACString& aCellDesc);
+  void CellNetworkInfoToString(nsACString& aCellDesc, int32_t aAge);
   void MobileCellInfoToString(nsACString& aCellDesc);
   nsTArray<RefPtr<nsICellInfo>> mCellInfo;
   nsCString mWifiDesc;
+  PRTime mCellTimestamp;
+  PRTime mWifiTimestamp;
   RefPtr<nsGeoPosition> mPosition;
   int mCellInfoResponsesExpected;
   int mCellInfoResponsesReceived;

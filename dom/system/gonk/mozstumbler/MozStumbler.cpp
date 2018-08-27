@@ -28,6 +28,8 @@ using namespace mozilla;
 using namespace mozilla::dom;
 
 
+static const char* kWifiAgePlaceholder = "_wifiApAge_";
+
 NS_IMPL_ISUPPORTS(StumblerInfo, nsICellInfoListCallback, nsIWifiScanResultsReady)
 
 class RequestCellInfoEvent : public nsRunnable {
@@ -156,6 +158,7 @@ StumblerInfo::SetCellInfoResponsesExpected(uint8_t count)
 #define TEXT_ALTACC NS_LITERAL_CSTRING("altitudeAccuracy")
 #define TEXT_HEAD NS_LITERAL_CSTRING("heading")
 #define TEXT_SPD NS_LITERAL_CSTRING("speed")
+#define TEXT_AGE NS_LITERAL_CSTRING("age")
 
 static void
 PrintLocationInfo(nsDataHashtable<nsCStringHashKey, double>& info, nsACString& aLocDesc)
@@ -165,7 +168,7 @@ PrintLocationInfo(nsDataHashtable<nsCStringHashKey, double>& info, nsACString& a
     const nsACString& key = it.Key();
     val = it.UserData();
     if (!IsNaN(val)) {
-      aLocDesc += nsPrintfCString("\"%s\":%f,", key.BeginReading(), val);
+      aLocDesc += nsPrintfCString("\"%s\":%g,", key.BeginReading(), val);
     }
   }
 }
@@ -178,9 +181,6 @@ StumblerInfo::LocationInfoToString(nsACString& aLocDesc)
   if (!coords) {
     return NS_ERROR_FAILURE;
   }
-
-  // append timestamp of submitting location
-  aLocDesc += nsPrintfCString("\"timestamp\":%lld,", PR_Now() / PR_USEC_PER_MSEC).get();
 
   // append position block
   aLocDesc += "\"position\": {";
@@ -202,6 +202,9 @@ StumblerInfo::LocationInfoToString(nsACString& aLocDesc)
   info.Put(TEXT_HEAD, val);
   coords->GetSpeed(&val);
   info.Put(TEXT_SPD, val);
+
+  // always set the age to 0 since we only collect data when getting GPS fix
+  info.Put(TEXT_AGE, 0);
 
   // append position fields
   PrintLocationInfo(info, aLocDesc);
@@ -253,7 +256,7 @@ PrintCellDesc(nsDataHashtable<nsCStringHashKey, int32_t>& info, nsACString& aCel
 }
 
 void
-StumblerInfo::CellNetworkInfoToString(nsACString& aCellDesc)
+StumblerInfo::CellNetworkInfoToString(nsACString& aCellDesc, int32_t aAge)
 {
   aCellDesc += ",\"cellTowers\": [";
 
@@ -325,6 +328,8 @@ StumblerInfo::CellNetworkInfoToString(nsACString& aCellDesc)
         info.Put(TEXT_STRENGTH_DBM, rsrp * -1);
       }
     }
+
+    info.Put(TEXT_AGE, aAge);
 
     aCellDesc += nsPrintfCString("\"%s\":\"%s\"", TEXT_RADIOTYPE.get(), radioType);
     PrintCellDesc(info, aCellDesc);
@@ -445,6 +450,9 @@ StumblerInfo::MobileCellInfoToString(nsACString& aCellDesc)
           aCellDesc += "{";
         }
 
+        // always set the age to 0 since we acquire cell info. when getting a GPS fix
+        info.Put(TEXT_AGE, 0);
+
         aCellDesc += nsPrintfCString("\"%s\":\"%s\"", TEXT_RADIOTYPE.get(), radioType);
         PrintCellDesc(info, aCellDesc);
 
@@ -480,9 +488,13 @@ StumblerInfo::DumpStumblerInfo()
     return;
   }
 
+  // append timestamp of submitting location
+  PRTime currTime = PR_Now();
+  desc += nsPrintfCString(",\"timestamp\":%lld", currTime / PR_USEC_PER_MSEC).get();
+
   nsAutoCString cellInfoDesc;
   if (mCellInfoResponsesExpected != 0) {
-    CellNetworkInfoToString(cellInfoDesc);
+    CellNetworkInfoToString(cellInfoDesc, (currTime - mCellTimestamp) / PR_USEC_PER_MSEC);
   } else {
     MobileCellInfoToString(cellInfoDesc);
   }
@@ -490,6 +502,22 @@ StumblerInfo::DumpStumblerInfo()
   if (cellInfoDesc.IsEmpty() && mWifiDesc.IsEmpty()) {
     return;
   }
+
+  // replace the placehoder of WiFi age by real one
+  if (!mWifiDesc.IsEmpty()) {
+    nsCString wifiTimeDiff = nsPrintfCString("%lld", (currTime - mWifiTimestamp) / PR_USEC_PER_MSEC);
+    int32_t pos = 0;
+    while (pos < static_cast<int32_t>(mWifiDesc.Length())) {
+      pos = mWifiDesc.Find(kWifiAgePlaceholder, pos);
+      if (pos == -1) {
+        break;
+      }
+      mWifiDesc.Replace(pos, strlen(kWifiAgePlaceholder), wifiTimeDiff);
+
+      pos += wifiTimeDiff.Length();
+    }
+  }
+
   desc += cellInfoDesc;
   desc += mWifiDesc;
 
@@ -506,6 +534,9 @@ StumblerInfo::NotifyGetCellInfoList(uint32_t count, nsICellInfo** aCellInfos)
 {
   MOZ_ASSERT(NS_IsMainThread());
   STUMBLER_DBG("There are %d cellinfo in the result\n", count);
+
+  // save the timestamp of mCellInfo
+  mCellTimestamp = PR_Now();
 
   for (uint32_t i = 0; i < count; i++) {
     mCellInfo.AppendElement(aCellInfos[i]);
@@ -530,6 +561,9 @@ StumblerInfo::Onready(uint32_t count, nsIWifiScanResult** results)
 {
   MOZ_ASSERT(NS_IsMainThread());
   STUMBLER_DBG("There are %d wifiAPinfo in the result\n",count);
+
+  // save the timestamp of mWifiDesc
+  mWifiTimestamp = PR_Now();
 
   mWifiDesc += ",\"wifiAccessPoints\": [";
   bool firstItem = true;
@@ -571,6 +605,8 @@ StumblerInfo::Onready(uint32_t count, nsIWifiScanResult** results)
     mWifiDesc += "\",\"signalStrength\":";
     mWifiDesc.AppendInt(signal);
 
+    // put a placeholder here since we don't know the age yet
+    mWifiDesc += nsPrintfCString("\",\"age\":%s", kWifiAgePlaceholder);
     mWifiDesc += "}";
   }
   mWifiDesc += "]";
