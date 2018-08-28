@@ -2598,10 +2598,14 @@ RilObject.prototype = {
     }
 
     let ICCRecordHelper = this.context.ICCRecordHelper;
-    // Try to get iccId only when cardState left GECKO_CARDSTATE_UNDETECTED.
-    if (iccStatus.cardState === CARD_STATE_PRESENT &&
-        (this.cardState === GECKO_CARDSTATE_UNINITIALIZED ||
-         this.cardState === GECKO_CARDSTATE_UNDETECTED)) {
+    //Read the iccid only when card app status change from
+    //uninitialized,undetected,unknown to ready or locked
+    if ((this.cardState === GECKO_CARDSTATE_UNINITIALIZED ||
+         this.cardState === GECKO_CARDSTATE_UNDETECTED ||
+         this.cardState === GECKO_CARDSTATE_UNKNOWN) &&
+        (newCardState != GECKO_CARDSTATE_UNINITIALIZED &&
+         newCardState != GECKO_CARDSTATE_UNDETECTED &&
+         newCardState != GECKO_CARDSTATE_UNKNOWN)) {
       ICCRecordHelper.readICCID();
     }
 
