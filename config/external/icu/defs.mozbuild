@@ -35,3 +35,5 @@ ALLOW_COMPILER_WARNINGS = True
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android' and CONFIG['MOZ_ANDROID_CXX_STL'] == 'mozstlport':
     LOCAL_INCLUDES += ['/build/gabi++/include']
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk' and CONFIG['ANDROID_VERSION'] == '19':
+    LOCAL_INCLUDES += ['%' + CONFIG['ANDROID_SOURCE'] + '/abi/cpp/include']
