@@ -758,17 +758,24 @@ BluetoothOppManager::CreateFile()
 
   // If the filename doesn't include file extension, append a file extension
   // based on the MIME type of OBEX header.
-  if (!mContentType.IsEmpty() && mFileName.RFindChar('.') == kNotFound) {
-    nsCOMPtr<nsIMIMEService> mimeSvc = do_GetService(NS_MIMESERVICE_CONTRACTID);
-    if (mimeSvc) {
-      nsCString extension;
-      nsresult rv =
-        mimeSvc->GetPrimaryExtension(NS_LossyConvertUTF16toASCII(mContentType),
-                                     EmptyCString(),
-                                     extension);
-      if (NS_SUCCEEDED(rv)) {
-        mFileName.Append('.');
-        AppendUTF8toUTF16(extension, mFileName);
+  if (!mContentType.IsEmpty()) {
+    // find seperator '.' from the last 6 characters.
+    int32_t offset = mFileName.RFindChar('.', -1, 6);
+
+    // whether the file extension is between 1 to 5 characters
+    if (offset == kNotFound ||
+        static_cast<uint32_t>(offset + 1) == mFileName.Length()) {
+      nsCOMPtr<nsIMIMEService> mimeSvc = do_GetService(NS_MIMESERVICE_CONTRACTID);
+      if (mimeSvc) {
+        nsCString extension;
+        nsresult rv =
+          mimeSvc->GetPrimaryExtension(NS_LossyConvertUTF16toASCII(mContentType),
+                                       EmptyCString(),
+                                       extension);
+        if (NS_SUCCEEDED(rv)) {
+          mFileName.Append('.');
+          AppendUTF8toUTF16(extension, mFileName);
+        }
       }
     }
   }
@@ -886,8 +893,12 @@ BluetoothOppManager::RetrieveSentFileName()
     mFileName = Substring(mFileName, offset + 1);
   }
 
-  offset = mFileName.RFindChar('.');
-  if (offset == kNotFound) {
+  // find seperator '.' from the last 6 characters.
+  offset = mFileName.RFindChar('.', -1, 6);
+
+  // whether the length of file extension is between 1 to 5
+  if (offset == kNotFound ||
+      static_cast<uint32_t>(offset + 1) == mFileName.Length()) {
     nsCOMPtr<nsIMIMEService> mimeSvc = do_GetService(NS_MIMESERVICE_CONTRACTID);
 
     if (mimeSvc) {
