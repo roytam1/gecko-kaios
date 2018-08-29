@@ -513,7 +513,7 @@ WifiGeoPositionProvider.prototype = {
             case "gprs":
             case "edge":
               radioTechFamily = "gsm";
-              mobileSignal = signalStrength.gsmSignalStrength;
+              mobileSignal = 2 * signalStrength.gsmSignalStrength - 113; // ASU to dBm
               break;
             case "umts":
             case "hsdpa":
@@ -521,11 +521,27 @@ WifiGeoPositionProvider.prototype = {
             case "hspa":
             case "hspa+":
               radioTechFamily = "wcdma";
-              mobileSignal = signalStrength.gsmSignalStrength;
+              mobileSignal = 2 * signalStrength.gsmSignalStrength - 113; // ASU to dBm
               break;
             case "lte":
               radioTechFamily = "lte";
+              // lteSignalStrength, ASU format, value range (0-31, 99)
               mobileSignal = signalStrength.lteSignalStrength;
+              if (mobileSignal !== 99 && mobileSignal >= 0 && mobileSignal <= 31) {
+                mobileSignal = 2 * signalStrength.lteSignalStrength - 113; // ASU to dBm
+              } else {
+                // lteSignalStrength is invalid value, try lteRsrp.
+                // Reference Signal Receive Power in dBm, range: -140 to -44 dBm.
+                var rsrp = signalStrength.lteRsrp;
+
+                if (rsrp != Ci.nsIMobileSignalStrength.SIGNAL_UNKNOWN_VALUE &&
+                    rsrp >= -140 && rsrp <= -44) {
+                  mobileSignal = rsrp;
+                } else {
+                  ERR("Can't find valid LTE signal strength");
+                  mobileSignal = undefined;
+                }
+              }
               break;
             // CDMA cases to be handled in bug 1010282
           }
