@@ -13,3 +13,7 @@ set_define('MOZ_SERVICES_FXACCOUNTS', True)
 # Put these after including ../toolkit/moz.configure to avoid overriding.
 set_config('MOZ_TELEMETRY', True)
 set_define('MOZ_TELEMETRY', True)
+# Enable private browsing to avoid js load module error in browser.
+# This flag has no guarantee of private browsing function.
+set_config('MOZ_PRIVATEBROWSING', True)
+set_define('MOZ_PRIVATEBROWSING', True)
