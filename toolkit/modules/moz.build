@@ -92,6 +92,11 @@ EXTRA_JS_MODULES += [
     'ZipUtils.jsm',
 ]
 
+if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'gonk':
+    EXTRA_JS_MODULES += [
+        'NewTabUtils.jsm'
+    ]
+
 if CONFIG['MOZ_PRESENTATION']:
     EXTRA_JS_MODULES += [
         'secondscreen/PresentationApp.jsm'
