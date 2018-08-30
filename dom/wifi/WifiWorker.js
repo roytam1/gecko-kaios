@@ -2962,6 +2962,8 @@ function WifiWorker() {
         self._fireEvent("onconnecting", { network: netToDOM(self.currentNetwork) });
         break;
       case "ASSOCIATED":
+        if (!self.currentNetwork)
+          self.currentNetwork = {};
         self.currentNetwork.bssid = wifiInfo.bssid;
         self.currentNetwork.ssid = quote(wifiInfo.wifiSsid);
         self.currentNetwork.isDriverRoaming = this.isDriverRoaming;
@@ -2979,6 +2981,8 @@ function WifiWorker() {
         // XXX Need to do this eventually if the user entered an incorrect
         // password. For now, we require user interaction to break the loop and
         // select a better network!
+        if (!self.currentNetwork)
+          self.currentNetwork = {};
         if (self._needToEnableNetworks) {
           self._enableAllNetworks(function(){});
           self._needToEnableNetworks = false;
