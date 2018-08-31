@@ -43,6 +43,8 @@ IPDL_SOURCES = [
     'PCookieService.ipdl',
 ]
 
+CXXFLAGS += ['-Wno-error=address']
+
 include('/ipc/chromium/chromium-config.mozbuild')
 
 FINAL_LIBRARY = 'xul'

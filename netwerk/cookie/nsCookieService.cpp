@@ -784,6 +784,8 @@ nsCookieService::Init()
     COOKIE_LOGSTRING(LogLevel::Warning, ("Init(): nsICookiePermission implementation not available"));
   }
 
+  Preferences::SetBool("capabilities.sandboxedCookies", (bool)MaybeOverrideOriginAttributes);
+
   return NS_OK;
 }
 
