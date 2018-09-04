@@ -319,6 +319,12 @@ if test -n "$gonkdir" ; then
       CPPFLAGS="$CPPFLAGS -I$gonkdir/external/jsoncpp/include"
       LDFLAGS="-L$gonkdir/out/target/product/$GONK_PRODUCT/obj/STATIC_LIBRARIES/libjsoncpp_intermediates $LDFLAGS"
     fi
+    if test -d "$gonkdir/external/curl" ; then
+      CPPFLAGS="$CPPFLAGS -I$gonkdir/external/curl/include"
+    fi
+    if test -d "$gonkdir/external/libxml2" ; then
+      CPPFLAGS="$CPPFLAGS -I$gonkdir/external/libxml2/include"
+    fi
     if test -d "$gonkdir/external/boringssl" ; then
       CPPFLAGS="$CPPFLAGS -I$gonkdir/external/boringssl/include"
     elif test -d "$gonkdir/external/openssl" ; then

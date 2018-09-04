@@ -1361,3 +1361,7 @@ keypad_R9.h
 iqqilib.h
 #endif
 json/json.h
+curl/curl.h
+libxml/parser.h
+libxml/xpath.h
+openssl/sha.h
