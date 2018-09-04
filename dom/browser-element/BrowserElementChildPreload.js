@@ -610,7 +610,8 @@ BrowserElementChild.prototype = {
       Services.prefs.getBoolPref('media.video.fullscreen.force-landscape');
     if (fullscreenForceLandscape) {
       let fullscreenElement = content.document.fullscreenElement;
-      if (isVideo(fullscreenElement)) {
+      // In case fullscreenElement has been removed before exit.(browser crash)
+      if (isVideo(fullscreenElement) || !fullscreenElement) {
         let window = content.document.defaultView;
         window.screen.mozLockOrientation("default");
       }
