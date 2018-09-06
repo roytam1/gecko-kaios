@@ -56,7 +56,6 @@ protected:
 };
 
 #ifdef MOZ_WIDGET_ANDROID
-
 class AndroidSurfaceTextureData : public TextureData
 {
 public:

@@ -144,6 +144,8 @@ void GonkNativeWindow::returnBuffer(TextureClient* client) {
 
     int index =  mConsumer->getSlotFromTextureClientLocked(client);
     if (index < 0) {
+        ALOGE("Invalide buff index: %d", index);
+        return;
     }
 
     FenceHandle handle = client->GetAndResetReleaseFenceHandle();
