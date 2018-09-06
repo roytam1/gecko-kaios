@@ -9,7 +9,7 @@ const nsIDialogParamBlock = Components.interfaces.nsIDialogParamBlock;
 const nsICookie = Components.interfaces.nsICookie;
 const nsICookiePromptService = Components.interfaces.nsICookiePromptService;
 
-Components.utils.import("resource://gre/modules/resource://gre/modules/AppConstants.jsm");
+Components.utils.import("resource://gre/modules/AppConstants.jsm");
 if (AppConstants.MOZ_PRIVATEBROWSING) {
   Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
 }

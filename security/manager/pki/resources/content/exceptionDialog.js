@@ -15,7 +15,7 @@ var gNeedReset;
 var gSecHistogram;
 var gNsISecTel;
 
-Components.utils.import("resource://gre/modules/resource://gre/modules/AppConstants.jsm");
+Components.utils.import("resource://gre/modules/AppConstants.jsm");
 if (AppConstants.MOZ_PRIVATEBROWSING) {
   Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
 }

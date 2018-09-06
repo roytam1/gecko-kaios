@@ -17,7 +17,7 @@ Cu.import("chrome://specialpowers/content/MockFilePicker.jsm");
 Cu.import("chrome://specialpowers/content/MockColorPicker.jsm");
 Cu.import("chrome://specialpowers/content/MockPermissionPrompt.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://gre/modules/resource://gre/modules/AppConstants.jsm");
+Cu.import("resource://gre/modules/AppConstants.jsm");
 if (AppConstants.MOZ_PRIVATEBROWSING) {
   Cu.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
 }
