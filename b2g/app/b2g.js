@@ -233,7 +233,7 @@ pref("geo.authorization.key", "%KAIOS_GEO_API_KEY%");
 
 // URL for geolocation crowdsourcing, the original URL of B2G OS is
 // "https://location.services.mozilla.com/v1/geosubmit?key=%MOZILLA_API_KEY%"
-pref("geo.stumbler.url", "https://kaiossubmit.combain.com");
+pref("geo.stumbler.url", "https://kaiossubmit.combain.com?key=%KAIOS_GEO_SUBMIT_API_KEY%");
 
 // Whether to clean up location provider when Geolocation setting is turned off.
 pref("geo.provider.ondemand_cleanup", false);

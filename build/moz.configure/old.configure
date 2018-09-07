@@ -343,6 +343,7 @@ def old_configure_options(*options):
     '--with-system-png',
     '--with-system-zlib',
     '--with-kaios-geo-api-keyfile',
+    '--with-kaios-geo-submit-api-keyfile',
     '--with-kaios-apps-api-keyfile',
     '--with-kaios-metrics-api-keyfile',
     '--with-kaios-release-tag',

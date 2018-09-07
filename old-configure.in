@@ -2962,6 +2962,17 @@ if test -z "$KAI_KAIOS_GEO_API_KEY"; then
 fi
 AC_SUBST(KAI_KAIOS_GEO_API_KEY)
 
+# Allow to specify a KaiOS API key file that contains the secret key to be
+# used by GeoSubmit (crowdsourcing data collection)
+MOZ_ARG_WITH_STRING(kaios-geo-submit-api-keyfile,
+[  --with-kaios-geo-submit-api-keyfile=file   Use the secret key contained in the given keyfile for KaiOS GeoSubmit],
+  KAI_KAIOS_GEO_SUBMIT_API_KEY=`cat $withval`)
+if test -z "$KAI_KAIOS_GEO_SUBMIT_API_KEY"; then
+    # An empty key indicates the device isn't granted by KaiOS GeoSubmit server
+    KAI_KAIOS_GEO_SUBMIT_API_KEY=
+fi
+AC_SUBST(KAI_KAIOS_GEO_SUBMIT_API_KEY)
+
 # Allow to specify a KaiOS Push API key file that contains the secret key to be
 # used for KaiOS push service requests.
 MOZ_ARG_WITH_STRING(kaios-push-api-keyfile,
