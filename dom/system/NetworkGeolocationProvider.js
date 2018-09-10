@@ -29,7 +29,7 @@ const HTTP_CODE_UNAUTHORIZED = 401;
 
 // Supported location servers
 const AMAP_SERVER_URI = "http://apilocate.amap.com/position";
-const COMBAIN_SERVER_URI = "https://cps.combain.com";
+const COMBAIN_SERVER_URI = "https://kaioslocate.combain.com";
 const KAI_SERVER_URI = "https://lbs.kaiostech.com/v2.0/lbs/locate";
 
 // Define a cooldown to prevent overly retrying in case the location server
