@@ -162,6 +162,9 @@ CreatePositionOptionsCopy(const PositionOptions& aOptions)
   geoOptions->mMaximumAge = aOptions.mMaximumAge;
   geoOptions->mTimeout = aOptions.mTimeout;
 #if defined(MOZ_WIDGET_GONK) && !defined(KAI_GEOLOC)
+  if (aOptions.mGpsMode) {
+    GEO_LOGI("set gpsMode to 0x%x", aOptions.mGpsMode);
+  }
   geoOptions->mGpsMode = aOptions.mGpsMode;
 #endif
 

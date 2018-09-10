@@ -1480,6 +1480,7 @@ GonkGPSGeolocationProvider::DeleteGpsData(uint16_t gpsMode)
   }
 
   if (mGpsInterface && mInitialized && mGpsMode) {
+    LOG("Delete GPS aiding data with gps mode 0x%x", mGpsMode);
     mGpsInterface->delete_aiding_data(mGpsMode);
     mGpsMode = 0;
   }
