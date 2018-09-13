@@ -1797,6 +1797,18 @@ Navigator::GetFeature(const nsAString& aName, ErrorResult& aRv)
       return p.forget();
     }
   }
+
+  if (aName.EqualsLiteral("kaios.api_daemon.version")) {
+    nsCString propertyKey("kaios.api_daemon.version");
+    char value[PROPERTY_VALUE_MAX];
+    uint32_t len = property_get(propertyKey.get(), value, nullptr);
+    if (len > 0) {
+      p->MaybeResolve(NS_ConvertUTF8toUTF16(value));
+    } else {
+      p->MaybeResolve(JS::UndefinedHandleValue);
+    }
+    return p.forget();
+  }
 #endif
 
   // Mirror the dom.apps.developer_mode pref to let apps get it read-only.
