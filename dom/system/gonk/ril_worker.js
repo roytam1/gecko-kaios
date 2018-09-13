@@ -255,6 +255,8 @@ RilObject.prototype = {
      */
     this.pendingToReportSmsMemoryStatus = false;
     this.smsStorageAvailable = true;
+
+    this._attachDataRegistration = {};
   },
 
   /**
