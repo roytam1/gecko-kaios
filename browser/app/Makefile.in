@@ -38,11 +38,14 @@ include $(topsrcdir)/config/rules.mk
 ifneq (,$(filter-out WINNT,$(OS_ARCH)))
 
 ifdef MOZ_MULET
+ifdef GAIADIR
 	COPY_APP_NAME = $(MOZ_APP_NAME)-bin
 else
 	COPY_APP_NAME = $(MOZ_APP_NAME)
 endif
-
+else
+	COPY_APP_NAME = $(MOZ_APP_NAME)
+endif
 ifdef COMPILE_ENVIRONMENT
 libs::
 	cp -p $(COPY_APP_NAME)$(BIN_SUFFIX) $(DIST)/bin/$(MOZ_APP_NAME)-bin$(BIN_SUFFIX)

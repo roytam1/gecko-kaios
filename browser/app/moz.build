@@ -6,11 +6,11 @@
 
 DIRS += ['profile/extensions']
 
-if CONFIG['OS_ARCH'] == 'WINNT' and CONFIG['MOZ_ASAN'] and CONFIG['MOZ_MULET']:
+if CONFIG['OS_ARCH'] == 'WINNT' and CONFIG['MOZ_ASAN'] and CONFIG['MOZ_MULET'] and CONFIG['GAIADIR']:
     GeckoProgram(CONFIG['MOZ_APP_NAME']+'-bin')
 elif CONFIG['OS_ARCH'] == 'WINNT' and CONFIG['MOZ_ASAN']:
     GeckoProgram(CONFIG['MOZ_APP_NAME'])
-elif CONFIG['MOZ_MULET']:
+elif CONFIG['MOZ_MULET'] and CONFIG['GAIADIR']:
     GeckoProgram(CONFIG['MOZ_APP_NAME']+'-bin', msvcrt='static')
 else:
     GeckoProgram(CONFIG['MOZ_APP_NAME'], msvcrt='static')

@@ -9,12 +9,13 @@ if CONFIG['MOZ_EXTENSIONS']:
     DIRS += ['/extensions']
 
 DIRS += ['/%s' % CONFIG['MOZ_BRANDING_DIRECTORY']]
+if CONFIG['GAIADIR']:
+    DIRS += ['/b2g/gaia']
 
 DIRS += [
     '/b2g/chrome',
     '/b2g/components',
     '/b2g/dev/app',
-    '/b2g/gaia',
     '/b2g/simulator',
     # Never add dirs after browser because they apparently won't get
     # packaged properly on Mac.
