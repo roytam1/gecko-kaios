@@ -437,7 +437,11 @@ bool OpenSlesInput::SetupVoiceCallMode() {
                  "OpenSL Get SL_IID_ANDROIDCONFIGURATION_ Interface error, res: %d", res);
     return false;
   } else {
+#if defined(PRODUCT_MANUFACTURER_SPRD)
+    SLuint32 voiceMode = SL_ANDROID_RECORDING_PRESET_GENERIC;
+#else
     SLuint32 voiceMode = SL_ANDROID_RECORDING_PRESET_VOICE_CALL;
+#endif
     SLuint32 voiceSize = sizeof(voiceMode);
 
     res = (*configItf)->SetConfiguration(configItf,
