@@ -34,6 +34,7 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 var contentLog = new logging.ContentLogger();
 
 var isB2G = false;
+var isMainContent = false;
 
 var marionetteTestName;
 var winUtil = content.QueryInterface(Ci.nsIInterfaceRequestor)
@@ -118,6 +119,7 @@ function registerSelf() {
     if (typeof id != "undefined") {
       // check if we're the main process
       if (register[0][1] == true) {
+        isMainContent = register[0][1];
         addMessageListener("MarionetteMainListener:emitTouchEvent", emitTouchEventForIFrame);
       }
       startListeners();
@@ -391,6 +393,11 @@ function deleteSession(msg) {
   removeMessageListenerId("Marionette:deleteCookie", deleteCookieFn);
   if (isB2G) {
     content.removeEventListener("mozbrowsershowmodalprompt", modalHandler, false);
+  }
+  // Remember to remove message listener for "MarionetteMainListener:emitTouchEvent"
+  if (isMainContent) {
+    removeMessageListener("MarionetteMainListener:emitTouchEvent", emitTouchEventForIFrame);
+    isMainContent = false;
   }
   elementManager.reset();
   // reset container frame to the top-most frame
