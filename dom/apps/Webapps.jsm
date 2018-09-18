@@ -2016,6 +2016,7 @@ this.DOMApplicationRegistry = {
     app.downloadSize = 0;
     app.installState = "installed";
     app.readyToApplyDownload = false;
+    app.userAgentInfo = newManifest.userAgentInfo || "";
 
     // Update the staged properties.
     if (app.staged) {
@@ -2142,6 +2143,7 @@ this.DOMApplicationRegistry = {
     this._saveWidgetsFullPath(manifest, aApp);
 
     aApp.role = manifest.role ? manifest.role : "";
+    aApp.userAgentInfo = manifest.userAgentInfo || "";
 
     if (supportSystemMessages()) {
       if (aOldManifest) {
@@ -2607,6 +2609,7 @@ this.DOMApplicationRegistry = {
     let manifest =
       new ManifestHelper(aApp.manifest, aApp.origin, aApp.manifestURL);
     aApp.role = manifest.role || "";
+    aApp.userAgentInfo = manifest.userAgentInfo || "";
 
     if (!AppsUtils.checkAppRole(aApp.role, aApp.appStatus)) {
       MessageBroadcaster.broadcastMessage("Webapps:UpdateState", {
@@ -2649,7 +2652,7 @@ this.DOMApplicationRegistry = {
 
       aApp.name = aNewManifest.name;
       aApp.csp = manifest.csp || "";
-      aApp.userAgentInfo = manifest.userAgentInfo || "";
+      aApp.userAgentInfo = aNewManifest.userAgentInfo || "";
       aApp.updateTime = Date.now();
     }
 
@@ -3176,6 +3179,7 @@ this.DOMApplicationRegistry = {
     appObject.localId = aLocalId;
     appObject.basePath = OS.Path.dirname(this.appsFile);
     appObject.name = aManifest.name;
+    appObject.userAgentInfo = aManifest.userAgentInfo;
     appObject.csp = aLocaleManifest.csp || "";
     appObject.role = aLocaleManifest.role;
     this._saveWidgetsFullPath(aLocaleManifest, appObject);
@@ -3458,6 +3462,7 @@ this.DOMApplicationRegistry = {
     app.installState = "installed";
     app.downloading = false;
     app.downloadAvailable = false;
+    app.userAgentInfo = aManifest.userAgentInfo || "";
 
     yield this._saveApps();
 
