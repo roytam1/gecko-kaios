@@ -4360,6 +4360,7 @@ WifiWorker.prototype = {
     const MAX_PRIORITY = 9999;
     const message = "WifiManager:associate:Return";
     let network = msg.data;
+    let needReassociate = false;
 
     let privnet = network;
     let dontConnect = privnet.dontConnect;
@@ -4386,6 +4387,9 @@ WifiWorker.prototype = {
               }
             }
             self._sendMessage(message, false, "network not found", msg);
+            if (needReassociate) {
+              WifiManager.reassociate(function(){});
+            }
           }).bind(self);
           self.waitForScan(callback);
           WifiManager.scan(true, function(){});
@@ -4474,6 +4478,7 @@ WifiWorker.prototype = {
             this.currentNetwork.netId !== INVALID_NETWORK_ID &&
             this.currentNetwork.netId !== privnet.netId) {
           WifiManager.disconnect(function(){
+            needReassociate = true;
             networkReady();
           });
         } else {
