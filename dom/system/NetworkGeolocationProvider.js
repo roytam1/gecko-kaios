@@ -546,8 +546,8 @@ WifiGeoPositionProvider.prototype = {
             // CDMA cases to be handled in bug 1010282
           }
           result.push({ radioType: radioTechFamily,
-                      mobileCountryCode: voice.network.mcc,
-                      mobileNetworkCode: voice.network.mnc,
+                      mobileCountryCode: parseInt(voice.network.mcc, 10),
+                      mobileNetworkCode: parseInt(voice.network.mnc, 10),
                       locationAreaCode: cell.gsmLocationAreaCode,
                       cellId: cell.gsmCellId,
                       signalStrength: mobileSignal });
