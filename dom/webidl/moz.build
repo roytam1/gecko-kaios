@@ -852,6 +852,7 @@ GENERATED_EVENTS_WEBIDL_FILES = [
 ]
 if CONFIG['ENABLE_FOTA']:
     GENERATED_EVENTS_WEBIDL_FILES += [
+        'FotaCustomEvent.webidl',
         'FotaEvent.webidl',
     ]
 

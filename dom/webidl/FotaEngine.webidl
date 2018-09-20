@@ -20,4 +20,6 @@ interface FotaEngine : EventTarget {
   long setNumberConfig(long configId, long configValue);
   [Throws]
   long getNumberConfig(long configId);
+
+  void notifyEvent(DOMString eventName, DOMString eventParam);
 };
