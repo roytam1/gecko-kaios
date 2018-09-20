@@ -19,18 +19,15 @@ const SETTINGS_CHANGED_TOPIC = "mozsettings-changed";
 const NETWORK_CHANGED_TOPIC = "network-active-changed";
 
 const SETTINGS_WIFI_ENABLED = "wifi.enabled";
-const GEO_KAI_ACCESS_TOKEN = "geolocation.kaios.accessToken";
-const GEO_KAI_ACCESS_TOKEN_TIMESTAMP = "geolocation.kaios.accessTokenTimestamp";
 
 const HTTP_CODE_OK = 200;
 const HTTP_CODE_CREATED = 201;
 const HTTP_CODE_BAD_REQUEST = 400;
 const HTTP_CODE_UNAUTHORIZED = 401;
 
-// Supported location servers
+// Supported 3rd party location servers
 const AMAP_SERVER_URI = "http://apilocate.amap.com/position";
 const COMBAIN_SERVER_URI = "https://kaioslocate.combain.com";
-const KAI_SERVER_URI = "https://lbs.kaiostech.com/v2.0/lbs/locate";
 
 // Define a cooldown to prevent overly retrying in case the location server
 // have any internal errors.
@@ -47,6 +44,12 @@ XPCOMUtils.defineLazyServiceGetter(this, "gSystemWorkerManager",
 XPCOMUtils.defineLazyServiceGetter(this, "gNetworkManager",
                                    "@mozilla.org/network/manager;1",
                                    "nsINetworkManager");
+
+XPCOMUtils.defineLazyModuleGetter(this, "CryptoUtils",
+                                  "resource://services-crypto/utils.js");
+
+XPCOMUtils.defineLazyModuleGetter(this, "CommonUtils",
+                                  "resource://services-common/utils.js");
 
 var gLoggingEnabled = false;
 
@@ -65,6 +68,12 @@ var gLocationRequestTimeout = 5000;
 
 var gWifiScanningEnabled = true;
 var gCellScanningEnabled = false;
+
+// the cache of restricted token
+var gRestrictedToken = null;
+
+// timestamp of the cached restricted token
+var gTokenRefreshedTimestamp = 0;
 
 function LOG(aMsg) {
   if (gLoggingEnabled) {
@@ -384,10 +393,6 @@ WifiGeoPositionProvider.prototype = {
             self.wifiService = Cc["@mozilla.org/wifi/monitor;1"].getService(Ci.nsIWifiMonitor);
             self.wifiService.startWatching(self);
           }
-        } else if (name == GEO_KAI_ACCESS_TOKEN) {
-          self.access_token = result;
-        } else if (name == GEO_KAI_ACCESS_TOKEN_TIMESTAMP) {
-          self.tokenTimestamp = result;
         }
       },
 
@@ -405,13 +410,6 @@ WifiGeoPositionProvider.prototype = {
       let settings = settingsService.getService(Ci.nsISettingsService);
       settings.createLock().get(SETTINGS_WIFI_ENABLED, settingsCallback);
       settings.createLock().get(SETTINGS_DEBUG_ENABLED, settingsCallback);
-
-      let needAuthorization =
-        Services.prefs.getBoolPref("geo.provider.need_authorization");
-      if (needAuthorization) {
-        settings.createLock().get(GEO_KAI_ACCESS_TOKEN, settingsCallback);
-        settings.createLock().get(GEO_KAI_ACCESS_TOKEN_TIMESTAMP, settingsCallback);
-      }
     }
 
     this.resetTimer();
@@ -573,69 +571,54 @@ WifiGeoPositionProvider.prototype = {
     this.sendLocationRequest(null);
   },
 
-  getAccessToken: function () {
-    let deferred = Promise.defer();
+  // fetch restricted token and cache it as 'gRestrictedToken'
+  fetchRestrictedToken: function() {
+    if (Date.now() - gTokenRefreshedTimestamp <= TOKEN_REFRESH_COOLDOWN_IN_MS) {
+      LOG("can't fetch restricted token due to the cooldown protection.");
+      return Promise.reject(HTTP_CODE_UNAUTHORIZED);
+    }
 
-    DeviceUtils.getTDeviceObject().then((device_info) => {
-      let url = Services.urlFormatter.formatURLPref("geo.token.uri");
+    let uri, apiKeyName;
+    try {
+      uri = Services.prefs.getCharPref("geo.token.uri");
+      apiKeyName = Services.prefs.getCharPref("geo.authorization.key");
+    } catch(e) {
+      ERR("can't fetch restricted token due to the cooldown protection.");
+      return Promise.reject(HTTP_CODE_BAD_REQUEST);
+    }
 
-      let xhr = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-                          .createInstance(Ci.nsIXMLHttpRequest);
+    LOG("fetching restricted token from " + uri);
+    return DeviceUtils.fetchAccessToken(uri, apiKeyName)
+      .then((credential) => {
+        LOG("restricted token has been refreshed, Hawk kid:" + credential.kid);
+        gRestrictedToken = credential;
+        gTokenRefreshedTimestamp = Date.now();
+      }, (errorStatus) => {
+        ERR("failed to fetch restricted token, errorStatus: " + errorStatus);
+        gRestrictedToken = null;
+        gTokenRefreshedTimestamp = Date.now();
+        return Promise.reject(errorStatus);
+      }); // end of fetchAccessToken
+  },
 
-      try {
-        xhr.open("POST", url, true);
-      } catch (e) {
-        deferred.reject(HTTP_CODE_BAD_REQUEST);
-        return;
-      }
-      xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+  // compute the Hawk header for a HTTP POST request
+  computeHawkHeader: function(restrictedToken, requestUrl, requestBody) {
+    let hawkCredentials = {
+      id:  restrictedToken.kid,
+      key: CommonUtils.safeAtoB(restrictedToken.mac_key),
+      algorithm: 'sha256'
+    };
 
-      let authorizationKey =
-        Services.urlFormatter.formatURLPref("geo.authorization.key");
+    let options = {
+      credentials: hawkCredentials,
+      payload: requestBody,
+      contentType: 'application/json' // only support json
+    };
 
-      xhr.setRequestHeader("Authorization", "Key " + authorizationKey);
+    let uri = Services.io.newURI(requestUrl, null, null);
+    let hawkHeader = CryptoUtils.computeHAWK(uri, "POST", options);
 
-      xhr.responseType = "json";
-      xhr.mozBackgroundRequest = true;
-      xhr.channel.loadFlags = Ci.nsIChannel.LOAD_ANONYMOUS;
-      // Prevent the request from reading from the cache.
-      xhr.channel.loadFlags |= Ci.nsIRequest.LOAD_BYPASS_CACHE;
-      // Prevent the request from writing to the cache.
-      xhr.channel.loadFlags |= Ci.nsIRequest.INHIBIT_CACHING;
-      xhr.onerror = (function() {
-        if (xhr.status) {
-          deferred.reject(xhr.status);
-        } else {
-          deferred.reject(HTTP_CODE_BAD_REQUEST);
-        }
-      }).bind(this);
-
-      xhr.onload = (function() {
-        LOG("get access token returned status: " + xhr.status);
-        // only accept status code 200 and 201.
-        let isStatusInvalid = xhr.channel instanceof Ci.nsIHttpChannel &&
-          (xhr.status != HTTP_CODE_OK && xhr.status != HTTP_CODE_CREATED);
-        if (isStatusInvalid || !xhr.response || !xhr.response.access_token) {
-          deferred.reject(xhr.status);
-        } else {
-          // cache access token to settings
-          let settings = Cc["@mozilla.org/settingsService;1"].getService(Ci.nsISettingsService);
-          this.access_token = xhr.response.access_token;
-          settings.createLock().set(GEO_KAI_ACCESS_TOKEN, this.access_token, null);
-
-          this.tokenTimestamp = Date.now();
-          settings.createLock().set(GEO_KAI_ACCESS_TOKEN_TIMESTAMP, this.tokenTimestamp, null);
-
-          deferred.resolve(xhr.response.access_token);
-        }
-      }).bind(this);
-
-      var requestData = JSON.stringify(device_info);
-      LOG("Refresh access token by sending: " + requestData);
-      xhr.send(requestData);
-    });
-
-    return deferred.promise;
+    return hawkHeader.field;
   },
 
   // whether the server take HTTP POST as location request
@@ -644,10 +627,9 @@ WifiGeoPositionProvider.prototype = {
       case AMAP_SERVER_URI:
         return false;
       case COMBAIN_SERVER_URI:
-      case KAI_SERVER_URI:
+      default: // default KaiOS server
         return true;
     }
-    return true;
   },
 
   // gennerate the URL of HTTP request with parameters
@@ -722,7 +704,7 @@ WifiGeoPositionProvider.prototype = {
       case COMBAIN_SERVER_URI:
         url += "?key=" + Services.urlFormatter.formatURLPref("geo.authorization.key");
         break;
-      case KAI_SERVER_URI:
+      default:
         // Kai server doesn't add any parameter via request url
         break;
     }
@@ -737,10 +719,9 @@ WifiGeoPositionProvider.prototype = {
       case AMAP_SERVER_URI:
         return !!response.result && !!response.result.location;
       case COMBAIN_SERVER_URI:
-      case KAI_SERVER_URI:
+      default:  // default KaiOS server
         return !!response.location;
     }
-    return !!response.location;
   },
 
   // create WifiGeoPositionObject by the HTTP response
@@ -757,7 +738,7 @@ WifiGeoPositionProvider.prototype = {
         break;
       }
       case COMBAIN_SERVER_URI:
-      case KAI_SERVER_URI:
+      default:
         latitude = response.location.lat;
         longtitude = response.location.lng;
         accuracy = response.accuracy;
@@ -801,10 +782,14 @@ WifiGeoPositionProvider.prototype = {
     let xhr = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
                         .createInstance(Ci.nsIXMLHttpRequest);
 
+    // request body of HTTP POST
+    let requestData;
     try {
       if (this.isPostReq()) {
+        requestData = JSON.stringify(data);
         xhr.open("POST", url, true);
       } else {
+        requestData = null;
         xhr.open("GET", url, true);
       }
     } catch (e) {
@@ -819,7 +804,13 @@ WifiGeoPositionProvider.prototype = {
     let needAuthorization =
       Services.prefs.getBoolPref("geo.provider.need_authorization");
     if (needAuthorization) {
-      xhr.setRequestHeader("Authorization", "Bearer " + this.access_token);
+      if (gRestrictedToken != null) {
+        let hawkHeader = this.computeHawkHeader(gRestrictedToken, this.serverUri, requestData);
+        xhr.setRequestHeader("Authorization", hawkHeader);
+      } else {
+        this.sendLocationRequestWithRefreshedToken(wifiData);
+        return;
+      }
     }
 
     xhr.responseType = "json";
@@ -843,20 +834,8 @@ WifiGeoPositionProvider.prototype = {
                             [POSITION_UNAVAILABLE]);
 
         if (needAuthorization && xhr.status == HTTP_CODE_UNAUTHORIZED) {
-          if (!this.tokenTimestamp ||
-              Date.now() - this.tokenTimestamp > TOKEN_REFRESH_COOLDOWN_IN_MS) {
-            this.getAccessToken().then(
-              (access_token) => {
-                LOG("Access token has been refreshed. ");
-                this.access_token = access_token;
-              },
-              (status_code) => {
-                LOG("Failed to refresh access token. status: " + status_code);
-                this.notifyListener("notifyError",
-                                    [POSITION_UNAVAILABLE]);
-              }
-            );
-          }
+          LOG("got 401 unauthorized. Refreshing restricted token...");
+          this.sendLocationRequestWithRefreshedToken(wifiData);
         }
         return;
       }
@@ -868,13 +847,19 @@ WifiGeoPositionProvider.prototype = {
     }).bind(this);
 
     if (this.isPostReq()) {
-      var requestData = JSON.stringify(data);
       LOG("sending HTTP POST with " + requestData);
       xhr.send(requestData);
     } else {
       LOG("sending HTTP GET: " + url);
       xhr.send(null);
     }
+  },
+
+  // fetch restricted token and send location request to server
+  sendLocationRequestWithRefreshedToken: function(wifiData) {
+    this.fetchRestrictedToken().then(
+      () => this.sendLocationRequest(wifiData),
+      (status_code) => this.notifyListener("notifyError", [POSITION_UNAVAILABLE]));
   },
 
   notifyListener: function(listenerFunc, args) {

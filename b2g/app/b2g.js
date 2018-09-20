@@ -216,17 +216,18 @@ pref("geo.cell.scan", true);
 // URL for geolocating service, the original URL of B2G OS is
 // "https://location.services.mozilla.com/v1/geolocate?key=%MOZILLA_API_KEY%"
 // KaiOS supports the following location servers
+// - Kai server, "https://api.kaiostech.com/v3.0/lbs/locatee"
+// - Kai stage server, "https://api.stage.kaiostech.com/v3.0/lbs/locatee"
 // - Combain server, "https://kaioslocate.combain.com"
-// - Kai experimental server, "https://lbs.kaiostech.com/v2.0/lbs/locate"
 // - Amap server, "http://apilocate.amap.com/position"
 // Empty string would disable WiFi/cell geolocating service
-pref("geo.wifi.uri", "https://kaioslocate.combain.com");
+pref("geo.wifi.uri", "https://api.stage.kaiostech.com/v3.0/lbs/locate");
 
 // The end point to get a access token for KaiOS location service
-pref("geo.token.uri", "https://lbs.kaiostech.com/v2.0/applications/ZL5uJA6yIVxXU3VyFO0z/tokens");
+pref("geo.token.uri", "https://api.stage.kaiostech.com/v3.0/applications/ZW8svGSlaw1ZLCxWZPQA/tokens");
 
 // whether the network geolocation provider need authorization header or not
-pref("geo.provider.need_authorization", false);
+pref("geo.provider.need_authorization", true);
 
 // the secret API key of KaiOS location service
 pref("geo.authorization.key", "%KAIOS_GEO_API_KEY%");
