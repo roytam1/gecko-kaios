@@ -31,6 +31,7 @@ public:
 private:
   virtual ~UploadStumbleRunnable() {}
   nsCOMPtr<nsIInputStream> mUploadInputStream;
+  bool mNeedAuthorization;
   nsresult Upload();
   void RequestSettingValue(const char* aKey);
 };

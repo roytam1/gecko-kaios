@@ -7,6 +7,7 @@
 #include "UploadStumbleRunnable.h"
 #include "StumblerLogging.h"
 #include "mozilla/dom/Event.h"
+#include "mozilla/Preferences.h"
 #include "nsContentUtils.h"
 #include "nsIInputStream.h"
 #include "nsIScriptSecurityManager.h"
@@ -21,7 +22,9 @@ static nsCString sAccessToken;
 
 UploadStumbleRunnable::UploadStumbleRunnable(nsIInputStream* aUploadData)
 : mUploadInputStream(aUploadData)
+, mNeedAuthorization(false)
 {
+  mNeedAuthorization = Preferences::GetBool("geo.provider.need_authorization");
 }
 
 NS_IMETHODIMP
@@ -29,7 +32,7 @@ UploadStumbleRunnable::Run()
 {
   MOZ_ASSERT(NS_IsMainThread());
 
-  if (sAccessToken.IsEmpty()) {
+  if (mNeedAuthorization && sAccessToken.IsEmpty()) {
     // Upload() will be called once we get the token from setting callback.
     RequestSettingValue("geolocation.kaios.accessToken");
   } else {
@@ -75,7 +78,9 @@ UploadStumbleRunnable::Upload()
   NS_ENSURE_SUCCESS(rv, rv);
 
   xhr->SetRequestHeader(NS_LITERAL_CSTRING("Content-Type"), NS_LITERAL_CSTRING("gzip"));
-  xhr->SetRequestHeader(NS_LITERAL_CSTRING("Authorization"), NS_LITERAL_CSTRING("Bearer ") + sAccessToken);
+  if (mNeedAuthorization) {
+    xhr->SetRequestHeader(NS_LITERAL_CSTRING("Authorization"), NS_LITERAL_CSTRING("Bearer ") + sAccessToken);
+  }
   xhr->SetMozBackgroundRequest(true);
   // 60s timeout
   xhr->SetTimeout(60 * 1000);
