@@ -32,7 +32,10 @@ const { Packet, JSONPacket, BulkPacket } =
 const promise = require("promise");
 const EventEmitter = require("devtools/shared/event-emitter");
 
-const { SystemAppProxy } = Cu.import("resource://gre/modules/SystemAppProxy.jsm");
+const { AppConstants } = Cu.import("resource://gre/modules/AppConstants.jsm");
+if (AppConstants.MOZ_B2G) {
+  const { SystemAppProxy } = Cu.import("resource://gre/modules/SystemAppProxy.jsm");
+}
 
 
 DevToolsUtils.defineLazyGetter(this, "Pipe", () => {
@@ -220,9 +223,11 @@ DebuggerTransport.prototype = {
     } else {
       dumpn("Transport closed.");
     }
-    SystemAppProxy._sendCustomEvent("mozContentEvent", {
-      type: "transport-closed"
-    });
+    if (AppConstants.MOZ_B2G) {
+      SystemAppProxy._sendCustomEvent("mozContentEvent", {
+        type: "transport-closed"
+      });
+    }
   },
 
   /**
