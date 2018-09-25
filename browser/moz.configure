@@ -17,3 +17,7 @@ set_define('MOZ_TELEMETRY', True)
 # This flag has no guarantee of private browsing function.
 set_config('MOZ_PRIVATEBROWSING', True)
 set_define('MOZ_PRIVATEBROWSING', True)
+# Enable social service to avoid js load module error in browser.
+# This flag has no guarantee of social service function.
+set_config('MOZ_SOCIAL', True)
+set_define('MOZ_SOCIAL', True)
