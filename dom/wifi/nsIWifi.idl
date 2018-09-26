@@ -6,7 +6,7 @@
 
 interface nsIWifiInfo;
 
-[scriptable, uuid(08bc44c9-76c2-4360-9555-707c9ade90e4)]
+[scriptable, uuid(732d4a2e-c881-40d9-93a7-a3151fe1a579)]
 interface nsIWifiScanResult : nsISupports {
     readonly attribute DOMString ssid;
     readonly attribute DOMString bssid;
@@ -25,6 +25,7 @@ interface nsIWifiScanResult : nsISupports {
 
     readonly attribute uint32_t relSignalStrength;
     readonly attribute boolean connected;
+    readonly attribute uint32_t frequency;
 };
 
 [scriptable, uuid(a6931ebf-8493-4014-90e2-99f406999982)]
