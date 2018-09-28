@@ -1858,12 +1858,6 @@ Navigator::HasFeature(const nsAString& aName, ErrorResult& aRv)
     }
   }
 
-  if (aName.EqualsLiteral("capabilities.sandboxedCookies")) {
-    p->MaybeResolve(Preferences::GetBool("capabilities.sandboxedCookies", false) ?
-                    Preferences::GetBool("apps.sandboxed.cookies.enabled", true) : false);
-    return p.forget();
-  }
-
 #ifdef HAS_KOOST_MODULES
   if (DeviceCapability::FeatureExistsAndResolve(aName, p)) {
     return p.forget();
