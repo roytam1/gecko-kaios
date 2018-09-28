@@ -359,10 +359,13 @@ pref("media.gonk.enabled", true);
 #endif
 
 #ifdef KAIOS_256MB_SUPPORT
-//set maximum video buffer size to 20MB(20*1024*1024)
-pref("media.mediasource.eviction_threshold.video", 20971520); //byte
-////set maximum Audio buffer size to 10MB(10*1024*1024)
-pref("media.mediasource.eviction_threshold.audio", 10485760); //byte
+// fine tune for 256 youtube. 
+// Bug 48101 - [PIER2_KK][Youtube] memory performance
+// value smaller than this may cause streaming pause (time range discontinuity)
+//set maximum video buffer size to 8MB(8*1024*1024)
+pref("media.mediasource.eviction_threshold.video", 8388608); //byte
+////set maximum Audio buffer size to 5MB(5*1024*1024)
+pref("media.mediasource.eviction_threshold.audio", 5242880); //byte
 #else
 // Set maximum Video buffer size to 40MB(40*1024*1024).
 pref("media.mediasource.eviction_threshold.video", 41943040);
