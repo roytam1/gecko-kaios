@@ -35,3 +35,6 @@ pref('devtools.chrome.enabled', true);
 pref('device.capability.flip', true);
 pref('device.capability.endcall-key', true);
 pref('device.capability.volume-key', true);
+
+// Relay keyBoard event to keyboard app
+pref('b2g.relayToKeyboard.enabled', false);

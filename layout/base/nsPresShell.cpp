@@ -7177,8 +7177,9 @@ PresShell::TryRelayToKeyboardApp(WidgetKeyboardEvent& aEvent,
                                  nsEventStatus* aStatus,
                                  nsINode* aTarget)
 {
+  bool relayToKeyboard = Preferences::GetBool("b2g.relayToKeyboard.enabled", true);
   if (XRE_GetProcessType() != GeckoProcessType_Default ||
-      aEvent.mFlags.mGeneratedFromIME) {
+      aEvent.mFlags.mGeneratedFromIME || !relayToKeyboard) {
     return false;
   }
 
