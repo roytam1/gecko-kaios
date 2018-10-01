@@ -205,7 +205,14 @@ SpeakerManager::HandleEvent(nsIDOMEvent* aEvent)
 void
 SpeakerManager::SetAudioChannelActive(bool isActive)
 {
-  if (mForcespeaker) {
+  // - When |mVisible| is true:
+  //   It should always respect |mForcespeaker|, no matter what
+  //   audio channel state is. So no need to call ForceSpeaker()
+  //   here and just let HandleEvent() handle visibility change.
+  // - When |mVisible| is false:
+  //   Only need to disable ForceSpeaker when our audio channel
+  //   is interrupted by others.
+  if (mForcespeaker && !mVisible && !isActive) {
     SpeakerManagerService *service =
       SpeakerManagerService::GetOrCreateSpeakerManagerService();
     MOZ_ASSERT(service);

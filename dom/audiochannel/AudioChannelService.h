@@ -194,6 +194,14 @@ private:
       mChannels[(int16_t)AudioChannel::System].mMuted = false;
     }
 
+    bool IsChannelActive(AudioChannel aChannel)
+    {
+      uint32_t channel = (uint32_t)aChannel;
+      MOZ_ASSERT(channel < NUMBER_OF_AUDIO_CHANNELS);
+      return mChannels[channel].mNumberOfAgents != 0 &&
+             !mChannels[channel].mMuted;
+    }
+
     uint64_t mWindowID;
     bool mIsAudioCaptured;
     AudioChannelConfig mChannels[NUMBER_OF_AUDIO_CHANNELS];

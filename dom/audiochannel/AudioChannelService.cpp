@@ -404,8 +404,7 @@ AudioChannelService::TelephonyChannelIsActive()
   nsTObserverArray<nsAutoPtr<AudioChannelWindow>>::ForwardIterator windowsIter(mWindows);
   while (windowsIter.HasMore()) {
     AudioChannelWindow* next = windowsIter.GetNext();
-    if (next->mChannels[(uint32_t)AudioChannel::Telephony].mNumberOfAgents != 0 &&
-        !next->mChannels[(uint32_t)AudioChannel::Telephony].mMuted) {
+    if (next->IsChannelActive(AudioChannel::Telephony)) {
       return true;
     }
   }
@@ -433,8 +432,8 @@ AudioChannelService::ContentOrNormalChannelIsActive()
   nsTObserverArray<nsAutoPtr<AudioChannelWindow>>::ForwardIterator iter(mWindows);
   while (iter.HasMore()) {
     AudioChannelWindow* next = iter.GetNext();
-    if (next->mChannels[(uint32_t)AudioChannel::Content].mNumberOfAgents > 0 ||
-        next->mChannels[(uint32_t)AudioChannel::Normal].mNumberOfAgents > 0) {
+    if (next->IsChannelActive(AudioChannel::Content) ||
+        next->IsChannelActive(AudioChannel::Normal)) {
       return true;
     }
   }
@@ -488,8 +487,7 @@ AudioChannelService::AnyAudioChannelIsActive()
   while (iter.HasMore()) {
     AudioChannelWindow* next = iter.GetNext();
     for (uint32_t i = 0; kMozAudioChannelAttributeTable[i].tag; ++i) {
-      if (next->mChannels[kMozAudioChannelAttributeTable[i].value].mNumberOfAgents
-          != 0) {
+      if (next->IsChannelActive((AudioChannel)kMozAudioChannelAttributeTable[i].value)) {
         return true;
       }
     }

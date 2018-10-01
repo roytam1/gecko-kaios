@@ -145,8 +145,8 @@ SpeakerManagerService::Notify()
 void
 SpeakerManagerService::SetAudioChannelActive(bool aIsActive)
 {
-  if (!aIsActive && !mVisible) {
-    ForceSpeaker(!mOrgSpeakerStatus, mVisible);
+  for (uint32_t i = 0; i < mRegisteredSpeakerManagers.Length(); i++) {
+    mRegisteredSpeakerManagers[i]->SetAudioChannelActive(aIsActive);
   }
 }
 
