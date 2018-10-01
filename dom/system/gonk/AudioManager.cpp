@@ -148,6 +148,7 @@ static const AudioDeviceInfo kAudioDeviceInfos[] = {
 };
 
 static const int kBtSampleRate = 8000;
+static const int kBtWideBandSampleRate = 16000;
 
 typedef MozPromise<bool, const char*, true> VolumeInitPromise;
 
@@ -521,8 +522,12 @@ AudioManager::HandleBluetoothStatusChanged(nsISupports* aSubject,
 
   if (!strcmp(aTopic, BLUETOOTH_SCO_STATUS_CHANGED_ID)) {
     if (isConnected) {
+      BluetoothHfpManagerBase* hfp =
+        static_cast<BluetoothHfpManagerBase*>(aSubject);
+      int btSampleRate = hfp->IsWbsEnabled() ? kBtWideBandSampleRate
+                                             : kBtSampleRate;
       String8 cmd;
-      cmd.appendFormat("bt_samplerate=%d", kBtSampleRate);
+      cmd.appendFormat("bt_samplerate=%d", btSampleRate);
       AudioSystem::setParameters(0, cmd);
       SetForceForUse(nsIAudioManager::USE_COMMUNICATION, nsIAudioManager::FORCE_BT_SCO);
     } else {
