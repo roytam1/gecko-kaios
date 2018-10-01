@@ -738,6 +738,12 @@ ParticularProcessPriorityManager::~ParticularProcessPriorityManager()
   if (mContentParent) {
     UnregisterWakeLockObserver(this);
   }
+
+  nsCOMPtr<nsIObserverService> os = services::GetObserverService();
+  if (os) {
+    os->RemoveObserver(this, "activity-opened");
+    os->RemoveObserver(this, "activity-closed");
+  }
 }
 
 /* virtual */ void
