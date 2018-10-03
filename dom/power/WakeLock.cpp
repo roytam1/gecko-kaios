@@ -17,6 +17,12 @@
 #include "nsPIDOMWindow.h"
 #include "nsIPropertyBag2.h"
 
+#ifndef TARGET_VARIANT_USER
+#define WAKELOCK_LOG(args...) __android_log_print(ANDROID_LOG_INFO, "WakeLock", ##args)
+#else
+#define WAKELOCK_LOG(args...) do { /* nothing */ } while(0)
+#endif
+
 using namespace mozilla::hal;
 
 namespace mozilla {
@@ -151,6 +157,7 @@ WakeLock::DoLock()
                         hal::WAKE_LOCK_ADD_ONE,
                         mHidden ? hal::WAKE_LOCK_ADD_ONE : hal::WAKE_LOCK_NO_CHANGE,
                         mContentParentID);
+    WAKELOCK_LOG("Acquire %s wakelock", ToNewUTF8String(mTopic));
   }
 }
 
@@ -165,6 +172,7 @@ WakeLock::DoUnlock()
                         hal::WAKE_LOCK_REMOVE_ONE,
                         mHidden ? hal::WAKE_LOCK_REMOVE_ONE : hal::WAKE_LOCK_NO_CHANGE,
                         mContentParentID);
+    WAKELOCK_LOG("Release %s wakelock", ToNewUTF8String(mTopic));
   }
 }
 
