@@ -22,6 +22,7 @@
 #include "nsIXMLContentSink.h"
 #include "nsNetCID.h"
 #include "nsComponentManagerUtils.h"
+#include "nsSMILAnimationController.h"
 #include "nsServiceManagerUtils.h"
 #include "mozilla/dom/SVGSVGElement.h"
 #include "nsSVGEffects.h"
@@ -130,6 +131,11 @@ SVGDocumentWrapper::IsAnimated()
     // script they will never run in the document that we wrap).
     return true;
   }
+  if (doc->HasAnimationController() &&
+      doc->GetAnimationController()->HasRegisteredAnimations()) {
+    // SMIL animations
+    return true;
+  }
   return false;
 }
 
@@ -144,6 +150,10 @@ SVGDocumentWrapper::StartAnimation()
 
   nsIDocument* doc = mViewer->GetDocument();
   if (doc) {
+    nsSMILAnimationController* controller = doc->GetAnimationController();
+    if (controller) {
+      controller->Resume(nsSMILTimeContainer::PAUSE_IMAGE);
+    }
     doc->SetImagesNeedAnimating(true);
   }
 }
@@ -159,6 +169,10 @@ SVGDocumentWrapper::StopAnimation()
 
   nsIDocument* doc = mViewer->GetDocument();
   if (doc) {
+    nsSMILAnimationController* controller = doc->GetAnimationController();
+    if (controller) {
+      controller->Pause(nsSMILTimeContainer::PAUSE_IMAGE);
+    }
     doc->SetImagesNeedAnimating(false);
   }
 }

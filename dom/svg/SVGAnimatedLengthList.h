@@ -9,8 +9,10 @@
 
 #include "mozilla/Attributes.h"
 #include "nsAutoPtr.h"
+#include "nsISMILAttr.h"
 #include "SVGLengthList.h"
 
+class nsSMILValue;
 class nsSVGElement;
 
 namespace mozilla {
@@ -72,6 +74,10 @@ public:
     return !!mAnimVal;
   }
 
+  /// Callers own the returned nsISMILAttr
+  nsISMILAttr* ToSMILAttr(nsSVGElement* aSVGElement, uint8_t aAttrEnum,
+                          uint8_t aAxis, bool aCanZeroPadList);
+
 private:
 
   // mAnimVal is a pointer to allow us to determine if we're being animated or
@@ -81,6 +87,40 @@ private:
 
   SVGLengthList mBaseVal;
   nsAutoPtr<SVGLengthList> mAnimVal;
+
+  struct SMILAnimatedLengthList : public nsISMILAttr
+  {
+  public:
+    SMILAnimatedLengthList(SVGAnimatedLengthList* aVal,
+                           nsSVGElement* aSVGElement,
+                           uint8_t aAttrEnum,
+                           uint8_t aAxis,
+                           bool aCanZeroPadList)
+      : mVal(aVal)
+      , mElement(aSVGElement)
+      , mAttrEnum(aAttrEnum)
+      , mAxis(aAxis)
+      , mCanZeroPadList(aCanZeroPadList)
+    {}
+
+    // These will stay alive because a nsISMILAttr only lives as long
+    // as the Compositing step, and DOM elements don't get a chance to
+    // die during that.
+    SVGAnimatedLengthList* mVal;
+    nsSVGElement* mElement;
+    uint8_t mAttrEnum;
+    uint8_t mAxis;
+    bool mCanZeroPadList; // See SVGLengthListAndInfo::CanZeroPadList
+
+    // nsISMILAttr methods
+    virtual nsresult ValueFromString(const nsAString& aStr,
+                                     const dom::SVGAnimationElement* aSrcElement,
+                                     nsSMILValue& aValue,
+                                     bool& aPreventCachingOfSandwich) const override;
+    virtual nsSMILValue GetBaseValue() const override;
+    virtual void ClearAnimValue() override;
+    virtual nsresult SetAnimValue(const nsSMILValue& aValue) override;
+  };
 };
 
 } // namespace mozilla

@@ -10,6 +10,8 @@
 #include "mozilla/Move.h"
 #include "nsSVGElement.h"
 #include "nsSVGAttrTearoffTable.h"
+#include "nsSMILValue.h"
+#include "SVGPointListSMILType.h"
 
 // See the comments in this file's header!
 
@@ -143,6 +145,68 @@ SVGAnimatedPointList::ClearAnimValue(nsSVGElement *aElement)
   }
   mAnimVal = nullptr;
   aElement->DidAnimatePointList();
+}
+
+nsISMILAttr*
+SVGAnimatedPointList::ToSMILAttr(nsSVGElement *aElement)
+{
+  return new SMILAnimatedPointList(this, aElement);
+}
+
+nsresult
+SVGAnimatedPointList::
+  SMILAnimatedPointList::ValueFromString(const nsAString& aStr,
+                               const dom::SVGAnimationElement* /*aSrcElement*/,
+                               nsSMILValue& aValue,
+                               bool& aPreventCachingOfSandwich) const
+{
+  nsSMILValue val(&SVGPointListSMILType::sSingleton);
+  SVGPointListAndInfo *list = static_cast<SVGPointListAndInfo*>(val.mU.mPtr);
+  nsresult rv = list->SetValueFromString(aStr);
+  if (NS_SUCCEEDED(rv)) {
+    list->SetInfo(mElement);
+    aValue = Move(val);
+  }
+  aPreventCachingOfSandwich = false;
+  return rv;
+}
+
+nsSMILValue
+SVGAnimatedPointList::SMILAnimatedPointList::GetBaseValue() const
+{
+  // To benefit from Return Value Optimization and avoid copy constructor calls
+  // due to our use of return-by-value, we must return the exact same object
+  // from ALL return points. This function must only return THIS variable:
+  nsSMILValue val;
+
+  nsSMILValue tmp(&SVGPointListSMILType::sSingleton);
+  SVGPointListAndInfo *list = static_cast<SVGPointListAndInfo*>(tmp.mU.mPtr);
+  nsresult rv = list->CopyFrom(mVal->mBaseVal);
+  if (NS_SUCCEEDED(rv)) {
+    list->SetInfo(mElement);
+    Swap(val, tmp);
+  }
+  return val;
+}
+
+nsresult
+SVGAnimatedPointList::SMILAnimatedPointList::SetAnimValue(const nsSMILValue& aValue)
+{
+  NS_ASSERTION(aValue.mType == &SVGPointListSMILType::sSingleton,
+               "Unexpected type to assign animated value");
+  if (aValue.mType == &SVGPointListSMILType::sSingleton) {
+    mVal->SetAnimValue(*static_cast<SVGPointListAndInfo*>(aValue.mU.mPtr),
+                       mElement);
+  }
+  return NS_OK;
+}
+
+void
+SVGAnimatedPointList::SMILAnimatedPointList::ClearAnimValue()
+{
+  if (mVal->mAnimVal) {
+    mVal->ClearAnimValue(mElement);
+  }
 }
 
 } // namespace mozilla

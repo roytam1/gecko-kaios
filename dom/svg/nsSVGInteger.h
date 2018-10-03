@@ -11,8 +11,11 @@
 #include "nsCycleCollectionParticipant.h"
 #include "nsError.h"
 #include "SVGAnimatedInteger.h"
+#include "nsISMILAttr.h"
 #include "nsSVGElement.h"
 #include "mozilla/Attributes.h"
+
+class nsSMILValue;
 
 namespace mozilla {
 namespace dom {
@@ -53,7 +56,9 @@ public:
 
   already_AddRefed<mozilla::dom::SVGAnimatedInteger>
     ToDOMAnimatedInteger(nsSVGElement* aSVGElement);
-
+  // Returns a new nsISMILAttr object that the caller must delete
+  nsISMILAttr* ToSMILAttr(nsSVGElement* aSVGElement);
+  
 private:
 
   int32_t mAnimVal;
@@ -89,6 +94,28 @@ public:
       mSVGElement->FlushAnimations();
       return mVal->GetAnimValue();
     }
+  };
+
+  struct SMILInteger : public nsISMILAttr
+  {
+  public:
+    SMILInteger(nsSVGInteger* aVal, nsSVGElement* aSVGElement)
+      : mVal(aVal), mSVGElement(aSVGElement) {}
+
+    // These will stay alive because a nsISMILAttr only lives as long
+    // as the Compositing step, and DOM elements don't get a chance to
+    // die during that.
+    nsSVGInteger* mVal;
+    nsSVGElement* mSVGElement;
+
+    // nsISMILAttr methods
+    virtual nsresult ValueFromString(const nsAString& aStr,
+                                     const mozilla::dom::SVGAnimationElement* aSrcElement,
+                                     nsSMILValue& aValue,
+                                     bool& aPreventCachingOfSandwich) const override;
+    virtual nsSMILValue GetBaseValue() const override;
+    virtual void ClearAnimValue() override;
+    virtual nsresult SetAnimValue(const nsSMILValue& aValue) override;
   };
 };
 

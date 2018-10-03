@@ -9,8 +9,10 @@
 
 #include "mozilla/Attributes.h"
 #include "nsAutoPtr.h"
+#include "nsISMILAttr.h"
 #include "SVGNumberList.h"
 
+class nsSMILValue;
 class nsSVGElement;
 
 namespace mozilla {
@@ -75,10 +77,13 @@ public:
   // useable, and represents the default base value of the attribute.
   bool IsExplicitlySet() const
     { return !!mAnimVal || mIsBaseSet; }
-
+  
   bool IsAnimating() const {
     return !!mAnimVal;
   }
+
+  /// Callers own the returned nsISMILAttr
+  nsISMILAttr* ToSMILAttr(nsSVGElement* aSVGElement, uint8_t aAttrEnum);
 
 private:
 
@@ -90,6 +95,34 @@ private:
   SVGNumberList mBaseVal;
   nsAutoPtr<SVGNumberList> mAnimVal;
   bool mIsBaseSet;
+
+  struct SMILAnimatedNumberList : public nsISMILAttr
+  {
+  public:
+    SMILAnimatedNumberList(SVGAnimatedNumberList* aVal,
+                           nsSVGElement* aSVGElement,
+                           uint8_t aAttrEnum)
+      : mVal(aVal)
+      , mElement(aSVGElement)
+      , mAttrEnum(aAttrEnum)
+    {}
+
+    // These will stay alive because a nsISMILAttr only lives as long
+    // as the Compositing step, and DOM elements don't get a chance to
+    // die during that.
+    SVGAnimatedNumberList* mVal;
+    nsSVGElement* mElement;
+    uint8_t mAttrEnum;
+
+    // nsISMILAttr methods
+    virtual nsresult ValueFromString(const nsAString& aStr,
+                                     const dom::SVGAnimationElement* aSrcElement,
+                                     nsSMILValue& aValue,
+                                     bool& aPreventCachingOfSandwich) const override;
+    virtual nsSMILValue GetBaseValue() const override;
+    virtual void ClearAnimValue() override;
+    virtual nsresult SetAnimValue(const nsSMILValue& aValue) override;
+  };
 };
 
 } // namespace mozilla

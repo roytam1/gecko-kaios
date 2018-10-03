@@ -9,7 +9,9 @@
 #include "nsCharSeparatedTokenizer.h"
 #include "nsError.h"
 #include "nsMathUtils.h"
+#include "nsSMILValue.h"
 #include "SVGContentUtils.h"
+#include "SVGIntegerPairSMILType.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -173,4 +175,63 @@ nsSVGIntegerPair::DOMAnimatedInteger::~DOMAnimatedInteger()
   } else {
     sSVGSecondAnimatedIntegerTearoffTable.RemoveTearoff(mVal);
   }
+}
+
+nsISMILAttr*
+nsSVGIntegerPair::ToSMILAttr(nsSVGElement *aSVGElement)
+{
+  return new SMILIntegerPair(this, aSVGElement);
+}
+
+nsresult
+nsSVGIntegerPair::SMILIntegerPair::ValueFromString(const nsAString& aStr,
+                                                   const dom::SVGAnimationElement* /*aSrcElement*/,
+                                                   nsSMILValue& aValue,
+                                                   bool& aPreventCachingOfSandwich) const
+{
+  int32_t values[2];
+
+  nsresult rv = ParseIntegerOptionalInteger(aStr, values);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+
+  nsSMILValue val(SVGIntegerPairSMILType::Singleton());
+  val.mU.mIntPair[0] = values[0];
+  val.mU.mIntPair[1] = values[1];
+  aValue = val;
+  aPreventCachingOfSandwich = false;
+
+  return NS_OK;
+}
+
+nsSMILValue
+nsSVGIntegerPair::SMILIntegerPair::GetBaseValue() const
+{
+  nsSMILValue val(SVGIntegerPairSMILType::Singleton());
+  val.mU.mIntPair[0] = mVal->mBaseVal[0];
+  val.mU.mIntPair[1] = mVal->mBaseVal[1];
+  return val;
+}
+
+void
+nsSVGIntegerPair::SMILIntegerPair::ClearAnimValue()
+{
+  if (mVal->mIsAnimated) {
+    mVal->mIsAnimated = false;
+    mVal->mAnimVal[0] = mVal->mBaseVal[0];
+    mVal->mAnimVal[1] = mVal->mBaseVal[1];
+    mSVGElement->DidAnimateIntegerPair(mVal->mAttrEnum);
+  }
+}
+
+nsresult
+nsSVGIntegerPair::SMILIntegerPair::SetAnimValue(const nsSMILValue& aValue)
+{
+  NS_ASSERTION(aValue.mType == SVGIntegerPairSMILType::Singleton(),
+               "Unexpected type to assign animated value");
+  if (aValue.mType == SVGIntegerPairSMILType::Singleton()) {
+    mVal->SetAnimValue(aValue.mU.mIntPair, mSVGElement);
+  }
+  return NS_OK;
 }

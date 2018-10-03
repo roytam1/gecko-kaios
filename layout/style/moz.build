@@ -195,6 +195,7 @@ UNIFIED_SOURCES += [
     'StyleRule.cpp',
     'StyleSheet.cpp',
     'StyleSheetInfo.cpp',
+    'SVGAttrAnimationRuleProcessor.cpp',
 ]
 
 # nsCSSRuleProcessor.cpp needs to be built separately because it uses plarena.h.

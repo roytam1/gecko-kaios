@@ -6,6 +6,9 @@
 
 #include "mozilla/dom/SVGAnimationElement.h"
 #include "mozilla/dom/SVGSVGElement.h"
+#include "nsSMILTimeContainer.h"
+#include "nsSMILAnimationController.h"
+#include "nsSMILAnimationFunction.h"
 #include "nsContentUtils.h"
 #include "nsIURI.h"
 #include "prtime.h"
@@ -25,7 +28,7 @@ NS_INTERFACE_MAP_END_INHERITING(SVGAnimationElementBase)
 
 NS_IMPL_CYCLE_COLLECTION_INHERITED(SVGAnimationElement,
                                    SVGAnimationElementBase,
-                                   mHrefTarget)
+                                   mHrefTarget, mTimedElement)
 
 //----------------------------------------------------------------------
 // Implementation
@@ -45,6 +48,11 @@ SVGAnimationElement::Init()
 {
   nsresult rv = SVGAnimationElementBase::Init();
   NS_ENSURE_SUCCESS(rv, rv);
+
+  mTimedElement.SetAnimationElement(this);
+  AnimationFunction().SetAnimationElement(this);
+  mTimedElement.SetTimeClient(&AnimationFunction());
+
   return NS_OK;
 }
 
@@ -102,6 +110,27 @@ SVGAnimationElement::GetTargetAttributeName(int32_t *aNamespaceID,
                         aNamespaceID, aLocalName));
 }
 
+nsSMILTargetAttrType
+SVGAnimationElement::GetTargetAttributeType() const
+{
+  nsIContent::AttrValuesArray typeValues[] = { &nsGkAtoms::css,
+                                               &nsGkAtoms::XML,
+                                               nullptr};
+  nsSMILTargetAttrType smilTypes[] = { eSMILTargetAttrType_CSS,
+                                       eSMILTargetAttrType_XML };
+  int32_t index = FindAttrValueIn(kNameSpaceID_None,
+                                  nsGkAtoms::attributeType,
+                                  typeValues,
+                                  eCaseMatters);
+  return (index >= 0) ? smilTypes[index] : eSMILTargetAttrType_auto;
+}
+
+nsSMILTimedElement&
+SVGAnimationElement::TimedElement()
+{
+  return mTimedElement;
+}
+
 nsSVGElement*
 SVGAnimationElement::GetTargetElement()
 {
@@ -119,14 +148,24 @@ SVGAnimationElement::GetStartTime(ErrorResult& rv)
 {
   FlushAnimations();
 
-  rv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
-  return 0.f;
+  nsSMILTimeValue startTime = mTimedElement.GetStartTime();
+  if (!startTime.IsDefinite()) {
+    rv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
+    return 0.f;
+  }
+
+  return float(double(startTime.GetMillis()) / PR_MSEC_PER_SEC);
 }
 
 float
 SVGAnimationElement::GetCurrentTime()
 {
   // Not necessary to call FlushAnimations() for this
+
+  nsSMILTimeContainer* root = GetTimeContainer();
+  if (root) {
+    return float(double(root->GetCurrentTime()) / PR_MSEC_PER_SEC);
+  }
 
   return 0.0f;
 }
@@ -136,8 +175,13 @@ SVGAnimationElement::GetSimpleDuration(ErrorResult& rv)
 {
   // Not necessary to call FlushAnimations() for this
 
-  rv.Throw(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
-  return 0.f;
+  nsSMILTimeValue simpleDur = mTimedElement.GetSimpleDuration();
+  if (!simpleDur.IsDefinite()) {
+    rv.Throw(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+    return 0.f;
+  }
+
+  return float(double(simpleDur.GetMillis()) / PR_MSEC_PER_SEC);
 }
 
 //----------------------------------------------------------------------
@@ -167,6 +211,10 @@ SVGAnimationElement::BindToTree(nsIDocument* aDocument,
 
   // Add myself to the animation controller's master set of animation elements.
   if (aDocument) {
+    nsSMILAnimationController *controller = aDocument->GetAnimationController();
+    if (controller) {
+      controller->RegisterAnimationElement(this);
+    }
     const nsAttrValue* href = mAttrsAndChildren.GetAttr(nsGkAtoms::href,
                                                         kNameSpaceID_XLink);
     if (href) {
@@ -178,6 +226,8 @@ SVGAnimationElement::BindToTree(nsIDocument* aDocument,
       // document yet.
       UpdateHrefTarget(aParent, hrefStr);
     }
+
+    mTimedElement.BindToTree(aParent);
   }
 
   AnimationNeedsResample();
@@ -188,7 +238,13 @@ SVGAnimationElement::BindToTree(nsIDocument* aDocument,
 void
 SVGAnimationElement::UnbindFromTree(bool aDeep, bool aNullParent)
 {
+  nsSMILAnimationController *controller = OwnerDoc()->GetAnimationController();
+  if (controller) {
+    controller->UnregisterAnimationElement(this);
+  }
+
   mHrefTarget.Unlink();
+  mTimedElement.DissolveReferences();
 
   AnimationNeedsResample();
 
@@ -209,6 +265,28 @@ SVGAnimationElement::ParseAttribute(int32_t aNamespaceID,
       AnimationNeedsResample();
       return true;
     }
+
+    nsresult rv = NS_ERROR_FAILURE;
+
+    // First let the animation function try to parse it...
+    bool foundMatch =
+      AnimationFunction().SetAttr(aAttribute, aValue, aResult, &rv);
+
+    // ... and if that didn't recognize the attribute, let the timed element
+    // try to parse it.
+    if (!foundMatch) {
+      foundMatch =
+        mTimedElement.SetAttr(aAttribute, aValue, aResult, this, &rv);
+    }
+
+    if (foundMatch) {
+      AnimationNeedsResample();
+      if (NS_FAILED(rv)) {
+        ReportAttributeParseFailure(OwnerDoc(), aAttribute, aValue);
+        return false;
+      }
+      return true;
+    }
   }
 
   return SVGAnimationElementBase::ParseAttribute(aNamespaceID, aAttribute,
@@ -222,6 +300,13 @@ SVGAnimationElement::AfterSetAttr(int32_t aNamespaceID, nsIAtom* aName,
   nsresult rv =
     SVGAnimationElementBase::AfterSetAttr(aNamespaceID, aName, aValue,
                                           aNotify);
+
+  if (SVGTests::IsConditionalProcessingAttribute(aName)) {
+    bool isDisabled = !SVGTests::PassesConditionalProcessingTests();
+    if (mTimedElement.SetIsDisabled(isDisabled)) {
+      AnimationNeedsResample();
+    }
+  }
 
   if (aNamespaceID != kNameSpaceID_XLink || aName != nsGkAtoms::href)
     return rv;
@@ -247,6 +332,13 @@ SVGAnimationElement::UnsetAttr(int32_t aNamespaceID,
                                                    aNotify);
   NS_ENSURE_SUCCESS(rv,rv);
 
+  if (aNamespaceID == kNameSpaceID_None) {
+    if (AnimationFunction().UnsetAttr(aAttribute) ||
+        mTimedElement.UnsetAttr(aAttribute)) {
+      AnimationNeedsResample();
+    }
+  }
+
   return NS_OK;
 }
 
@@ -263,16 +355,54 @@ void
 SVGAnimationElement::ActivateByHyperlink()
 {
   FlushAnimations();
+
+  // The behavior for when the target is an animation element is defined in
+  // SMIL Animation:
+  //   http://www.w3.org/TR/smil-animation/#HyperlinkSemantics
+  nsSMILTimeValue seekTime = mTimedElement.GetHyperlinkTime();
+  if (seekTime.IsDefinite()) {
+    nsSMILTimeContainer* timeContainer = GetTimeContainer();
+    if (timeContainer) {
+      timeContainer->SetCurrentTime(seekTime.GetMillis());
+      AnimationNeedsResample();
+      // As with SVGSVGElement::SetCurrentTime, we need to trigger
+      // a synchronous sample now.
+      FlushAnimations();
+    }
+    // else, silently fail. We mustn't be part of an SVG document fragment that
+    // is attached to the document tree so there's nothing we can do here
+  } else {
+    IgnoredErrorResult rv;
+    BeginElement(rv);
+  }
 }
 
 //----------------------------------------------------------------------
 // Implementation helpers
+
+nsSMILTimeContainer*
+SVGAnimationElement::GetTimeContainer()
+{
+  SVGSVGElement *element = SVGContentUtils::GetOuterSVGElement(this);
+
+  if (element) {
+    return element->GetTimedDocumentRoot();
+  }
+
+  return nullptr;
+}
 
 void
 SVGAnimationElement::BeginElementAt(float offset, ErrorResult& rv)
 {
   // Make sure the timegraph is up-to-date
   FlushAnimations();
+
+  // This will fail if we're not attached to a time container (SVG document
+  // fragment).
+  rv = mTimedElement.BeginElementAt(offset);
+  if (rv.Failed())
+    return;
 
   AnimationNeedsResample();
   // Force synchronous sample so that events resulting from this call arrive in
@@ -285,6 +415,10 @@ SVGAnimationElement::EndElementAt(float offset, ErrorResult& rv)
 {
   // Make sure the timegraph is up-to-date
   FlushAnimations();
+
+  rv = mTimedElement.EndElementAt(offset);
+  if (rv.Failed())
+    return;
 
   AnimationNeedsResample();
   // Force synchronous sample
@@ -312,6 +446,7 @@ SVGAnimationElement::UpdateHrefTarget(nsIContent* aNodeForContext,
 void
 SVGAnimationElement::AnimationTargetChanged()
 {
+  mTimedElement.HandleTargetElementChange(GetTargetElementContent());
   AnimationNeedsResample();
 }
 

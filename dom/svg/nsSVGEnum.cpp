@@ -9,6 +9,8 @@
 #include "nsSVGEnum.h"
 #include "nsIAtom.h"
 #include "nsSVGElement.h"
+#include "nsSMILValue.h"
+#include "SMILEnumType.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -125,4 +127,68 @@ nsSVGEnum::ToDOMAnimatedEnum(nsSVGElement* aSVGElement)
 nsSVGEnum::DOMAnimatedEnum::~DOMAnimatedEnum()
 {
   sSVGAnimatedEnumTearoffTable.RemoveTearoff(mVal);
+}
+
+nsISMILAttr*
+nsSVGEnum::ToSMILAttr(nsSVGElement *aSVGElement)
+{
+  return new SMILEnum(this, aSVGElement);
+}
+
+nsresult
+nsSVGEnum::SMILEnum::ValueFromString(const nsAString& aStr,
+                                     const dom::SVGAnimationElement* /*aSrcElement*/,
+                                     nsSMILValue& aValue,
+                                     bool& aPreventCachingOfSandwich) const
+{
+  nsIAtom *valAtom = NS_GetStaticAtom(aStr);
+  if (valAtom) {
+    nsSVGEnumMapping *mapping = mVal->GetMapping(mSVGElement);
+
+    while (mapping && mapping->mKey) {
+      if (valAtom == *(mapping->mKey)) {
+        nsSMILValue val(SMILEnumType::Singleton());
+        val.mU.mUint = mapping->mVal;
+        aValue = val;
+        aPreventCachingOfSandwich = false;
+        return NS_OK;
+      }
+      mapping++;
+    }
+  }
+  
+  // only a warning since authors may mistype attribute values
+  NS_WARNING("unknown enumeration key");
+  return NS_ERROR_FAILURE;
+}
+
+nsSMILValue
+nsSVGEnum::SMILEnum::GetBaseValue() const
+{
+  nsSMILValue val(SMILEnumType::Singleton());
+  val.mU.mUint = mVal->mBaseVal;
+  return val;
+}
+
+void
+nsSVGEnum::SMILEnum::ClearAnimValue()
+{
+  if (mVal->mIsAnimated) {
+    mVal->mIsAnimated = false;
+    mVal->mAnimVal = mVal->mBaseVal;
+    mSVGElement->DidAnimateEnum(mVal->mAttrEnum);
+  }
+}
+
+nsresult
+nsSVGEnum::SMILEnum::SetAnimValue(const nsSMILValue& aValue)
+{
+  NS_ASSERTION(aValue.mType == SMILEnumType::Singleton(),
+               "Unexpected type to assign animated value");
+  if (aValue.mType == SMILEnumType::Singleton()) {
+    MOZ_ASSERT(aValue.mU.mUint <= USHRT_MAX,
+               "Very large enumerated value - too big for uint16_t");
+    mVal->SetAnimValue(uint16_t(aValue.mU.mUint), mSVGElement);
+  }
+  return NS_OK;
 }

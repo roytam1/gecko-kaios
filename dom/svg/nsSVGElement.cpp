@@ -48,7 +48,10 @@
 #include "nsIFrame.h"
 #include "nsQueryObject.h"
 #include <stdarg.h>
+#include "nsSMILMappedAttribute.h"
+#include "SVGMotionSMILAttr.h"
 #include "nsAttrValueOrString.h"
+#include "nsSMILAnimationController.h"
 #include "mozilla/dom/SVGElementBinding.h"
 #include "mozilla/unused.h"
 #include "mozilla/RestyleManagerHandle.h"
@@ -665,7 +668,7 @@ nsSVGElement::UnsetAttrInternal(int32_t aNamespaceID, nsIAtom* aName,
       }
       return;
     }
-
+    
     // Check if this is a length attribute going away
     LengthAttributesInfo lenInfo = GetLengthInfo();
 
@@ -909,6 +912,34 @@ nsSVGElement::WalkContentStyleRules(nsRuleWalker* aRuleWalker)
   return NS_OK;
 }
 
+void
+nsSVGElement::WalkAnimatedContentStyleRules(nsRuleWalker* aRuleWalker)
+{
+  // Update & walk the animated content style rule, to include style from
+  // animated mapped attributes.  But first, get nsPresContext to check
+  // whether this is a "no-animation restyle". (This should match the check
+  // in nsHTMLCSSStyleSheet::RulesMatching(), where we determine whether to
+  // apply the SMILOverrideStyle.)
+  RestyleManagerHandle restyleManager =
+    aRuleWalker->PresContext()->RestyleManager();
+  MOZ_ASSERT(restyleManager->IsGecko(),
+             "stylo: Servo-backed style system should not be calling "
+             "WalkAnimatedContentStyleRules");
+  if (!restyleManager->AsGecko()->SkipAnimationRules()) {
+    // update/walk the animated content style rule.
+    css::StyleRule* animContentStyleRule = GetAnimatedContentStyleRule();
+    if (!animContentStyleRule) {
+      UpdateAnimatedContentStyleRule();
+      animContentStyleRule = GetAnimatedContentStyleRule();
+    }
+    if (animContentStyleRule) {
+      css::Declaration* declaration = animContentStyleRule->GetDeclaration();
+      declaration->SetImmutable();
+      aRuleWalker->Forward(declaration);
+    }
+  }
+}
+
 NS_IMETHODIMP_(bool)
 nsSVGElement::IsAttributeMapped(const nsIAtom* name) const
 {
@@ -982,7 +1013,7 @@ nsSVGElement::sFontSpecificationMap[] = {
   { &nsGkAtoms::font_stretch },
   { &nsGkAtoms::font_style },
   { &nsGkAtoms::font_variant },
-  { &nsGkAtoms::fontWeight },
+  { &nsGkAtoms::fontWeight },  
   { nullptr }
 };
 
@@ -1264,6 +1295,85 @@ nsSVGElement::UpdateContentStyleRule()
     mappedAttrParser.ParseMappedAttrValue(attrName->Atom(), value);
   }
   mContentStyleRule = mappedAttrParser.CreateStyleRule();
+}
+
+static void
+ParseMappedAttrAnimValueCallback(void*    aObject,
+                                 nsIAtom* aPropertyName,
+                                 void*    aPropertyValue,
+                                 void*    aData)
+{
+  MOZ_ASSERT(aPropertyName != SMIL_MAPPED_ATTR_STYLERULE_ATOM,
+             "animated content style rule should have been removed "
+             "from properties table already (we're rebuilding it now)");
+
+  MappedAttrParser* mappedAttrParser = static_cast<MappedAttrParser*>(aData);
+  MOZ_ASSERT(mappedAttrParser, "parser should be non-null");
+
+  nsStringBuffer* animValBuf = static_cast<nsStringBuffer*>(aPropertyValue);
+  MOZ_ASSERT(animValBuf, "animated value should be non-null");
+
+  nsString animValStr;
+  nsContentUtils::PopulateStringFromStringBuffer(animValBuf, animValStr);
+
+  mappedAttrParser->ParseMappedAttrValue(aPropertyName, animValStr);
+}
+
+// Callback for freeing animated content style rule, in property table.
+static void
+ReleaseStyleRule(void*    aObject,       /* unused */
+                 nsIAtom* aPropertyName,
+                 void*    aPropertyValue,
+                 void*    aData          /* unused */)
+{
+  MOZ_ASSERT(aPropertyName == SMIL_MAPPED_ATTR_STYLERULE_ATOM,
+             "unexpected property name, for animated content style rule");
+  css::StyleRule* styleRule = static_cast<css::StyleRule*>(aPropertyValue);
+  MOZ_ASSERT(styleRule, "unexpected null style rule");
+  styleRule->Release();
+}
+
+void
+nsSVGElement::UpdateAnimatedContentStyleRule()
+{
+  MOZ_ASSERT(!GetAnimatedContentStyleRule(),
+             "Animated content style rule already set");
+
+  nsIDocument* doc = OwnerDoc();
+  if (!doc) {
+    NS_ERROR("SVG element without owner document");
+    return;
+  }
+
+  MappedAttrParser mappedAttrParser(doc->CSSLoader(), doc->GetDocumentURI(),
+                                    GetBaseURI(), this);
+  doc->PropertyTable(SMIL_MAPPED_ATTR_ANIMVAL)->
+    Enumerate(this, ParseMappedAttrAnimValueCallback, &mappedAttrParser);
+ 
+  RefPtr<css::StyleRule>
+    animContentStyleRule(mappedAttrParser.CreateStyleRule());
+
+  if (animContentStyleRule) {
+#ifdef DEBUG
+    nsresult rv =
+#endif
+      SetProperty(SMIL_MAPPED_ATTR_ANIMVAL,
+                  SMIL_MAPPED_ATTR_STYLERULE_ATOM,
+                  animContentStyleRule.get(),
+                  ReleaseStyleRule);
+    Unused << animContentStyleRule.forget();
+    MOZ_ASSERT(rv == NS_OK,
+               "SetProperty failed (or overwrote something)");
+  }
+}
+
+css::StyleRule*
+nsSVGElement::GetAnimatedContentStyleRule()
+{
+  return
+    static_cast<css::StyleRule*>(GetProperty(SMIL_MAPPED_ATTR_ANIMVAL,
+                                             SMIL_MAPPED_ATTR_STYLERULE_ATOM,
+                                             nullptr));
 }
 
 /**
@@ -1946,7 +2056,7 @@ void
 nsSVGElement::DidAnimateInteger(uint8_t aAttrEnum)
 {
   nsIFrame* frame = GetPrimaryFrame();
-
+  
   if (frame) {
     IntegerAttributesInfo info = GetIntegerInfo();
     frame->AttributeChanged(kNameSpaceID_None,
@@ -2017,7 +2127,7 @@ void
 nsSVGElement::DidAnimateIntegerPair(uint8_t aAttrEnum)
 {
   nsIFrame* frame = GetPrimaryFrame();
-
+  
   if (frame) {
     IntegerPairAttributesInfo info = GetIntegerPairInfo();
     frame->AttributeChanged(kNameSpaceID_None,
@@ -2034,7 +2144,7 @@ nsSVGElement::GetAngleInfo()
 
 void nsSVGElement::AngleAttributesInfo::Reset(uint8_t aAttrEnum)
 {
-  mAngles[aAttrEnum].Init(aAttrEnum,
+  mAngles[aAttrEnum].Init(aAttrEnum, 
                           mAngleInfo[aAttrEnum].mDefaultValue,
                           mAngleInfo[aAttrEnum].mDefaultUnitType);
 }
@@ -2104,7 +2214,7 @@ void
 nsSVGElement::DidAnimateBoolean(uint8_t aAttrEnum)
 {
   nsIFrame* frame = GetPrimaryFrame();
-
+  
   if (frame) {
     BooleanAttributesInfo info = GetBooleanInfo();
     frame->AttributeChanged(kNameSpaceID_None,
@@ -2181,7 +2291,7 @@ void
 nsSVGElement::DidAnimateViewBox()
 {
   nsIFrame* frame = GetPrimaryFrame();
-
+  
   if (frame) {
     frame->AttributeChanged(kNameSpaceID_None,
                             nsGkAtoms::viewBox,
@@ -2221,7 +2331,7 @@ void
 nsSVGElement::DidAnimatePreserveAspectRatio()
 {
   nsIFrame* frame = GetPrimaryFrame();
-
+  
   if (frame) {
     frame->AttributeChanged(kNameSpaceID_None,
                             nsGkAtoms::preserveAspectRatio,
@@ -2421,14 +2531,210 @@ nsSVGElement::RecompileScriptEventListeners()
   }
 }
 
+nsISMILAttr*
+nsSVGElement::GetAnimatedAttr(int32_t aNamespaceID, nsIAtom* aName)
+{
+  if (aNamespaceID == kNameSpaceID_None) {
+    // We check mapped-into-style attributes first so that animations
+    // targeting width/height on outer-<svg> don't appear to be ignored
+    // because we returned a nsISMILAttr for the corresponding
+    // SVGAnimatedLength.
+
+    // Mapped attributes:
+    if (IsAttributeMapped(aName)) {
+      nsCSSProperty prop =
+        nsCSSProps::LookupProperty(nsDependentAtomString(aName),
+                                   nsCSSProps::eEnabledForAllContent);
+      // Check IsPropertyAnimatable to avoid attributes that...
+      //  - map to explicitly unanimatable properties (e.g. 'direction')
+      //  - map to unsupported attributes (e.g. 'glyph-orientation-horizontal')
+      if (nsSMILCSSProperty::IsPropertyAnimatable(prop)) {
+        return new nsSMILMappedAttribute(prop, this);
+      }
+    }
+
+    // Transforms:
+    if (GetTransformListAttrName() == aName) {
+      // The transform attribute is being animated, so we must ensure that the
+      // SVGAnimatedTransformList is/has been allocated:
+      return GetAnimatedTransformList(DO_ALLOCATE)->ToSMILAttr(this);
+    }
+
+    // Motion (fake 'attribute' for animateMotion)
+    if (aName == nsGkAtoms::mozAnimateMotionDummyAttr) {
+      return new SVGMotionSMILAttr(this);
+    }
+
+    // Lengths:
+    LengthAttributesInfo info = GetLengthInfo();
+    for (uint32_t i = 0; i < info.mLengthCount; i++) {
+      if (aName == *info.mLengthInfo[i].mName) {
+        return info.mLengths[i].ToSMILAttr(this);
+      }
+    }
+
+    // Numbers:
+    {
+      NumberAttributesInfo info = GetNumberInfo();
+      for (uint32_t i = 0; i < info.mNumberCount; i++) {
+        if (aName == *info.mNumberInfo[i].mName) {
+          return info.mNumbers[i].ToSMILAttr(this);
+        }
+      }
+    }
+
+    // Number Pairs:
+    {
+      NumberPairAttributesInfo info = GetNumberPairInfo();
+      for (uint32_t i = 0; i < info.mNumberPairCount; i++) {
+        if (aName == *info.mNumberPairInfo[i].mName) {
+          return info.mNumberPairs[i].ToSMILAttr(this);
+        }
+      }
+    }
+
+    // Integers:
+    {
+      IntegerAttributesInfo info = GetIntegerInfo();
+      for (uint32_t i = 0; i < info.mIntegerCount; i++) {
+        if (aName == *info.mIntegerInfo[i].mName) {
+          return info.mIntegers[i].ToSMILAttr(this);
+        }
+      }
+    }
+
+    // Integer Pairs:
+    {
+      IntegerPairAttributesInfo info = GetIntegerPairInfo();
+      for (uint32_t i = 0; i < info.mIntegerPairCount; i++) {
+        if (aName == *info.mIntegerPairInfo[i].mName) {
+          return info.mIntegerPairs[i].ToSMILAttr(this);
+        }
+      }
+    }
+
+    // Enumerations:
+    {
+      EnumAttributesInfo info = GetEnumInfo();
+      for (uint32_t i = 0; i < info.mEnumCount; i++) {
+        if (aName == *info.mEnumInfo[i].mName) {
+          return info.mEnums[i].ToSMILAttr(this);
+        }
+      }
+    }
+
+    // Booleans:
+    {
+      BooleanAttributesInfo info = GetBooleanInfo();
+      for (uint32_t i = 0; i < info.mBooleanCount; i++) {
+        if (aName == *info.mBooleanInfo[i].mName) {
+          return info.mBooleans[i].ToSMILAttr(this);
+        }
+      }
+    }
+
+    // Angles:
+    {
+      AngleAttributesInfo info = GetAngleInfo();
+      for (uint32_t i = 0; i < info.mAngleCount; i++) {
+        if (aName == *info.mAngleInfo[i].mName) {
+          return info.mAngles[i].ToSMILAttr(this);
+        }
+      }
+    }
+
+    // viewBox:
+    if (aName == nsGkAtoms::viewBox) {
+      nsSVGViewBox *viewBox = GetViewBox();
+      return viewBox ? viewBox->ToSMILAttr(this) : nullptr;
+    }
+
+    // preserveAspectRatio:
+    if (aName == nsGkAtoms::preserveAspectRatio) {
+      SVGAnimatedPreserveAspectRatio *preserveAspectRatio =
+        GetPreserveAspectRatio();
+      return preserveAspectRatio ?
+        preserveAspectRatio->ToSMILAttr(this) : nullptr;
+    }
+
+    // NumberLists:
+    {
+      NumberListAttributesInfo info = GetNumberListInfo();
+      for (uint32_t i = 0; i < info.mNumberListCount; i++) {
+        if (aName == *info.mNumberListInfo[i].mName) {
+          MOZ_ASSERT(i <= UCHAR_MAX, "Too many attributes");
+          return info.mNumberLists[i].ToSMILAttr(this, uint8_t(i));
+        }
+      }
+    }
+
+    // LengthLists:
+    {
+      LengthListAttributesInfo info = GetLengthListInfo();
+      for (uint32_t i = 0; i < info.mLengthListCount; i++) {
+        if (aName == *info.mLengthListInfo[i].mName) {
+          MOZ_ASSERT(i <= UCHAR_MAX, "Too many attributes");
+          return info.mLengthLists[i].ToSMILAttr(this,
+                                                 uint8_t(i),
+                                                 info.mLengthListInfo[i].mAxis,
+                                                 info.mLengthListInfo[i].mCouldZeroPadList);
+        }
+      }
+    }
+
+    // PointLists:
+    {
+      if (GetPointListAttrName() == aName) {
+        SVGAnimatedPointList *pointList = GetAnimatedPointList();
+        if (pointList) {
+          return pointList->ToSMILAttr(this);
+        }
+      }
+    }
+
+    // PathSegLists:
+    {
+      if (GetPathDataAttrName() == aName) {
+        SVGAnimatedPathSegList *segList = GetAnimPathSegList();
+        if (segList) {
+          return segList->ToSMILAttr(this);
+        }
+      }
+    }
+
+    if (aName == nsGkAtoms::_class) {
+      return mClassAttribute.ToSMILAttr(this);
+    }
+  }
+
+  // Strings
+  {
+    StringAttributesInfo info = GetStringInfo();
+    for (uint32_t i = 0; i < info.mStringCount; i++) {
+      if (aNamespaceID == info.mStringInfo[i].mNamespaceID &&
+          aName == *info.mStringInfo[i].mName) {
+        return info.mStrings[i].ToSMILAttr(this);
+      }
+    }
+  }
+
+  return nullptr;
+}
+
 void
 nsSVGElement::AnimationNeedsResample()
 {
-
+  nsIDocument* doc = GetComposedDoc();
+  if (doc && doc->HasAnimationController()) {
+    doc->GetAnimationController()->SetResampleNeeded();
+  }
 }
 
 void
 nsSVGElement::FlushAnimations()
 {
-
+  nsIDocument* doc = GetComposedDoc();
+  if (doc && doc->HasAnimationController()) {
+    doc->GetAnimationController()->FlushResampleRequests();
+  }
 }

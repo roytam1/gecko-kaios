@@ -20,8 +20,10 @@
 
 using namespace mozilla;
 
-nsDOMCSSAttributeDeclaration::nsDOMCSSAttributeDeclaration(dom::Element* aElement)
+nsDOMCSSAttributeDeclaration::nsDOMCSSAttributeDeclaration(dom::Element* aElement,
+                                                           bool aIsSMILOverride)
   : mElement(aElement)
+  , mIsSMILOverride(aIsSMILOverride)
 {
   MOZ_COUNT_CTOR(nsDOMCSSAttributeDeclaration);
 
@@ -70,7 +72,9 @@ nsresult
 nsDOMCSSAttributeDeclaration::SetCSSDeclaration(css::Declaration* aDecl)
 {
   NS_ASSERTION(mElement, "Must have Element to set the declaration!");
-  return mElement->SetInlineStyleDeclaration(aDecl, nullptr, true);
+  return
+    mIsSMILOverride ? mElement->SetSMILOverrideStyleDeclaration(aDecl, true) :
+    mElement->SetInlineStyleDeclaration(aDecl, nullptr, true);
 }
 
 nsIDocument*
@@ -88,7 +92,10 @@ nsDOMCSSAttributeDeclaration::GetCSSDeclaration(Operation aOperation)
     return nullptr;
 
   css::Declaration* declaration;
-  declaration = mElement->GetInlineStyleDeclaration();
+  if (mIsSMILOverride)
+    declaration = mElement->GetSMILOverrideStyleDeclaration();
+  else
+    declaration = mElement->GetInlineStyleDeclaration();
 
   // Notify observers that our style="" attribute is going to change
   // unless:
@@ -102,7 +109,8 @@ nsDOMCSSAttributeDeclaration::GetCSSDeclaration(Operation aOperation)
   // BeginUpdate(), but this is a good chokepoint where we know we
   // plan to modify the CSSDeclaration, so need to notify
   // AttributeWillChange if this is inline style.
-  if (((aOperation == eOperation_Modify) ||
+  if (!mIsSMILOverride &&
+      ((aOperation == eOperation_Modify) ||
        (aOperation == eOperation_RemoveProperty && declaration))) {
     nsNodeUtils::AttributeWillChange(mElement, kNameSpaceID_None,
                                      nsGkAtoms::style,
@@ -123,7 +131,11 @@ nsDOMCSSAttributeDeclaration::GetCSSDeclaration(Operation aOperation)
   decl->InitializeEmpty();
 
   // this *can* fail (inside SetAttrAndNotify, at least).
-  nsresult rv = mElement->SetInlineStyleDeclaration(decl, nullptr, false);
+  nsresult rv;
+  if (mIsSMILOverride)
+    rv = mElement->SetSMILOverrideStyleDeclaration(decl, false);
+  else
+    rv = mElement->SetInlineStyleDeclaration(decl, nullptr, false);
 
   if (NS_FAILED(rv)) {
     return nullptr; // the decl will be destroyed along with the style rule

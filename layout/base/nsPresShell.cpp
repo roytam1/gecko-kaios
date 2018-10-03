@@ -120,6 +120,7 @@
 #include "nsStyleSheetService.h"
 #include "gfxContext.h"
 #include "gfxUtils.h"
+#include "nsSMILAnimationController.h"
 #include "SVGContentUtils.h"
 #include "nsSVGEffects.h"
 #include "SVGFragmentIdentifier.h"
@@ -949,6 +950,11 @@ PresShell::Init(nsIDocument* aDocument,
     }
 #endif
 
+  if (mDocument->HasAnimationController()) {
+    nsSMILAnimationController* animCtrl = mDocument->GetAnimationController();
+    animCtrl->NotifyRefreshDriverCreated(GetPresContext()->RefreshDriver());
+  }
+
   for (DocumentTimeline* timeline : mDocument->Timelines()) {
     timeline->NotifyRefreshDriverCreated(GetPresContext()->RefreshDriver());
   }
@@ -1250,6 +1256,9 @@ PresShell::Destroy()
     NS_ASSERTION(mDocument->GetShell() == this, "Wrong shell?");
     mDocument->DeleteShell();
 
+    if (mDocument->HasAnimationController()) {
+      mDocument->GetAnimationController()->NotifyRefreshDriverDestroying(rd);
+    }
     for (DocumentTimeline* timeline : mDocument->Timelines()) {
       timeline->NotifyRefreshDriverDestroying(rd);
     }
@@ -4049,6 +4058,11 @@ PresShell::FlushPendingNotifications(mozilla::ChangesToFlush aFlush)
       mDocument->FlushUserFontSet();
 
       mPresContext->FlushCounterStyles();
+
+      // Flush any requested SMIL samples.
+      if (mDocument->HasAnimationController()) {
+        mDocument->GetAnimationController()->FlushResampleRequests();
+      }
 
       if (aFlush.mFlushAnimations && mPresContext->EffectCompositor()) {
         mPresContext->EffectCompositor()->PostRestyleForThrottledAnimations();

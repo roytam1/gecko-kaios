@@ -82,6 +82,7 @@ class nsViewManager;
 class nsPresContext;
 class nsRange;
 class nsScriptLoader;
+class nsSMILAnimationController;
 class nsTextNode;
 class nsWindowSizes;
 class nsDOMCaretPosition;
@@ -95,6 +96,7 @@ class ErrorResult;
 class EventStates;
 class PendingAnimationTracker;
 class StyleSetHandle;
+class SVGAttrAnimationRuleProcessor;
 template<typename> class OwningNonNull;
 
 namespace css {
@@ -1084,6 +1086,16 @@ public:
     return mStyleAttrStyleSheet;
   }
 
+  /**
+   * Get this document's SVG Animation rule processor.  May return null
+   * if there isn't one.
+   */
+  mozilla::SVGAttrAnimationRuleProcessor*
+  GetSVGAttrAnimationRuleProcessor() const
+  {
+    return mSVGAttrAnimationRuleProcessor;
+  }
+
   virtual void SetScriptGlobalObject(nsIScriptGlobalObject* aGlobalObject) = 0;
 
   /**
@@ -1943,6 +1955,16 @@ public:
   typedef void (* ActivityObserverEnumerator)(nsISupports*, void*);
   void EnumerateActivityObservers(ActivityObserverEnumerator aEnumerator,
                                   void* aData);
+
+  // Indicates whether mAnimationController has been (lazily) initialized.
+  // If this returns true, we're promising that GetAnimationController()
+  // will have a non-null return value.
+  bool HasAnimationController()  { return !!mAnimationController; }
+
+  // Getter for this document's SMIL Animation Controller. Performs lazy
+  // initialization, if this document supports animation and if
+  // mAnimationController isn't yet initialized.
+  virtual nsSMILAnimationController* GetAnimationController() = 0;
 
   // Gets the tracker for animations that are waiting to start.
   // Returns nullptr if there is no pending animation tracker for this document
@@ -2815,6 +2837,7 @@ protected:
   RefPtr<mozilla::css::ImageLoader> mStyleImageLoader;
   RefPtr<nsHTMLStyleSheet> mAttrStyleSheet;
   RefPtr<nsHTMLCSSStyleSheet> mStyleAttrStyleSheet;
+  RefPtr<mozilla::SVGAttrAnimationRuleProcessor> mSVGAttrAnimationRuleProcessor;
 
   // The set of all object, embed, applet, video/audio elements or
   // nsIObjectLoadingContent or nsIDocumentActivity for which this is the
@@ -2827,6 +2850,9 @@ protected:
   // to this set by calling RegisterPendingLinkUpdate when added to a document and must
   // remove themselves by calling UnregisterPendingLinkUpdate when removed from a document.
   nsTHashtable<nsPtrHashKey<mozilla::dom::Link> > mLinksToUpdate;
+
+  // SMIL Animation Controller, lazily-initialized in GetAnimationController
+  RefPtr<nsSMILAnimationController> mAnimationController;
 
   // Table of element properties for this document.
   nsPropertyTable mPropertyTable;

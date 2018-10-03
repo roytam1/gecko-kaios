@@ -500,6 +500,7 @@
 ; svg
 @BINPATH@/res/svg.css
 @BINPATH@/components/dom_svg.xpt
+@BINPATH@/components/dom_smil.xpt
 
 ; [Personal Security Manager]
 ;

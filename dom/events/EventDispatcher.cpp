@@ -42,6 +42,7 @@
 #include "mozilla/dom/SimpleGestureEvent.h"
 #include "mozilla/dom/StorageEvent.h"
 #include "mozilla/dom/SVGZoomEvent.h"
+#include "mozilla/dom/TimeEvent.h"
 #include "mozilla/dom/TouchEvent.h"
 #include "mozilla/dom/TransitionEvent.h"
 #include "mozilla/dom/WheelEvent.h"
@@ -220,7 +221,7 @@ public:
   {
     return !!(mFlags & NS_TARGET_CHAIN_MAY_HAVE_MANAGER);
   }
-
+  
   EventTarget* CurrentTarget()
   {
     return mTarget;
@@ -828,6 +829,9 @@ EventDispatcher::CreateEvent(EventTarget* aOwner,
     case eSVGZoomEventClass:
       return NS_NewDOMSVGZoomEvent(aOwner, aPresContext,
                                    aEvent->AsSVGZoomEvent());
+    case eSMILTimeEventClass:
+      return NS_NewDOMTimeEvent(aOwner, aPresContext,
+                                aEvent->AsSMILTimeEvent());
     case eCommandEventClass:
       return NS_NewDOMCommandEvent(aOwner, aPresContext,
                                    aEvent->AsCommandEvent());
@@ -891,6 +895,9 @@ EventDispatcher::CreateEvent(EventTarget* aOwner,
   if (aEventType.LowerCaseEqualsLiteral("svgzoomevent") ||
       aEventType.LowerCaseEqualsLiteral("svgzoomevents"))
     return NS_NewDOMSVGZoomEvent(aOwner, aPresContext, nullptr);
+  if (aEventType.LowerCaseEqualsLiteral("timeevent") ||
+      aEventType.LowerCaseEqualsLiteral("timeevents"))
+    return NS_NewDOMTimeEvent(aOwner, aPresContext, nullptr);
   if (aEventType.LowerCaseEqualsLiteral("xulcommandevent") ||
       aEventType.LowerCaseEqualsLiteral("xulcommandevents"))
     return NS_NewDOMXULCommandEvent(aOwner, aPresContext, nullptr);

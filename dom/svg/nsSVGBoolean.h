@@ -9,9 +9,11 @@
 
 #include "nsCOMPtr.h"
 #include "nsError.h"
+#include "nsISMILAttr.h"
 #include "mozilla/Attributes.h"
 
 class nsIAtom;
+class nsSMILValue;
 class nsSVGElement;
 
 namespace mozilla {
@@ -44,6 +46,8 @@ public:
 
   already_AddRefed<mozilla::dom::SVGAnimatedBoolean>
     ToDOMAnimatedBoolean(nsSVGElement* aSVGElement);
+  // Returns a new nsISMILAttr object that the caller must delete
+  nsISMILAttr* ToSMILAttr(nsSVGElement* aSVGElement);
 
 private:
 
@@ -51,5 +55,28 @@ private:
   bool mBaseVal;
   bool mIsAnimated;
   uint8_t mAttrEnum; // element specified tracking for attribute
+
+public:
+  struct SMILBool : public nsISMILAttr
+  {
+  public:
+    SMILBool(nsSVGBoolean* aVal, nsSVGElement* aSVGElement)
+      : mVal(aVal), mSVGElement(aSVGElement) {}
+
+    // These will stay alive because a nsISMILAttr only lives as long
+    // as the Compositing step, and DOM elements don't get a chance to
+    // die during that.
+    nsSVGBoolean* mVal;
+    nsSVGElement* mSVGElement;
+
+    // nsISMILAttr methods
+    virtual nsresult ValueFromString(const nsAString& aStr,
+                                     const mozilla::dom::SVGAnimationElement* aSrcElement,
+                                     nsSMILValue& aValue,
+                                     bool& aPreventCachingOfSandwich) const override;
+    virtual nsSMILValue GetBaseValue() const override;
+    virtual void ClearAnimValue() override;
+    virtual nsresult SetAnimValue(const nsSMILValue& aValue) override;
+  };
 };
 #endif //__NS_SVGBOOLEAN_H__

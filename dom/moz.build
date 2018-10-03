@@ -29,6 +29,7 @@ interfaces = [
     'notification',
     'permission',
     'svg',
+    'smil',
     'apps',
     'gamepad',
 ]

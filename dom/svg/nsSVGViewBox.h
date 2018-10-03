@@ -12,9 +12,12 @@
 #include "nsError.h"
 #include "mozilla/dom/SVGAnimatedRect.h"
 #include "mozilla/dom/SVGIRect.h"
+#include "nsISMILAttr.h"
 #include "nsSVGElement.h"
 #include "mozilla/Attributes.h"
 #include "nsSVGAttrTearoffTable.h"
+
+class nsSMILValue;
 
 namespace mozilla {
 namespace dom {
@@ -90,6 +93,9 @@ public:
 
   already_AddRefed<mozilla::dom::SVGIRect>
   ToDOMAnimVal(nsSVGElement* aSVGElement);
+
+  // Returns a new nsISMILAttr object that the caller must delete
+  nsISMILAttr* ToSMILAttr(nsSVGElement* aSVGElement);
 
 private:
 
@@ -214,6 +220,28 @@ public:
   private:
     virtual ~DOMAnimVal();
 
+  };
+
+  struct SMILViewBox : public nsISMILAttr
+  {
+  public:
+    SMILViewBox(nsSVGViewBox* aVal, nsSVGElement* aSVGElement)
+      : mVal(aVal), mSVGElement(aSVGElement) {}
+
+    // These will stay alive because a nsISMILAttr only lives as long
+    // as the Compositing step, and DOM elements don't get a chance to
+    // die during that.
+    nsSVGViewBox* mVal;
+    nsSVGElement* mSVGElement;
+
+    // nsISMILAttr methods
+    virtual nsresult ValueFromString(const nsAString& aStr,
+                                     const mozilla::dom::SVGAnimationElement* aSrcElement,
+                                     nsSMILValue& aValue,
+                                     bool& aPreventCachingOfSandwich) const override;
+    virtual nsSMILValue GetBaseValue() const override;
+    virtual void ClearAnimValue() override;
+    virtual nsresult SetAnimValue(const nsSMILValue& aValue) override;
   };
 
   static nsSVGAttrTearoffTable<nsSVGViewBox, mozilla::dom::SVGAnimatedRect>

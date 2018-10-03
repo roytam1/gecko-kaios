@@ -35,6 +35,9 @@
 #include "nsStyleUtil.h"
 #include "SVGContentUtils.h"
 
+#include "nsSMILTimeContainer.h"
+#include "nsSMILAnimationController.h"
+#include "nsSMILTypes.h"
 #include "SVGAngle.h"
 #include <algorithm>
 #include "prtime.h"
@@ -145,9 +148,15 @@ NS_IMPL_CYCLE_COLLECTION_CLASS(SVGSVGElement)
 
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(SVGSVGElement,
                                                 SVGSVGElementBase)
+  if (tmp->mTimedDocumentRoot) {
+    tmp->mTimedDocumentRoot->Unlink();
+  }
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(SVGSVGElement,
                                                   SVGSVGElementBase)
+  if (tmp->mTimedDocumentRoot) {
+    tmp->mTimedDocumentRoot->Traverse(&cb);
+  }
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
 NS_IMPL_ADDREF_INHERITED(SVGSVGElement,SVGSVGElementBase)
@@ -310,30 +319,59 @@ SVGSVGElement::ForceRedraw()
 void
 SVGSVGElement::PauseAnimations()
 {
+  if (mTimedDocumentRoot) {
+    mTimedDocumentRoot->Pause(nsSMILTimeContainer::PAUSE_SCRIPT);
+  }
   // else we're not the outermost <svg> or not bound to a tree, so silently fail
 }
 
 void
 SVGSVGElement::UnpauseAnimations()
 {
+  if (mTimedDocumentRoot) {
+    mTimedDocumentRoot->Resume(nsSMILTimeContainer::PAUSE_SCRIPT);
+  }
   // else we're not the outermost <svg> or not bound to a tree, so silently fail
 }
 
 bool
 SVGSVGElement::AnimationsPaused()
 {
-  return false;
+  nsSMILTimeContainer* root = GetTimedDocumentRoot();
+  return root && root->IsPausedByType(nsSMILTimeContainer::PAUSE_SCRIPT);
 }
 
 float
 SVGSVGElement::GetCurrentTime()
 {
-  return 0.f;
+  nsSMILTimeContainer* root = GetTimedDocumentRoot();
+  if (root) {
+    double fCurrentTimeMs = double(root->GetCurrentTime());
+    return (float)(fCurrentTimeMs / PR_MSEC_PER_SEC);
+  } else {
+    return 0.f;
+  }
 }
 
 void
 SVGSVGElement::SetCurrentTime(float seconds)
 {
+  if (mTimedDocumentRoot) {
+    // Make sure the timegraph is up-to-date
+    FlushAnimations();
+    double fMilliseconds = double(seconds) * PR_MSEC_PER_SEC;
+    // Round to nearest whole number before converting, to avoid precision
+    // errors
+    nsSMILTime lMilliseconds = int64_t(NS_round(fMilliseconds));
+    mTimedDocumentRoot->SetCurrentTime(lMilliseconds);
+    AnimationNeedsResample();
+    // Trigger synchronous sample now, to:
+    //  - Make sure we get an up-to-date paint after this method
+    //  - re-enable event firing (it got disabled during seeking, and it
+    //  doesn't get re-enabled until the first sample after the seek -- so
+    //  let's make that happen now.)
+    FlushAnimations();
+  }
   // else we're not the outermost <svg> or not bound to a tree, so silently fail
 }
 
@@ -452,7 +490,7 @@ SVGSVGElement::SetCurrentScaleTranslate(float s, float x, float y)
     s = CURRENT_SCALE_MIN;
   else if (s > CURRENT_SCALE_MAX)
     s = CURRENT_SCALE_MAX;
-
+  
   // IMPORTANT: If either mCurrentTranslate *or* mCurrentScale is changed then
   // mPreviousTranslate_x, mPreviousTranslate_y *and* mPreviousScale must all
   // be updated otherwise SVGZoomEvents will end up with invalid data. I.e. an
@@ -463,7 +501,7 @@ SVGSVGElement::SetCurrentScaleTranslate(float s, float x, float y)
   // their own last change.
   mPreviousScale = mCurrentScale;
   mPreviousTranslate = mCurrentTranslate;
-
+  
   mCurrentScale = s;
   mCurrentTranslate = SVGPoint(x, y);
 
@@ -489,6 +527,24 @@ void
 SVGSVGElement::SetCurrentTranslate(float x, float y)
 {
   SetCurrentScaleTranslate(mCurrentScale, x, y);
+}
+
+nsSMILTimeContainer*
+SVGSVGElement::GetTimedDocumentRoot()
+{
+  if (mTimedDocumentRoot) {
+    return mTimedDocumentRoot;
+  }
+
+  // We must not be the outermost <svg> element, try to find it
+  SVGSVGElement *outerSVGElement =
+    SVGContentUtils::GetOuterSVGElement(this);
+
+  if (outerSVGElement) {
+    return outerSVGElement->GetTimedDocumentRoot();
+  }
+  // invalid structure
+  return nullptr;
 }
 
 //----------------------------------------------------------------------
@@ -535,6 +591,15 @@ SVGSVGElement::IsAttributeMapped(const nsIAtom* name) const
 nsresult
 SVGSVGElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
 {
+  if (aVisitor.mEvent->mMessage == eSVGLoad) {
+    if (mTimedDocumentRoot) {
+      mTimedDocumentRoot->Begin();
+      // Set 'resample needed' flag, so that if any script calls a DOM method
+      // that requires up-to-date animations before our first sample callback,
+      // we'll force a synchronous sample.
+      AnimationNeedsResample();
+    }
+  }
   return SVGSVGElementBase::PreHandleEvent(aVisitor);
 }
 
@@ -656,6 +721,27 @@ SVGSVGElement::BindToTree(nsIDocument* aDocument,
                           nsIContent* aBindingParent,
                           bool aCompileEventHandlers)
 {
+  nsSMILAnimationController* smilController = nullptr;
+
+  if (aDocument) {
+    smilController = aDocument->GetAnimationController();
+    if (smilController) {
+      // SMIL is enabled in this document
+      if (WillBeOutermostSVG(aParent, aBindingParent)) {
+        // We'll be the outermost <svg> element.  We'll need a time container.
+        if (!mTimedDocumentRoot) {
+          mTimedDocumentRoot = new nsSMILTimeContainer();
+        }
+      } else {
+        // We're a child of some other <svg> element, so we don't need our own
+        // time container. However, we need to make sure that we'll get a
+        // kick-start if we get promoted to be outermost later on.
+        mTimedDocumentRoot = nullptr;
+        mStartAnimationOnBindToTree = true;
+      }
+    }
+  }
+
   nsresult rv = SVGSVGElementBase::BindToTree(aDocument, aParent,
                                               aBindingParent,
                                               aCompileEventHandlers);
@@ -670,12 +756,24 @@ SVGSVGElement::BindToTree(nsIDocument* aDocument,
     doc->EnsureOnDemandBuiltInUASheet(cache->SVGSheet());
   }
 
+  if (mTimedDocumentRoot && smilController) {
+    rv = mTimedDocumentRoot->SetParent(smilController);
+    if (mStartAnimationOnBindToTree) {
+      mTimedDocumentRoot->Begin();
+      mStartAnimationOnBindToTree = false;
+    }
+  }
+
   return rv;
 }
 
 void
 SVGSVGElement::UnbindFromTree(bool aDeep, bool aNullParent)
 {
+  if (mTimedDocumentRoot) {
+    mTimedDocumentRoot->SetParent(nullptr);
+  }
+
   SVGSVGElementBase::UnbindFromTree(aDeep, aNullParent);
 }
 

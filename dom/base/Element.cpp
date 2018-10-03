@@ -1883,6 +1883,54 @@ Element::UnbindFromTree(bool aDeep, bool aNullParent)
   }
 }
 
+nsICSSDeclaration*
+Element::GetSMILOverrideStyle()
+{
+  Element::nsDOMSlots *slots = DOMSlots();
+
+  if (!slots->mSMILOverrideStyle) {
+    slots->mSMILOverrideStyle = new nsDOMCSSAttributeDeclaration(this, true);
+  }
+
+  return slots->mSMILOverrideStyle;
+}
+
+css::Declaration*
+Element::GetSMILOverrideStyleDeclaration()
+{
+  Element::nsDOMSlots *slots = GetExistingDOMSlots();
+  return slots ? slots->mSMILOverrideStyleDeclaration.get() : nullptr;
+}
+
+nsresult
+Element::SetSMILOverrideStyleDeclaration(css::Declaration* aDeclaration,
+                                         bool aNotify)
+{
+  Element::nsDOMSlots *slots = DOMSlots();
+
+  slots->mSMILOverrideStyleDeclaration = aDeclaration;
+
+  if (aNotify) {
+    nsIDocument* doc = GetComposedDoc();
+    // Only need to request a restyle if we're in a document.  (We might not
+    // be in a document, if we're clearing animation effects on a target node
+    // that's been detached since the previous animation sample.)
+    if (doc) {
+      nsCOMPtr<nsIPresShell> shell = doc->GetShell();
+      if (shell) {
+        // Pass both eRestyle_StyleAttribute and
+        // eRestyle_StyleAttribute_Animations since we don't know if
+        // this style represents only the ticking of an existing
+        // animation or whether it's a new or changed animation.
+        shell->RestyleForAnimation(this, eRestyle_StyleAttribute |
+                                         eRestyle_StyleAttribute_Animations);
+      }
+    }
+  }
+
+  return NS_OK;
+}
+
 bool
 Element::IsLabelable() const
 {

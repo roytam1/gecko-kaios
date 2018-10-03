@@ -29,6 +29,7 @@
 #include "mozilla/Attributes.h"
 #include "nsIScrollableFrame.h"
 #include "mozilla/dom/Attr.h"
+#include "nsISMILAttr.h"
 #include "mozilla/dom/DOMRect.h"
 #include "nsAttrValue.h"
 #include "mozilla/EventForwards.h"
@@ -49,6 +50,7 @@ struct nsRect;
 class nsFocusManager;
 class nsGlobalWindow;
 class nsICSSDeclaration;
+class nsISMILAttr;
 class nsDocument;
 
 namespace mozilla {
@@ -239,6 +241,41 @@ public:
   virtual nsresult SetInlineStyleDeclaration(css::Declaration* aDeclaration,
                                              const nsAString* aSerialized,
                                              bool aNotify);
+
+  /**
+   * Get the SMIL override style declaration for this element. If the
+   * rule hasn't been created, this method simply returns null.
+   */
+  virtual css::Declaration* GetSMILOverrideStyleDeclaration();
+
+  /**
+   * Set the SMIL override style declaration for this element. If
+   * aNotify is true, this method will notify the document's pres
+   * context, so that the style changes will be noticed.
+   */
+  virtual nsresult SetSMILOverrideStyleDeclaration(css::Declaration* aDeclaration,
+                                                   bool aNotify);
+
+  /**
+   * Returns a new nsISMILAttr that allows the caller to animate the given
+   * attribute on this element.
+   *
+   * The CALLER OWNS the result and is responsible for deleting it.
+   */
+  virtual nsISMILAttr* GetAnimatedAttr(int32_t aNamespaceID, nsIAtom* aName)
+  {
+    return nullptr;
+  }
+
+  /**
+   * Get the SMIL override style for this element. This is a style declaration
+   * that is applied *after* the inline style, and it can be used e.g. to store
+   * animated style values.
+   *
+   * Note: This method is analogous to the 'GetStyle' method in
+   * nsGenericHTMLElement and nsStyledElement.
+   */
+  virtual nsICSSDeclaration* GetSMILOverrideStyle();
 
   /**
    * Returns if the element is labelable as per HTML specification.
