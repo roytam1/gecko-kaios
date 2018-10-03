@@ -605,6 +605,11 @@ StumblerInfo::Onready(uint32_t count, nsIWifiScanResult** results)
     mWifiDesc += "\",\"signalStrength\":";
     mWifiDesc.AppendInt(signal);
 
+    uint32_t frequency;
+    results[i]->GetFrequency(&frequency);
+    mWifiDesc += "\",\"frequency\":";
+    mWifiDesc.AppendInt(frequency); // implicitly convert uint32_t to int
+
     // put a placeholder here since we don't know the age yet
     mWifiDesc += nsPrintfCString("\",\"age\":%s", kWifiAgePlaceholder);
     mWifiDesc += "}";
