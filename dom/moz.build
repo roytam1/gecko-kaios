@@ -73,6 +73,7 @@ DIRS += [
     'jsurl',
     'kaipay',
     'asmjscache',
+    'mathml',
     'media',
     'messages',
     'mobileconnection',

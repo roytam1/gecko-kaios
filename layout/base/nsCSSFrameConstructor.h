@@ -504,7 +504,7 @@ private:
                                nsFrameItems&            aFrameItems);
 
 private:
-  /* An enum of possible parent types for anonymous table or ruby object
+  /* An enum of possible parent types for anonymous table or ruby object 
      construction */
   enum ParentType {
     eTypeBlock = 0, /* This includes all non-table-related frames */
@@ -1425,6 +1425,25 @@ private:
   nsresult GetAnonymousContent(nsIContent* aParent,
                                nsIFrame* aParentFrame,
                                nsTArray<nsIAnonymousContentCreator::ContentInfo>& aAnonContent);
+
+//MathML Mod - RBS
+  /**
+   * Takes the frames in aBlockItems and wraps them in a new anonymous block
+   * frame whose content is aContent and whose parent will be aParentFrame.
+   * The anonymous block is added to aNewItems and aBlockItems is cleared.
+   */
+  void FlushAccumulatedBlock(nsFrameConstructorState& aState,
+                             nsIContent* aContent,
+                             nsContainerFrame* aParentFrame,
+                             nsFrameItems& aBlockItems,
+                             nsFrameItems& aNewItems);
+
+  // Function to find FrameConstructionData for aContent.  Will return
+  // null if aContent is not MathML.
+  static const FrameConstructionData* FindMathMLData(Element* aElement,
+                                                     nsIAtom* aTag,
+                                                     int32_t aNameSpaceID,
+                                                     nsStyleContext* aStyleContext);
 
   // Function to find FrameConstructionData for aContent.  Will return
   // null if aContent is not XUL.

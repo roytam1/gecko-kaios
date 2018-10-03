@@ -98,7 +98,7 @@ nsNameSpaceManager::RegisterNameSpace(const nsAString& aURI,
   }
 
   NS_POSTCONDITION(aNameSpaceID >= -1, "Bogus namespace ID");
-
+  
   return rv;
 }
 
@@ -106,7 +106,7 @@ nsresult
 nsNameSpaceManager::GetNameSpaceURI(int32_t aNameSpaceID, nsAString& aURI)
 {
   NS_PRECONDITION(aNameSpaceID >= 0, "Bogus namespace ID");
-
+  
   int32_t index = aNameSpaceID - 1; // id is index + 1
   if (index < 0 || index >= int32_t(mURIArray.Length())) {
     aURI.Truncate();
@@ -151,6 +151,9 @@ NS_NewElement(Element** aResult,
     return NS_NewXULElement(aResult, ni.forget());
   }
 #endif
+  if (ns == kNameSpaceID_MathML) {
+    return NS_NewMathMLElement(aResult, ni.forget());
+  }
   if (ns == kNameSpaceID_SVG) {
     return NS_NewSVGElement(aResult, ni.forget(), aFromParser);
   }
@@ -181,7 +184,7 @@ nsresult nsNameSpaceManager::AddNameSpace(const nsAString& aURI,
     // We've wrapped...  Can't do anything else here; just bail.
     return NS_ERROR_OUT_OF_MEMORY;
   }
-
+  
   NS_ASSERTION(aNameSpaceID - 1 == (int32_t) mURIArray.Length(),
                "BAD! AddNameSpace not called in right order!");
 

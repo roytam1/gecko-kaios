@@ -57,6 +57,8 @@
 #include "mozilla/dom/HTMLInputElement.h"
 #include "SVGElementFactory.h"
 #include "nsSVGUtils.h"
+#include "nsMathMLAtoms.h"
+#include "nsMathMLOperators.h"
 #include "Navigator.h"
 #include "DOMStorageObserver.h"
 #include "CacheObserver.h"
@@ -220,6 +222,8 @@ nsLayoutStatics::Initialize()
 
 #endif
 
+  nsMathMLOperators::AddRefTable();
+
   nsTextServicesDocument::RegisterAtoms();
 
 #ifdef DEBUG
@@ -373,6 +377,7 @@ nsLayoutStatics::Shutdown()
 #endif
 
   SVGElementFactory::Shutdown();
+  nsMathMLOperators::ReleaseTable();
 
   nsFloatManager::Shutdown();
   nsImageFrame::ReleaseGlobals();

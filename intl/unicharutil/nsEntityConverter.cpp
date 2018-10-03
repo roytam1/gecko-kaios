@@ -39,6 +39,12 @@ nsEntityConverter:: GetVersionBundleInstance(uint32_t versionNumber)
       MOZ_ASSERT(mHTML40SpecialBundle, "LoadEntityBundle failed");
     }
     return mHTML40SpecialBundle;
+  case nsIEntityConverter::mathml20:
+    if (!mMathML20Bundle) {
+      mMathML20Bundle = LoadEntityBundle(kMATHML20);
+      MOZ_ASSERT(mMathML20Bundle, "LoadEntityBundle failed");
+    }
+    return mMathML20Bundle;
   default:
     return nullptr;
   }

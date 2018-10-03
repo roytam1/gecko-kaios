@@ -539,7 +539,7 @@ static const nsDefaultMimeTypeEntry defaultMimeEntries[] =
  * default mime types.
  */
 struct nsExtraMimeTypeEntry {
-  const char* mMimeType;
+  const char* mMimeType; 
   const char* mFileExtensions;
   const char* mDescription;
 };
@@ -588,6 +588,7 @@ static const nsExtraMimeTypeEntry extraMimeEntries[] =
   { TEXT_PLAIN, "txt,text", "Text File" },
   { TEXT_HTML, "html,htm,shtml,ehtml", "HyperText Markup Language" },
   { "application/xhtml+xml", "xhtml,xht", "Extensible HyperText Markup Language" },
+  { APPLICATION_MATHML_XML, "mml", "Mathematical Markup Language" },
   { APPLICATION_RDF, "rdf", "Resource Description Framework" },
   { TEXT_XUL, "xul", "XML-Based User Interface Language" },
   { TEXT_XML, "xml,xsl,xbl", "Extensible Markup Language" },
@@ -635,7 +636,7 @@ static const nsExtraMimeTypeEntry extraMimeEntries[] =
  * NOTE: These MUST be lower-case and ASCII.
  */
 static const nsDefaultMimeTypeEntry nonDecodableExtensions[] = {
-  { APPLICATION_GZIP, "gz" },
+  { APPLICATION_GZIP, "gz" }, 
   { APPLICATION_GZIP, "tgz" },
   { APPLICATION_ZIP, "zip" },
   { APPLICATION_COMPRESS, "z" },
@@ -724,7 +725,7 @@ nsExternalHelperAppService::DoContentContentProcessHelper(const nsACString& aMim
     child->SendPExternalHelperAppConstructor(uriParams,
                                               nsCString(aMimeContentType),
                                               disp, contentDisposition,
-                                              fileName, aForceSave,
+                                              fileName, aForceSave, 
                                               contentLength, referrerParams,
                                               mozilla::dom::TabChild::GetFrom(window));
   ExternalHelperAppChild *childListener = static_cast<ExternalHelperAppChild *>(pc);
@@ -841,7 +842,7 @@ NS_IMETHODIMP nsExternalHelperAppService::DoContent(const nsACString& aMimeConte
       if (mimeInfo) {
         mimeInfo->GetMIMEType(mimeType);
 
-        LOG(("OS-Provided mime type '%s' for extension '%s'\n",
+        LOG(("OS-Provided mime type '%s' for extension '%s'\n", 
              mimeType.get(), fileExtension.get()));
       }
     }
@@ -864,7 +865,7 @@ NS_IMETHODIMP nsExternalHelperAppService::DoContent(const nsACString& aMimeConte
   } else {
     mimeSvc->GetFromTypeAndExtension(aMimeContentType, fileExtension,
                                      getter_AddRefs(mimeInfo));
-  }
+  } 
   LOG(("Type/Ext lookup found 0x%p\n", mimeInfo.get()));
 
   // No mimeinfo -> we can't continue. probably OOM.
@@ -952,7 +953,7 @@ NS_IMETHODIMP nsExternalHelperAppService::ExternalProtocolHandlerExists(const ch
                                                                         bool * aHandlerExists)
 {
   nsCOMPtr<nsIHandlerInfo> handlerInfo;
-  nsresult rv = GetProtocolHandlerInfo(nsDependentCString(aProtocolScheme),
+  nsresult rv = GetProtocolHandlerInfo(nsDependentCString(aProtocolScheme), 
                                        getter_AddRefs(handlerInfo));
   NS_ENSURE_SUCCESS(rv, rv);
 
@@ -1001,7 +1002,7 @@ NS_IMETHODIMP nsExternalHelperAppService::LoadUrl(nsIURI * aURL)
 static const char kExternalProtocolPrefPrefix[]  = "network.protocol-handler.external.";
 static const char kExternalProtocolDefaultPref[] = "network.protocol-handler.external-default";
 
-NS_IMETHODIMP
+NS_IMETHODIMP 
 nsExternalHelperAppService::LoadURI(nsIURI *aURI,
                                     nsIInterfaceRequestor *aWindowContext)
 {
@@ -1025,7 +1026,7 @@ nsExternalHelperAppService::LoadURI(nsIURI *aURI,
 
   spec.ReplaceSubstring("\"", "%22");
   spec.ReplaceSubstring("`", "%60");
-
+  
   nsCOMPtr<nsIIOService> ios(do_GetIOService());
   nsCOMPtr<nsIURI> uri;
   nsresult rv = ios->NewURI(spec, nullptr, nullptr, getter_AddRefs(uri));
@@ -1066,11 +1067,11 @@ nsExternalHelperAppService::LoadURI(nsIURI *aURI,
   if (!alwaysAsk && (preferredAction == nsIHandlerInfo::useHelperApp ||
                      preferredAction == nsIHandlerInfo::useSystemDefault))
     return handler->LaunchWithURI(uri, aWindowContext);
-
+  
   nsCOMPtr<nsIContentDispatchChooser> chooser =
     do_CreateInstance("@mozilla.org/content-dispatch-chooser;1", &rv);
   NS_ENSURE_SUCCESS(rv, rv);
-
+  
   return chooser->Ask(handler, aWindowContext, uri,
                       nsIContentDispatchChooser::REASON_CANNOT_HANDLE);
 }
@@ -1141,9 +1142,9 @@ void nsExternalHelperAppService::ExpungeTemporaryPrivateFiles()
   ExpungeTemporaryFilesHelper(mTemporaryPrivateFilesList);
 }
 
-static const char kExternalWarningPrefPrefix[] =
+static const char kExternalWarningPrefPrefix[] = 
   "network.protocol-handler.warn-external.";
-static const char kExternalWarningDefaultPref[] =
+static const char kExternalWarningDefaultPref[] = 
   "network.protocol-handler.warn-external-default";
 
 NS_IMETHODIMP
@@ -1159,7 +1160,7 @@ nsExternalHelperAppService::GetProtocolHandlerInfo(const nsACString &aScheme,
     // Either it knows nothing, or we ran out of memory
     return NS_ERROR_FAILURE;
   }
-
+  
   nsCOMPtr<nsIHandlerService> handlerSvc = do_GetService(NS_HANDLERSERVICE_CONTRACTID);
   if (handlerSvc) {
     bool hasHandler = false;
@@ -1170,7 +1171,7 @@ nsExternalHelperAppService::GetProtocolHandlerInfo(const nsACString &aScheme,
         return NS_OK;
     }
   }
-
+  
   return SetProtocolHandlerDefaults(*aHandlerInfo, exists);
 }
 
@@ -1197,7 +1198,7 @@ nsExternalHelperAppService::SetProtocolHandlerDefaults(nsIHandlerInfo *aHandlerI
     // whether or not to ask the user depends on the warning preference
     nsAutoCString scheme;
     aHandlerInfo->GetType(scheme);
-
+    
     nsAutoCString warningPref(kExternalWarningPrefPrefix);
     warningPref += scheme;
     bool warn;
@@ -1207,7 +1208,7 @@ nsExternalHelperAppService::SetProtocolHandlerDefaults(nsIHandlerInfo *aHandlerI
     }
     aHandlerInfo->SetAlwaysAskBeforeHandling(warn);
   } else {
-    // If no OS default existed, we set the preferred action to alwaysAsk.
+    // If no OS default existed, we set the preferred action to alwaysAsk. 
     // This really means not initialized (i.e. there's no available handler)
     // to all the code...
     aHandlerInfo->SetPreferredAction(nsIHandlerInfo::alwaysAsk);
@@ -1215,7 +1216,7 @@ nsExternalHelperAppService::SetProtocolHandlerDefaults(nsIHandlerInfo *aHandlerI
 
   return NS_OK;
 }
-
+ 
 // XPCOM profile change observer
 NS_IMETHODIMP
 nsExternalHelperAppService::Observe(nsISupports *aSubject, const char *aTopic, const char16_t *someData )
@@ -1229,7 +1230,7 @@ nsExternalHelperAppService::Observe(nsISupports *aSubject, const char *aTopic, c
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// begin external app handler implementation
+// begin external app handler implementation 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 NS_IMPL_ADDREF(nsExternalAppHandler)
@@ -1363,19 +1364,19 @@ NS_IMETHODIMP nsExternalAppHandler::GetContentLength(int64_t *aContentLength)
 
 void nsExternalAppHandler::RetargetLoadNotifications(nsIRequest *request)
 {
-  // we are going to run the downloading of the helper app in our own little docloader / load group context.
+  // we are going to run the downloading of the helper app in our own little docloader / load group context. 
   // so go ahead and force the creation of a load group and doc loader for us to use...
   nsCOMPtr<nsIChannel> aChannel = do_QueryInterface(request);
   if (!aChannel)
     return;
 
   // we need to store off the original (pre redirect!) channel that initiated the load. We do
-  // this so later on, we can pass any refresh urls associated with the original channel back to the
+  // this so later on, we can pass any refresh urls associated with the original channel back to the 
   // window context which started the whole process. More comments about that are listed below....
-  // HACK ALERT: it's pretty bogus that we are getting the document channel from the doc loader.
+  // HACK ALERT: it's pretty bogus that we are getting the document channel from the doc loader. 
   // ideally we should be able to just use mChannel (the channel we are extracting content from) or
   // the default load channel associated with the original load group. Unfortunately because
-  // a redirect may have occurred, the doc loader is the only one with a ptr to the original channel
+  // a redirect may have occurred, the doc loader is the only one with a ptr to the original channel 
   // which is what we really want....
 
   // Note that we need to do this before removing aChannel from the loadgroup,
@@ -1394,7 +1395,7 @@ void nsExternalAppHandler::RetargetLoadNotifications(nsIRequest *request)
   if(oldLoadGroup) {
     oldLoadGroup->RemoveRequest(request, nullptr, NS_BINDING_RETARGETED);
   }
-
+      
   aChannel->SetLoadGroup(nullptr);
   aChannel->SetNotificationCallbacks(nullptr);
 
@@ -1612,9 +1613,9 @@ NS_IMETHODIMP nsExternalAppHandler::OnStartRequest(nsIRequest *request, nsISuppo
   mRequest = request;
 
   nsCOMPtr<nsIChannel> aChannel = do_QueryInterface(request);
-
+  
   nsresult rv;
-
+  
   nsCOMPtr<nsIFileChannel> fileChan(do_QueryInterface(request));
   mIsFileChannel = fileChan != nullptr;
 
@@ -1758,7 +1759,7 @@ NS_IMETHODIMP nsExternalAppHandler::OnStartRequest(nsIRequest *request, nsISuppo
     alwaysAsk = false;
     action = nsIMIMEInfo::saveToDisk;
   }
-
+  
   if (alwaysAsk)
   {
     // Display the dialog
@@ -2404,8 +2405,8 @@ NS_IMETHODIMP nsExternalAppHandler::LaunchWithApplication(nsIFile * aApplication
     return NS_OK;
 
   // user has chosen to launch using an application, fire any refresh tags now...
-  ProcessAnyRefreshTags();
-
+  ProcessAnyRefreshTags(); 
+  
   if (mMimeInfo && aApplication) {
     PlatformLocalHandlerApp_t *handlerApp =
       new PlatformLocalHandlerApp_t(EmptyString(), aApplication);
@@ -2451,7 +2452,7 @@ NS_IMETHODIMP nsExternalAppHandler::LaunchWithApplication(nsIFile * aApplication
 #ifdef XP_WIN
   fileToUse->Append(mSuggestedFileName + mTempFileExtension);
 #else
-  fileToUse->Append(mSuggestedFileName);
+  fileToUse->Append(mSuggestedFileName);  
 #endif
 
   nsresult rv = fileToUse->CreateUnique(nsIFile::NORMAL_FILE_TYPE, 0600);
@@ -2598,10 +2599,10 @@ nsExternalAppHandler::Notify(nsITimer* timer)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // nsIMIMEService methods
-NS_IMETHODIMP nsExternalHelperAppService::GetFromTypeAndExtension(const nsACString& aMIMEType, const nsACString& aFileExt, nsIMIMEInfo **_retval)
+NS_IMETHODIMP nsExternalHelperAppService::GetFromTypeAndExtension(const nsACString& aMIMEType, const nsACString& aFileExt, nsIMIMEInfo **_retval) 
 {
   NS_PRECONDITION(!aMIMEType.IsEmpty() ||
-                  !aFileExt.IsEmpty(),
+                  !aFileExt.IsEmpty(), 
                   "Give me something to work with");
   LOG(("Getting mimeinfo from type '%s' ext '%s'\n",
         PromiseFlatCString(aMIMEType).get(), PromiseFlatCString(aFileExt).get()));
@@ -2641,7 +2642,7 @@ NS_IMETHODIMP nsExternalHelperAppService::GetFromTypeAndExtension(const nsACStri
     } else {
       rv = NS_ERROR_NOT_AVAILABLE;
     }
-
+ 
     found = found || NS_SUCCEEDED(rv);
 
     if (!found || NS_FAILED(rv)) {
@@ -2713,7 +2714,7 @@ NS_IMETHODIMP nsExternalHelperAppService::GetFromTypeAndExtension(const nsACStri
   return NS_OK;
 }
 
-NS_IMETHODIMP nsExternalHelperAppService::GetTypeFromExtension(const nsACString& aFileExt, nsACString& aContentType)
+NS_IMETHODIMP nsExternalHelperAppService::GetTypeFromExtension(const nsACString& aFileExt, nsACString& aContentType) 
 {
   // OK. We want to try the following sources of mimetype information, in this order:
   // 1. defaultMimeEntries array
@@ -2794,7 +2795,7 @@ NS_IMETHODIMP nsExternalHelperAppService::GetPrimaryExtension(const nsACString& 
   return mi->GetPrimaryExtension(_retval);
 }
 
-NS_IMETHODIMP nsExternalHelperAppService::GetTypeFromURI(nsIURI *aURI, nsACString& aContentType)
+NS_IMETHODIMP nsExternalHelperAppService::GetTypeFromURI(nsIURI *aURI, nsACString& aContentType) 
 {
   NS_ENSURE_ARG_POINTER(aURI);
   nsresult rv = NS_ERROR_NOT_AVAILABLE;
@@ -2828,7 +2829,7 @@ NS_IMETHODIMP nsExternalHelperAppService::GetTypeFromURI(nsIURI *aURI, nsACStrin
 
     return GetTypeFromExtension(ext, aContentType);
   }
-
+    
   // no url, let's give the raw spec a shot
   nsAutoCString specStr;
   rv = aURI->GetSpec(specStr);
@@ -2843,7 +2844,7 @@ NS_IMETHODIMP nsExternalHelperAppService::GetTypeFromURI(nsIURI *aURI, nsACStrin
       extLoc != specLength - 1 &&
       // nothing over 20 chars long can be sanely considered an
       // extension.... Dat dere would be just data.
-      specLength - extLoc < 20)
+      specLength - extLoc < 20) 
   {
     return GetTypeFromExtension(Substring(specStr, extLoc + 1), aContentType);
   }
@@ -2862,12 +2863,12 @@ NS_IMETHODIMP nsExternalHelperAppService::GetTypeFromFile(nsIFile* aFile, nsACSt
   nsAutoString fileName;
   rv = aFile->GetLeafName(fileName);
   if (NS_FAILED(rv)) return rv;
-
+ 
   nsAutoCString fileExt;
   if (!fileName.IsEmpty())
   {
-    int32_t len = fileName.Length();
-    for (int32_t i = len; i >= 0; i--)
+    int32_t len = fileName.Length(); 
+    for (int32_t i = len; i >= 0; i--) 
     {
       if (fileName[i] == char16_t('.'))
       {
