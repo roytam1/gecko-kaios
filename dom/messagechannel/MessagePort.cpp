@@ -187,7 +187,6 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(MessagePort)
   NS_INTERFACE_MAP_ENTRY(nsIIPCBackgroundChildCreateCallback)
-  NS_INTERFACE_MAP_ENTRY(nsIObserver)
 NS_INTERFACE_MAP_END_INHERITING(DOMEventTargetHelper)
 
 NS_IMPL_ADDREF_INHERITED(MessagePort, DOMEventTargetHelper)
@@ -273,7 +272,6 @@ NS_IMPL_ISUPPORTS(ForceCloseHelper, nsIIPCBackgroundChildCreateCallback)
 
 MessagePort::MessagePort(nsIGlobalObject* aGlobal)
   : DOMEventTargetHelper(aGlobal)
-  , mInnerID(0)
   , mMessageQueueEnabled(false)
   , mIsKeptAlive(false)
 {
@@ -366,15 +364,6 @@ MessagePort::Initialize(const nsID& aUUID,
     }
 
     mWorkerHolder = Move(workerHolder);
-  } else if (GetOwner()) {
-    MOZ_ASSERT(NS_IsMainThread());
-    MOZ_ASSERT(GetOwner()->IsInnerWindow());
-    mInnerID = GetOwner()->WindowID();
-
-    nsCOMPtr<nsIObserverService> obs = mozilla::services::GetObserverService();
-    if (obs) {
-      obs->AddObserver(this, "inner-window-destroyed", false);
-    }
   }
 }
 
@@ -915,14 +904,6 @@ MessagePort::UpdateMustKeepAlive()
     // The DTOR of this WorkerHolder will release the worker for us.
     mWorkerHolder = nullptr;
 
-    if (NS_IsMainThread()) {
-      nsCOMPtr<nsIObserverService> obs =
-        do_GetService("@mozilla.org/observer-service;1");
-      if (obs) {
-        obs->RemoveObserver(this, "inner-window-destroyed");
-      }
-    }
-
     Release();
     return;
   }
@@ -933,34 +914,14 @@ MessagePort::UpdateMustKeepAlive()
   }
 }
 
-NS_IMETHODIMP
-MessagePort::Observe(nsISupports* aSubject, const char* aTopic,
-                     const char16_t* aData)
+void
+MessagePort::DisconnectFromOwner()
 {
-  MOZ_ASSERT(NS_IsMainThread());
-
-  if (strcmp(aTopic, "inner-window-destroyed")) {
-    return NS_OK;
-  }
-
-  // If the window id destroyed we have to release the reference that we are
-  // keeping.
-  if (!mIsKeptAlive) {
-    return NS_OK;
-  }
-
-  nsCOMPtr<nsISupportsPRUint64> wrapper = do_QueryInterface(aSubject);
-  NS_ENSURE_TRUE(wrapper, NS_ERROR_FAILURE);
-
-  uint64_t innerID;
-  nsresult rv = wrapper->GetData(&innerID);
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  if (innerID == mInnerID) {
+  if (mIsKeptAlive) {
     CloseForced();
   }
 
-  return NS_OK;
+  DOMEventTargetHelper::DisconnectFromOwner();
 }
 
 void
