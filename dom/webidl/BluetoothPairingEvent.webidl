@@ -9,12 +9,14 @@
              optional BluetoothPairingEventInit eventInitDict)]
 interface BluetoothPairingEvent : Event
 {
+  readonly attribute DOMString               address;
   readonly attribute DOMString               deviceName;
   readonly attribute BluetoothPairingHandle? handle;
 };
 
 dictionary BluetoothPairingEventInit : EventInit
 {
+  DOMString address = "";
   DOMString deviceName = "";
   BluetoothPairingHandle? handle = null;
 };

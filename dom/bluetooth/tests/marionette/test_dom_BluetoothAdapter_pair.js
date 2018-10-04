@@ -35,6 +35,7 @@
 //   - BluetoothPairingListener.onpairingconfirmationreq()
 //   - BluetoothPairingListener.onpairingconsentreq()
 //
+//   - BluetoothPairingEvent.address        // not covered yet
 //   - BluetoothPairingEvent.deviceName
 //   - BluetoothPairingEvent.handle
 //

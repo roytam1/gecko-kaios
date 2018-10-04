@@ -70,6 +70,7 @@ BluetoothPairingListener::DispatchPairingEvent(
                                    aPasskey);
 
   BluetoothPairingEventInit init;
+  init.mAddress = addressStr;
   init.mDeviceName = nameStr;
   init.mHandle = handle;
 
