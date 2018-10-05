@@ -17,7 +17,8 @@
 #include "nsPIDOMWindow.h"
 #include "nsIPropertyBag2.h"
 
-#ifndef TARGET_VARIANT_USER
+#if defined(MOZ_WIDGET_GONK) && !defined(TARGET_VARIANT_USER)
+#include <android/log.h>
 #define WAKELOCK_LOG(args...) __android_log_print(ANDROID_LOG_INFO, "WakeLock", ##args)
 #else
 #define WAKELOCK_LOG(args...) do { /* nothing */ } while(0)
