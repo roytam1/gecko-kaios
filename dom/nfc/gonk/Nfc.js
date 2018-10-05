@@ -695,6 +695,8 @@ Nfc.prototype = {
 
   _domRequest: [],
 
+  _mPOSReaderModeOn: false,
+
   /**
    * Start NFC service
    */
@@ -739,29 +741,55 @@ Nfc.prototype = {
   onChildProcessShutdown: function onChildProcessShutdown(target) {
     if (this._domRequest.length <= 0) return;
 
-    for (let i = this._domRequest.length - 1; i >= 0; i--) {
-      if (this._domRequest[i].msg.manager === target) {
-        this._domRequest.splice(i, 1);
-      }
-    }
-
-    if (this._domRequest.length <= 0) {
+    let handler = [];
+    handler["NFC:SetConfig"] = (name) => {
       if(!Services.prefs.getBoolPref("dom.nfc.revertTransit.enabled")) {
         debug("Revert to transit is disabled.");
         return;
       }
 
-      let command = CommandMsgTable["NFC:SetConfig"];
+      let command = CommandMsgTable[name];
       if (!command) {
         debug("Unknown message");
         return;
       }
+
       let confFile = new Blob([''], {type: "text/plain"});
       this.sendToNfcService(command, {
         requestId: this._getRandomId(),
         rfConfType: "revertToTransit",
         confBlob: confFile
       });
+    };
+
+    handler["NFC:MPOSReaderMode"] = (name) => {
+      if (!this._mPOSReaderModeOn) {
+        debug("Reader mode is not enabled");
+        return
+      }
+
+      let command = CommandMsgTable[name];
+      if (!command) {
+        debug("Unknown message");
+        return;
+      }
+
+      this.sendToNfcService(command, {
+        requestId: this._getRandomId(),
+        mPOSReaderMode: false
+      });
+    };
+
+    for (let i = this._domRequest.length - 1; i >= 0; i--) {
+      if (this._domRequest[i].msg.manager !== target) continue;
+
+      let msgName = this._domRequest[i].name;
+      let func = handler[msgName];
+      if (func) {
+        func(msgName);
+      }
+
+      this._domRequest.splice(i, 1);
     }
   },
   /**
@@ -1089,9 +1117,13 @@ Nfc.prototype = {
     let msg = message.data || {};
     msg.manager = message.target;
 
-    // We are interested in SetConfig DOMRequests only.
-    if (message.name == "NFC:SetConfig") {
+    // We are interested in SetConfig and MPOSReaderMode DOMRequests.
+    if (message.name == "NFC:SetConfig" || message.name == "NFC:MPOSReaderMode") {
       this._domRequest.push({name: message.name, msg:msg});
+
+      if (message.name == "NFC:MPOSReaderMode") {
+        this._mPOSReaderModeOn = msg.mPOSReaderMode;
+      }
     }
 
     // NFC Service is running and we have a message for it. This
@@ -1657,6 +1689,10 @@ Nfc.prototype = {
   mPOSReaderModeResponse: function(message)
   {
     debug("mPOSReaderModeResponse: send mpos reader mode response:" + JSON.stringify(message));
+    if (message.errorMsg) {
+      this._mPOSReaderModeOn = false;
+    }
+
     this.sendNfcResponse(message);
   },
 
