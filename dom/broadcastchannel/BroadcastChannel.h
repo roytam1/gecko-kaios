@@ -10,7 +10,6 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/DOMEventTargetHelper.h"
 #include "nsIIPCBackgroundChildCreateCallback.h"
-#include "nsIObserver.h"
 #include "nsTArray.h"
 #include "mozilla/RefPtr.h"
 
@@ -34,12 +33,10 @@ class BroadcastChannelMessage;
 class BroadcastChannel final
   : public DOMEventTargetHelper
   , public nsIIPCBackgroundChildCreateCallback
-  , public nsIObserver
 {
   friend class BroadcastChannelChild;
 
   NS_DECL_NSIIPCBACKGROUNDCHILDCREATECALLBACK
-  NS_DECL_NSIOBSERVER
 
   typedef mozilla::ipc::PrincipalInfo PrincipalInfo;
 
@@ -112,6 +109,8 @@ private:
 
   void RemoveDocFromBFCache();
 
+  void DisconnectFromOwner() override;
+
   RefPtr<BroadcastChannelChild> mActor;
   nsTArray<RefPtr<BroadcastChannelMessage>> mPendingMessages;
 
@@ -124,8 +123,6 @@ private:
   bool mPrivateBrowsing;
 
   bool mIsKeptAlive;
-
-  uint64_t mInnerID;
 
   enum {
     StateActive,

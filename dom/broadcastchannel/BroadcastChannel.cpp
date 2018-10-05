@@ -314,7 +314,6 @@ BroadcastChannel::BroadcastChannel(nsPIDOMWindowInner* aWindow,
   , mChannel(aChannel)
   , mPrivateBrowsing(aPrivateBrowsing)
   , mIsKeptAlive(false)
-  , mInnerID(0)
   , mState(StateActive)
 {
   // Window can be null in workers
@@ -412,17 +411,7 @@ BroadcastChannel::Constructor(const GlobalObject& aGlobal,
     BackgroundChild::GetOrCreateForCurrentThread(bc);
   }
 
-  if (!workerPrivate) {
-    MOZ_ASSERT(window);
-    MOZ_ASSERT(window->IsInnerWindow());
-    bc->mInnerID = window->WindowID();
-
-    // Register as observer for inner-window-destroyed.
-    nsCOMPtr<nsIObserverService> obs = mozilla::services::GetObserverService();
-    if (obs) {
-      obs->AddObserver(bc, "inner-window-destroyed", false);
-    }
-  } else {
+  if (workerPrivate) {
     bc->mWorkerHolder = new BroadcastChannelWorkerHolder(bc);
     if (NS_WARN_IF(!bc->mWorkerHolder->HoldWorker(workerPrivate))) {
       bc->mWorkerHolder = nullptr;
@@ -635,34 +624,6 @@ BroadcastChannel::UpdateMustKeepAlive()
   }
 }
 
-NS_IMETHODIMP
-BroadcastChannel::Observe(nsISupports* aSubject, const char* aTopic,
-                          const char16_t* aData)
-{
-  MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(!strcmp(aTopic, "inner-window-destroyed"));
-
-  // If the window is destroyed we have to release the reference that we are
-  // keeping.
-  nsCOMPtr<nsISupportsPRUint64> wrapper = do_QueryInterface(aSubject);
-  NS_ENSURE_TRUE(wrapper, NS_ERROR_FAILURE);
-
-  uint64_t innerID;
-  nsresult rv = wrapper->GetData(&innerID);
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  if (innerID == mInnerID) {
-    nsCOMPtr<nsIObserverService> obs = mozilla::services::GetObserverService();
-    if (obs) {
-      obs->RemoveObserver(this, "inner-window-destroyed");
-    }
-
-    Shutdown();
-  }
-
-  return NS_OK;
-}
-
 void
 BroadcastChannel::RemoveDocFromBFCache()
 {
@@ -688,6 +649,13 @@ BroadcastChannel::RemoveDocFromBFCache()
   bfCacheEntry->RemoveFromBFCacheSync();
 }
 
+void
+BroadcastChannel::DisconnectFromOwner()
+{
+  Shutdown();
+  DOMEventTargetHelper::DisconnectFromOwner();
+}
+
 NS_IMPL_CYCLE_COLLECTION_CLASS(BroadcastChannel)
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(BroadcastChannel,
@@ -701,7 +669,6 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(BroadcastChannel)
   NS_INTERFACE_MAP_ENTRY(nsIIPCBackgroundChildCreateCallback)
-  NS_INTERFACE_MAP_ENTRY(nsIObserver)
 NS_INTERFACE_MAP_END_INHERITING(DOMEventTargetHelper)
 
 NS_IMPL_ADDREF_INHERITED(BroadcastChannel, DOMEventTargetHelper)
