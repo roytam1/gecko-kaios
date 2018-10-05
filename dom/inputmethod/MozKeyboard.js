@@ -454,6 +454,8 @@ MozInputMethod.prototype = {
   },
 
   uninit: function mozInputMethodUninit() {
+    Services.obs.removeObserver(this, "inner-window-destroyed");
+
     cpmm.removeWeakMessageListener('Keyboard:Focus', this);
     cpmm.removeWeakMessageListener('Keyboard:Blur', this);
     cpmm.removeWeakMessageListener('Keyboard:SelectionChange', this);
