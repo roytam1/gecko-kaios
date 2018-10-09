@@ -361,16 +361,25 @@ pref("media.gonk.enabled", true);
 #ifdef KAIOS_256MB_SUPPORT
 // fine tune for 256 youtube.
 // Bug 48101 - [PIER2_KK][Youtube] memory performance
-// value smaller than this may cause streaming pause (time range discontinuity)
-//set maximum video buffer size to 8MB(8*1024*1024)
-pref("media.mediasource.eviction_threshold.video", 8388608); //byte
-////set maximum Audio buffer size to 5MB(5*1024*1024)
-pref("media.mediasource.eviction_threshold.audio", 5242880); //byte
+//set maximum video buffer size to 4MB(4*1024*1024)
+pref("media.mediasource.eviction_threshold.video", 4194304); //byte
+////set maximum Audio buffer size to 2MB(2*1024*1024)
+pref("media.mediasource.eviction_threshold.audio", 2097152); //byte
+// Bug 49586 - MSE buffer control by Gecko
+////set maximum buffer time range to 20 second
+pref("media.mediasource.range_threshold", 20);
+////allow gecko control MSE buffer size
+pref("media.mediasource.buffer_control", true);
 #else
-// Set maximum Video buffer size to 40MB(40*1024*1024).
-pref("media.mediasource.eviction_threshold.video", 41943040);
-// Set maximum Audio buffer size to 20MB(20*1024*1024).
-pref("media.mediasource.eviction_threshold.audio", 20971520);
+// Set maximum Video buffer size to 8MB(8*1024*1024).
+pref("media.mediasource.eviction_threshold.video", 8388608);
+// Set maximum Audio buffer size to 4MB(4*1024*1024).
+pref("media.mediasource.eviction_threshold.audio", 4194304);
+// Bug 49586 - MSE buffer control by Gecko
+////set maximum buffer time range to 40 second
+pref("media.mediasource.range_threshold", 40);
+////allow gecko control MSE buffer size
+pref("media.mediasource.buffer_control", true);
 #endif
 
 //Encrypted media extensions.

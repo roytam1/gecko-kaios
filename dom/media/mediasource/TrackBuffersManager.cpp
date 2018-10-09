@@ -14,6 +14,7 @@
 #include "SourceBuffer.h"
 #include "WebMDemuxer.h"
 #include "SourceBufferTask.h"
+#include "MediaTimer.h"
 
 #ifdef MOZ_FMP4
 #include "MP4Demuxer.h"
@@ -104,8 +105,13 @@ TrackBuffersManager::TrackBuffersManager(MediaSourceDecoder* aParentDecoder,
                                                  100 * 1024 * 1024))
   , mAudioEvictionThreshold(Preferences::GetUint("media.mediasource.eviction_threshold.audio",
                                                  30 * 1024 * 1024))
+  , mRangeThreshold(Preferences::GetUint("media.mediasource.range_threshold"))
+  , mMSEGeckoControl(Preferences::GetBool("media.mediasource.buffer_control"))
   , mEvictionOccurred(false)
   , mMonitor("TrackBuffersManager")
+  , mDelayedScheduler(aParentDecoder->GetDemuxer()->GetTaskQueue())
+  , mDispatched(false)
+  , mCurrentTime(0.0)
 {
   MOZ_ASSERT(NS_IsMainThread(), "Must be instanciated on the main thread");
 }
@@ -124,6 +130,8 @@ TrackBuffersManager::AppendData(MediaByteBuffer* aData,
   MSE_DEBUG("Appending %lld bytes", aData->Length());
 
   mEnded = false;
+
+  mCurrentTime = mParentDecoder->GetCurrentTime();
 
   RefPtr<MediaByteBuffer> buffer = aData;
 
@@ -633,6 +641,9 @@ TrackBuffersManager::SegmentParserLoop()
 {
   MOZ_ASSERT(OnTaskQueue());
 
+  mDispatched = false;
+  mDelayedScheduler.Reset();
+
   while (true) {
     // 1. If the input buffer is empty, then jump to the need more data step below.
     if (!mInputBuffer || mInputBuffer->IsEmpty()) {
@@ -775,6 +786,42 @@ TrackBuffersManager::NeedMoreData()
     // We've been detached.
     return;
   }
+
+  // If gecko control buffer is disabled, buffer control is managed by APP (ex: youtube)
+  // Youtube keeps a buffer range of 2 minutes.
+  // Which needs video:8M, audio:5M at least.
+  // Behavior of other APP is unknown, maybe even worse. (Meaning we need to increase memory size)
+  //
+  // If gecko control buffer is allowed, check if current buffer time range is more than mRangeThreshold
+  // MSE spec only says gecko either return OK/FAIL to app, but doesn't say how fast we need to respond.
+  // if we have enough data, resolve promise later with ScheduleSegmentParserLoopIn()
+  // memory usage: video: 4M, audio: 2M
+  // Youtube will still try to fill buffer as soon as possible, but in this case the buffer range is about 81s
+  //
+  // MediaDecoder::GetCurrentTime() must run on main thread so mCurrentTime is the closest we can get here.
+  // (Assume AppendData() won't take too long to get here)
+  if(mCurrentTime != 0.0 && mMSEGeckoControl){
+    double bufferEnd = 0.0;
+    media::TimeIntervals currentRanges = Buffered();
+    for(uint32_t i = 0; i < currentRanges.Length(); i++){
+      // edge case curtime:35s time range: [30-40, 100-110]
+      // if we pick the last(which is 110), we will never be able to resolve it.
+      // we need to pick end time as 40s to allow APP to have the chance to fill the gap.
+      // (Although APP may not fill it). Embms have this issue.
+      if(currentRanges.Start(i).ToSeconds() <= mCurrentTime && mCurrentTime < currentRanges.End(i).ToSeconds()){
+        bufferEnd = currentRanges.End(i).ToSeconds();
+        break;
+      }
+    }
+
+    if((bufferEnd - mCurrentTime) > mRangeThreshold){
+      MSE_DEBUG("curTime:%f bufferEnd:%f  mRangeThreshold:%lld seconds. Don't resolve yet",mCurrentTime, bufferEnd, mRangeThreshold);
+      ScheduleSegmentParserLoopIn(USECS_PER_S*(bufferEnd - mCurrentTime - mRangeThreshold));
+      mCurrentTime = 0.0;
+      return;
+    }
+  }
+
   MOZ_DIAGNOSTIC_ASSERT(mCurrentTask && mCurrentTask->GetType() == SourceBufferTask::Type::AppendBuffer);
   MOZ_DIAGNOSTIC_ASSERT(mSourceBufferAttributes);
 
@@ -804,11 +851,41 @@ TrackBuffersManager::RejectAppend(nsresult aRejectValue, const char* aName)
 }
 
 void
-TrackBuffersManager::ScheduleSegmentParserLoop()
+TrackBuffersManager::ScheduleSegmentParserLoopIn(int64_t aMicroseconds)
 {
-  if (mDetached) {
+  MOZ_ASSERT(OnTaskQueue());          // mDelayedScheduler.Ensure() may Disconnect()
+                                      // the promise, which must happen on the state
+                                      // machine task queue.
+  MOZ_ASSERT(aMicroseconds > 0);
+
+  if (mDetached || mDispatched) {
     return;
   }
+
+  TimeStamp now = TimeStamp::Now();
+  TimeStamp target = now + TimeDuration::FromMicroseconds(aMicroseconds);
+
+  MSE_DEBUG("%p Scheduling SegmentParserLoop for %lf ms from now",this, (target - now).ToMilliseconds());
+
+  RefPtr<TrackBuffersManager> self = this;
+  mDelayedScheduler.Ensure(target, [self] () {
+    self->OnDelayedSchedule();
+  }, [self] () {
+    self->NotReached();
+  });
+
+}
+
+
+void
+TrackBuffersManager::ScheduleSegmentParserLoop()
+{
+  if (mDetached || mDispatched) {
+    return;
+  }
+
+  mDispatched = true;
+
   nsCOMPtr<nsIRunnable> task =
     NS_NewRunnableMethod(this, &TrackBuffersManager::SegmentParserLoop);
   GetTaskQueue()->Dispatch(task.forget());
@@ -911,7 +988,7 @@ TrackBuffersManager::OnDemuxerResetDone(nsresult)
     mProcessedInput += mPendingInputBuffer->Length();
   }
 
-  SegmentParserLoop();
+  ScheduleSegmentParserLoop();
 }
 
 void

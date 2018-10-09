@@ -21,6 +21,7 @@
 #include "nsProxyRelease.h"
 #include "nsString.h"
 #include "nsTArray.h"
+#include "MediaTimer.h"
 
 namespace mozilla {
 
@@ -158,6 +159,15 @@ private:
   // All following functions run on the taskqueue.
   RefPtr<AppendPromise> DoAppendData(RefPtr<MediaByteBuffer> aData,
                                      SourceBufferAttributes aAttributes);
+  void OnDelayedSchedule()
+  {
+    MOZ_ASSERT(OnTaskQueue());
+    mDelayedScheduler.CompleteRequest();
+    ScheduleSegmentParserLoop();
+  }
+
+  void NotReached() { MOZ_DIAGNOSTIC_ASSERT(false); }
+  void ScheduleSegmentParserLoopIn(int64_t aMicroseconds);
   void ScheduleSegmentParserLoop();
   void SegmentParserLoop();
   void InitializationSegmentReceived();
@@ -397,6 +407,8 @@ private:
   Atomic<int64_t> mSizeSourceBuffer;
   const int64_t mVideoEvictionThreshold;
   const int64_t mAudioEvictionThreshold;
+  const int64_t mRangeThreshold;
+  const bool mMSEGeckoControl;
   Atomic<bool> mEvictionOccurred;
 
   // Monitor to protect following objects accessed across multipple threads.
@@ -406,6 +418,10 @@ private:
   media::TimeIntervals mAudioBufferedRanges;
   // MediaInfo of the first init segment read.
   MediaInfo mInfo;
+  // Used to dispatch another round schedule with specific target time.
+  DelayedScheduler mDelayedScheduler;
+  bool mDispatched;
+  double mCurrentTime;
 };
 
 } // namespace mozilla
