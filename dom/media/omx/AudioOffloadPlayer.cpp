@@ -670,7 +670,12 @@ nsresult AudioOffloadPlayer::StopTimeUpdate()
 MediaDecoderOwner::NextFrameStatus AudioOffloadPlayer::GetNextFrameStatus()
 {
   MOZ_ASSERT(NS_IsMainThread());
-  if (mSeekTarget.IsValid()) {
+  // If seek is called while paused, we directly resolve seek promise and
+  // pretend that seek has done. The actual seek operation will be performed
+  // after played. In this case, we don't want to be stuck in seeking state
+  // before Play() is called, so we check mSeekPromise here instead of
+  // mSeekTarget.
+  if (!mSeekPromise.IsEmpty()) {
     return MediaDecoderOwner::NEXT_FRAME_UNAVAILABLE_SEEKING;
   } else if (mPlayState == MediaDecoder::PLAY_STATE_ENDED) {
     return MediaDecoderOwner::NEXT_FRAME_UNAVAILABLE;
