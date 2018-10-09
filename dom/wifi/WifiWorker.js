@@ -939,6 +939,15 @@ var WifiManager = (function() {
         return true;
       }
 
+      // Wpa_supplicant won't send WRONG_KEY or AUTH_FAIL event before sdk 20,
+      // hence we check pre-share key incorrect msg here.
+      if (sdkVersion < 20 &&
+          event.indexOf("pre-shared key may be incorrect") !== -1 ) {
+        wifiInfo.reset();
+        notify("networkdisable", {reason: "DISABLED_AUTHENTICATION_FAILURE"});
+        return true;
+      }
+
       // This is ugly, but we need to grab the SSID here. BSSID is not guaranteed
       // to be provided, so don't grab BSSID here.
       var match = /Trying to associate with.*SSID[ =]'(.*)'/.exec(event);
