@@ -577,7 +577,7 @@ partial interface Navigator {
 #endif
 #ifdef ENABLE_FOTA
 partial interface Navigator {
-  [Throws]
+  [CheckAnyPermissions="fota", Throws]
   readonly attribute FotaEngine fota;
 };
 #endif

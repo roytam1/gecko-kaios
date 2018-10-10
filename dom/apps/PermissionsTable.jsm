@@ -611,7 +611,12 @@ this.PermissionsTable =  { geolocation: {
                              app: ALLOW_ACTION,
                              privileged: ALLOW_ACTION,
                              certified: ALLOW_ACTION
-                           }
+                           },
+                           "fota": {
+                            app: DENY_ACTION,
+                            privileged: DENY_ACTION,
+                            certified: ALLOW_ACTION
+                           },
                          };
 
 /**
