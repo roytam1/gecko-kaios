@@ -2376,10 +2376,12 @@ this.DOMApplicationRegistry = {
                                                   inIsolatedMozBrowser: app.installerIsBrowser
                                                 };
       }
-      headers.forEach(function(aHeader) {
-        debug("Adding header: " + aHeader.name + ": " + aHeader.value);
-        xhr.setRequestHeader(aHeader.name, aHeader.value);
-      });
+      if (headers.length > 0) {
+        headers.forEach(function(aHeader) {
+          debug("Adding header: " + aHeader.name + ": " + aHeader.value);
+          xhr.setRequestHeader(aHeader.name, aHeader.value);
+        });
+      }
       xhr.responseType = "json";
       if (app.etag) {
         debug("adding manifest etag:" + app.etag);
@@ -2405,8 +2407,12 @@ this.DOMApplicationRegistry = {
     // Read the current app manifest file
     // read account for hawk token
     Promise.all([ this._readManifests([{ id: id }]),
-      this._prepareKaiHeaders(aData.manifestURL) ]).then((aResult) => {
-        doRequest.call(this, aResult[0][0].manifest, aResult[1]);
+      this._prepareKaiHeaders(aData.manifestURL) ])
+    .then((aResult) => {
+      doRequest.call(this, aResult[0][0].manifest, aResult[1]);
+    })
+    .catch((err) => {
+      debug("Webapps.jsm failed to call doRequest, error: " + err);
     });
   },
 
