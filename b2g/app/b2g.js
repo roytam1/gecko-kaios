@@ -317,14 +317,6 @@ pref("ui.threedlightshadow", "#ece7e2");
 pref("ui.threedshadow", "#aea194");
 pref("ui.windowframe", "#efebe7");
 
-// Themable via mozSettings
-pref("ui.menu", "#f97c17");
-pref("ui.menutext", "#ffffff");
-pref("ui.infobackground", "#343e40");
-pref("ui.infotext", "#686868");
-pref("ui.window", "#ffffff");
-pref("ui.windowtext", "#000000");
-pref("ui.highlight", "#b2f2ff");
 
 // replace newlines with spaces on paste into single-line text boxes
 pref("editor.singleLine.pasteNewlines", 2);
