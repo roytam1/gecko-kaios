@@ -1592,6 +1592,7 @@ BluetoothOppManager::NotifyAboutFileChange()
     mozilla::services::GetObserverService();
   NS_ENSURE_TRUE_VOID(obs);
 
+  BT_LOGR("Notify observers about the modified file via 'file-watcher-notify'");
   obs->NotifyObservers(mDsFile, "file-watcher-notify", data.get());
 }
 

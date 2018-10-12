@@ -46,14 +46,12 @@ extern bool gBluetoothDebugFlag;
 
 /**
  * Prints 'W'ARN logs, which show only when developer setting
- * 'Bluetooth output in adb' is enabled.
+ * 'Bluetooth output in adb' is disabled.
  */
 #define BT_WARNING(msg, ...)                                         \
   do {                                                               \
-    if (gBluetoothDebugFlag) {                                       \
       __android_log_print(ANDROID_LOG_WARN, "GeckoBluetooth",        \
                           "%s: " msg, __FUNCTION__, ##__VA_ARGS__);  \
-    }                                                                \
   } while(0)
 
 #else
@@ -85,9 +83,10 @@ extern bool gBluetoothDebugFlag;
  */
 #define BT_ENSURE_TRUE_VOID_BROADCAST_SYSMSG(type, parameters)       \
   do {                                                               \
+    nsCString message = NS_ConvertUTF16toUTF8(type);                 \
+    BT_LOGR("broadcast system message: [%s]", message.get());        \
     if (!BroadcastSystemMessage(type, parameters)) {                 \
-      BT_WARNING("Failed to broadcast [%s]",                         \
-                 NS_ConvertUTF16toUTF8(type).get());                 \
+      BT_WARNING("Failed to broadcast [%s]", message.get());         \
       return;                                                        \
     }                                                                \
   } while(0)

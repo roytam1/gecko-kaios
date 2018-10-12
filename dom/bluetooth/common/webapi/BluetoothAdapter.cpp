@@ -580,6 +580,8 @@ BluetoothAdapter::Notify(const BluetoothSignal& aData)
     RefPtr<BluetoothStatusChangedEvent> event =
       BluetoothStatusChangedEvent::Constructor(this, aData.name(), init);
     DispatchTrustedEvent(event);
+    BT_LOGR("dispatch event to %s with status: %d",
+      NS_ConvertUTF16toUTF8(aData.name()).get(), status);
   } else if (aData.name().EqualsLiteral(PAIRING_ABORTED_ID) ||
              aData.name().EqualsLiteral(REQUEST_MEDIA_PLAYSTATUS_ID)) {
     DispatchEmptyEvent(aData.name());

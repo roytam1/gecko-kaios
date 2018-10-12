@@ -85,6 +85,8 @@ BluetoothPairingListener::DispatchPairingEvent(
 void
 BluetoothPairingListener::Notify(const BluetoothSignal& aData)
 {
+  BT_LOGD("[A] %s", NS_ConvertUTF16toUTF8(aData.name()).get());
+
   InfallibleTArray<BluetoothNamedValue> arr;
 
   BluetoothValue value = aData.value();

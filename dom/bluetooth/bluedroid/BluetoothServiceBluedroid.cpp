@@ -996,6 +996,7 @@ BluetoothServiceBluedroid::StartDiscoveryInternal(
   BluetoothReplyRunnable* aRunnable)
 {
   MOZ_ASSERT(NS_IsMainThread());
+  BT_LOGR("");
   ENSURE_BLUETOOTH_IS_ENABLED_VOID(aRunnable);
 
   mChangeDiscoveryRunnables.AppendElement(aRunnable);
@@ -1031,7 +1032,7 @@ BluetoothServiceBluedroid::StopDiscoveryInternal(
   BluetoothReplyRunnable* aRunnable)
 {
   MOZ_ASSERT(NS_IsMainThread());
-
+  BT_LOGR("");
   ENSURE_BLUETOOTH_IS_ENABLED_VOID(aRunnable);
 
   mChangeDiscoveryRunnables.AppendElement(aRunnable);
@@ -1460,6 +1461,7 @@ BluetoothServiceBluedroid::Connect(const BluetoothAddress& aDeviceAddress,
                                    uint16_t aServiceUuid,
                                    BluetoothReplyRunnable* aRunnable)
 {
+  BT_LOGR("");
   ConnectDisconnect(true, aDeviceAddress, aRunnable, aServiceUuid, aCod);
 }
 
@@ -1468,6 +1470,7 @@ BluetoothServiceBluedroid::Disconnect(
   const BluetoothAddress& aDeviceAddress, uint16_t aServiceUuid,
   BluetoothReplyRunnable* aRunnable)
 {
+  BT_LOGR("");
   ConnectDisconnect(false, aDeviceAddress, aRunnable, aServiceUuid);
 }
 
@@ -1529,6 +1532,7 @@ BluetoothServiceBluedroid::SendFile(const BluetoothAddress& aDeviceAddress,
                                     BlobChild* aBlobChild,
                                     BluetoothReplyRunnable* aRunnable)
 {
+  BT_LOGR("");
   MOZ_ASSERT(NS_IsMainThread());
 
   // Currently we only support one device sending one file at a time,
@@ -1550,6 +1554,7 @@ BluetoothServiceBluedroid::SendFile(const BluetoothAddress& aDeviceAddress,
                                     Blob* aBlob,
                                     BluetoothReplyRunnable* aRunnable)
 {
+  BT_LOGR("");
   MOZ_ASSERT(NS_IsMainThread());
 
   // Currently we only support one device sending one file at a time,
@@ -1571,6 +1576,7 @@ BluetoothServiceBluedroid::StopSendingFile(
   const BluetoothAddress& aDeviceAddress, BluetoothReplyRunnable* aRunnable)
 {
   MOZ_ASSERT(NS_IsMainThread());
+  BT_LOGR("");
 
   // Currently we only support one device sending one file at a time,
   // so we don't need aDeviceAddress here because the target device
@@ -1593,6 +1599,7 @@ BluetoothServiceBluedroid::ConfirmReceivingFile(
   BluetoothReplyRunnable* aRunnable)
 {
   MOZ_ASSERT(NS_IsMainThread());
+  BT_LOGR("confirm: %d", aConfirm);
 
   // Currently we only support one device sending one file at a time,
   // so we don't need aDeviceAddress here because the target device
@@ -1614,6 +1621,7 @@ void
 BluetoothServiceBluedroid::ConnectSco(BluetoothReplyRunnable* aRunnable)
 {
   MOZ_ASSERT(NS_IsMainThread());
+  BT_LOGR("");
 
   BluetoothHfpManager* hfp = BluetoothHfpManager::Get();
   if (!hfp || !hfp->ConnectSco()) {
@@ -1628,6 +1636,7 @@ void
 BluetoothServiceBluedroid::DisconnectSco(BluetoothReplyRunnable* aRunnable)
 {
   MOZ_ASSERT(NS_IsMainThread());
+  BT_LOGR("");
 
   BluetoothHfpManager* hfp = BluetoothHfpManager::Get();
   if (!hfp || !hfp->DisconnectSco()) {
@@ -1940,6 +1949,8 @@ BluetoothServiceBluedroid::SendMetaData(const nsAString& aTitle,
                                         int64_t aDuration,
                                         BluetoothReplyRunnable* aRunnable)
 {
+  BT_LOGR("title: %s, duration: %lld", NS_ConvertUTF16toUTF8(aTitle).get(),
+                                      aDuration);
   BluetoothAvrcpManager* avrcp = BluetoothAvrcpManager::Get();
   if (avrcp) {
     avrcp->UpdateMetaData(aTitle, aArtist, aAlbum, aMediaNumber,
@@ -1953,6 +1964,7 @@ BluetoothServiceBluedroid::SendPlayStatus(
   int64_t aDuration, int64_t aPosition, ControlPlayStatus aPlayStatus,
   BluetoothReplyRunnable* aRunnable)
 {
+  BT_LOGD("duration: %lld, position: %lld", aDuration, aPosition);
   BluetoothAvrcpManager* avrcp = BluetoothAvrcpManager::Get();
   if (avrcp) {
     avrcp->UpdatePlayStatus(aDuration, aPosition, aPlayStatus);
@@ -1989,6 +2001,7 @@ BluetoothServiceBluedroid::SendMessageEvent(
   uint8_t aMasId, BlobParent* aBlobParent, BlobChild* aBlobChild,
   BluetoothReplyRunnable* aRunnable)
 {
+  BT_LOGR("MAS ID: %u", aMasId);
   BluetoothMapSmsManager* map = BluetoothMapSmsManager::Get();
   if (!map) {
     DispatchReplyError(aRunnable,
@@ -2004,6 +2017,7 @@ void
 BluetoothServiceBluedroid::SendMessageEvent(
   uint8_t aMasId, Blob* aBlob, BluetoothReplyRunnable* aRunnable)
 {
+  BT_LOGR("MAS ID: %u", aMasId);
   BluetoothMapSmsManager* map = BluetoothMapSmsManager::Get();
   if (!map) {
     DispatchReplyError(aRunnable,

@@ -663,6 +663,9 @@ BluetoothHfpManager::NotifyDialer(const nsAString& aCommand)
 
   AppendNamedValue(parameters, "command", nsString(aCommand));
 
+  BT_LOGR("bluetooth-dialer-command with command [%s]",
+    NS_ConvertUTF16toUTF8(aCommand).get());
+
   BT_ENSURE_TRUE_VOID_BROADCAST_SYSMSG(type, parameters);
 }
 
@@ -693,6 +696,7 @@ BluetoothHfpManager::HandleVolumeChanged(nsISupports* aSubject)
     return;
   }
   if (!setting.mValue.isNumber()) {
+    BT_WARNING("value of 'audio.volume.bt_sco' is not a number. ");
     return;
   }
 
@@ -706,6 +710,7 @@ BluetoothHfpManager::HandleVolumeChanged(nsISupports* aSubject)
 
   // Only send volume back when there's a connected headset
   if (IsConnected()) {
+    BT_LOGR("AT+VGS=%d", mCurrentVgs);
     NS_ENSURE_TRUE_VOID(sBluetoothHfpInterface);
     sBluetoothHfpInterface->VolumeControl(
       HFP_VOLUME_TYPE_SPEAKER, mCurrentVgs, mDeviceAddress,
@@ -1616,6 +1621,7 @@ BluetoothHfpManager::VolumeNotification(
     nsCOMPtr<nsIObserverService> os = mozilla::services::GetObserverService();
     NS_ENSURE_TRUE_VOID(os);
 
+    BT_LOGR("bluetooth-volume-change: %s", NS_ConvertUTF16toUTF8(data).get());
     os->NotifyObservers(nullptr, "bluetooth-volume-change", data.get());
   }
 }

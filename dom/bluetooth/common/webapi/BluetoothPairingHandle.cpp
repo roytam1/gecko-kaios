@@ -67,6 +67,7 @@ BluetoothPairingHandle::Create(nsPIDOMWindowInner* aOwner,
 already_AddRefed<Promise>
 BluetoothPairingHandle::SetPinCode(const nsAString& aPinCode, ErrorResult& aRv)
 {
+  BT_LOGR("SSP type: %s", NS_ConvertUTF16toUTF8(mType).get());
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetParentObject());
   if (!global) {
     aRv.Throw(NS_ERROR_FAILURE);
@@ -103,6 +104,7 @@ BluetoothPairingHandle::SetPinCode(const nsAString& aPinCode, ErrorResult& aRv)
 already_AddRefed<Promise>
 BluetoothPairingHandle::Accept(ErrorResult& aRv)
 {
+  BT_LOGR("SSP type: %s", NS_ConvertUTF16toUTF8(mType).get());
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetParentObject());
   if (!global) {
     aRv.Throw(NS_ERROR_FAILURE);
@@ -140,6 +142,7 @@ BluetoothPairingHandle::Accept(ErrorResult& aRv)
 already_AddRefed<Promise>
 BluetoothPairingHandle::Reject(ErrorResult& aRv)
 {
+  BT_LOGR("SSP type: %s", NS_ConvertUTF16toUTF8(mType).get());
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(GetParentObject());
   if (!global) {
     aRv.Throw(NS_ERROR_FAILURE);
