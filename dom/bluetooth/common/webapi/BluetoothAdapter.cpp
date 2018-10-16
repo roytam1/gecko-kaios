@@ -341,10 +341,7 @@ BluetoothAdapter::BluetoothAdapter(nsPIDOMWindowInner* aWindow,
 {
   MOZ_ASSERT(aWindow);
 
-  // Only allow certified bluetooth application to receive pairing requests
-  if (IsBluetoothCertifiedApp()) {
-    mPairingReqs = BluetoothPairingListener::Create(aWindow);
-  }
+  mPairingReqs = BluetoothPairingListener::Create(aWindow);
 
   const InfallibleTArray<BluetoothNamedValue>& values =
     aValue.get_ArrayOfBluetoothNamedValue();
@@ -1083,43 +1080,6 @@ BluetoothAdapter::IsAdapterAttributeChanged(BluetoothAdapterAttribute aType,
       BT_WARNING("Type %d is not handled", uint32_t(aType));
       return false;
   }
-}
-
-bool
-BluetoothAdapter::IsBluetoothCertifiedApp()
-{
-  NS_ENSURE_TRUE(GetOwner(), false);
-
-  // Retrieve the app status and origin for permission checking
-  nsCOMPtr<nsIDocument> doc = GetOwner()->GetExtantDoc();
-  NS_ENSURE_TRUE(doc, false);
-
-  uint16_t appStatus = nsIPrincipal::APP_STATUS_NOT_INSTALLED;
-  doc->NodePrincipal()->GetAppStatus(&appStatus);
-  if (appStatus != nsIPrincipal::APP_STATUS_CERTIFIED) {
-   return false;
-  }
-
-  // Get the app origin of Bluetooth app from PrefService.
-  nsCOMPtr<nsIPrefBranch> prefs(do_GetService(NS_PREFSERVICE_CONTRACTID));
-  if (!prefs) {
-    BT_WARNING("Failed to get preference service");
-    return false;
-  }
-
-  nsAutoCString prefOrigin;
-  nsresult rv = prefs->GetCharPref(PREF_BLUETOOTH_APP_ORIGIN,
-                                   getter_Copies(prefOrigin));
-  if (NS_FAILED(rv)) {
-    BT_WARNING("Failed to get the pref value '" PREF_BLUETOOTH_APP_ORIGIN "'");
-    return false;
-  }
-
-  nsAutoCString appOrigin;
-  doc->NodePrincipal()->GetOriginNoSuffix(appOrigin);
-
-  // Don't use 'Equals()' since the origin might contain a postfix for appId.
-  return appOrigin.Find(prefOrigin) != -1;
 }
 
 void

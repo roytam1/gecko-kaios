@@ -538,13 +538,6 @@ private:
   bool IsAdapterAttributeChanged(BluetoothAdapterAttribute aType,
                                  const BluetoothValue& aValue);
 
-  /**
-   * Check whether this adapter belongs to Bluetooth certified app.
-   *
-   * @return true if this adapter belongs to Bluetooth app; false otherwise
-   */
-  bool IsBluetoothCertifiedApp();
-
   /****************************************************************************
    * Variables
    ***************************************************************************/

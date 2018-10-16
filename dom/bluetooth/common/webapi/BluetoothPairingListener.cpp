@@ -6,6 +6,11 @@
 
 #include "BluetoothService.h"
 #include "BluetoothUtils.h"
+#include "nsIDocument.h"
+#include "nsIPrefBranch.h"
+#include "nsIPrefService.h"
+#include "nsIPrincipal.h"
+
 #include "mozilla/dom/bluetooth/BluetoothPairingListener.h"
 #include "mozilla/dom/bluetooth/BluetoothPairingHandle.h"
 #include "mozilla/dom/bluetooth/BluetoothTypes.h"
@@ -63,16 +68,16 @@ BluetoothPairingListener::DispatchPairingEvent(
   nsString addressStr;
   AddressToString(aAddress, addressStr);
 
-  RefPtr<BluetoothPairingHandle> handle =
-    BluetoothPairingHandle::Create(GetOwner(),
-                                   addressStr,
-                                   aType,
-                                   aPasskey);
-
   BluetoothPairingEventInit init;
   init.mAddress = addressStr;
   init.mDeviceName = nameStr;
-  init.mHandle = handle;
+
+  // Only allow certified bluetooth application to access BluetoothPairingHandle
+  if (IsBluetoothCertifiedApp()) {
+    RefPtr<BluetoothPairingHandle> handle =
+      BluetoothPairingHandle::Create(GetOwner(), addressStr, aType, aPasskey);
+    init.mHandle = handle;
+  }
 
   RefPtr<BluetoothPairingEvent> event =
     BluetoothPairingEvent::Constructor(this,
@@ -163,4 +168,41 @@ BluetoothPairingListener::TryListeningToBluetoothSignal()
                                  this);
 
   mHasListenedToSignal = true;
+}
+
+bool
+BluetoothPairingListener::IsBluetoothCertifiedApp()
+{
+  NS_ENSURE_TRUE(GetOwner(), false);
+
+  // Retrieve the app status and origin for permission checking
+  nsCOMPtr<nsIDocument> doc = GetOwner()->GetExtantDoc();
+  NS_ENSURE_TRUE(doc, false);
+
+  uint16_t appStatus = nsIPrincipal::APP_STATUS_NOT_INSTALLED;
+  doc->NodePrincipal()->GetAppStatus(&appStatus);
+  if (appStatus != nsIPrincipal::APP_STATUS_CERTIFIED) {
+   return false;
+  }
+
+  // Get the app origin of Bluetooth app from PrefService.
+  nsCOMPtr<nsIPrefBranch> prefs(do_GetService(NS_PREFSERVICE_CONTRACTID));
+  if (!prefs) {
+    BT_WARNING("Failed to get preference service");
+    return false;
+  }
+
+  nsAutoCString prefOrigin;
+  nsresult rv = prefs->GetCharPref(PREF_BLUETOOTH_APP_ORIGIN,
+                                   getter_Copies(prefOrigin));
+  if (NS_FAILED(rv)) {
+    BT_WARNING("Failed to get the pref value '" PREF_BLUETOOTH_APP_ORIGIN "'");
+    return false;
+  }
+
+  nsAutoCString appOrigin;
+  doc->NodePrincipal()->GetOriginNoSuffix(appOrigin);
+
+  // Don't use 'Equals()' since the origin might contain a postfix for appId.
+  return appOrigin.Find(prefOrigin) != -1;
 }

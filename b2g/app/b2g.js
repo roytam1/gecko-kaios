@@ -359,7 +359,7 @@ pref("media.gonk.enabled", true);
 #endif
 
 #ifdef KAIOS_256MB_SUPPORT
-// fine tune for 256 youtube. 
+// fine tune for 256 youtube.
 // Bug 48101 - [PIER2_KK][Youtube] memory performance
 // value smaller than this may cause streaming pause (time range discontinuity)
 //set maximum video buffer size to 8MB(8*1024*1024)
@@ -1212,7 +1212,7 @@ pref("dom.vr.cardboard.enabled", true);
 // In B2G by deafult any AudioChannelAgent is muted when created.
 pref("dom.audiochannel.mutedByDefault", true);
 
-// The app origin of bluetooth app, which is responsible for listening pairing
+// The app origin of bluetooth app, which is responsible for replying pairing
 // requests.
 pref("dom.bluetooth.app-origin", "app://bluetooth.gaiamobile.org");
 

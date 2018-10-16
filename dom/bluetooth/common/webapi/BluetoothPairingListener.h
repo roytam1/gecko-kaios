@@ -60,6 +60,13 @@ private:
   void TryListeningToBluetoothSignal();
 
   /**
+   * Check whether this pairing listener belongs to Bluetooth certified app.
+   *
+   * @return true if this adapter belongs to Bluetooth app; false otherwise
+   */
+  bool IsBluetoothCertifiedApp();
+
+  /**
    * Indicate whether or not this pairing listener has started listening to
    * Bluetooth signal.
    */

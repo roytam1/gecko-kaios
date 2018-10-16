@@ -11,6 +11,9 @@ interface BluetoothPairingEvent : Event
 {
   readonly attribute DOMString               address;
   readonly attribute DOMString               deviceName;
+
+  // BluetoothPairingHandle is only available on bluetooth app which is
+  // responsible for replying pairing requests.
   readonly attribute BluetoothPairingHandle? handle;
 };
 
