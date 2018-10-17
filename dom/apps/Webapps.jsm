@@ -868,20 +868,26 @@ this.DOMApplicationRegistry = {
           yield this.installSystemApps();
         }
 
-        // At first run, install preloaded apps and set up their permissions.
+        // Need to update the persisted list of apps since
+        // installPreinstalledApp() removes the ones failing to install.
         for (let id in this.webapps) {
           let isPreinstalled = this.installPreinstalledApp(id);
           this.removeIfHttpsDuplicate(id);
           if (!this.webapps[id]) {
             continue;
           }
-          this.updateOfflineCacheForApp(id);
-          this.updatePermissionsForApp(id, isPreinstalled);
+          this.webapps[id].preinstalled = isPreinstalled;
         }
-        // Need to update the persisted list of apps since
-        // installPreinstalledApp() removes the ones failing to install.
         yield this._saveApps();
 
+        // At first run, install preloaded apps and set up their permissions.
+        for (let id in this.webapps) {
+          if (!this.webapps[id]) {
+            continue;
+          }
+          this.updateOfflineCacheForApp(id);
+          this.updatePermissionsForApp(id, this.webapps[id].preinstalled);
+        }
       }
 
       // DataStores must be initialized at startup.
