@@ -505,7 +505,8 @@ OMXVideoEncoder::Encode(const Image* aImage, int aWidth, int aHeight,
       // (as used from WebrtcOMXH264VideoCodec, and a few other places) - bug 1067442
       const PlanarYCbCrData* yuv = static_cast<PlanarYCbCrImage*>(img)->GetData();
       NS_ENSURE_TRUE(yuv->mYChannel, NS_ERROR_INVALID_ARG);
-    } else if (format == ImageFormat::GRALLOC_PLANAR_YCBCR) {
+    } else if (format == ImageFormat::GRALLOC_PLANAR_YCBCR ||
+               format == ImageFormat::GONK_CAMERA_IMAGE) {
       // Reject unsupported gralloc-ed buffers.
       int halFormat = static_cast<GrallocImage*>(img)->GetGraphicBuffer()->getPixelFormat();
       NS_ENSURE_TRUE(halFormat == HAL_PIXEL_FORMAT_YCrCb_420_SP ||
@@ -549,7 +550,8 @@ OMXVideoEncoder::Encode(const Image* aImage, int aWidth, int aHeight,
     // Fill UV plane.
     memset(dst + yLen, 0x80, uvLen);
   } else {
-    if (format == ImageFormat::GRALLOC_PLANAR_YCBCR) {
+    if (format == ImageFormat::GRALLOC_PLANAR_YCBCR ||
+        format == ImageFormat::GONK_CAMERA_IMAGE) {
       ConvertGrallocImageToNV12(static_cast<GrallocImage*>(img), dst);
     } else if (format == ImageFormat::PLANAR_YCBCR) {
       ConvertPlanarYCbCrToNV12(static_cast<PlanarYCbCrImage*>(img)->GetData(),
