@@ -16,17 +16,21 @@
 
 using namespace mozilla;
 
+#define WATCHER_PREF_FREE_SPACE "disk_space_watcher.free_space"
+
 StaticRefPtr<DiskSpaceWatcher> gDiskSpaceWatcher;
 
 NS_IMPL_ISUPPORTS(DiskSpaceWatcher, nsIDiskSpaceWatcher, nsIObserver)
 
 uint64_t DiskSpaceWatcher::sFreeSpace = 0;
 bool DiskSpaceWatcher::sIsDiskFull = false;
+uint64_t DiskSpaceWatcher::sFreeSpaceThreshold = 0;
 
 DiskSpaceWatcher::DiskSpaceWatcher()
 {
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(!gDiskSpaceWatcher);
+  sFreeSpaceThreshold = Preferences::GetInt(WATCHER_PREF_FREE_SPACE, 50) * 1024 * 1024;
 }
 
 DiskSpaceWatcher::~DiskSpaceWatcher()
@@ -126,6 +130,12 @@ void DiskSpaceWatcher::UpdateState(bool aIsDiskFull, uint64_t aFreeSpace)
   observerService->NotifyObservers(subject,
                                    DISKSPACEWATCHER_OBSERVER_TOPIC,
                                    sIsDiskFull ? stateFull : stateFree);
+  if (aFreeSpace < sFreeSpaceThreshold) {
+    observerService->NotifyObservers(subject,
+                                     FREESPACELOW_OBSERVER_TOPIC,
+                                     nullptr);
+  }
+
   return;
 }
 

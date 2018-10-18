@@ -44,6 +44,10 @@ struct ClearAllParams
 {
 };
 
+struct ClearTemporaryParams
+{
+};
+
 struct ResetAllParams
 {
 };
@@ -53,6 +57,7 @@ union RequestParams
   ClearOriginParams;
   ClearAppParams;
   ClearAllParams;
+  ClearTemporaryParams;
   ResetAllParams;
 };
 

@@ -17,6 +17,7 @@
 #include "mozilla/ipc/BackgroundParent.h"
 #include "mozilla/ipc/BackgroundUtils.h"
 #include "mozilla/ipc/PBackgroundChild.h"
+#include "nsIDiskSpaceWatcher.h"
 #include "nsIIdleService.h"
 #include "nsIIPCBackgroundChildCreateCallback.h"
 #include "nsIObserverService.h"
@@ -298,6 +299,11 @@ QuotaManagerService::Init()
     nsresult rv = observerService->AddObserver(this,
                                                PROFILE_BEFORE_CHANGE_OBSERVER_ID,
                                                false);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
+
+    rv = observerService->AddObserver(this, FREESPACELOW_OBSERVER_TOPIC, false);
     if (NS_WARN_IF(NS_FAILED(rv))) {
       return rv;
     }
@@ -701,6 +707,18 @@ QuotaManagerService::Observe(nsISupports* aSubject,
     nsAutoPtr<PendingRequestInfo> info(
       new IdleMaintenanceInfo(/* aStart */ false));
 
+    nsresult rv = InitiateRequest(info);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
+
+    return NS_OK;
+  }
+
+  if (!strcmp(aTopic, FREESPACELOW_OBSERVER_TOPIC)) {
+    RefPtr<Request> request = new Request();
+    ClearTemporaryParams params;
+    nsAutoPtr<PendingRequestInfo> info(new RequestInfo(request, params));
     nsresult rv = InitiateRequest(info);
     if (NS_WARN_IF(NS_FAILED(rv))) {
       return rv;

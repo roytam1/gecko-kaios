@@ -379,6 +379,9 @@ public:
                        nsACString& aOrigin,
                        bool* aIsApp);
 
+  void
+  RemoveTemporaryStorage();
+
 private:
   QuotaManager();
 

@@ -27,6 +27,7 @@ private:
 
   static uint64_t sFreeSpace;
   static bool     sIsDiskFull;
+  static uint64_t sFreeSpaceThreshold;
 };
 
 #endif // __DISKSPACEWATCHER_H__

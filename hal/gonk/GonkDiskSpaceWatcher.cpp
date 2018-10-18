@@ -104,6 +104,7 @@ private:
 
   bool mIsDiskFull;
   uint64_t mFreeSpace;
+  uint64_t mFreeSpaceThreshold;
 
   int mFd;
   MessageLoopForIO::FileDescriptorWatcher mReadWatcher;
@@ -115,6 +116,7 @@ static GonkDiskSpaceWatcher* gHalDiskSpaceWatcher = nullptr;
 #define WATCHER_PREF_HIGH       "disk_space_watcher.high_threshold"
 #define WATCHER_PREF_TIMEOUT    "disk_space_watcher.timeout"
 #define WATCHER_PREF_SIZE_DELTA "disk_space_watcher.size_delta"
+#define WATCHER_PREF_FREE_SPACE "disk_space_watcher.free_space_threshold"
 
 static const char kWatchedPath[] = "/data";
 
@@ -168,6 +170,7 @@ GonkDiskSpaceWatcher::GonkDiskSpaceWatcher() :
   mHighThreshold = Preferences::GetInt(WATCHER_PREF_HIGH, 32) * 1024 * 1024;
   mTimeout = TimeDuration::FromSeconds(Preferences::GetInt(WATCHER_PREF_TIMEOUT, 5));
   mSizeDelta = Preferences::GetInt(WATCHER_PREF_SIZE_DELTA, 1) * 1024 * 1024;
+  mFreeSpaceThreshold = Preferences::GetInt(WATCHER_PREF_FREE_SPACE, 50) * 1024 * 1024;
 }
 
 void
@@ -291,6 +294,8 @@ GonkDiskSpaceWatcher::OnFileCanReadWithoutBlocking(int aFd)
             mSizeDelta < llabs(mFreeSpace - mLastFreeSpace)) {
           NotifyUpdate();
         }
+      } else if (mFreeSpace < mFreeSpaceThreshold) {
+        NotifyUpdate();
       }
     }
     close(fem->fd);

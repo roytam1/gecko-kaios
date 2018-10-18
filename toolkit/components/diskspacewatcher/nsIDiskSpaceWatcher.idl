@@ -10,7 +10,7 @@
 #endif
 %}
 
-[scriptable, uuid(3aceba74-2ed5-4e99-8fe4-06e90e2b8ef0)]
+[scriptable, uuid(c0cb5600-1b02-4cb0-958f-f524ff4d39c3)]
 interface nsIDiskSpaceWatcher : nsISupports
 {
   readonly attribute bool isDiskFull; // True if we are low on disk space.
@@ -22,4 +22,5 @@ interface nsIDiskSpaceWatcher : nsISupports
 
 // The data for this notification will be either 'free' or 'full'.
 #define DISKSPACEWATCHER_OBSERVER_TOPIC "disk-space-watcher"
+#define FREESPACELOW_OBSERVER_TOPIC "free-space-low"
 %}
