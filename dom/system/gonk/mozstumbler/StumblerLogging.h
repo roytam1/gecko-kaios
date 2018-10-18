@@ -7,12 +7,38 @@
 #ifndef STUMBLERLOGGING_H
 #define STUMBLERLOGGING_H
 
-#include "mozilla/Logging.h"
+#if !defined(MOZ_WIDGET_GONK)
 
+#include "mozilla/Logging.h"
 mozilla::LogModule* GetLog();
 
-#define STUMBLER_DBG(arg, ...)  MOZ_LOG(GetLog(), mozilla::LogLevel::Debug, ("STUMBLER - %s: " arg, __func__, ##__VA_ARGS__))
-#define STUMBLER_LOG(arg, ...)  MOZ_LOG(GetLog(), mozilla::LogLevel::Info, ("STUMBLER - %s: " arg, __func__, ##__VA_ARGS__))
-#define STUMBLER_ERR(arg, ...)  MOZ_LOG(GetLog(), mozilla::LogLevel::Error, ("STUMBLER -%s: " arg, __func__, ##__VA_ARGS__))
+#define STUMBLER_DBG(arg, ...)                                   \
+  MOZ_LOG(GetLog(), mozilla::LogLevel::Debug,                    \
+          ("Stumbler_GEO - %s: " arg, __func__, ##__VA_ARGS__))
 
-#endif
+#define STUMBLER_LOG(arg, ...)                                   \
+  MOZ_LOG(GetLog(), mozilla::LogLevel::Info,                     \
+          ("Stumbler_GEO - %s: " arg, __func__, ##__VA_ARGS__))
+
+#define STUMBLER_ERR(arg, ...)                                   \
+  MOZ_LOG(GetLog(), mozilla::LogLevel::Error,                    \
+          ("Stumbler_GEO - %s: " arg, __func__, ##__VA_ARGS__))
+
+#else
+
+#include <android/log.h>
+#define STUMBLER_DBG(msg, ...)                                   \
+  __android_log_print(ANDROID_LOG_DEBUG, "Stumbler_GEO",         \
+                      "%s: " msg, __func__, ##__VA_ARGS__)
+
+#define STUMBLER_LOG(msg, ...)                                   \
+  __android_log_print(ANDROID_LOG_INFO, "Stumbler_GEO",          \
+                      "%s: " msg, __func__, ##__VA_ARGS__)
+
+#define STUMBLER_ERR(msg, ...)                                   \
+  __android_log_print(ANDROID_LOG_WARN, "Stumbler_GEO",          \
+                      "%s: " msg, __func__, ##__VA_ARGS__)
+
+#endif // !defined(MOZ_WIDGET_GONK)
+
+#endif // STUMBLERLOGGING_H

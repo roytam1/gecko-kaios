@@ -577,7 +577,8 @@ StumblerInfo::Onready(uint32_t count, nsIWifiScanResult** results)
 
     if (ssid.Length() >= 6) {
       if (StringEndsWith(ssid, NS_LITERAL_STRING("_nomap"))) {
-        STUMBLER_DBG("end with _nomap. skip this AP(ssid :%s)\n", ssid.get());
+        STUMBLER_DBG("end with _nomap. skip this AP(ssid :%s)\n",
+                     NS_ConvertUTF16toUTF8(ssid).get());
         continue;
       }
     }
