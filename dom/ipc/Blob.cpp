@@ -806,23 +806,6 @@ CreateBlobImpl(const nsTArray<BlobData>& aBlobDatas,
 {
   MOZ_ASSERT(gProcessType == GeckoProcessType_Default);
 
-  // Special case for a multipart blob with only one part.
-  if (aBlobDatas.Length() == 1) {
-    const BlobData& blobData = aBlobDatas[0];
-
-    RefPtr<BlobImpl> blobImpl =
-      CreateBlobImplFromBlobData(blobData, aMetadata);
-    if (NS_WARN_IF(!blobImpl)) {
-      return nullptr;
-    }
-
-    DebugOnly<bool> isMutable;
-    MOZ_ASSERT(NS_SUCCEEDED(blobImpl->GetMutable(&isMutable)));
-    MOZ_ASSERT(!isMutable);
-
-    return blobImpl.forget();
-  }
-
   FallibleTArray<RefPtr<BlobImpl>> fallibleBlobImpls;
   if (NS_WARN_IF(!fallibleBlobImpls.SetLength(aBlobDatas.Length(), fallible))) {
     return nullptr;
