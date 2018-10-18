@@ -9,7 +9,6 @@
 #define UPLOADSTUMBLERUNNABLE_H
 
 #include "nsIDOMEventListener.h"
-#include "nsISettingsService.h"
 
 class nsIXMLHttpRequest;
 class nsIInputStream;
@@ -19,12 +18,8 @@ class nsIInputStream;
  for how this is scheduled.
  */
 class UploadStumbleRunnable final : public nsRunnable
-                                  , public nsISettingsServiceCallback
 {
 public:
-  NS_DECL_ISUPPORTS
-  NS_DECL_NSISETTINGSSERVICECALLBACK
-
   explicit UploadStumbleRunnable(nsIInputStream* aUploadInputStream);
 
   NS_IMETHOD Run() override;
@@ -32,8 +27,9 @@ private:
   virtual ~UploadStumbleRunnable() {}
   nsCOMPtr<nsIInputStream> mUploadInputStream;
   bool mNeedAuthorization;
+
   nsresult Upload();
-  void RequestSettingValue(const char* aKey);
+  nsString ComputeHawkHeader(const nsAString& aRequestUrl);
 };
 
 

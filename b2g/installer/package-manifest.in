@@ -238,6 +238,9 @@
 @RESPATH@/components/dom_payment.xpt
 #endif
 @RESPATH@/components/dom_json.xpt
+#ifdef HAS_KOOST_MODULES
+@RESPATH@/components/dom_kaiauth.xpt
+#endif
 @RESPATH@/components/dom_messages.xpt
 @RESPATH@/components/dom_power.xpt
 @RESPATH@/components/dom_push.xpt
@@ -450,6 +453,10 @@
 @RESPATH@/components/TooltipTextProvider.manifest
 @RESPATH@/components/NetworkGeolocationProvider.manifest
 @RESPATH@/components/NetworkGeolocationProvider.js
+#ifdef HAS_KOOST_MODULES
+@RESPATH@/components/HawkHelper.manifest
+@RESPATH@/components/HawkHelper.js
+#endif
 @RESPATH@/components/TVSimulatorService.js
 @RESPATH@/components/TVSimulatorService.manifest
 #ifdef MOZ_WEBRTC

@@ -9,16 +9,22 @@
 #include "mozilla/dom/Event.h"
 #include "mozilla/Preferences.h"
 #include "nsContentUtils.h"
+#ifdef HAS_KOOST_MODULES
+#include "nsIHawkHelper.h"
+#endif
 #include "nsIInputStream.h"
 #include "nsIScriptSecurityManager.h"
+#include "nsISeekableStream.h"
 #include "nsIURLFormatter.h"
 #include "nsIXMLHttpRequest.h"
 #include "nsJSUtils.h"
 #include "nsNetUtil.h"
+#include "nsStreamUtils.h" // for NS_ConsumeStream
 #include "nsVariant.h"
 
-// The cache of access token for using location HTTP API
-static nsCString sAccessToken;
+// The Hawk credential which is cached when using location HTTP API
+static const char GEO_KAI_HAWK_KID [] = "geolocation.kaios.hawk_key_id";
+static const char GEO_KAI_HAWK_MAC [] = "geolocation.kaios.hawk_mac_key";
 
 UploadStumbleRunnable::UploadStumbleRunnable(nsIInputStream* aUploadData)
 : mUploadInputStream(aUploadData)
@@ -32,14 +38,9 @@ UploadStumbleRunnable::Run()
 {
   MOZ_ASSERT(NS_IsMainThread());
 
-  if (mNeedAuthorization && sAccessToken.IsEmpty()) {
-    // Upload() will be called once we get the token from setting callback.
-    RequestSettingValue("geolocation.kaios.accessToken");
-  } else {
-    nsresult rv = Upload();
-    if (NS_FAILED(rv)) {
-      WriteStumbleOnThread::UploadEnded(false);
-    }
+  nsresult rv = Upload();
+  if (NS_FAILED(rv)) {
+    WriteStumbleOnThread::UploadEnded(false);
   }
   return NS_OK;
 }
@@ -47,6 +48,8 @@ UploadStumbleRunnable::Run()
 nsresult
 UploadStumbleRunnable::Upload()
 {
+  STUMBLER_DBG("Upload stumble data file.\n");
+
   nsresult rv;
   RefPtr<nsVariant> variant = new nsVariant();
 
@@ -77,10 +80,19 @@ UploadStumbleRunnable::Upload()
   rv = xhr->Open(NS_LITERAL_CSTRING("POST"), NS_ConvertUTF16toUTF8(url), false, EmptyString(), EmptyString());
   NS_ENSURE_SUCCESS(rv, rv);
 
-  xhr->SetRequestHeader(NS_LITERAL_CSTRING("Content-Type"), NS_LITERAL_CSTRING("gzip"));
+  // The POST content is pre-compressed gzip file.
+  xhr->SetRequestHeader(NS_LITERAL_CSTRING("Content-Type"),
+                        NS_LITERAL_CSTRING("application/gzip"));
+
+  xhr->SetResponseType(NS_LITERAL_STRING("text"));
+
+#ifdef HAS_KOOST_MODULES
   if (mNeedAuthorization) {
-    xhr->SetRequestHeader(NS_LITERAL_CSTRING("Authorization"), NS_LITERAL_CSTRING("Bearer ") + sAccessToken);
+    nsString hawkHeader = ComputeHawkHeader(url);
+    xhr->SetRequestHeader(NS_LITERAL_CSTRING("Authorization"),
+                          NS_ConvertUTF16toUTF8(hawkHeader));
   }
+#endif
   xhr->SetMozBackgroundRequest(true);
   // 60s timeout
   xhr->SetTimeout(60 * 1000);
@@ -106,6 +118,52 @@ UploadStumbleRunnable::Upload()
   NS_ENSURE_SUCCESS(rv, rv);
 
   return NS_OK;
+}
+
+nsString
+UploadStumbleRunnable::ComputeHawkHeader(const nsAString& requestUrl)
+{
+#ifdef HAS_KOOST_MODULES
+  // Read the request body from the input stream
+  nsCString streamBuffer;
+  nsresult rv = NS_ConsumeStream(mUploadInputStream, UINT32_MAX, streamBuffer);
+  if (NS_FAILED(rv)) {
+    STUMBLER_ERR("Failed to read the stream of GeoSubmit");
+    return EmptyString();
+  }
+  nsString requestBody = NS_ConvertASCIItoUTF16(streamBuffer);
+  streamBuffer = EmptyCString();
+
+  // Set the stream offset to the begining
+  nsCOMPtr<nsISeekableStream> seekableStream
+    = do_QueryInterface(mUploadInputStream);
+  if (seekableStream) {
+    seekableStream->Seek(nsISeekableStream::NS_SEEK_SET, 0);
+  }
+
+  nsAdoptingString kid = Preferences::GetString(GEO_KAI_HAWK_KID);
+  nsAdoptingString mac = Preferences::GetString(GEO_KAI_HAWK_MAC);
+  if (!kid || !mac) {
+    STUMBLER_ERR("Failed to get cached Hawk ID and MAC");
+    return EmptyString();
+  }
+
+  nsCOMPtr<nsIHawkHelper> hawkHelper
+    = do_CreateInstance("@kaiostech.com/kaiauth/hawk-helper;1");
+  if (hawkHelper) {
+    nsString hawkHeader;
+    rv = hawkHelper->ComputeHawkHeader(NS_LITERAL_STRING("POST"),
+                                       kid,
+                                       mac,
+                                       requestUrl,
+                                       requestBody,
+                                       hawkHeader);
+    if (NS_SUCCEEDED(rv)) {
+      return hawkHeader;
+    }
+  }
+#endif
+  return EmptyString();
 }
 
 NS_IMPL_ISUPPORTS(UploadEventListener, nsIDOMEventListener)
@@ -143,6 +201,12 @@ UploadEventListener::HandleEvent(nsIDOMEvent* aEvent)
     STUMBLER_DBG("statuscode %d\n", statusCode);
   }
 
+  nsAutoString response;
+  rv = mXHR->GetResponseText(response);
+  if (NS_SUCCEEDED(rv)) {
+    STUMBLER_DBG("XHR response: %s\n", NS_ConvertUTF16toUTF8(response).get());
+  }
+
   if (200 == statusCode || 400 == statusCode) {
     doDelete = true;
   }
@@ -165,74 +229,4 @@ UploadEventListener::HandleEvent(nsIDOMEvent* aEvent)
 
   mXHR = nullptr;
   return NS_OK;
-}
-
-NS_IMPL_ISUPPORTS(UploadStumbleRunnable,
-                  nsISettingsServiceCallback)
-
-/** nsISettingsServiceCallback **/
-
-NS_IMETHODIMP
-UploadStumbleRunnable::Handle(const nsAString& aName,
-                              JS::Handle<JS::Value> aResult)
-{
-  if (aName.EqualsLiteral("geolocation.kaios.accessToken")) {
-    if (aResult.isString()) {
-      JSContext *cx = nsContentUtils::GetCurrentJSContext();
-      NS_ENSURE_TRUE(cx, NS_OK);
-
-      nsAutoJSString token;
-      if (!token.init(cx, aResult.toString())) {
-        WriteStumbleOnThread::UploadEnded(false);
-        return NS_ERROR_FAILURE;
-      }
-      if (!token.IsEmpty()) {
-        // Get token from settings value.
-        sAccessToken = NS_ConvertUTF16toUTF8(token);;
-
-        // Upload the StumblerInfo with the access token.
-        nsresult rv = Upload();
-        if (NS_FAILED(rv)) {
-          WriteStumbleOnThread::UploadEnded(false);
-        }
-      } else {
-        WriteStumbleOnThread::UploadEnded(false);
-      }
-    }
-  }
-
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-UploadStumbleRunnable::HandleError(const nsAString& aErrorMessage)
-{
-  WriteStumbleOnThread::UploadEnded(false);
-  return NS_OK;
-}
-
-void
-UploadStumbleRunnable::RequestSettingValue(const char* aKey)
-{
-  MOZ_ASSERT(aKey);
-  nsCOMPtr<nsISettingsService> ss = do_GetService("@mozilla.org/settingsService;1");
-  if (!ss) {
-    MOZ_ASSERT(ss);
-    return;
-  }
-
-  nsCOMPtr<nsISettingsServiceLock> lock;
-  nsresult rv = ss->CreateLock(nullptr, getter_AddRefs(lock));
-  if (NS_FAILED(rv)) {
-    nsContentUtils::LogMessageToConsole(nsPrintfCString(
-      "geo: error while createLock setting '%s': %d\n", aKey, rv).get());
-    return;
-  }
-
-  rv = lock->Get(aKey, this);
-  if (NS_FAILED(rv)) {
-    nsContentUtils::LogMessageToConsole(nsPrintfCString(
-      "geo: error while get setting '%s': %d\n", aKey, rv).get());
-    return;
-  }
 }

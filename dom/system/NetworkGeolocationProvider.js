@@ -19,6 +19,8 @@ const SETTINGS_CHANGED_TOPIC = "mozsettings-changed";
 const NETWORK_CHANGED_TOPIC = "network-active-changed";
 
 const SETTINGS_WIFI_ENABLED = "wifi.enabled";
+const GEO_KAI_HAWK_KID = "geolocation.kaios.hawk_key_id";
+const GEO_KAI_HAWK_MAC = "geolocation.kaios.hawk_mac_key";
 
 const HTTP_CODE_OK = 200;
 const HTTP_CODE_CREATED = 201;
@@ -50,6 +52,9 @@ XPCOMUtils.defineLazyModuleGetter(this, "CryptoUtils",
 
 XPCOMUtils.defineLazyModuleGetter(this, "CommonUtils",
                                   "resource://services-common/utils.js");
+
+XPCOMUtils.defineLazyModuleGetter(this, "Preferences",
+                                  "resource://gre/modules/Preferences.jsm");
 
 var gLoggingEnabled = false;
 
@@ -593,6 +598,10 @@ WifiGeoPositionProvider.prototype = {
         LOG("restricted token has been refreshed, Hawk kid:" + credential.kid);
         gRestrictedToken = credential;
         gTokenRefreshedTimestamp = Date.now();
+
+        // Store GEO_KAI_HAWK_MAC and GEO_KAI_HAWK_KID for GeoSubmit
+        Preferences.set(GEO_KAI_HAWK_KID, credential.kid);
+        Preferences.set(GEO_KAI_HAWK_MAC, credential.mac_key);
       }, (errorStatus) => {
         ERR("failed to fetch restricted token, errorStatus: " + errorStatus);
         gRestrictedToken = null;
