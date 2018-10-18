@@ -20,6 +20,7 @@ public:
   FactoryCreate();
 
   static void UpdateState(bool aIsDiskFull, uint64_t aFreeSpace);
+  static void UpdateFreeSpace(uint64_t aFreeSpace);
 
 private:
   DiskSpaceWatcher();
@@ -27,6 +28,8 @@ private:
 
   static uint64_t sFreeSpace;
   static bool     sIsDiskFull;
+  static uint64_t sFreeSpaceLowThreshold;
+  static uint64_t sFreeSpaceHighThreshold;
 };
 
 #endif // __DISKSPACEWATCHER_H__

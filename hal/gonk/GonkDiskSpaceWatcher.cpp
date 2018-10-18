@@ -95,6 +95,7 @@ public:
 private:
   void NotifyUpdate();
   void NotifyAlmostLowDiskSpace();
+  void NotifyFreeSpace();
 
   uint64_t mLowThreshold;
   uint64_t mHighThreshold;
@@ -106,7 +107,10 @@ private:
 
   bool mIsDiskFull;
   bool mIsBelowWarningThreshold;
+  bool mIsFreeSpaceLow;
   uint64_t mFreeSpace;
+  uint64_t mFreeSpaceLowThreshold;
+  uint64_t mFreeSpaceHighThreshold;
 
   int mFd;
   MessageLoopForIO::FileDescriptorWatcher mReadWatcher;
@@ -119,6 +123,8 @@ static GonkDiskSpaceWatcher* gHalDiskSpaceWatcher = nullptr;
 #define WATCHER_PREF_WARNING    "disk_space_watcher.warning_threshold"
 #define WATCHER_PREF_TIMEOUT    "disk_space_watcher.timeout"
 #define WATCHER_PREF_SIZE_DELTA "disk_space_watcher.size_delta"
+#define WATCHER_PREF_FREE_SPACE_LOW "disk_space_watcher.free_space_low_threshold"
+#define WATCHER_PREF_FREE_SPACE_HIGH "disk_space_watcher.free_space_high_threshold"
 
 static const char kWatchedPath[] = "/data";
 
@@ -173,10 +179,30 @@ public:
   }
 };
 
+// Helper class to dispatch calls to xpcom on the main thread.
+class FreeSpaceNotifier : public nsRunnable
+{
+public:
+  FreeSpaceNotifier(const uint64_t aFreeSpace) :
+    mFreeSpace(aFreeSpace) {}
+
+  NS_IMETHOD Run()
+  {
+    MOZ_ASSERT(NS_IsMainThread());
+    DiskSpaceWatcher::UpdateFreeSpace(mFreeSpace);
+    return NS_OK;
+  }
+
+private:
+  uint64_t mFreeSpace;
+};
+
+
 GonkDiskSpaceWatcher::GonkDiskSpaceWatcher() :
   mLastFreeSpace(UINT64_MAX),
   mIsDiskFull(false),
   mIsBelowWarningThreshold(false),
+  mIsFreeSpaceLow(false),
   mFreeSpace(UINT64_MAX),
   mFd(-1)
 {
@@ -190,6 +216,8 @@ GonkDiskSpaceWatcher::GonkDiskSpaceWatcher() :
   mWarningThreshold = Preferences::GetInt(WATCHER_PREF_WARNING, 50) * 1024 * 1024;
   mTimeout = TimeDuration::FromSeconds(Preferences::GetInt(WATCHER_PREF_TIMEOUT, 5));
   mSizeDelta = Preferences::GetInt(WATCHER_PREF_SIZE_DELTA, 1) * 1024 * 1024;
+  mFreeSpaceLowThreshold = Preferences::GetInt(WATCHER_PREF_FREE_SPACE_LOW, 50) * 1024 * 1024;
+  mFreeSpaceHighThreshold = Preferences::GetInt(WATCHER_PREF_FREE_SPACE_HIGH, 52) * 1024 * 1024;
 }
 
 void
@@ -269,6 +297,17 @@ GonkDiskSpaceWatcher::NotifyAlmostLowDiskSpace() {
 }
 
 void
+GonkDiskSpaceWatcher::NotifyFreeSpace()
+{
+  mLastTimestamp = TimeStamp::Now();
+  mLastFreeSpace = mFreeSpace;
+
+  nsCOMPtr<nsIRunnable> runnable =
+    new FreeSpaceNotifier(mFreeSpace);
+  NS_DispatchToMainThread(runnable);
+}
+
+void
 GonkDiskSpaceWatcher::OnFileCanReadWithoutBlocking(int aFd)
 {
   struct fanotify_event_metadata* fem = nullptr;
@@ -326,6 +365,18 @@ GonkDiskSpaceWatcher::OnFileCanReadWithoutBlocking(int aFd)
         mIsBelowWarningThreshold = true;
       } else if (mIsBelowWarningThreshold && mFreeSpace > mWarningThreshold) {
         mIsBelowWarningThreshold = false;
+      }
+
+      if (!mIsFreeSpaceLow && (mFreeSpace < mFreeSpaceLowThreshold)) {
+        mIsFreeSpaceLow = true;
+        NotifyFreeSpace();
+      } else if (mIsFreeSpaceLow && (mFreeSpace >= mFreeSpaceHighThreshold)) {
+        mIsFreeSpaceLow = false;
+        NotifyFreeSpace();
+      } else if (mIsFreeSpaceLow) {
+        if ((mTimeout * 60 ) < TimeStamp::Now() - mLastTimestamp) {
+          NotifyFreeSpace();
+        }
       }
     }
     close(fem->fd);

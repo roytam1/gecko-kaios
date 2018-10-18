@@ -17,6 +17,7 @@
 #include "mozilla/ipc/BackgroundParent.h"
 #include "mozilla/ipc/BackgroundUtils.h"
 #include "mozilla/ipc/PBackgroundChild.h"
+#include "nsIDiskSpaceWatcher.h"
 #include "nsIIdleService.h"
 #include "nsIIPCBackgroundChildCreateCallback.h"
 #include "nsIObserverService.h"
@@ -298,6 +299,15 @@ QuotaManagerService::Init()
     nsresult rv = observerService->AddObserver(this,
                                                PROFILE_BEFORE_CHANGE_OBSERVER_ID,
                                                false);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
+
+    rv = observerService->AddObserver(this, FREESPACELOW_OBSERVER_TOPIC, false);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
+    rv = observerService->AddObserver(this, FREESPACEHIGH_OBSERVER_TOPIC, false);
     if (NS_WARN_IF(NS_FAILED(rv))) {
       return rv;
     }
@@ -706,6 +716,30 @@ QuotaManagerService::Observe(nsISupports* aSubject,
       return rv;
     }
 
+    return NS_OK;
+  }
+
+  if (!strcmp(aTopic, FREESPACELOW_OBSERVER_TOPIC)) {
+    QuotaManager* quotaManager = QuotaManager::Get();
+    if (!quotaManager) {
+      return NS_OK;
+    }
+    if (quotaManager->GetCleanRequired() || quotaManager->GetTemporaryStorageUsage() == 0) {
+      return NS_OK;
+    }
+    quotaManager->SetCleanRequired(true);
+    return NS_OK;
+  }
+
+  if (!strcmp(aTopic, FREESPACEHIGH_OBSERVER_TOPIC)) {
+    QuotaManager* quotaManager = QuotaManager::Get();
+    if (!quotaManager) {
+      return NS_OK;
+    }
+    if (!quotaManager->GetCleanRequired()) {
+      return NS_OK;
+    }
+    quotaManager->SetCleanRequired(false);
     return NS_OK;
   }
 

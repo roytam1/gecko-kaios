@@ -16,17 +16,24 @@
 
 using namespace mozilla;
 
+#define WATCHER_PREF_FREE_SPACE_LOW "disk_space_watcher.free_space_low_threshold"
+#define WATCHER_PREF_FREE_SPACE_HIGH "disk_space_watcher.free_space_high_threshold"
+
 StaticRefPtr<DiskSpaceWatcher> gDiskSpaceWatcher;
 
 NS_IMPL_ISUPPORTS(DiskSpaceWatcher, nsIDiskSpaceWatcher, nsIObserver)
 
 uint64_t DiskSpaceWatcher::sFreeSpace = 0;
 bool DiskSpaceWatcher::sIsDiskFull = false;
+uint64_t DiskSpaceWatcher::sFreeSpaceLowThreshold = 0;
+uint64_t DiskSpaceWatcher::sFreeSpaceHighThreshold = 0;
 
 DiskSpaceWatcher::DiskSpaceWatcher()
 {
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(!gDiskSpaceWatcher);
+  sFreeSpaceLowThreshold = Preferences::GetInt(WATCHER_PREF_FREE_SPACE_LOW, 50) * 1024 * 1024;
+  sFreeSpaceHighThreshold = Preferences::GetInt(WATCHER_PREF_FREE_SPACE_HIGH, 52) * 1024 * 1024;
 }
 
 DiskSpaceWatcher::~DiskSpaceWatcher()
@@ -126,6 +133,39 @@ void DiskSpaceWatcher::UpdateState(bool aIsDiskFull, uint64_t aFreeSpace)
   observerService->NotifyObservers(subject,
                                    DISKSPACEWATCHER_OBSERVER_TOPIC,
                                    sIsDiskFull ? stateFull : stateFree);
+
+  return;
+}
+
+// static
+void DiskSpaceWatcher::UpdateFreeSpace(uint64_t aFreeSpace)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  if (!gDiskSpaceWatcher) {
+    return;
+  }
+
+  nsCOMPtr<nsIObserverService> observerService =
+    mozilla::services::GetObserverService();
+
+  if (!observerService) {
+    return;
+  }
+
+  nsCOMPtr<nsISupports> subject;
+  CallQueryInterface(gDiskSpaceWatcher.get(), getter_AddRefs(subject));
+  MOZ_ASSERT(subject);
+  if (aFreeSpace < sFreeSpaceLowThreshold) {
+    observerService->NotifyObservers(subject,
+                                     FREESPACELOW_OBSERVER_TOPIC,
+                                     nullptr);
+  }
+  if (aFreeSpace >= sFreeSpaceHighThreshold) {
+    observerService->NotifyObservers(subject,
+                                     FREESPACEHIGH_OBSERVER_TOPIC,
+                                     nullptr);
+  }
+
   return;
 }
 

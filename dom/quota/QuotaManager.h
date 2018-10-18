@@ -379,6 +379,30 @@ public:
                        nsACString& aOrigin,
                        bool* aIsApp);
 
+  void
+  RemoveTemporaryStorage();
+
+  void
+  SetCleanRequired(bool aCleanRequired)
+  {
+    if (mCleanRequired != aCleanRequired) {
+      mCleanRequired = aCleanRequired;
+    }
+    return;
+  }
+
+  bool
+  GetCleanRequired()
+  {
+    return mCleanRequired;
+  }
+
+  uint64_t
+  GetTemporaryStorageUsage()
+  {
+    return mTemporaryStorageUsage;
+  }
+
 private:
   QuotaManager();
 
@@ -514,6 +538,7 @@ private:
   bool mTemporaryStorageInitialized;
 
   bool mStorageAreaInitialized;
+  bool mCleanRequired;
 };
 
 END_QUOTA_NAMESPACE

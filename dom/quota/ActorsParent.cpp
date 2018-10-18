@@ -1062,6 +1062,28 @@ private:
   GetResponse(RequestResponse& aResponse) override;
 };
 
+class TemporaryClearOp final
+  : public QuotaRequestBase
+{
+
+public:
+  explicit TemporaryClearOp()
+    : QuotaRequestBase(/* aExclusive */ true)
+  {
+    AssertIsOnOwningThread();
+  }
+
+private:
+  ~TemporaryClearOp()
+  { }
+
+  virtual nsresult
+  DoDirectoryWork(QuotaManager* aQuotaManager) override;
+
+  virtual void
+  GetResponse(RequestResponse& aResponse) override;
+};
+
 class OriginClearOp final
   : public QuotaRequestBase
 {
@@ -2615,7 +2637,8 @@ QuotaManager::QuotaManager()
   mTemporaryStorageLimit(0),
   mTemporaryStorageUsage(0),
   mTemporaryStorageInitialized(false),
-  mStorageAreaInitialized(false)
+  mStorageAreaInitialized(false),
+  mCleanRequired(false)
 {
   AssertIsOnOwningThread();
   MOZ_ASSERT(!gInstance);
@@ -3927,6 +3950,11 @@ QuotaManager::EnsureOriginIsInitialized(PersistenceType aPersistenceType,
     CheckTemporaryStorageLimits();
   }
 
+  if (mCleanRequired && mTemporaryStorageUsage != 0) {
+    RemoveTemporaryStorage();
+    mCleanRequired = false;
+  }
+
   int64_t timestamp;
 
   bool created;
@@ -4508,6 +4536,51 @@ QuotaManager::CheckTemporaryStorageLimits()
     OriginClearCompleted(doomedOrigin.mPersistenceType,
                          doomedOrigin.mOrigin,
                          doomedOrigin.mIsApp);
+  }
+}
+
+void
+QuotaManager::RemoveTemporaryStorage()
+{
+  AssertIsOnIOThread();
+  nsTArray<OriginInfo*> doomedOriginInfos;
+  {
+    MutexAutoLock lock(mQuotaMutex);
+    for (auto iter = mGroupInfoPairs.Iter(); !iter.Done(); iter.Next()) {
+      GroupInfoPair* pair = iter.UserData();
+      MOZ_ASSERT(!iter.Key().IsEmpty(), "Empty key!");
+      MOZ_ASSERT(pair, "Null pointer!");
+      RefPtr<GroupInfo> temporaryGroupInfo =
+        pair->LockedGetGroupInfo(PERSISTENCE_TYPE_TEMPORARY);
+      if (temporaryGroupInfo && temporaryGroupInfo->mUsage > 0) {
+        doomedOriginInfos.AppendElements(temporaryGroupInfo->mOriginInfos);
+      }
+    }
+  }
+  for (uint32_t index = 0; index < doomedOriginInfos.Length(); index++) {
+    OriginInfo* doomedOriginInfo = doomedOriginInfos[index];
+    DeleteFilesForOrigin(PERSISTENCE_TYPE_TEMPORARY, doomedOriginInfo->mOrigin);
+  }
+  nsTArray<OriginParams> doomedOrigins;
+  {
+    MutexAutoLock lock(mQuotaMutex);
+    for (uint32_t index = 0; index < doomedOriginInfos.Length(); index++) {
+      OriginInfo* doomedOriginInfo = doomedOriginInfos[index];
+      nsCString group = doomedOriginInfo->mGroupInfo->mGroup;
+      nsCString origin = doomedOriginInfo->mOrigin;
+      bool isApp = doomedOriginInfo->mIsApp;
+      LockedRemoveQuotaForOrigin(PERSISTENCE_TYPE_TEMPORARY, group, origin);
+
+#ifdef DEBUG
+      doomedOriginInfos[index] = nullptr;
+#endif
+
+      doomedOrigins.AppendElement(OriginParams(PERSISTENCE_TYPE_TEMPORARY, origin, isApp));
+    }
+  }
+  for (const OriginParams& doomedOrigin : doomedOrigins) {
+    OriginClearCompleted(PERSISTENCE_TYPE_TEMPORARY, doomedOrigin.mOrigin,
+      doomedOrigin.mIsApp);
   }
 }
 
@@ -5249,7 +5322,9 @@ Quota::AllocPQuotaRequestParent(const RequestParams& aParams)
     case RequestParams::TClearAllParams:
       actor = new ResetOrClearOp(/* aClear */ true);
       break;
-
+    case RequestParams::TClearTemporaryParams:
+      actor = new TemporaryClearOp();
+      break;
     case RequestParams::TResetAllParams:
       actor = new ResetOrClearOp(/* aClear */ false);
       break;
@@ -5664,6 +5739,23 @@ ResetOrClearOp::GetResponse(RequestResponse& aResponse)
   } else {
     aResponse = ResetAllResponse();
   }
+}
+
+nsresult
+TemporaryClearOp::DoDirectoryWork(QuotaManager* aQuotaManager)
+{
+  AssertIsOnIOThread();
+
+  aQuotaManager->RemoveTemporaryStorage();
+
+  return NS_OK;
+}
+
+void
+TemporaryClearOp::GetResponse(RequestResponse& aResponse)
+{
+  AssertIsOnOwningThread();
+  aResponse = ClearTemporaryResponse();
 }
 
 OriginClearOp::OriginClearOp(const RequestParams& aParams)

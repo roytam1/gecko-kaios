@@ -20,6 +20,10 @@ struct ClearAllResponse
 {
 };
 
+struct ClearTemporaryResponse
+{
+};
+
 struct ResetAllResponse
 {
 };
@@ -30,6 +34,7 @@ union RequestResponse
   ClearOriginResponse;
   ClearAppResponse;
   ClearAllResponse;
+  ClearTemporaryResponse;
   ResetAllResponse;
 };
 
