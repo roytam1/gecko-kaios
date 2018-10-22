@@ -11,6 +11,11 @@ var Cu = Components.utils;
 Cu.importGlobalProperties(['Blob', 'File']);
 Cu.import("resource://gre/modules/Services.jsm");
 
+#ifdef HAS_PRIOPRIETARY_MODULES
+Cu.import("resource://gre/modules/DeviceConfigRecovery.jsm");
+#endif
+
+
 this.EXPORTED_SYMBOLS = ["SettingsDB", "SETTINGSDB_NAME", "SETTINGSSTORE_NAME"];
 
 var DEBUG = false;
@@ -91,14 +96,22 @@ SettingsDB.prototype = {
     let rawstr = converter.ConvertToUnicode(NetUtil.readInputStreamToString(
                                             stream,
                                             stream.available()) || "");
-    let settings;
+    let settingsOld;
     try {
-      settings = JSON.parse(rawstr);
+      settingsOld = JSON.parse(rawstr);
     } catch(e) {
       if (DEBUG) debug("Error parsing " + settingsFile.path + " : " + e);
       return;
     }
     stream.close();
+
+#ifdef HAS_PRIOPRIETARY_MODULES
+    // Add for DC recovery, Override settings array(before the DB init by it).
+    if (DEBUG) debug("start DeviceConfig recovery");
+    let settings = DeviceConfigRecovery.recover(settingsOld);
+#else
+    let settings = settingsOld;
+#endif
 
     objectStore.openCursor().onsuccess = function(event) {
       let cursor = event.target.result;

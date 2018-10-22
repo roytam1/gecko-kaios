@@ -19,8 +19,11 @@ if CONFIG['MOZ_B2G']:
     ]
 
 EXTRA_JS_MODULES += [
-    'SettingsDB.jsm',
     'SettingsRequestManager.jsm'
+]
+
+EXTRA_PP_JS_MODULES += [
+    'SettingsDB.jsm'
 ]
 
 if CONFIG['MOZ_BUILD_APP'] == 'browser':

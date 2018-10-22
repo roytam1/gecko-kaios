@@ -1076,3 +1076,6 @@ bin/libfreebl_32int64_3.so
 @RESPATH@/components/SimContactService.manifest
 @RESPATH@/components/SimContactService.js
 @RESPATH@/components/simcontact.xpt
+
+@RESPATH@/components/DeviceConfig.manifest
+@RESPATH@/components/DeviceConfigAPI.js

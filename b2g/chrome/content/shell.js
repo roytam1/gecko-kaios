@@ -820,12 +820,15 @@ var shell = {
         Cu.import('resource://gre/modules/PresentationDeviceInfoManager.jsm');
       }
     } catch(e) { }
-    // Customization files.
-    Cu.import('resource://gre/modules/CustomizationService.jsm');
-    Cu.import('resource://gre/modules/CustomizationConfigManager.jsm');
-
     // Initialization for ExternalAPI.
     if (isGonk) {
+      // DeviceConfig files.
+      Cu.import('resource://gre/modules/DeviceConfigService.jsm');
+      Cu.import('resource://gre/modules/DeviceConfigManager.jsm');
+      // Customization files.
+      Cu.import('resource://gre/modules/CustomizationService.jsm');
+      Cu.import('resource://gre/modules/CustomizationConfigManager.jsm');
+
       Cu.import('resource://gre/modules/ExternalAPIService.jsm');
     }
 

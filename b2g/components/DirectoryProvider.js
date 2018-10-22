@@ -67,7 +67,8 @@ DirectoryProvider.prototype = {
 
   getFileOnGonk: function(prop, persistent) {
     let localProps = ["cachePDir", "webappsDir", "PrefD", "indexedDBPDir",
-                      "permissionDBPDir", "UpdRootD", "customizationPDir"];
+                      "permissionDBPDir", "UpdRootD", "customizationPDir",
+                      "deviceconfigPDir"];
     if (localProps.indexOf(prop) != -1) {
       let file = Cc["@mozilla.org/file/local;1"]
                    .createInstance(Ci.nsILocalFile)
