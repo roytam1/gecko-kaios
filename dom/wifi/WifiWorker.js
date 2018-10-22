@@ -2318,8 +2318,8 @@ function getKeyManagement(flags) {
     types.push("WPA-EAP");
   if (/\[WEP/.test(flags))
     types.push("WEP");
-  if (/\[WAPI-KEY/.test(flags))
-     types.push("WAPI-PSK");
+  if ((/\[WAPI-KEY/.test(flags)) || (/\[WAPI-PSK/.test(flags)))
+    types.push("WAPI-PSK");
   if (/\[WAPI-CERT/.test(flags))
     types.push("WAPI-CERT");
   return types;
