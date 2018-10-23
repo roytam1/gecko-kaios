@@ -1896,6 +1896,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INTERNAL(nsGlobalWindow)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mConsole)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mExternal)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mMozSelfSupport)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPendingPromises)
 
   tmp->TraverseHostObjectURIs(cb);
 
@@ -1975,6 +1976,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(nsGlobalWindow)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mConsole)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mExternal)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mMozSelfSupport)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mPendingPromises)
 
   tmp->UnlinkHostObjectURIs();
 
@@ -10348,6 +10350,19 @@ nsGlobalWindow::GetIndexedDB(ErrorResult& aError)
   return mIndexedDB;
 }
 
+void
+nsGlobalWindow::AddPendingPromise(mozilla::dom::Promise* aPromise)
+{
+  mPendingPromises.AppendElement(aPromise);
+}
+
+void
+nsGlobalWindow::RemovePendingPromise(mozilla::dom::Promise* aPromise)
+{
+  DebugOnly<bool> foundIt = mPendingPromises.RemoveElement(aPromise);
+  MOZ_ASSERT(foundIt, "tried to remove a non-existent element from mPendingPromises");
+}
+
 //*****************************************************************************
 // nsGlobalWindow::nsIInterfaceRequestor
 //*****************************************************************************
@@ -13100,6 +13115,9 @@ nsGlobalWindow::AddSizeOfIncludingThis(nsWindowSizes* aWindowSizes) const
     }
     ++aWindowSizes->mDOMEventTargetsCount;
   }
+
+  aWindowSizes->mDOMOtherSize +=
+    mPendingPromises.ShallowSizeOfExcludingThis(aWindowSizes->mMallocSizeOf);
 }
 
 

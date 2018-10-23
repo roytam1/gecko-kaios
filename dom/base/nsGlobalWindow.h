@@ -1581,6 +1581,11 @@ public:
   // Inner windows only.
   void UpdateCanvasFocus(bool aFocusChanged, nsIContent* aNewContent);
 
+  // See PromiseWindowProxy.h for an explanation.
+  // Inner windows only.
+  void AddPendingPromise(mozilla::dom::Promise* aPromise);
+  void RemovePendingPromise(mozilla::dom::Promise* aPromise);
+
 public:
   virtual already_AddRefed<nsPIWindowRoot> GetTopWindowRoot() override;
 
@@ -1884,6 +1889,8 @@ protected:
 
   // The VRDevies for this window
   nsTArray<RefPtr<mozilla::dom::VRDevice>> mVRDevices;
+
+  nsTArray<RefPtr<mozilla::dom::Promise>> mPendingPromises; // Inner windows only
 
   friend class nsDOMScriptableHelper;
   friend class nsDOMWindowUtils;
