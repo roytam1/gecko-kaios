@@ -11,8 +11,11 @@
 #include "mozilla/Assertions.h"
 #include "mozilla/dom/ContentChild.h"
 #include "mozilla/dom/ipc/BlobChild.h"
+#include "mozilla/ipc/MessageChannel.h"
 
 #include "BluetoothChild.h"
+#include "BluetoothCommon.h" // for BT_WARNING
+#include "BluetoothReplyRunnable.h"
 #include "MainThreadUtils.h"
 
 USING_BLUETOOTH_NAMESPACE
@@ -33,8 +36,14 @@ SendRequest(BluetoothReplyRunnable* aRunnable, const Request& aRequest)
                    "shutdown!");
 
   if (sBluetoothChild) {
-    BluetoothRequestChild* actor = new BluetoothRequestChild(aRunnable);
-    sBluetoothChild->SendPBluetoothRequestConstructor(actor, aRequest);
+    mozilla::ipc::MessageChannel* channel = sBluetoothChild->GetIPCChannel();
+    if (channel && channel->CanSend()) {
+      BluetoothRequestChild* actor = new BluetoothRequestChild(aRunnable);
+      sBluetoothChild->SendPBluetoothRequestConstructor(actor, aRequest);
+    } else {
+      BT_WARNING("Failed to send Bluetooth IPC request to parent.");
+      aRunnable->SetError(NS_LITERAL_STRING("BluetoothIpcMsgChannelError"));
+    }
   }
 }
 
