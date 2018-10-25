@@ -1181,6 +1181,7 @@ public final class AttributeName
     public static final AttributeName ARIA_POSINSET = new AttributeName(ALL_NO_NS, SAME_LOCAL("aria-posinset"), ALL_NO_PREFIX, NCNAME_HTML | NCNAME_FOREIGN | NCNAME_LANG);
     public static final AttributeName ARIA_VALUEMAX = new AttributeName(ALL_NO_NS, SAME_LOCAL("aria-valuemax"), ALL_NO_PREFIX, NCNAME_HTML | NCNAME_FOREIGN | NCNAME_LANG);
     public static final AttributeName ARIA_READONLY = new AttributeName(ALL_NO_NS, SAME_LOCAL("aria-readonly"), ALL_NO_PREFIX, NCNAME_HTML | NCNAME_FOREIGN | NCNAME_LANG);
+    public static final AttributeName ANIMATIONMODE = new AttributeName(ALL_NO_NS, SAME_LOCAL("animationmode"), ALL_NO_PREFIX, NCNAME_HTML | NCNAME_FOREIGN | NCNAME_LANG);
     public static final AttributeName ARIA_SELECTED = new AttributeName(ALL_NO_NS, SAME_LOCAL("aria-selected"), ALL_NO_PREFIX, NCNAME_HTML | NCNAME_FOREIGN | NCNAME_LANG);
     public static final AttributeName ARIA_REQUIRED = new AttributeName(ALL_NO_NS, SAME_LOCAL("aria-required"), ALL_NO_PREFIX, NCNAME_HTML | NCNAME_FOREIGN | NCNAME_LANG);
     public static final AttributeName ARIA_EXPANDED = new AttributeName(ALL_NO_NS, SAME_LOCAL("aria-expanded"), ALL_NO_PREFIX, NCNAME_HTML | NCNAME_FOREIGN | NCNAME_LANG);
@@ -1765,6 +1766,7 @@ public final class AttributeName
     ARIA_POSINSET,
     ARIA_VALUEMAX,
     ARIA_READONLY,
+    ANIMATIONMODE,
     ARIA_SELECTED,
     ARIA_REQUIRED,
     ARIA_EXPANDED,
@@ -2350,6 +2352,7 @@ public final class AttributeName
     437462252,
     437597991,
     437617485,
+    437936995,
     437986305,
     437986507,
     437986828,

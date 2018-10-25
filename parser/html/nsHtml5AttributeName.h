@@ -556,6 +556,7 @@ class nsHtml5AttributeName
     static nsHtml5AttributeName* ATTR_ARIA_POSINSET;
     static nsHtml5AttributeName* ATTR_ARIA_VALUEMAX;
     static nsHtml5AttributeName* ATTR_ARIA_READONLY;
+    static nsHtml5AttributeName* ATTR_ANIMATIONMODE;
     static nsHtml5AttributeName* ATTR_ARIA_SELECTED;
     static nsHtml5AttributeName* ATTR_ARIA_REQUIRED;
     static nsHtml5AttributeName* ATTR_ARIA_EXPANDED;
