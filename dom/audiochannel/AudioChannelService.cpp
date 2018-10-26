@@ -862,6 +862,7 @@ AudioChannelService::SetAudioChannelMuted(nsPIDOMWindowOuter* aWindow,
 
   AudioChannelWindow* winData = GetOrCreateWindowData(aWindow);
   winData->mChannels[(uint32_t)aAudioChannel].mMuted = aMuted;
+  MaybeSendStatusUpdate();
   RefreshAgentsVolumeAndPropagate(aAudioChannel, aWindow);
 }
 
