@@ -542,7 +542,7 @@ MozMtpDatabase::AddDirectory(MtpStorageID aStorageID,
     time(&entry->mDateAdded);
 
     if (fileInfo.type == PR_FILE_FILE) {
-      entry->mObjectFormat = MTP_FORMAT_DEFINED;
+      entry->mObjectFormat = MTP_FORMAT_TEXT;
       //TODO: Check how 64-bit filesize are dealt with
       entry->mObjectSize = fileInfo.size;
       AddEntry(entry);
