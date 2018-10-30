@@ -77,6 +77,10 @@ AudioOffloadPlayer::AudioOffloadPlayer(MediaOmxCommonDecoder* aObserver) :
 
 AudioOffloadPlayer::~AudioOffloadPlayer()
 {
+  if (mResetTimer) {
+    mResetTimer->Cancel();
+    mResetTimer = nullptr;
+  }
   Reset();
 #if ANDROID_VERSION >= 21
   AudioSystem::releaseAudioSessionId(mSessionId, -1);
