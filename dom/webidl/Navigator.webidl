@@ -279,6 +279,9 @@ partial interface Navigator {
    */
   [Throws, Pref="dom.wakelock.enabled", Func="Navigator::HasWakeLockSupport", UnsafeInPrerendering]
   MozWakeLock requestWakeLock(DOMString aTopic);
+
+  [Throws]
+  void minimizeMemoryUsage();
 };
 
 partial interface Navigator {

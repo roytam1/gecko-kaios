@@ -403,6 +403,9 @@ public:
 
   bool LargeTextEnabled();
 
+  // This API to minimize memory usage by trigger memory pressure, it triggers
+  // GC and send out mozmemorypressure event.
+  void MinimizeMemoryUsage(ErrorResult& aRv);
 #ifdef MOZ_EME
   already_AddRefed<Promise>
   RequestMediaKeySystemAccess(const nsAString& aKeySystem,

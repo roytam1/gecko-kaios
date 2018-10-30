@@ -151,6 +151,8 @@
 #include "mozilla/dom/fota/FotaEngine.h"
 #endif
 
+#include "nsMemoryPressure.h"
+
 namespace mozilla {
 #ifdef HAS_KOOST_MODULES
 using namespace toolkit;
@@ -3158,5 +3160,39 @@ Navigator::GetExternalapi(ErrorResult& aRv)
 }
 #endif // HAS_KOOST_MODULES
 
+class MinimizeMemoryUsageRunnable : public nsRunnable
+{
+public:
+  explicit MinimizeMemoryUsageRunnable()
+    : mRemainingIters(sNumIters)
+  {
+  }
+
+  NS_IMETHOD Run()
+  {
+    mRemainingIters--;
+    NS_DispatchMemoryPressure(MemPressure_New);
+    if (mRemainingIters > 0) {
+      NS_DispatchToMainThread(this);
+    }
+    return NS_OK;
+  }
+
+private:
+  static const uint32_t sNumIters = 3;
+  uint32_t mRemainingIters;
+};
+
+void
+Navigator::MinimizeMemoryUsage(ErrorResult& aRv)
+{
+  RefPtr<MinimizeMemoryUsageRunnable> runnable =
+    new MinimizeMemoryUsageRunnable();
+
+  nsresult rv = NS_DispatchToMainThread(runnable);
+  if (NS_FAILED(rv)) {
+    aRv.Throw(NS_ERROR_UNEXPECTED);
+  }
+}
 } // namespace dom
 } // namespace mozilla
