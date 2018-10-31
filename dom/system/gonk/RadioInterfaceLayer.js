@@ -789,6 +789,10 @@ RadioInterface.prototype = {
         // so notify gRadioEnabledController here.
         gRadioEnabledController.notifyRadioStateChanged(this.clientId,
                                                         message.radioState);
+        // After the modem assert, the data calls should be deactivated.
+        if (message.radioState != RIL.GECKO_RADIOSTATE_ENABLED) {
+          gRadioEnabledController._deactivateDataCalls();
+        }
         break;
       case "cardstatechange":
         gIccService.notifyCardStateChanged(this.clientId,
