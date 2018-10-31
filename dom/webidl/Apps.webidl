@@ -83,11 +83,13 @@ interface DOMApplication : EventTarget {
 
   void download();
   void cancelDownload();
-
   DOMRequest launch(optional DOMString? url);
 
   DOMRequest clearBrowserData();
   DOMRequest checkForUpdate(optional boolean allowedAuto = true);
+  // Clear idb storage depends on StorageType. Clear all types of storage if no
+  // argument provided.
+  DOMRequest clearStorage(optional StorageType type);
 
   /**
    * Inter-App Communication APIs.

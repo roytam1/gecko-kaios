@@ -228,6 +228,7 @@ this.DOMApplicationRegistry = {
                      "Webapps:GetIcon",
                      "Webapps:ExtractManifest",
                      "Webapps:SetEnabled",
+                     "Webapps:ClearStorage",
                      "child-process-shutdown"];
 
     this.frameMessages = ["Webapps:ClearBrowserData"];
@@ -1461,6 +1462,9 @@ this.DOMApplicationRegistry = {
         case "Webapps:Launch":
           this.doLaunch(msg, mm);
           break;
+        case "Webapps:ClearStorage":
+          this.clearStorage(msg, mm);
+          break;
         case "Webapps:LocationChange":
           this.onLocationChange(msg.oid);
           break;
@@ -1756,6 +1760,24 @@ this.DOMApplicationRegistry = {
     appClone.timestamp = aTimeStamp;
     Services.obs.notifyObservers(null, "webapps-launch", JSON.stringify(appClone));
     aOnSuccess();
+  },
+
+  clearStorage: function (aData, aMm) {
+    let storageType = aData.storageType;
+    let app = this.getAppByManifestURL(aData.manifestURL);
+    let appURI = NetUtil.newURI(app.origin, null, null);
+    let principal =
+      Services.scriptSecurityManager.createCodebasePrincipal(appURI,
+                                                             {appId: app.localId});
+    let qms = Cc["@mozilla.org/dom/quota-manager-service;1"]
+                .getService(Ci.nsIQuotaManagerService);
+    let request;
+    request = qms.clearStoragesForPrincipal(principal, storageType);
+
+    aMm.sendAsyncMessage("Webapps:ClearStorage:Return:OK", this.formatMessage(aData));
+    // TODO we should handle error status of QuotaRequest in the future
+    // if request.resultCode != Cr.NS_OK
+    // aMm.sendAsyncMessage("Webapps:ClearStorage:Return:KO", this.formatMessage(aData));
   },
 
   close: function close(aApp) {

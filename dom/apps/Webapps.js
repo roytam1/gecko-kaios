@@ -614,6 +614,20 @@ WebappsApplication.prototype = {
     return request;
   },
 
+  clearStorage: function(aType) {
+    this.addMessageListeners(["Webapps:ClearStorage:Return:OK",
+                              "Webapps:ClearStorage:Return:KO"]);
+    let request = this.createRequest();
+    cpmm.sendAsyncMessage("Webapps:ClearStorage", {
+      manifestURL: this.manifestURL,
+      storageType: aType,
+      oid: this._id,
+      topId: this._topId,
+      requestID: this.getRequestId(request)
+    });
+    return request;
+  },
+
   connect: function(aKeyword, aRules) {
     this.addMessageListeners(["Webapps:Connect:Return:OK",
                               "Webapps:Connect:Return:KO"]);
@@ -857,6 +871,16 @@ WebappsApplication.prototype = {
         } else {
           req.reject(new this._window.DOMError(msg.error || ""));
         }
+        break;
+      case "Webapps:ClearStorage:Return:KO":
+        this.removeMessageListeners(["Webapps:ClearStorage:Return:OK",
+                                     "Webapps:ClearStorage:Return:KO"]);
+        Services.DOMRequest.fireError(req, msg.error);
+        break;
+      case "Webapps:ClearStorage:Return:OK":
+        this.removeMessageListeners(["Webapps:ClearStorage:Return:OK",
+                                     "Webapps:ClearStorage:Return:KO"]);
+        Services.DOMRequest.fireSuccess(req, null);
         break;
     }
   },
