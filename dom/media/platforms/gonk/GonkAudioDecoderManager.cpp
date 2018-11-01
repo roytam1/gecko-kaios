@@ -21,7 +21,7 @@
 #include "MediaData.h"
 #include "MediaInfo.h"
 
-#define CODECCONFIG_TIMEOUT_US 10000LL
+#define CODECCONFIG_TIMEOUT_US 40000LL
 #define READ_OUTPUT_BUFFER_TIMEOUT_US  0LL
 
 #include <android/log.h>
