@@ -156,10 +156,11 @@ var ErrorPage = {
       let mm = frameLoader.messageManager;
       try {
         mm.loadFrameScript(kErrorPageFrameScript, true, true);
+        mm.addMessageListener('ErrorPage:AddCertException', self._addCertException.bind(self));
       } catch (e) {
         dump('Error loading ' + kErrorPageFrameScript + ' as frame script: ' + e + '\n');
       }
-      mm.addMessageListener('ErrorPage:AddCertException', self._addCertException.bind(self));
+
       frameElement.removeEventListener('mozbrowsererror', injectErrorPageScript, true);
     };
 
