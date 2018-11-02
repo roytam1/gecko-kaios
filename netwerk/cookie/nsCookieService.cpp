@@ -3058,6 +3058,10 @@ nsCookieService::GetCookieStringInternal(nsIURI *aHostURI,
   if (NS_FAILED(aHostURI->SchemeIs("https", &isSecure))) {
     isSecure = false;
   }
+  // Consider app scheme as secure protocol too.
+  if (!isSecure && NS_FAILED(aHostURI->SchemeIs("app", &isSecure))) {
+    isSecure = false;
+  }
 
   nsCookie *cookie;
   AutoTArray<nsCookie*, 8> foundCookieList;
