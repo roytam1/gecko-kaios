@@ -436,6 +436,7 @@ var shell = {
     WebappsHelper.init();
     CaptivePortalLoginHelper.init();
     VolumeRequestHelper.init();
+    WarnLowDiskSpaceHelper.init();
     HangMonitorHelper.init();
     Services.spatialNavigationService.init(window);
 
@@ -1105,6 +1106,17 @@ var VolumeRequestHelper = {
     Services.obs.addObserver(this, 'request-volume-up', false);
     Services.obs.addObserver(this, 'request-volume-down', false);
     Services.obs.addObserver(this, 'request-volume-show', false);
+  },
+  observe: function observe(subject, topic, data) {
+    shell.sendChromeEvent({
+      type: topic
+    });
+  }
+}
+
+var WarnLowDiskSpaceHelper = {
+  init: function init() {
+    Services.obs.addObserver(this, 'almost-low-disk-space', false);
   },
   observe: function observe(subject, topic, data) {
     shell.sendChromeEvent({

@@ -94,15 +94,18 @@ public:
 
 private:
   void NotifyUpdate();
+  void NotifyAlmostLowDiskSpace();
 
   uint64_t mLowThreshold;
   uint64_t mHighThreshold;
+  uint64_t mWarningThreshold;
   TimeDuration mTimeout;
   TimeStamp  mLastTimestamp;
   uint64_t mLastFreeSpace;
   uint32_t mSizeDelta;
 
   bool mIsDiskFull;
+  bool mIsBelowWarningThreshold;
   uint64_t mFreeSpace;
 
   int mFd;
@@ -113,6 +116,7 @@ static GonkDiskSpaceWatcher* gHalDiskSpaceWatcher = nullptr;
 
 #define WATCHER_PREF_LOW        "disk_space_watcher.low_threshold"
 #define WATCHER_PREF_HIGH       "disk_space_watcher.high_threshold"
+#define WATCHER_PREF_WARNING    "disk_space_watcher.warning_threshold"
 #define WATCHER_PREF_TIMEOUT    "disk_space_watcher.timeout"
 #define WATCHER_PREF_SIZE_DELTA "disk_space_watcher.size_delta"
 
@@ -138,6 +142,22 @@ private:
   uint64_t mFreeSpace;
 };
 
+class AlmostLowDiskSpaceNotifier : public nsRunnable
+{
+public:
+  NS_IMETHOD Run()
+  {
+    MOZ_ASSERT(NS_IsMainThread());
+    nsCOMPtr<nsIObserverService> obs = mozilla::services::GetObserverService();
+    if (obs) {
+      obs->NotifyObservers(nullptr, "almost-low-disk-space", nullptr);
+    } else {
+      NS_WARNING("Notify almost-low-disk-space failed, obs is null.");
+    }
+    return NS_OK;
+  }
+};
+
 // Helper runnable to delete the watcher on the main thread.
 class DiskSpaceCleaner : public nsRunnable
 {
@@ -156,6 +176,7 @@ public:
 GonkDiskSpaceWatcher::GonkDiskSpaceWatcher() :
   mLastFreeSpace(UINT64_MAX),
   mIsDiskFull(false),
+  mIsBelowWarningThreshold(false),
   mFreeSpace(UINT64_MAX),
   mFd(-1)
 {
@@ -166,6 +187,7 @@ GonkDiskSpaceWatcher::GonkDiskSpaceWatcher() :
   // a timeout of 5 seconds.
   mLowThreshold = Preferences::GetInt(WATCHER_PREF_LOW, 30) * 1024 * 1024;
   mHighThreshold = Preferences::GetInt(WATCHER_PREF_HIGH, 32) * 1024 * 1024;
+  mWarningThreshold = Preferences::GetInt(WATCHER_PREF_WARNING, 50) * 1024 * 1024;
   mTimeout = TimeDuration::FromSeconds(Preferences::GetInt(WATCHER_PREF_TIMEOUT, 5));
   mSizeDelta = Preferences::GetInt(WATCHER_PREF_SIZE_DELTA, 1) * 1024 * 1024;
 }
@@ -241,6 +263,12 @@ GonkDiskSpaceWatcher::NotifyUpdate()
 }
 
 void
+GonkDiskSpaceWatcher::NotifyAlmostLowDiskSpace() {
+  nsCOMPtr<nsIRunnable> runnable = new AlmostLowDiskSpaceNotifier();
+  NS_DispatchToMainThread(runnable);
+}
+
+void
 GonkDiskSpaceWatcher::OnFileCanReadWithoutBlocking(int aFd)
 {
   struct fanotify_event_metadata* fem = nullptr;
@@ -291,6 +319,13 @@ GonkDiskSpaceWatcher::OnFileCanReadWithoutBlocking(int aFd)
             mSizeDelta < llabs(mFreeSpace - mLastFreeSpace)) {
           NotifyUpdate();
         }
+      }
+
+      if (!mIsBelowWarningThreshold && mFreeSpace <= mWarningThreshold) {
+        NotifyAlmostLowDiskSpace();
+        mIsBelowWarningThreshold = true;
+      } else if (mIsBelowWarningThreshold && mFreeSpace > mWarningThreshold) {
+        mIsBelowWarningThreshold = false;
       }
     }
     close(fem->fd);
