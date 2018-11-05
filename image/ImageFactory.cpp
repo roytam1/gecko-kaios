@@ -83,13 +83,20 @@ ImageFactory::CreateImage(nsIRequest* aRequest,
                           const nsCString& aMimeType,
                           ImageURL* aURI,
                           bool aIsMultiPart,
-                          uint32_t aInnerWindowId)
+                          uint32_t aInnerWindowId,
+                          uint16_t aAnimationMode)
 {
   MOZ_ASSERT(gfxPrefs::SingletonExists(),
              "Pref observers should have been initialized already");
 
   // Compute the image's initialization flags.
   uint32_t imageFlags = ComputeImageFlags(aURI, aMimeType, aIsMultiPart);
+  // Set animation mode flag for animation control.
+  if (aAnimationMode == imgIContainer::kDontAnimMode) {
+    imageFlags |= Image::INIT_FLAG_DONT_ANIM_MODE;
+  } else if (aAnimationMode == imgIContainer::kLoopOnceAnimMode) {
+    imageFlags |= Image::INIT_FLAG_LOOPONCE_ANIM_MODE;
+  }
 
   // Select the type of image to create based on MIME type.
   if (aMimeType.EqualsLiteral(IMAGE_SVG_XML)) {

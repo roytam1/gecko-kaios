@@ -178,6 +178,7 @@ DecoderFactory::CreateAnimationDecoder(DecoderType aType,
 DecoderFactory::CreateMetadataDecoder(DecoderType aType,
                                       RasterImage* aImage,
                                       SourceBuffer* aSourceBuffer,
+                                      DecoderFlags aDecoderFlags,
                                       int aSampleSize)
 {
   if (aType == DecoderType::UNKNOWN) {
@@ -191,6 +192,7 @@ DecoderFactory::CreateMetadataDecoder(DecoderType aType,
   // Initialize the decoder.
   decoder->SetMetadataDecode(true);
   decoder->SetIterator(aSourceBuffer->Iterator());
+  decoder->SetDecoderFlags(aDecoderFlags);
   decoder->SetSampleSize(aSampleSize);
 
   decoder->Init();

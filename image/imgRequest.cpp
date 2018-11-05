@@ -93,7 +93,8 @@ imgRequest::Init(nsIURI *aURI,
                  nsISupports* aCX,
                  nsIPrincipal* aLoadingPrincipal,
                  int32_t aCORSMode,
-                 ReferrerPolicy aReferrerPolicy)
+                 ReferrerPolicy aReferrerPolicy,
+                 uint16_t aAnimationMode)
 {
   MOZ_ASSERT(NS_IsMainThread(), "Cannot use nsIURI off main thread!");
 
@@ -117,6 +118,7 @@ imgRequest::Init(nsIURI *aURI,
   mLoadingPrincipal = aLoadingPrincipal;
   mCORSMode = aCORSMode;
   mReferrerPolicy = aReferrerPolicy;
+  mAnimationMode = aAnimationMode;
 
   // If the original URI and the current URI are different, check whether the
   // original URI is secure. We deliberately don't take the current URI into
@@ -912,7 +914,8 @@ struct NewPartResult final
 static NewPartResult
 PrepareForNewPart(nsIRequest* aRequest, nsIInputStream* aInStr, uint32_t aCount,
                   ImageURL* aURI, bool aIsMultipart, Image* aExistingImage,
-                  ProgressTracker* aProgressTracker, uint32_t aInnerWindowId)
+                  ProgressTracker* aProgressTracker, uint32_t aInnerWindowId,
+                  uint16_t aAnimationMode)
 {
   NewPartResult result(aExistingImage);
 
@@ -955,7 +958,7 @@ PrepareForNewPart(nsIRequest* aRequest, nsIInputStream* aInStr, uint32_t aCount,
     RefPtr<Image> partImage =
       ImageFactory::CreateImage(aRequest, progressTracker, result.mContentType,
                                 aURI, /* aIsMultipart = */ true,
-                                aInnerWindowId);
+                                aInnerWindowId, aAnimationMode);
 
     if (result.mIsFirstPart) {
       // First part for a multipart channel. Create the MultipartImage wrapper.
@@ -978,7 +981,7 @@ PrepareForNewPart(nsIRequest* aRequest, nsIInputStream* aInStr, uint32_t aCount,
     result.mImage =
       ImageFactory::CreateImage(aRequest, aProgressTracker, result.mContentType,
                                 aURI, /* aIsMultipart = */ false,
-                                aInnerWindowId);
+                                aInnerWindowId, aAnimationMode);
   }
 
   MOZ_ASSERT(result.mImage);
@@ -1048,7 +1051,6 @@ imgRequest::OnDataAvailable(nsIRequest* aRequest, nsISupports* aContext,
                        "count", aCount);
 
   NS_ASSERTION(aRequest, "imgRequest::OnDataAvailable -- no request!");
-
   RefPtr<Image> image;
   RefPtr<ProgressTracker> progressTracker;
   bool isMultipart = false;
@@ -1070,7 +1072,8 @@ imgRequest::OnDataAvailable(nsIRequest* aRequest, nsISupports* aContext,
   if (newPartPending) {
     NewPartResult result = PrepareForNewPart(aRequest, aInStr, aCount, mURI,
                                              isMultipart, image,
-                                             progressTracker, mInnerWindowId);
+                                             progressTracker, mInnerWindowId,
+                                             mAnimationMode);
     bool succeeded = result.mSucceeded;
 
     if (result.mImage) {

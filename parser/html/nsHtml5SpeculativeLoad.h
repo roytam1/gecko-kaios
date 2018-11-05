@@ -62,7 +62,8 @@ class nsHtml5SpeculativeLoad {
                           const nsAString& aCrossOrigin,
                           const nsAString& aReferrerPolicy,
                           const nsAString& aSrcset,
-                          const nsAString& aSizes)
+                          const nsAString& aSizes,
+                          const nsAString& aAnimationMode)
     {
       NS_PRECONDITION(mOpCode == eSpeculativeLoadUninitialized,
                       "Trying to reinitialize a speculative load!");
@@ -73,6 +74,7 @@ class nsHtml5SpeculativeLoad {
         nsContentUtils::TrimWhitespace<nsContentUtils::IsHTMLWhitespace>(aReferrerPolicy));
       mSrcset.Assign(aSrcset);
       mSizes.Assign(aSizes);
+      mAnimationMode.Assign(aAnimationMode);
     }
 
     // <picture> elements have multiple <source> nodes followed by an <img>,
@@ -229,6 +231,11 @@ class nsHtml5SpeculativeLoad {
      * attribute.  If the attribute is not set, this will be a void string.
      */
     nsString mSizes;
+    /**
+     * If mOpCode is eSpeculativeLoadImage, this is the value of "animationmode"
+     * attribute.  If the attribute is not set, this will be a void string.
+     */
+    nsString mAnimationMode;
     /**
      * If mOpCode is eSpeculativeLoadPictureSource, this is the value of "media"
      * attribute.  If the attribute is not set, this will be a void string.

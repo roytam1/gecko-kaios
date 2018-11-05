@@ -23,7 +23,8 @@ enum class DecoderFlags : uint8_t
   FIRST_FRAME_ONLY               = 1 << 0,
   IS_REDECODE                    = 1 << 1,
   IMAGE_IS_TRANSIENT             = 1 << 2,
-  ASYNC_NOTIFY                   = 1 << 3
+  ASYNC_NOTIFY                   = 1 << 3,
+  ANIMATION_DISABLED             = 1 << 4
 };
 MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(DecoderFlags)
 

@@ -1134,7 +1134,8 @@ public:
 
   virtual void MaybePreLoadImage(nsIURI* uri,
                                  const nsAString &aCrossOriginAttr,
-                                 ReferrerPolicy aReferrerPolicy) override;
+                                 ReferrerPolicy aReferrerPolicy,
+                                 const nsAString &aAnimationMode) override;
   virtual void ForgetImagePreload(nsIURI* aURI) override;
 
   virtual void MaybePreconnect(nsIURI* uri,

@@ -14,6 +14,7 @@
 #include "imgRequestProxy.h"
 #include "Units.h"
 #include "nsCycleCollectionParticipant.h"
+#include "mozilla/dom/HTMLImageElementBinding.h"
 
 // Only needed for IsPictureEnabled()
 #include "mozilla/dom/HTMLPictureElement.h"
@@ -213,6 +214,9 @@ public:
   {
     SetHTMLAttr(nsGkAtoms::lowsrc, aLowsrc, aError);
   }
+
+  AnimationModeType AnimationMode();
+  void SetAnimationMode(AnimationModeType animationMode);
 
 #ifdef DEBUG
   nsIDOMHTMLFormElement* GetForm() const;

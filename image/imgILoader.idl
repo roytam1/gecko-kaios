@@ -34,6 +34,8 @@ interface imgILoader : nsISupports
   // validation.
   const unsigned long LOAD_CORS_ANONYMOUS = 1 << 16;
   const unsigned long LOAD_CORS_USE_CREDENTIALS = 1 << 17;
+  const unsigned long LOAD_IMAGE_DONT_ANIM_MODE = 1 << 18;
+  const unsigned long LOAD_IMAGE_LOOPONCE_ANIM_MODE = 1 << 19;
 
   /**
    * Start the load and decode of an image.

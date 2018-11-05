@@ -34,7 +34,7 @@ nsHtml5SpeculativeLoad::Perform(nsHtml5TreeOpExecutor* aExecutor)
       aExecutor->SetSpeculationReferrerPolicy(mReferrerPolicy);
       break;
     case eSpeculativeLoadImage:
-      aExecutor->PreloadImage(mUrl, mCrossOrigin, mSrcset, mSizes, mReferrerPolicy);
+      aExecutor->PreloadImage(mUrl, mCrossOrigin, mSrcset, mSizes, mReferrerPolicy, mAnimationMode);
       break;
     case eSpeculativeLoadOpenPicture:
       aExecutor->PreloadOpenPicture();

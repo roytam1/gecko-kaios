@@ -94,7 +94,8 @@ RasterImage::RasterImage(ImageURL* aURI /* = nullptr */) :
   mHasBeenDecoded(false),
   mPendingAnimation(false),
   mAnimationFinished(false),
-  mWantFullDecode(false)
+  mWantFullDecode(false),
+  mAnimationModeLock(false)
 {
 #ifdef MOZ_TELEMETRY
   Telemetry::GetHistogramById(Telemetry::IMAGE_DECODE_COUNT)->Add(0);
@@ -137,6 +138,13 @@ RasterImage::Init(const char* aMimeType,
   mWantFullDecode = !!(aFlags & INIT_FLAG_DECODE_IMMEDIATELY);
   mTransient = !!(aFlags & INIT_FLAG_TRANSIENT);
   mSyncLoad = !!(aFlags & INIT_FLAG_SYNC_LOAD);
+  // Animation mode setting from Web API should not be overwritten by others.
+  // Set animation mode internally and enable the ANIMATION_MODE_LOCK flag here.
+  if (aFlags & INIT_FLAG_DONT_ANIM_MODE) {
+    SetAnimationMode((imgIContainer::kDontAnimMode | ANIMATION_MODE_LOCK));
+  } else if (aFlags & INIT_FLAG_LOOPONCE_ANIM_MODE) {
+    SetAnimationMode((imgIContainer::kLoopOnceAnimMode | ANIMATION_MODE_LOCK));
+  }
 
   // Use the MIME type to select a decoder type, and make sure there *is* a
   // decoder for this MIME type.
@@ -898,10 +906,22 @@ RasterImage::SetMetadata(const ImageMetadata& aMetadata,
 NS_IMETHODIMP
 RasterImage::SetAnimationMode(uint16_t aAnimationMode)
 {
-  if (mAnim) {
-    mAnim->SetAnimationMode(aAnimationMode);
+  // Updates setting only if we haven't received setting from Web API yet.
+  if (mAnimationModeLock) {
+    return NS_OK;
   }
-  return SetAnimationModeInternal(aAnimationMode);
+
+  bool animationModeLock =
+    ((aAnimationMode & ANIMATION_MODE_LOCK) == ANIMATION_MODE_LOCK);
+  if (animationModeLock) {
+    mAnimationModeLock = animationModeLock;
+  }
+
+  uint16_t mode = aAnimationMode & ANIMATION_MODE_MASK;
+  if (mAnim) {
+    mAnim->SetAnimationMode(mode);
+  }
+  return SetAnimationModeInternal(mode);
 }
 
 //******************************************************************************
@@ -1292,6 +1312,15 @@ RasterImage::Decode(const IntSize& aSize, uint32_t aFlags)
   if (mHasBeenDecoded) {
     decoderFlags |= DecoderFlags::IS_REDECODE;
   }
+  // Get animation mode and set decoder flag.
+  {
+    uint16_t animationMode;
+
+    GetAnimationMode(&animationMode);
+    if (animationMode == kDontAnimMode) {
+      decoderFlags |= DecoderFlags::ANIMATION_DISABLED;
+    }
+  }
 
   SurfaceFlags surfaceFlags = ToSurfaceFlags(aFlags);
   if (IsOpaque()) {
@@ -1370,10 +1399,21 @@ RasterImage::DecodeMetadata(uint32_t aFlags)
 
   MOZ_ASSERT(!mHasSize, "Should not do unnecessary metadata decodes");
 
+  DecoderFlags decoderFlags = DefaultDecoderFlags();
+  // Get animation mode and set decoder flag.
+  {
+    uint16_t animationMode;
+
+    GetAnimationMode(&animationMode);
+    if (animationMode == kDontAnimMode) {
+      decoderFlags |= DecoderFlags::ANIMATION_DISABLED;
+    }
+  }
+
   // Create a decoder.
   RefPtr<Decoder> decoder =
     DecoderFactory::CreateMetadataDecoder(mDecoderType, this, mSourceBuffer,
-                                          mRequestedSampleSize);
+                                          decoderFlags, mRequestedSampleSize);
 
   // Make sure DecoderFactory was able to create a decoder successfully.
   if (!decoder) {

@@ -8,7 +8,7 @@
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/Move.h"
 #include "mozilla/Preferences.h"
- #include "mozilla/ChaosMode.h"
+#include "mozilla/ChaosMode.h"
 
 #include "ImageLogging.h"
 #include "nsPrintfCString.h"
@@ -58,6 +58,8 @@
 using namespace mozilla;
 using namespace mozilla::image;
 using namespace mozilla::net;
+
+typedef mozilla::dom::Element Element;
 
 MOZ_DEFINE_MALLOC_SIZE_OF(ImagesMallocSizeOf)
 
@@ -2158,6 +2160,33 @@ imgLoader::LoadImage(nsIURI* aURI,
     }
   }
 
+  // Get animation mode hint through the animationMode attribute of the HtmlImageElement.
+  uint16_t animationMode = imgIContainer::kNormalAnimMode;
+
+  if (aContext && aContext->IsElement()) {
+    nsAutoString animationMode_Str;
+    Element* imgElement = aContext->AsElement();
+    if (!imgElement) {
+      return NS_ERROR_FAILURE;
+    }
+    imgElement->GetAttr(kNameSpaceID_None, nsGkAtoms::animationmode, animationMode_Str);
+
+    if (animationMode_Str.EqualsLiteral("dontanim")) {
+      animationMode = imgIContainer::kDontAnimMode;
+    } else if (animationMode_Str.EqualsLiteral("looponce")){
+      animationMode = imgIContainer::kLoopOnceAnimMode;
+    }
+  } else { // Get animation mode hint through flag, brought from nsDocument::MaybePreLoadImage.
+    if (aLoadFlags & imgILoader::LOAD_IMAGE_DONT_ANIM_MODE) {
+      animationMode = imgIContainer::kDontAnimMode;
+    } else if (aLoadFlags & imgILoader::LOAD_IMAGE_LOOPONCE_ANIM_MODE) {
+      animationMode = imgIContainer::kLoopOnceAnimMode;
+    }
+  }
+  MOZ_LOG(gImgLog, LogLevel::Debug,
+         ("[this=%p] imgLoader::LoadImage -- image animation mode: %d",
+          this, animationMode));
+
   // Keep the channel in this scope, so we can adjust its notificationCallbacks
   // later when we create the proxy.
   nsCOMPtr<nsIChannel> newChannel;
@@ -2197,7 +2226,7 @@ imgLoader::LoadImage(nsIURI* aURI,
     newChannel->GetLoadGroup(getter_AddRefs(channelLoadGroup));
     request->Init(aURI, aURI, /* aHadInsecureRedirect = */ false,
                   channelLoadGroup, newChannel, entry, aLoadingDocument,
-                  aLoadingPrincipal, corsmode, aReferrerPolicy);
+                  aLoadingPrincipal, corsmode, aReferrerPolicy, animationMode);
 
     // Add the initiator type for this image load
     nsCOMPtr<nsITimedChannel> timedChannel = do_QueryInterface(newChannel);

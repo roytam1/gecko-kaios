@@ -74,7 +74,8 @@ public:
                 nsISupports* aCX,
                 nsIPrincipal* aLoadingPrincipal,
                 int32_t aCORSMode,
-                ReferrerPolicy aReferrerPolicy);
+                ReferrerPolicy aReferrerPolicy,
+                uint16_t aAnimationMode = 0);
 
   void ClearLoader();
 
@@ -272,6 +273,9 @@ private:
 
   // The Referrer Policy (defined in ReferrerPolicy.h) used for this image.
   ReferrerPolicy mReferrerPolicy;
+
+  // The animation mode (defined in imgIContainer.h) used for this image.
+  uint16_t mAnimationMode;
 
   nsresult mImageErrorCode;
 

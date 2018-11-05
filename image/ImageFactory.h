@@ -45,7 +45,8 @@ public:
                                              const nsCString& aMimeType,
                                              ImageURL* aURI,
                                              bool aIsMultiPart,
-                                             uint32_t aInnerWindowId);
+                                             uint32_t aInnerWindowId,
+                                             uint16_t aAnimationMode);
   /**
    * Creates a new image which isn't associated with a URI or loaded through
    * the usual image loading mechanism.

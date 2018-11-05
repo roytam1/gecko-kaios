@@ -803,6 +803,34 @@ HTMLImageElement::GetNaturalWidth(uint32_t* aNaturalWidth)
   return NS_OK;
 }
 
+AnimationModeType
+HTMLImageElement::AnimationMode()
+{
+  nsAutoString animationMode_Str;
+
+  GetAttr(kNameSpaceID_None, nsGkAtoms::animationmode, animationMode_Str);
+  for (uint16_t idx = 0; idx < ArrayLength(AnimationModeTypeValues::strings); idx++) {
+    if (animationMode_Str.Equals(NS_ConvertUTF8toUTF16(
+      AnimationModeTypeValues::strings[idx].value))) {
+      return AnimationModeType(idx);
+    }
+  }
+
+  return AnimationModeType::Normal;
+}
+
+void
+HTMLImageElement::SetAnimationMode(AnimationModeType animationMode)
+{
+  if (uint16_t(animationMode) < ArrayLength(AnimationModeTypeValues::strings)) {
+    nsAutoString animationMode_Str;
+    animationMode_Str.Assign(NS_ConvertUTF8toUTF16(
+      AnimationModeTypeValues::strings[uint16_t(animationMode)].value));
+
+    SetAttr(kNameSpaceID_None, nsGkAtoms::animationmode, nullptr, animationMode_Str, true);
+  }
+}
+
 nsresult
 HTMLImageElement::CopyInnerTo(Element* aDest)
 {

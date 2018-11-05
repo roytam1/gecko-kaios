@@ -111,6 +111,7 @@ public:
   CreateMetadataDecoder(DecoderType aType,
                         RasterImage* aImage,
                         SourceBuffer* aSourceBuffer,
+                        DecoderFlags aDecoderFlags,
                         int aSampleSize);
 
   /**

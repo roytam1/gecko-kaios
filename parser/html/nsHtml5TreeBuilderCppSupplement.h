@@ -132,12 +132,15 @@ nsHtml5TreeBuilder::createElement(int32_t aNamespace, nsIAtom* aName,
             aAttributes->getValue(nsHtml5AttributeName::ATTR_REFERRERPOLICY);
           nsString* sizes =
             aAttributes->getValue(nsHtml5AttributeName::ATTR_SIZES);
+          nsString* animationMode =
+            aAttributes->getValue(nsHtml5AttributeName::ATTR_ANIMATIONMODE);
           mSpeculativeLoadQueue.AppendElement()->
             InitImage(url ? *url : NullString(),
                       crossOrigin ? *crossOrigin : NullString(),
                       referrerPolicy ? *referrerPolicy : NullString(),
                       srcset ? *srcset : NullString(),
-                      sizes ? *sizes : NullString());
+                      sizes ? *sizes : NullString(),
+                      animationMode ? *animationMode : NullString());
         } else if (nsHtml5Atoms::source == aName) {
           nsString* srcset =
             aAttributes->getValue(nsHtml5AttributeName::ATTR_SRCSET);
@@ -216,6 +219,7 @@ nsHtml5TreeBuilder::createElement(int32_t aNamespace, nsIAtom* aName,
             mSpeculativeLoadQueue.AppendElement()->InitImage(*url, NullString(),
                                                              NullString(),
                                                              NullString(),
+                                                             NullString(),
                                                              NullString());
           }
         } else if (nsHtml5Atoms::style == aName) {
@@ -259,6 +263,7 @@ nsHtml5TreeBuilder::createElement(int32_t aNamespace, nsIAtom* aName,
           nsString* url = aAttributes->getValue(nsHtml5AttributeName::ATTR_XLINK_HREF);
           if (url) {
             mSpeculativeLoadQueue.AppendElement()->InitImage(*url, NullString(),
+                                                             NullString(),
                                                              NullString(),
                                                              NullString(),
                                                              NullString());

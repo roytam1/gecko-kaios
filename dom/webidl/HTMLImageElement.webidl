@@ -77,6 +77,21 @@ partial interface HTMLImageElement {
   readonly attribute long y;
 };
 
+enum AnimationModeType {
+  // Default behavior and play image over and over again.
+  "normal",
+  // Prevent image animation from playing.
+  "dontanim",
+  // Animate the image once only.
+  "looponce",
+};
+
+// Extension for image animation control.
+partial interface HTMLImageElement {
+   // Determine how multi-frame images are animated.
+   attribute AnimationModeType animationMode;
+};
+
 [NoInterfaceObject]
 interface MozImageLoadingContent {
   // Mirrored chrome-only nsIImageLoadingContent methods.  Please make sure

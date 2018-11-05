@@ -9805,7 +9805,7 @@ nsDocument::ResolvePreloadImage(nsIURI *aBaseURI,
 
 void
 nsDocument::MaybePreLoadImage(nsIURI* uri, const nsAString &aCrossOriginAttr,
-                              ReferrerPolicy aReferrerPolicy)
+                              ReferrerPolicy aReferrerPolicy, const nsAString &aAnimationMode)
 {
   // Early exit if the img is already present in the img-cache
   // which indicates that the "real" load has already started and
@@ -9831,6 +9831,12 @@ nsDocument::MaybePreLoadImage(nsIURI* uri, const nsAString &aCrossOriginAttr,
     break;
   default:
     MOZ_CRASH("Unknown CORS mode!");
+  }
+
+  if (aAnimationMode.EqualsLiteral("dontanim")) {
+    loadFlags |= imgILoader::LOAD_IMAGE_DONT_ANIM_MODE;
+  } else if (aAnimationMode.EqualsLiteral("looponce")) {
+    loadFlags |= imgILoader::LOAD_IMAGE_LOOPONCE_ANIM_MODE;
   }
 
   // Image not in cache - trigger preload

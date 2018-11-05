@@ -943,7 +943,8 @@ nsHtml5TreeOpExecutor::PreloadImage(const nsAString& aURL,
                                     const nsAString& aCrossOrigin,
                                     const nsAString& aSrcset,
                                     const nsAString& aSizes,
-                                    const nsAString& aImageReferrerPolicy)
+                                    const nsAString& aImageReferrerPolicy,
+                                    const nsAString& aAnimationMode)
 {
   nsCOMPtr<nsIURI> baseURI = BaseURIForPreload();
   nsCOMPtr<nsIURI> uri = mDocument->ResolvePreloadImage(baseURI, aURL, aSrcset,
@@ -960,7 +961,7 @@ nsHtml5TreeOpExecutor::PreloadImage(const nsAString& aURL,
       }
     }
 
-    mDocument->MaybePreLoadImage(uri, aCrossOrigin, referrerPolicy);
+    mDocument->MaybePreLoadImage(uri, aCrossOrigin, referrerPolicy, aAnimationMode);
   }
 }
 

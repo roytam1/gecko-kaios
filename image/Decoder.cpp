@@ -418,9 +418,13 @@ Decoder::PostHasTransparency()
 void
 Decoder::PostIsAnimated(int32_t aFirstFrameTimeout)
 {
-  mProgress |= FLAG_IS_ANIMATED;
-  mImageMetadata.SetHasAnimation();
-  mImageMetadata.SetFirstFrameTimeout(aFirstFrameTimeout);
+  // Post animated when decode animation is enabled.
+  if (IsDecodeAnimationEnabled())
+  {
+    mProgress |= FLAG_IS_ANIMATED;
+    mImageMetadata.SetHasAnimation();
+    mImageMetadata.SetFirstFrameTimeout(aFirstFrameTimeout);
+  }
 }
 
 void

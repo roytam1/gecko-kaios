@@ -52,6 +52,9 @@ class nsIRequest;
     {0xb1, 0x43, 0x33, 0x40, 0xc0, 0x01, 0x12, 0xf7} \
 }
 
+#define ANIMATION_MODE_MASK 0x0F
+#define ANIMATION_MODE_LOCK 0x10
+
 /**
  * Handles static and animated image containers.
  *
@@ -405,6 +408,10 @@ private: // data
   // Whether, once we are done doing a metadata decode, we should immediately
   // kick off a full decode.
   bool                       mWantFullDecode:1;
+
+  // Indicate whether the animation mode is set by Web API or not.
+  // Web API has the highest priority than others, and should not be overwritten if the flag is set.
+  bool                       mAnimationModeLock:1;
 
   TimeStamp mDrawStartTime;
 

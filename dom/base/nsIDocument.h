@@ -2093,7 +2093,8 @@ public:
    */
   virtual void MaybePreLoadImage(nsIURI* uri,
                                  const nsAString& aCrossOriginAttr,
-                                 ReferrerPolicyEnum aReferrerPolicy) = 0;
+                                 ReferrerPolicyEnum aReferrerPolicy,
+                                 const nsAString& aAnimationMode) = 0;
 
   /**
    * Called by images to forget an image preload when they start doing

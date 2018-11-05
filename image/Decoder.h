@@ -161,6 +161,14 @@ public:
     return bool(mDecoderFlags & DecoderFlags::FIRST_FRAME_ONLY);
   }
 
+  /**
+   * Should we decode animation? Or still image is enough.
+   */
+  bool IsDecodeAnimationEnabled() const
+  {
+    return bool(!(mDecoderFlags & DecoderFlags::ANIMATION_DISABLED));
+  }
+
   size_t BytesDecoded() const { return mBytesDecoded; }
 
   // The amount of time we've spent inside Write() so far for this decoder.
