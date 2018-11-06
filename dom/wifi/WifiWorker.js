@@ -1125,14 +1125,19 @@ var WifiManager = (function() {
   function getSecurity(netid, callback) {
     wifiCommand.getNetworkVariable(netid, "key_mgmt", function(key_mgmt) {
       wifiCommand.getNetworkVariable(netid, "auth_alg", function(auth_alg) {
-        if (key_mgmt == "WPA-PSK") {
-          callback("WPA-PSK");
-        } else if (key_mgmt.indexOf("WPA-EAP") != -1) {
-          callback("WPA-EAP");
-        } else if (key_mgmt == "NONE" && auth_alg === "OPEN SHARED") {
-          callback("WEP");
-        } else {
+        if (key_mgmt == null) {
+          debug("key_mgmt is null, set to OPEN");
           callback("OPEN");
+        } else {
+          if (key_mgmt == "WPA-PSK") {
+            callback("WPA-PSK");
+          } else if (key_mgmt.indexOf("WPA-EAP") != -1) {
+            callback("WPA-EAP");
+          } else if (key_mgmt == "NONE" && auth_alg === "OPEN SHARED") {
+            callback("WEP");
+          } else {
+            callback("OPEN");
+          }
         }
       });
     });
