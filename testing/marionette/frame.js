@@ -8,6 +8,7 @@ const {classes: Cc, interfaces: Ci, results: Cr, utils: Cu} = Components;
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+Cu.import("chrome://marionette/content/error.js");
 
 this.EXPORTED_SYMBOLS = ["frame"];
 
@@ -127,9 +128,13 @@ frame.Manager = class {
   getOopFrame(winId, frameId) {
     // get original frame window
     let outerWin = Services.wm.getOuterWindowWithId(winId);
-    // find the OOP frame
+    // find the OOP frame, but might get undefined
     let f = outerWin.document.getElementsByTagName("iframe")[frameId];
-    return f;
+    if (f !== undefined) {
+      return f;
+    } else {
+      throw new NoSuchFrameError("Unable to get OOP frame: " + frameId);
+    }
   }
 
   getFrameMM(winId, frameId) {
