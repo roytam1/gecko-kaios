@@ -329,14 +329,16 @@ function newSession(msg) {
  */
 function sleepSession(msg) {
   deleteSession();
-  addMessageListener("Marionette:restart", restart);
 }
 
 /**
  * Restarts all our listeners after this listener was put to sleep
  */
 function restart(msg) {
-  removeMessageListener("Marionette:restart", restart);
+  // Remove "Marionette:restart" listener for content process only
+  if (!isMainContent) {
+    removeMessageListener("Marionette:restart", restart);
+  }
   if (isB2G) {
     readyStateTimer.initWithCallback(waitForReady, 100, Ci.nsITimer.TYPE_ONE_SHOT);
   }
@@ -398,6 +400,9 @@ function deleteSession(msg) {
   if (isMainContent) {
     removeMessageListener("MarionetteMainListener:emitTouchEvent", emitTouchEventForIFrame);
     isMainContent = false;
+  } else {
+    // Add "Marionette:restart" listener for content process only.
+    addMessageListener("Marionette:restart", restart);
   }
   elementManager.reset();
   // reset container frame to the top-most frame
