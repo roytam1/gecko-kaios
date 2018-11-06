@@ -3369,7 +3369,6 @@ function WifiWorker() {
   lock.get(SETTINGS_WIFI_DHCPSERVER_ENDIP, this);
   lock.get(SETTINGS_WIFI_DNS1, this);
   lock.get(SETTINGS_WIFI_DNS2, this);
-  lock.get(SETTINGS_WIFI_TETHERING_ENABLED, this);
 
   lock.get(SETTINGS_USB_DHCPSERVER_STARTIP, this);
   lock.get(SETTINGS_USB_DHCPSERVER_ENDIP, this);
