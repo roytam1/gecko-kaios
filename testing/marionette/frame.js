@@ -165,8 +165,6 @@ frame.Manager = class {
         this.currentRemoteFrame = f;
         this.addMessageManagerListeners(mm);
 
-        // load listener.js immediately to let the following sessions work.
-        mm.loadFrameScript(FRAME_SCRIPT, false, true);
         mm.sendAsyncMessage("Marionette:restart");
         return oopFrame.id;
       }
