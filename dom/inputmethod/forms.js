@@ -1568,11 +1568,11 @@ var CompositionManager =  {
     }
 
     if (!dict) {
-      this._isStarted = tip.flushPendingComposition();
+      this._isStarted |= tip.flushPendingComposition();
     } else {
       let keyboardEvent = new win.KeyboardEvent("", dict);
       let flags = dict.flags;
-      this._isStarted = tip.flushPendingComposition(keyboardEvent, flags);
+      this._isStarted |= tip.flushPendingComposition(keyboardEvent, flags);
     }
 
     if (this._isStarted) {
