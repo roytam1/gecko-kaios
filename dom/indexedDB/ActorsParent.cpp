@@ -9444,6 +9444,11 @@ ConvertBlobsToActors(PBackgroundParent* aBackgroundActor,
   for (uint32_t index = 0; index < count; index++) {
     const StructuredCloneFile& file = aFiles[index];
 
+    if (!file.mFileInfo) {
+      NS_WARNING("StructuredCloneFile mFileInfo is null, this shouldn't happen");
+      return NS_ERROR_DOM_INDEXEDDB_UNKNOWN_ERR;
+    }
+
     const int64_t fileId = file.mFileInfo->Id();
     MOZ_ASSERT(fileId > 0);
 
@@ -25338,6 +25343,11 @@ ObjectStoreGetRequestOp::ConvertResponse(
                              SerializedStructuredCloneReadInfo& aSerializedInfo)
 {
   MOZ_ASSERT(aIndex < mResponse.Length());
+
+  if (aIndex >= mResponse.Length()) {
+    NS_WARNING("Out-of-bound array access in ConvertResponse!");
+    return NS_ERROR_FAILURE;
+  }
 
   StructuredCloneReadInfo& info = mResponse[aIndex];
 
