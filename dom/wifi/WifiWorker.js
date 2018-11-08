@@ -2832,9 +2832,10 @@ function WifiWorker() {
   WifiManager.onsupplicantconnection = function() {
     debug("Connected to supplicant");
     // Register listener for mobileConnectionService
-    if (self.mobileConnectionListener === null) {
-      self.mobileConnectionListener = gMobileConnectionService
+    if (!self.mobileConnectionRegistered) {
+      gMobileConnectionService
         .getItemByServiceId(WifiManager.telephonyServiceId).registerListener(self);
+      self.mobileConnectionRegistered = true;
     }
     // Set current country code
     self.lastKnownCountryCode = self.pickWifiCountryCode();
@@ -3429,7 +3430,7 @@ WifiWorker.prototype = {
   disconnectedByWifiTethering: false,
 
   lastKnownCountryCode: null,
-  mobileConnectionListener: null,
+  mobileConnectionRegistered: false,
 
   _wifiTetheringSettingsToRead: [],
 
@@ -4992,10 +4993,10 @@ WifiWorker.prototype = {
         Services.obs.removeObserver(this, kWifiCaptivePortalResult);
         Services.obs.removeObserver(this, kOpenCaptivePortalLoginEvent);
         Services.prefs.removeObserver(kPrefDefaultServiceId, this);
-        if (this.mobileConnectionListener) {
+        if (this.mobileConnectionRegistered) {
           gMobileConnectionService
             .getItemByServiceId(WifiManager.telephonyServiceId).unregisterListener(this);
-          this.mobileConnectionListener = null;
+          this.mobileConnectionRegistered = false;
         }
         break;
 
@@ -5005,14 +5006,15 @@ WifiWorker.prototype = {
           if (defaultServiceId == WifiManager.telephonyServiceId) {
             return;
           }
-          if (this.mobileConnectionListener) {
+          if (this.mobileConnectionRegistered) {
             gMobileConnectionService
               .getItemByServiceId(WifiManager.telephonyServiceId).unregisterListener(this);
-            this.mobileConnectionListener = null;
+            this.mobileConnectionRegistered = false;
           }
           WifiManager.telephonyServiceId = defaultServiceId;
-          this.mobileConnectionListener = gMobileConnectionService
+          gMobileConnectionService
             .getItemByServiceId(WifiManager.telephonyServiceId).registerListener(this);
+          this.mobileConnectionRegistered = true;
         }
         break;
 
