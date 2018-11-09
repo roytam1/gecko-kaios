@@ -2601,6 +2601,7 @@ function WifiWorker() {
   this._reconnectOnDisconnect = false;
   this._listeners = [];
   this.wifiDisableDelayId = null;
+  this.isDriverRoaming = false;
 
   WifiManager.telephonyServiceId = this._getDefaultServiceId();
 
@@ -2975,10 +2976,10 @@ function WifiWorker() {
           self.currentNetwork = {};
         self.currentNetwork.bssid = wifiInfo.bssid;
         self.currentNetwork.ssid = quote(wifiInfo.wifiSsid);
-        self.currentNetwork.isDriverRoaming = this.isDriverRoaming;
         self.currentNetwork.netId = wifiInfo.networkId;
+        self.isDriverRoaming = this.isDriverRoaming;
         WifiManager.getNetworkConfiguration(self.currentNetwork, function (){
-          if (!self.currentNetwork.isDriverRoaming) {
+          if (!self.isDriverRoaming) {
             // Notify again because we get complete network information.
             self._fireEvent("onconnecting", { network: netToDOM(self.currentNetwork) });
           }
@@ -3002,14 +3003,14 @@ function WifiWorker() {
           WifiManager.loopDetectionCount = 0;
           WifiManager.associationRejectCount = 0;
           self._startConnectionInfoTimer();
-          if (!self.currentNetwork.isDriverRoaming) {
+          if (!self.isDriverRoaming) {
             self._fireEvent("onassociate", { network: netToDOM(self.currentNetwork) });
           }
         };
         self.currentNetwork.bssid = wifiInfo.bssid;
         self.currentNetwork.ssid = quote(wifiInfo.wifiSsid);
         self.currentNetwork.netId = wifiInfo.networkId;
-        self.currentNetwork.isDriverRoaming = this.isDriverRoaming;
+        self.isDriverRoaming = this.isDriverRoaming;
         WifiManager.getNetworkConfiguration(self.currentNetwork, _oncompleted);
         break;
       case "CONNECTED":
@@ -3145,7 +3146,7 @@ function WifiWorker() {
     // connectionInformation event with the IP address the next time the
     // timer fires.
     self._lastConnectionInfo = null;
-    if (!self.currentNetwork.isDriverRoaming) {
+    if (!self.isDriverRoaming) {
       self._fireEvent("onconnect", { network: netToDOM(self.currentNetwork) });
     }
     WifiManager.postDhcpSetup(function(){});
