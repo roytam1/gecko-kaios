@@ -18,6 +18,7 @@ namespace mozilla {
 namespace hal_impl {
 
 static const int sRetryInterval = 100; // ms
+static nsCOMPtr<nsITimer> sRetryTimer;
 
 bool
 SystemServiceIsRunning(const char* aSvcName)
@@ -125,17 +126,21 @@ StartSystemService(const char* aSvcName, const char* aArgs)
    * hereby add delay. See Bug 1143925 Comment 41.
    */
   if (!SystemServiceIsRunning(aSvcName)) {
-    nsCOMPtr<nsITimer> timer = do_CreateInstance("@mozilla.org/timer;1");
-    if (!timer) {
-      return NS_ERROR_FAILURE;
+    if (!sRetryTimer) {
+      nsresult rv;
+      sRetryTimer = do_CreateInstance("@mozilla.org/timer;1", &rv);
+      NS_ENSURE_SUCCESS(rv, rv);
     }
 
     RefPtr<StartSystemServiceTimerCallback> timerCallback =
       new StartSystemServiceTimerCallback(aSvcName, aArgs);
 
-    timer->InitWithCallback(timerCallback,
-                            sRetryInterval,
-                            nsITimer::TYPE_ONE_SHOT);
+    sRetryTimer->InitWithCallback(timerCallback,
+                                  sRetryInterval,
+                                  nsITimer::TYPE_ONE_SHOT);
+  } else if (sRetryTimer) {
+    sRetryTimer->Cancel();
+    sRetryTimer = nullptr;
   }
 
   return NS_OK;
