@@ -2902,14 +2902,12 @@ function WifiWorker() {
         WifiManager.getSecurity(configNetwork.netId, function(security) {
           if (security == "WEP") {
             self.handleNetworkConnectionFailure(configNetwork.netId, function() {
-              self.handleWrongPassword(configNetwork.netId);
               self._fireEvent("onauthenticationfailed",
                 {network: netToDOM(configNetwork)});
             });
           } else {
             WifiManager.dhcpFailuresCount++;
             if (WifiManager.dhcpFailuresCount >= MAX_RETRIES_ON_DHCP_FAILURE) {
-              WifiManager.clearDisableReasonCounter(function(){});
               self.handleNetworkConnectionFailure(configNetwork.netId,
                 function(){});
               self._fireEvent("ondhcpfailed",
@@ -2923,11 +2921,9 @@ function WifiWorker() {
         });
         break;
       case "DISABLED_AUTHENTICATION_FAILURE":
-        WifiManager.clearDisableReasonCounter(function(){});
         self.handleNetworkConnectionFailure(configNetwork.netId, function() {
-             self.handleWrongPassword(configNetwork.netId);
-             self._fireEvent("onauthenticationfailed",
-              {network: netToDOM(configNetwork)});
+          self._fireEvent("onauthenticationfailed",
+            {network: netToDOM(configNetwork)});
         });
 
         break;
@@ -2936,14 +2932,12 @@ function WifiWorker() {
           WifiManager.getSecurity(network.netId, function(security) {
             if (security == "WEP") {
                self.handleNetworkConnectionFailure(network.netId, function() {
-                 self.handleWrongPassword(network.netId);
                  self._fireEvent("onauthenticationfailed",
                    {network: netToDOM(configNetwork)});
                });
             } else {
               WifiManager.associationRejectCount++;
               if (WifiManager.associationRejectCount >= MAX_RETRIES_ON_ASSOCIATION_REJECT) {
-                WifiManager.clearDisableReasonCounter(function(){});
                 self.handleNetworkConnectionFailure(network.netId, function(){});
                 self._fireEvent("onassociationreject",
                   {network: netToDOM(configNetwork)});
@@ -3588,6 +3582,9 @@ WifiWorker.prototype = {
   },
 
   handleNetworkConnectionFailure: function(netId, callback) {
+    const MIN_PRIORITY = 0;
+    WifiManager.clearDisableReasonCounter(function(){});
+
     // We may fail to establish the connection, re-enable the
     // rest of our networks.
     if (this._needToEnableNetworks) {
@@ -3597,21 +3594,18 @@ WifiWorker.prototype = {
     if (netId >= 0) {
       WifiManager.disableNetwork(netId, function() {
         debug("disable network - id: " + netId);
-        if (callback) {
-          callback(true);
-        }
+      });
+
+      WifiManager.setNetworkVariable(netId, "priority", MIN_PRIORITY, function() {
+        debug("minimize priority of network " + netId);
+        WifiManager.saveConfig(function() {
+          self._reloadConfiguredNetworks(function(){});
+        });
       });
     }
-  },
-
-  handleWrongPassword: function(netId) {
-    let self = this;
-    WifiManager.removeNetwork(netId, function() {
-      debug("remove network - id: " + netId);
-      WifiManager.saveConfig(function() {
-        self._reloadConfiguredNetworks(function() {});
-      });
-    });
+    if (callback) {
+      callback(true);
+    }
   },
 
   // TODO: Change currentNetwork to lastNetwork in Bug-35607
