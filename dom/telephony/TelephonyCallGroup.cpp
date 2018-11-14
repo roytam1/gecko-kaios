@@ -263,7 +263,7 @@ TelephonyCallGroup::GetServiceId()
 already_AddRefed<TelephonyCall>
 TelephonyCallGroup::GetCall(uint32_t aServiceId, uint32_t aCallIndex)
 {
-  RefPtr<TelephonyCall> call;
+  RefPtr<TelephonyCall> call = nullptr;
 
   for (uint32_t index = 0; index < mCalls.Length(); index++) {
     RefPtr<TelephonyCall>& tempCall = mCalls[index];
@@ -281,7 +281,10 @@ TelephonyCallGroup::GetCall(uint32_t aServiceId, uint32_t aCallIndex)
     }
   }
 
-  return call.forget();
+  if (call) {
+    return call.forget();
+  }
+  return nullptr;
 }
 
 NS_IMPL_CYCLE_COLLECTION_CLASS(TelephonyCallGroup)

@@ -331,23 +331,27 @@ Telephony::GetCall(uint32_t aServiceId, uint32_t aCallIndex)
     if (tempCall->ServiceId() == aServiceId &&
         tempCall->CallIndex() == aCallIndex) {
       call = tempCall;
-      break;
+      return call.forget();
     }
   }
 
-  return call.forget();
+  return nullptr;
 }
 
 already_AddRefed<TelephonyCall>
 Telephony::GetCallFromEverywhere(uint32_t aServiceId, uint32_t aCallIndex)
 {
   RefPtr<TelephonyCall> call = GetCall(aServiceId, aCallIndex);
-
-  if (!call) {
-    call = mGroup->GetCall(aServiceId, aCallIndex);
+  if (call) {
+    return call.forget();
   }
 
-  return call.forget();
+  call = mGroup->GetCall(aServiceId, aCallIndex);
+  if (call) {
+    return call.forget();
+  }
+
+  return nullptr;
 }
 
 nsresult
