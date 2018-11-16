@@ -23,6 +23,10 @@ if (isGonk) {
 XPCOMUtils.defineLazyServiceGetter(this, "gMobileConnectionService",
                                    "@mozilla.org/mobileconnection/mobileconnectionservice;1",
                                    "nsIMobileConnectionService");
+
+XPCOMUtils.defineLazyServiceGetter(this, "gIccService",
+                                   "@mozilla.org/icc/iccservice;1",
+                                   "nsIIccService");
 const REQUEST_REJECT = 0;
 const HTTP_CODE_OK = 200;
 const HTTP_CODE_CREATED = 201;
@@ -91,9 +95,49 @@ this.DeviceUtils = {
     return deferred.promise;
   },
 
+  getIccInfoArray: function DeviceUtils_getIccInfoArray() {
+    if (typeof gMobileConnectionService === "undefined") return [];
+
+    let infoArray = [];
+    for (let i = 0; i < gMobileConnectionService.numItems; i++) {
+      let icc = gIccService.getIccByServiceId(0);
+      if (icc && icc.iccInfo) {
+        infoArray.push(icc.iccInfo);
+      }
+    }
+    return infoArray;
+  },
+
+  getMobileNetworkInfoArray: function DeviceUtils_getMobileNetworkInfoArray() {
+    if (typeof gMobileConnectionService === "undefined") return [];
+
+    let infoArray = [];
+    for (let i = 0; i < gMobileConnectionService.numItems; i++) {
+      let conn = gMobileConnectionService.getItemByServiceId(0);
+      if (conn && conn.voice && conn.voice.network) {
+        infoArray.push(conn.voice.network);
+      }
+    }
+    return infoArray;
+  },
+
   getTDeviceObject: function DeviceUtils_getTDeviceObject() {
     let deferred = Promise.defer();
+
+    // mobile network and language should be updated every time.
+    let netInfoArray = this.getMobileNetworkInfoArray();
+    let net_mcc = netInfoArray.length ? parseInt(netInfoArray[0].mcc, 10)
+                                      : undefined;
+    let net_mnc = netInfoArray.length ? parseInt(netInfoArray[0].mcc, 10)
+                                      : undefined;
+    let language = Services.prefs.getPrefType("general.useragent.locale") == Ci.nsIPrefBranch.PREF_STRING
+                 ? Services.prefs.getCharPref("general.useragent.locale")
+                 : undefined;
+
     if (this.device_info_cache) {
+      this.device_info_cache.net_mcc = net_mcc;
+      this.device_info_cache.net_mnc = net_mnc;
+      this.device_info_cache.lang = language;
       deferred.resolve(this.device_info_cache);
     } else {
       this.getDeviceId().then(
@@ -103,6 +147,7 @@ this.DeviceUtils = {
             if (!(characteristics in device_type_map)) {
               characteristics = "default";
             }
+            let iccArray = this.getIccInfoArray();
             let device_info = {
               device_id: device_id,
               reference: this.getRefNumber(),
@@ -112,7 +157,15 @@ this.DeviceUtils = {
                 Services.prefs.getCharPref("b2g.version") : undefined,
               device_type: device_type_map[characteristics],
               brand: libcutils.property_get("ro.product.brand"),
-              model: libcutils.property_get("ro.product.name")
+              model: libcutils.property_get("ro.product.name"),
+              uuid: Services.prefs.getPrefType("app.update.custom") == Ci.nsIPrefBranch.PREF_STRING ?
+                    Services.prefs.getCharPref("app.update.custom") : undefined,
+              icc_mcc: iccArray.length ? parseInt(iccArray[0].mcc, 10) : undefined,
+              icc_mnc: iccArray.length ? parseInt(iccArray[0].mnc, 10) : undefined,
+              net_mcc: net_mcc,
+              net_mnc: net_mnc,
+              lang: language,
+              build_id: Services.appinfo.platformBuildID
             };
 
             this.device_info_cache = device_info;
