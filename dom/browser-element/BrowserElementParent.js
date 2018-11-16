@@ -1206,6 +1206,8 @@ BrowserElementParent.prototype = {
   },
 
   setSpatialNavigationEnabled: defineNoReturnMethod(function(enabled) {
+    let uri = this._window.document.documentURI;
+    dump("App: [" + uri + "] setSpatialNavigationEnabled: [" + enabled + "]");
     this._frameLoader.spatialNavigationEnabled = enabled;
   }),
 

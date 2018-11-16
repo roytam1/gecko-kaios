@@ -128,13 +128,6 @@ typedef FrameMetrics::ViewID ViewID;
 // we'd need to re-institute a fixed version of bug 98158.
 #define MAX_DEPTH_CONTENT_FRAMES 10
 
-#ifdef DEBUG
-static mozilla::LazyLogModule sSpatialNavigationLog("SpatialNavigation");
-#define LOG_SpatialNavigation(arg, ...)  MOZ_LOG(sSpatialNavigationLog,     \
-                                                 mozilla::LogLevel::Debug,  \
-                                                 (arg, ##__VA_ARGS__))
-#endif
-
 NS_IMPL_CYCLE_COLLECTION(nsFrameLoader, mDocShell, mMessageManager, mChildMessageManager)
 NS_IMPL_CYCLE_COLLECTING_ADDREF(nsFrameLoader)
 NS_IMPL_CYCLE_COLLECTING_RELEASE(nsFrameLoader)
@@ -3097,10 +3090,6 @@ nsFrameLoader::GetVisible(bool* aVisible)
 /* [infallible] */ NS_IMETHODIMP
 nsFrameLoader::SetSpatialNavigationEnabled(bool aSpatialNavigationEnabled)
 {
-#if (defined DEBUG && defined MOZ_WIDGET_GONK)
-  LOG_SpatialNavigation("SetSpatialNavigationEnabled: %d",
-    aSpatialNavigationEnabled);
-#endif
   if (mSpatialNavigationEnabled == aSpatialNavigationEnabled) {
     return NS_OK;
   }

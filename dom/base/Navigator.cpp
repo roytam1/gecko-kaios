@@ -3108,6 +3108,16 @@ Navigator::GetVolumeManager(ErrorResult& aRv)
 void
 Navigator::SetSpatialNavigationEnabled(bool aEnabled)
 {
+#ifdef MOZ_WIDGET_GONK
+  nsAutoString documentURI;
+  if (mWindow && mWindow->GetDoc()) {
+    mWindow->GetDoc()->GetDocumentURI(documentURI);
+    __android_log_print(ANDROID_LOG_INFO, "Gecko",
+      "App: [%s] setSpatialNavigationEnabled: [%s]",
+      NS_ConvertUTF16toUTF8(documentURI).get(),
+      aEnabled ? "true" : "false");
+  }
+#endif //MOZ_WIDGET_GONK
   RefPtr<SpatialNavigationServiceChild> service =
     SpatialNavigationServiceChild::GetOrCreate();
 
