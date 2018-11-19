@@ -144,6 +144,10 @@ void
 FMRadio::Shutdown()
 {
   IFMRadioService::Singleton()->RemoveObserver(this);
+  if (mAudioChannelAgentEnabled) {
+    mAudioChannelAgent->NotifyStoppedPlaying();
+    mAudioChannelAgentEnabled = false;
+  }
 
   mIsShutdown = true;
 }
