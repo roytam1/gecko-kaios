@@ -126,6 +126,8 @@ this.GeckoDriver = function(appName, device, stopSignal, emulator) {
   this._browserIds = new WeakMap();
   this.actions = new action.Chain();
 
+  this.isAppDead = false;
+
   this.sessionCapabilities = {
     // mandated capabilities
     "browserName": Services.appinfo.name,
@@ -225,16 +227,21 @@ GeckoDriver.prototype.sendAsync = function(name, msg, cmdId) {
     });
   } else {
     let remoteFrameId = curRemoteFrame.targetFrameId;
-    try {
-      this.mm.sendAsyncMessage(name + remoteFrameId, msg);
-    } catch (e) {
-      switch(e.result) {
-        case Cr.NS_ERROR_FAILURE:
-        case Cr.NS_ERROR_NOT_INITIALIZED:
-          throw new NoSuchWindowError();
+    if (!this.isAppDead) {
+      try {
+        this.mm.sendAsyncMessage(name + remoteFrameId, msg);
+      } catch (e) {
+        switch(e.result) {
+          case Cr.NS_ERROR_FAILURE:
+          case Cr.NS_ERROR_NOT_INITIALIZED:
+            this.isAppDead = true;
+            throw new NoSuchWindowError();
         default:
           throw new WebDriverError(e.toString());
+        }
       }
+    } else {
+      logger.error("The app was dead already!");
     }
   }
 };
