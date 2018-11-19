@@ -265,6 +265,11 @@ BrowserElementChild.prototype = {
                      /* useCapture = */ true,
                      /* wantsUntrusted = */ false);
 
+   addEventListener('DOMContentLoaded',
+                    this._contentLoadedHandler.bind(this),
+                    /* useCapture = */ true,
+                    /* wantsUntrusted = */ false);
+
     addEventListener('scrollviewchange',
                      this._ScrollViewChangeHandler.bind(this),
                      /* useCapture = */ true,
@@ -331,6 +336,7 @@ BrowserElementChild.prototype = {
       "get-is-audio-channel-active": this._recvIsAudioChannelActive,
       "get-structured-data": this._recvGetStructuredData,
       "get-web-manifest": this._recvGetWebManifest,
+      "manifest-warnings": this._recvManifestWarnings,
     }
 
     addMessageListener("browser-element-api:call", function(aMessage) {
@@ -892,6 +898,15 @@ BrowserElementChild.prototype = {
 
     // Inform the window implementation that we handled this resize ourselves.
     e.preventDefault();
+  },
+
+  _contentLoadedHandler: function(e) {
+    if (content != e.target.defaultView) {
+      return;
+    }
+
+    sendAsyncMsg('check-manifest-warnings',
+                 { appManifestURL: docShell.appManifestURL });
   },
 
   _contextmenuHandler: function(e) {
@@ -1766,6 +1781,10 @@ BrowserElementChild.prototype = {
       id: data.json.id,
       successRv: resultString
     });
+  },
+
+  _recvManifestWarnings: function(data) {
+    content.console.warn(data.json.warningMsg);
   },
 
   _processMicroformatValue(field, value) {

@@ -24,6 +24,10 @@ XPCOMUtils.defineLazyGetter(this, "DOMApplicationRegistry", function () {
   return DOMApplicationRegistry;
 });
 
+XPCOMUtils.defineLazyServiceGetter(this, "appsService",
+                                   "@mozilla.org/AppsService;1",
+                                   "nsIAppsService");
+
 XPCOMUtils.defineLazyServiceGetter(this, "systemMessenger",
                                    "@mozilla.org/system-message-internal;1",
                                    "nsISystemMessagesInternal");
@@ -394,6 +398,7 @@ BrowserElementParent.prototype = {
       "got-is-audio-channel-active": this._gotDOMRequestResult,
       "got-structured-data": this._gotDOMRequestResult,
       "got-web-manifest": this._gotDOMRequestResult,
+      "check-manifest-warnings": this._handleCheckManifestWarnings,
     };
 
     let mmSecuritySensitiveCalls = {
@@ -663,6 +668,21 @@ BrowserElementParent.prototype = {
     let evt = this._createEvent("findchange", data.json,
                                 /* cancelable = */ false);
     this._frameElement.dispatchEvent(evt);
+  },
+
+  _handleCheckManifestWarnings: function(data) {
+    let appManifest = data.json.appManifestURL;
+    appsService.getManifestFor(appManifest).then((manifest) => {
+      let msg = "";
+      if (manifest.cursor &&
+          this._mm.assertAppHasPermission("spatialnavigation-app-manage")) {
+        msg += "Cannot declare [cursor:true] and permission [spatialnavigation-app-manage] in the same time."
+      }
+      if (msg.length > 0) {
+        this._sendAsyncMsg('manifest-warnings',
+          { warningMsg: "Illegal usage in app manifest: " + msg });
+      }
+    }, (reason) => {});
   },
 
   _createEvent: function(evtName, detail, cancelable) {
