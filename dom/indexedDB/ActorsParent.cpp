@@ -10813,7 +10813,7 @@ UpdateRefcountFunction::DidCommit()
 
     MOZ_ASSERT(value);
 
-    if (value->mDelta) {
+    if (value && value->mFileInfo && value->mDelta) {
       value->mFileInfo->UpdateDBRefs(value->mDelta);
     }
   }
@@ -18749,6 +18749,10 @@ DatabaseOperationBase::GetStructuredCloneReadInfoFromBlob(
 
       RefPtr<FileInfo> fileInfo = aFileManager->GetFileInfo(Abs(id));
       MOZ_ASSERT(fileInfo);
+
+      if (!fileInfo) {
+        return NS_ERROR_FILE_CORRUPTED;
+      }
 
       StructuredCloneFile* file = aInfo->mFiles.AppendElement();
       file->mFileInfo.swap(fileInfo);
