@@ -76,15 +76,6 @@ int nsNSSComponent::mInstanceCount = 0;
 bool EnsureNSSInitializedChromeOrContent()
 {
   nsresult rv;
-  if (XRE_IsParentProcess()) {
-    nsCOMPtr<nsISupports> nss = do_GetService(PSM_COMPONENT_CONTRACTID, &rv);
-    if (NS_FAILED(rv)) {
-      return false;
-    }
-
-    return true;
-  }
-
   // If this is a content process and not the main thread (i.e. probably a
   // worker) then forward this call to the main thread.
   if (!NS_IsMainThread()) {
@@ -109,6 +100,15 @@ bool EnsureNSSInitializedChromeOrContent()
     );
 
     return initialized;
+  }
+
+  if (XRE_IsParentProcess()) {
+    nsCOMPtr<nsISupports> nss = do_GetService(PSM_COMPONENT_CONTRACTID, &rv);
+    if (NS_FAILED(rv)) {
+      return false;
+    }
+
+    return true;
   }
 
   if (NSS_IsInitialized()) {
@@ -144,6 +144,26 @@ bool EnsureNSSInitialized(EnsureNSSOperator op)
 
     NS_ERROR("Trying to initialize PSM/NSS in a non-chrome process!");
     return false;
+  }
+
+  // If this is a content process and not the main thread (i.e. probably a
+  // worker) then forward this call to the main thread.
+  if (!NS_IsMainThread()) {
+    static Atomic<bool> initialized(false);
+    nsCOMPtr<nsIThread> mainThread;
+    nsresult rv = NS_GetMainThread(getter_AddRefs(mainThread));
+    if (NS_FAILED(rv)) {
+      return false;
+    }
+
+    // Forward to the main thread synchronously.
+    mozilla::SyncRunnable::DispatchToThread(mainThread,
+      new SyncRunnable(NS_NewRunnableFunction([&]() {
+        initialized = EnsureNSSInitialized(op);
+      }))
+    );
+
+    return initialized;
   }
 
   static bool loading = false;
