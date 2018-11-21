@@ -4330,6 +4330,15 @@ OpenDatabaseAndHandleBusy(mozIStorageService* aStorageService,
   return NS_OK;
 }
 
+bool
+NonChromeOriginInLowDiskSpaceMode(const nsACString& aOrigin)
+{
+  // In order to boot to home successfully in low disk space, we block only
+  // non-chrome origin db operations.
+  return !aOrigin.EqualsLiteral("chrome") &&
+         IndexedDatabaseManager::InLowDiskSpaceMode();
+}
+
 nsresult
 CreateStorageConnection(nsIFile* aDBFile,
                         nsIFile* aFMDirectory,
@@ -4352,7 +4361,7 @@ CreateStorageConnection(nsIFile* aDBFile,
   nsresult rv;
   bool exists;
 
-  if (IndexedDatabaseManager::InLowDiskSpaceMode()) {
+  if (NonChromeOriginInLowDiskSpaceMode(aOrigin)) {
     rv = aDBFile->Exists(&exists);
     if (NS_WARN_IF(NS_FAILED(rv))) {
       return rv;
@@ -24929,7 +24938,7 @@ ObjectStoreAddOrPutRequestOp::DoDatabaseWork(DatabaseConnection* aConnection)
                  "ObjectStoreAddOrPutRequestOp::DoDatabaseWork",
                  js::ProfileEntry::Category::STORAGE);
 
-  if (NS_WARN_IF(IndexedDatabaseManager::InLowDiskSpaceMode())) {
+  if (NS_WARN_IF(NonChromeOriginInLowDiskSpaceMode(mOrigin))) {
     return NS_ERROR_DOM_INDEXEDDB_QUOTA_ERR;
   }
 
