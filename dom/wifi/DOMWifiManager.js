@@ -135,6 +135,9 @@ DOMWifiManager.prototype = {
     var state = this._mm.sendSyncMessage("WifiManager:getState")[0];
     if (state) {
       this._currentNetwork = this._convertWifiNetwork(state.network);
+      if (this._currentNetwork) {
+        this._hasInternet = (this._currentNetwork.hasInternet || false);
+      }
       this._lastConnectionInfo = this._convertConnectionInfo(state.connectionInfo);
       this._enabled = state.enabled;
       this._connectionStatus = state.status;
