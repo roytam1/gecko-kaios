@@ -146,7 +146,7 @@ private:
   bool mCurrentProfileFinished;
   bool mSuccess;
   int8_t mProfilesIndex;
-  nsTArray<BluetoothProfileManagerBase*> mProfiles;
+  nsTArray<RefPtr<BluetoothProfileManagerBase>> mProfiles;
 
   // Either CoD or BluetoothServiceClass is assigned.
   union {
