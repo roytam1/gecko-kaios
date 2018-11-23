@@ -4909,7 +4909,8 @@ WifiWorker.prototype = {
 
     if (!enabled) {
       this.queueRequest({command: "setWifiApEnabled", value: true}, function(data) {
-        if (this.disconnectedByWifi && this.isAirplaneMode() === false) {
+        let isWifiAffectTethering = Services.prefs.getBoolPref("wifi.affect.tethering");
+        if (isWifiAffectTethering && this.disconnectedByWifi && this.isAirplaneMode() === false) {
           this.setWifiApEnabled(true, this.notifyTetheringOn.bind(this));
         } else {
           this.requestDone();
@@ -4949,7 +4950,8 @@ WifiWorker.prototype = {
 
     if (!enabled) {
       this.queueRequest({command: "setWifiEnabled", value: true}, function(data) {
-        if (this.disconnectedByWifiTethering && this.isAirplaneMode() === false) {
+        let isTetheringAffectWifi = Services.prefs.getBoolPref("tethering.affect.wifi");
+        if (isTetheringAffectWifi && this.disconnectedByWifiTethering && this.isAirplaneMode() === false) {
           gSettingsService.createLock().set(
             SETTINGS_WIFI_ENABLED,
             true,

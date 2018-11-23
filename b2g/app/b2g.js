@@ -1366,6 +1366,11 @@ pref("hangmonitor.log.level", 1);
 pref("device.capability.wifi", false);
 #endif
 
+// Customize whether tethering could be turned on again after wifi is turned off
+pref("wifi.affect.tethering", false);
+// Customize whether wifi could be turned on again after tethering is turned off
+pref("tethering.affect.wifi", false);
+
 // Kai daemon ws url
 pref("externalAPI.websocket.url", "ws://localhost:8081/");
 pref("externalAPI.websocket.protocols", "kaios-services");
