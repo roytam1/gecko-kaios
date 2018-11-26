@@ -191,6 +191,8 @@ DataCallManager.prototype = {
        return;
     }
     this._dataDefaultClientId = aNewClientId;
+    //Reset the hasGetIccid due to _dataDefaultClientId change.
+    this.hasGetIccid = false;
 
     // This is to handle boot up stage.
     if (this._currentDataClientId == -1) {
@@ -224,16 +226,17 @@ DataCallManager.prototype = {
 
       if (RILQUIRKS_DATA_REGISTRATION_ON_DEMAND ||
           RILQUIRKS_SUBSCRIPTION_CONTROL) {
-        this._setDataRegistration(oldIface, false).then(() => {
-          if (this._dataEnabled) {
-            newSettings.oldEnabled = newSettings.enabled;
-            newSettings.enabled = true;
-          }
-          this._currentDataClientId = this._dataDefaultClientId;
+        //Config the mobile network setting.
+        if (this._dataEnabled) {
+          newSettings.oldEnabled = newSettings.enabled;
+          newSettings.enabled = true;
+        }
+        this._currentDataClientId = this._dataDefaultClientId;
 
-          this._setDataRegistration(newIface, true).then(() => {
-            newConnHandler.updateRILNetworkInterface();
-          });
+        //Config the DDS value.
+        this._setDataRegistration(oldIface, false);
+        this._setDataRegistration(newIface, true).then(() => {
+          newConnHandler.updateRILNetworkInterface();
         });
         return;
       }
