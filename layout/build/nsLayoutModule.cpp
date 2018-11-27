@@ -57,6 +57,7 @@
 #include "nsIKeyboardAppProxy.h"
 #include "mozilla/KeyboardAppProxy.h"
 #include "SpatialNavigationService.h"
+#include "mozilla/dom/AppsUpdater.h"
 #endif
 #include "nsIEventListenerService.h"
 #include "nsIMessageManager.h"
@@ -388,6 +389,7 @@ NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsIPowerManagerService,
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsIAlarmHalService,
                                          AlarmHalService::GetInstance)
 #ifdef HAS_KOOST_MODULES
+NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(AppsUpdater,AppsUpdater::GetSingleton)
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsIKeyboardAppProxy,
                                          KeyboardAppProxy::GetInstance)
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsISpatialNavigationService,
@@ -890,6 +892,7 @@ NS_DEFINE_NAMED_CID(NS_POWERMANAGERSERVICE_CID);
 NS_DEFINE_NAMED_CID(OSFILECONSTANTSSERVICE_CID);
 NS_DEFINE_NAMED_CID(NS_ALARMHALSERVICE_CID);
 #ifdef HAS_KOOST_MODULES
+NS_DEFINE_NAMED_CID(APPSUPDATER_CID);
 NS_DEFINE_NAMED_CID(NS_KEYBOARDAPPPROXY_CID);
 NS_DEFINE_NAMED_CID(SPATIAL_NAVIGATION_SERVICE_CID);
 #endif
@@ -1210,6 +1213,7 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
   { &kOSFILECONSTANTSSERVICE_CID, true, nullptr, OSFileConstantsServiceConstructor },
   { &kNS_ALARMHALSERVICE_CID, false, nullptr, nsIAlarmHalServiceConstructor },
 #ifdef HAS_KOOST_MODULES
+  { &kAPPSUPDATER_CID, false, nullptr, AppsUpdaterConstructor },
   { &kNS_KEYBOARDAPPPROXY_CID, false, nullptr, nsIKeyboardAppProxyConstructor },
   { &kSPATIAL_NAVIGATION_SERVICE_CID, false, nullptr, nsISpatialNavigationServiceConstructor },
 #endif
@@ -1391,6 +1395,7 @@ static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
   { OSFILECONSTANTSSERVICE_CONTRACTID, &kOSFILECONSTANTSSERVICE_CID },
   { ALARMHALSERVICE_CONTRACTID, &kNS_ALARMHALSERVICE_CID },
 #ifdef HAS_KOOST_MODULES
+  { APPSUPDATER_CONTRACTID, &kAPPSUPDATER_CID },
   { KEYBOARDAPPPROXY_CONTRACTID, &kNS_KEYBOARDAPPPROXY_CID },
   { SPATIAL_NAVIGATION_SERVICE_CONTRACTID, &kSPATIAL_NAVIGATION_SERVICE_CID },
 #endif
