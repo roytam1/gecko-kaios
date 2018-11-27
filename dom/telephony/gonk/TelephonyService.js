@@ -1889,7 +1889,7 @@ TelephonyService.prototype = {
         }
 
         timer.initWithCallback(() => {
-          this.stopTone();
+          this.stopTone(aClientId);
           timer.initWithCallback(() => {
             if (tones.length === 1) {
               aCallback.notifySuccess();
