@@ -16,6 +16,9 @@
 #include "Types.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/dom/WakeLock.h"
+#include "nsIMobileConnectionService.h"
+#include "nsIMobileCallForwardingOptions.h"
+
 
 namespace mozilla {
 namespace dom {
@@ -24,6 +27,7 @@ class ContentParent;
 
 namespace power {
 
+class ShutdownRadioRequest;
 class PowerManagerService
   : public nsIPowerManagerService
   , public WakeLockObserver
@@ -62,6 +66,8 @@ public:
   already_AddRefed<WakeLock>
   NewWakeLock(const nsAString& aTopic, nsPIDOMWindowInner* aWindow,
               mozilla::ErrorResult& aRv);
+  void PowerOffFinal();
+  void RebootFinal();
 
 private:
 
@@ -75,10 +81,33 @@ private:
   static StaticRefPtr<PowerManagerService> sSingleton;
 
   nsTArray<nsCOMPtr<nsIDOMMozWakeLockListener>> mWakeLockListeners;
+  RefPtr<ShutdownRadioRequest> mShutdownRadioRequest;
   
   int32_t mWatchdogTimeoutSecs;
+  bool    mShutdownRadioRequestEnabled;
 };
 
+class ShutdownRadioRequest final : public nsIMobileConnectionCallback
+{
+public:
+  NS_DECL_ISUPPORTS
+  NS_DECL_NSIMOBILECONNECTIONCALLBACK
+
+  ShutdownRadioRequest(RefPtr<PowerManagerService> aPowerManagerService, bool aRebootRequest)
+  : mRebootRequest(aRebootRequest)
+  , mPowerManagerService(aPowerManagerService)
+  {
+  }
+
+  void ShutdownRadio();
+
+private:
+
+  ~ShutdownRadioRequest();
+
+  bool mRebootRequest;
+  RefPtr<PowerManagerService> mPowerManagerService;
+};
 } // namespace power
 } // namespace dom
 } // namespace mozilla

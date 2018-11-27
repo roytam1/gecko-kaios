@@ -64,3 +64,9 @@ MobileConnectionIPCService::GetItemByServiceId(uint32_t aServiceId,
 
   return NS_OK;
 }
+
+NS_IMETHODIMP
+MobileConnectionIPCService::ShutdownRadio(nsIMobileConnectionCallback* requestCallback)
+{
+  return NS_OK;
+}

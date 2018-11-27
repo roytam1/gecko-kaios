@@ -960,6 +960,13 @@ RilObject.prototype = {
     Buf.sendParcel();
   },
 
+  shutdownRequest: function (options) {
+    if (DEBUG) {
+      this.context.debug("shutdownRequest: " + JSON.stringify(options));
+    }
+    this.context.Buf.simpleRequest(REQUEST_SHUTDOWN, options);
+  },
+
   /**
    * Set call waiting status.
    *
@@ -5125,7 +5132,9 @@ RilObject.prototype[REQUEST_SIM_AUTHENTICATION] = function REQUEST_SIM_AUTHENTIC
 RilObject.prototype[REQUEST_GET_DC_RT_INFO] = null;
 RilObject.prototype[REQUEST_SET_DC_RT_INFO_RATE] = null;
 RilObject.prototype[REQUEST_SET_DATA_PROFILE] = null;
-RilObject.prototype[REQUEST_SHUTDOWN] = null;
+RilObject.prototype[REQUEST_SHUTDOWN] = function REQUEST_SHUTDOWN(length, options) {
+  this.sendChromeMessage(options);
+};
 RilObject.prototype[REQUEST_SET_DATA_SUBSCRIPTION] = function REQUEST_SET_DATA_SUBSCRIPTION(length, options) {
   if (!options.rilMessageType) {
     // The request was made by ril_worker itself. Don't report.

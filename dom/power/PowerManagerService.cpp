@@ -69,17 +69,18 @@ void
 PowerManagerService::Init()
 {
   RegisterWakeLockObserver(this);
-
   // NB: default to *enabling* the watchdog even when the pref is
   // absent, in case the profile might be damaged and we need to
   // restart to repair it.
   mWatchdogTimeoutSecs =
     Preferences::GetInt("shutdown.watchdog.timeoutSecs", 10);
+  mShutdownRadioRequestEnabled = Preferences::GetBool("ril.shutdown_radio_request_enabled", false);
 }
 
 PowerManagerService::~PowerManagerService()
 {
   UnregisterWakeLockObserver(this);
+  mShutdownRadioRequest = nullptr;
 }
 
 void
@@ -132,10 +133,107 @@ PowerManagerService::SyncProfile()
   }
 }
 
-NS_IMETHODIMP
-PowerManagerService::Reboot()
+NS_IMPL_ISUPPORTS(ShutdownRadioRequest, nsIMobileConnectionCallback)
+
+ShutdownRadioRequest::~ShutdownRadioRequest(){
+  mPowerManagerService = nullptr;
+}
+
+void
+ShutdownRadioRequest::ShutdownRadio()
 {
-  LOG_FUNCTION_AND_JS_STACK() // bug 839452
+  nsCOMPtr<nsIMobileConnectionService> service =
+    do_GetService(NS_MOBILE_CONNECTION_SERVICE_CONTRACTID);
+  NS_ASSERTION(service, "This shouldn't fail!");
+  service->ShutdownRadio(this);
+}
+
+NS_IMETHODIMP
+ShutdownRadioRequest::NotifySuccess()
+{
+  if (mRebootRequest) {
+    mPowerManagerService->RebootFinal();
+  } else {
+    mPowerManagerService->PowerOffFinal();
+  }
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ShutdownRadioRequest::NotifySuccessWithBoolean(bool aResult)
+{
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ShutdownRadioRequest::NotifyGetNetworksSuccess(uint32_t aCount,
+                                                        nsIMobileNetworkInfo** aNetworks)
+{
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ShutdownRadioRequest::NotifyGetCallForwardingSuccess(uint32_t aCount,
+                                                              nsIMobileCallForwardingOptions** aResults)
+{
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ShutdownRadioRequest::NotifyGetCallBarringSuccess(uint16_t aProgram,
+                                                           bool aEnabled,
+                                                           uint16_t aServiceClass)
+{
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ShutdownRadioRequest::NotifyGetCallWaitingSuccess(uint16_t aServiceClass)
+{
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ShutdownRadioRequest::NotifyGetClirStatusSuccess(uint16_t aN,
+                                                          uint16_t aM)
+{
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ShutdownRadioRequest::NotifyGetPreferredNetworkTypeSuccess(int32_t aType)
+{
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ShutdownRadioRequest::NotifyGetRoamingPreferenceSuccess(int32_t aMode)
+{
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ShutdownRadioRequest::NotifyGetDeviceIdentitiesRequestSuccess(
+  nsIMobileDeviceIdentities* aResult)
+{
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ShutdownRadioRequest::NotifyError(const nsAString& aName)
+{
+  if (mRebootRequest) {
+    mPowerManagerService->RebootFinal();
+  } else {
+    mPowerManagerService->PowerOffFinal();
+  }
+  return NS_OK;
+}
+
+void
+PowerManagerService::RebootFinal()
+{
+  LOG_FUNCTION_AND_JS_STACK() // bug 839452　
 
   StartForceQuitWatchdog(eHalShutdownMode_Reboot, mWatchdogTimeoutSecs);
   // To synchronize any unsaved user data before rebooting.
@@ -144,8 +242,8 @@ PowerManagerService::Reboot()
   MOZ_CRASH("hal::Reboot() shouldn't return");
 }
 
-NS_IMETHODIMP
-PowerManagerService::PowerOff()
+void
+PowerManagerService::PowerOffFinal()
 {
   LOG_FUNCTION_AND_JS_STACK() // bug 839452
 
@@ -154,6 +252,32 @@ PowerManagerService::PowerOff()
   SyncProfile();
   hal::PowerOff();
   MOZ_CRASH("hal::PowerOff() shouldn't return");
+}
+
+NS_IMETHODIMP
+PowerManagerService::Reboot()
+{
+  if (mShutdownRadioRequestEnabled) {
+    LOG_FUNCTION_AND_JS_STACK() // bug 839452　
+    mShutdownRadioRequest = new ShutdownRadioRequest(this,true);
+    mShutdownRadioRequest->ShutdownRadio();
+    return NS_OK;
+  }
+  RebootFinal();
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+PowerManagerService::PowerOff()
+{
+  if (mShutdownRadioRequestEnabled) {
+    LOG_FUNCTION_AND_JS_STACK() // bug 839452　
+    mShutdownRadioRequest = new ShutdownRadioRequest(this,false);
+    mShutdownRadioRequest->ShutdownRadio();
+    return NS_OK;
+  }
+  PowerOffFinal();
+  return NS_OK;
 }
 
 NS_IMETHODIMP

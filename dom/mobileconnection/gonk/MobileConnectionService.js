@@ -10,6 +10,7 @@ const {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/systemlibs.js");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+Cu.import("resource://gre/modules/Promise.jsm");
 
 var RIL = {};
 Cu.import("resource://gre/modules/ril_consts.js", RIL);
@@ -875,6 +876,34 @@ MobileConnectionProvider.prototype = {
    */
   _debug: function(aMessage) {
     dump("MobileConnectionProvider[" + this._clientId + "]: " + aMessage + "\n");
+  },
+  /**
+   * Function to power off radio and set modem off
+   * before device power down or reboot.
+   */
+  shutdownRequest: function() {
+    return new Promise((aResolve, aReject) => {
+      this.setRadioEnabled(false,
+        {
+          notifySuccess: () => {aResolve();},
+          notifyError: (errorMsg) => {
+            if (DEBUG) {
+              this._debug("setRadioEnabled notifyError:" + errorMsg);
+            }
+            aResolve();
+          }
+        }
+      );
+    })
+    .then(() => {
+      return new Promise((aResolve, aReject) => {
+        this._radioInterface.sendWorkerMessage("shutdownRequest", null, (aResponse) => {
+          aResolve();
+        });
+      });
+    }).catch((aError) => {
+      aResolve();
+    });
   },
 
   /**
@@ -1918,6 +1947,22 @@ MobileConnectionService.prototype = {
     }
 
     return provider;
+  },
+
+  shutdownRadio: function(aCallback) {
+    let shutdownPromses = [];
+    shutdownPromses.push(this.getItemByServiceId(gDataCallManager.dataDefaultServiceId).shutdownRequest());
+    for (let i = 0; i < this._providers.length; i++) {
+      if (i == gDataCallManager.dataDefaultServiceId) {
+        continue;
+      }
+      shutdownPromses.push(this.getItemByServiceId(i).shutdownRequest());
+    }
+    Promise.all(shutdownPromses).then(() => {
+      if (aCallback) {
+        aCallback.notifySuccess();
+      }
+    });
   },
 
   /**

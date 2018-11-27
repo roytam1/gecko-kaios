@@ -170,6 +170,7 @@ interface nsIMobileConnectionService : nsISupports
   readonly attribute unsigned long numItems;
 
   nsIMobileConnection getItemByServiceId(in unsigned long serviceId);
+  void shutdownRadio(in nsIMobileConnectionCallback requestCallback);
 };
 
 %{C++
