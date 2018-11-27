@@ -41,6 +41,11 @@ XPCOMUtils.defineLazyGetter(this, "gRadioInterfaceLayer", function() {
   return ril;
 });
 
+XPCOMUtils.defineLazyServiceGetter(this, "gPowerManagerService",
+                                   "@mozilla.org/power/powermanagerservice;1",
+                                   "nsIPowerManagerService");
+
+
 const GONK_CELLBROADCAST_SERVICE_CONTRACTID =
   "@mozilla.org/cellbroadcast/gonkservice;1";
 const GONK_CELLBROADCAST_SERVICE_CID =
@@ -58,6 +63,7 @@ function debug(s) {
 }
 
 var CB_SEARCH_LIST_GECKO_CONFIG = false;
+const CB_HANDLED_WAKELOCK_TIMEOUT = 10000;
 
 function CellBroadcastService() {
   this._listeners = [];
@@ -270,6 +276,39 @@ CellBroadcastService.prototype = {
     return radioInterface;
   },
 
+    // The following attributes/functions are used for acquiring/releasing the
+    // CPU wake lock when the RIL handles received CB. Note that we need
+    // a timer to bound the lock's life cycle to avoid exhausting the battery.
+    _cbHandledWakeLock: null,
+    _cbHandledWakeLockTimer: null,
+    _acquireCbHandledWakeLock: function() {
+        if (!this._cbHandledWakeLock) {
+            if (DEBUG) debug("Acquiring a CPU wake lock for handling CB");
+            this._cbHandledWakeLock = gPowerManagerService.newWakeLock("cpu");
+        }
+        if (!this._cbHandledWakeLockTimer) {
+            if (DEBUG) debug("Creating a timer for releasing the CPU wake lock");
+            this._cbHandledWakeLockTimer =
+                Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+        }
+        if (DEBUG) debug("Setting the timer for releasing the CPU wake lock");
+        this._cbHandledWakeLockTimer
+            .initWithCallback(() => this._releaseCbHandledWakeLock(),
+               CB_HANDLED_WAKELOCK_TIMEOUT,
+                Ci.nsITimer.TYPE_ONE_SHOT);
+    },
+
+    _releaseCbHandledWakeLock: function() {
+        if (DEBUG) debug("Releasing the CPU wake lock for handling CB");
+        if (this._cbHandledWakeLockTimer) {
+            this._cbHandledWakeLockTimer.cancel();
+        }
+        if (this._cbHandledWakeLock) {
+            this._cbHandledWakeLock.unlock();
+            this._cbHandledWakeLock = null;
+        }
+    },
+
   /**
    * nsIGonkCellBroadcastService interface
    */
@@ -286,6 +325,7 @@ CellBroadcastService.prototype = {
                                   aEtwsWarningType,
                                   aEtwsEmergencyUserAlert,
                                   aEtwsPopup) {
+    this._acquireCbHandledWakeLock();
     // Broadcast CBS System message
     gCellbroadcastMessenger.notifyCbMessageReceived(aServiceId,
                                                     aGsmGeographicalScope,
@@ -359,6 +399,8 @@ CellBroadcastService.prototype = {
         this.handle(aSubject.key, aSubject.value);
         break;
       case NS_XPCOM_SHUTDOWN_OBSERVER_ID:
+        // Release the CPU wake lock for handling the received CB.
+        this._releaseCbHandledWakeLock();
         Services.obs.removeObserver(this, NS_XPCOM_SHUTDOWN_OBSERVER_ID);
         Services.obs.removeObserver(this, kMozSettingsChangedObserverTopic);
 
