@@ -74,7 +74,12 @@
 #undef DBG
 #define LOG(args...)  __android_log_print(ANDROID_LOG_INFO,  "GonkGPS_GEO", ## args)
 #define ERR(args...)  __android_log_print(ANDROID_LOG_ERROR, "GonkGPS_GEO", ## args)
-#define DBG(args...)  __android_log_print(ANDROID_LOG_DEBUG, "GonkGPS_GEO", ## args)
+#define DBG(args...)                                                   \
+  do {                                                                 \
+    if (gDebug_isLoggingEnabled) {                                     \
+      __android_log_print(ANDROID_LOG_DEBUG, "GonkGPS_GEO", ## args);  \
+    }                                                                  \
+  } while(0)
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -176,12 +181,10 @@ GonkGPSGeolocationProvider::LocationCallback(GpsLocation* location)
   // current time, most notably: the geolocation service which respects maximumAge
   // set in the DOM JS.
 
-  if (gDebug_isLoggingEnabled) {
-    DBG("geo: GPS got a fix (%f, %f). accuracy: %f",
-        location->latitude,
-        location->longitude,
-        location->accuracy);
-  }
+  DBG("geo: GPS got a fix (%f, %f). accuracy: %f",
+      location->latitude,
+      location->longitude,
+      location->accuracy);
 
   RefPtr<UpdateLocationEvent> event = new UpdateLocationEvent(somewhere);
   NS_DispatchToMainThread(event);
@@ -237,9 +240,7 @@ GonkGPSGeolocationProvider::StatusCallback(GpsStatus* status)
       msgStream = "geo: Unknown GPS status\n";
       break;
   }
-  if (gDebug_isLoggingEnabled){
-    DBG("%s", msgStream);
-  }
+  DBG("%s", msgStream);
 }
 
 void
@@ -409,9 +410,7 @@ private:
 void
 GonkGPSGeolocationProvider::NmeaCallback(GpsUtcTime timestamp, const char* nmea, int length)
 {
-  if (gDebug_isLoggingEnabled) {
-    DBG("NMEA: timestamp:\t%lld, length: %d, %s", timestamp, length, nmea);
-  }
+  DBG("NMEA: timestamp:\t%lld, length: %d, %s", timestamp, length, nmea);
 
 #ifdef HAS_KOOST_MODULES
   NS_DispatchToMainThread(new NotifyNmeaUpdateTask(timestamp, nmea));
@@ -515,6 +514,7 @@ GonkGPSGeolocationProvider::RequestUtcTimeCallback()
 void
 GonkGPSGeolocationProvider::SetNiResponse(int id, int response)
 {
+  LOG("GpsNiInterface->respond(%d, %d)", id, response);
   MOZ_ASSERT(mGpsNiInterface);
   mGpsNiInterface->respond(id, response);
 }
@@ -522,6 +522,7 @@ GonkGPSGeolocationProvider::SetNiResponse(int id, int response)
 bool
 GonkGPSGeolocationProvider::SendChromeEvent(int id, GpsNiNotifyFlags flags, nsString& message)
 {
+  LOG("SendChromeEvent(%d, %x, %s)", id, flags, NS_ConvertUTF16toUTF8(message).get());
   MOZ_ASSERT(NS_IsMainThread());
   nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
   if (!obs) {
@@ -577,10 +578,8 @@ GonkGPSGeolocationProvider::GPSNiNotifyCallback(GpsNiNotification *notification)
       int id = mNotification->notification_id;
       GpsNiNotifyFlags flags = mNotification->notify_flags;
 
-      if (gDebug_isLoggingEnabled) {
-        DBG("geo: GPSNiNotifyCallback id:%d, flag:%x, timeout:%d, default response:%d",
-           id, flags, mNotification->timeout, mNotification->default_response);
-      }
+      DBG("geo: GPSNiNotifyCallback id:%d, flag:%x, timeout:%d, default response:%d",
+         id, flags, mNotification->timeout, mNotification->default_response);
 
       RefPtr<GonkGPSGeolocationProvider> provider =
         GonkGPSGeolocationProvider::GetSingleton();
@@ -848,14 +847,17 @@ GonkGPSGeolocationProvider::SetAGpsDataConn(nsAString& aApn)
 // data_conn_open has been deprecated since Android L added ApnIpType to HAL
 // Check APN_IP_IPV4V6 to see whether data_conn_open_with_apn_ip_type is supported.
 #ifdef APN_IP_IPV4V6
+    LOG("AGpsInterface->data_conn_open_with_apn_ip_type(%s, APN_IP_IPV4V6)", apn.get());
     mAGpsInterface->data_conn_open_with_apn_ip_type(apn.get(), APN_IP_IPV4V6);
 #else
+    LOG("AGpsInterface->data_conn_open(%s)", apn.get());
     mAGpsInterface->data_conn_open(apn.get());
 #endif
   } else if (connectionState == nsINetworkInfo::NETWORK_STATE_DISCONNECTED) {
     if (hasUpdateNetworkAvailability) {
       mAGpsRilInterface->update_network_availability(false, apn.get());
     }
+    LOG("AGpsInterface->data_conn_closed()");
     mAGpsInterface->data_conn_closed();
   }
 }
@@ -899,6 +901,7 @@ GonkGPSGeolocationProvider::RequestDataConnection()
   if (GetDataConnectionState() == nsINetworkInfo::NETWORK_STATE_CONNECTED) {
     // Connection is already established, we don't need to setup again.
     // We just get supl APN and make AGPS data connection state updated.
+    DBG("Request setting 'ril.supl.apn' since SUPL is already connected.");
     RequestSettingValue("ril.supl.apn");
   } else {
 
@@ -913,6 +916,7 @@ GonkGPSGeolocationProvider::RequestDataConnection()
       }
     }
 
+    DBG("nsIRadioInterface->SetupDataCallByType()");
     mRadioInterface->SetupDataCallByType(nsINetworkInfo::NETWORK_TYPE_MOBILE_SUPL);
   }
 }
@@ -926,6 +930,7 @@ GonkGPSGeolocationProvider::ReleaseDataConnection()
     return;
   }
 
+  LOG("nsIRadioInterface->DeactivateDataCallByType()");
   mRadioInterface->DeactivateDataCallByType(nsINetworkInfo::NETWORK_TYPE_MOBILE_SUPL);
 }
 
@@ -969,6 +974,7 @@ GonkGPSGeolocationProvider::RequestSetID(uint32_t flags)
   }
 
   NS_ConvertUTF16toUTF8 idBytes(id);
+  DBG("AGpsRilInterface->set_set_id(%u, %s)", type, idBytes.get());
   mAGpsRilInterface->set_set_id(type, idBytes.get());
 }
 
@@ -991,10 +997,8 @@ ConvertToGpsRefLocationType(const nsAString& aConnectionType)
     }
   }
 
-  if (gDebug_isLoggingEnabled) {
-    DBG("geo: Unsupported connection type %s\n",
-        NS_ConvertUTF16toUTF8(aConnectionType).get());
-  }
+  DBG("geo: Unsupported connection type %s\n",
+      NS_ConvertUTF16toUTF8(aConnectionType).get());
   return AGPS_REF_LOCATION_TYPE_GSM_CELLID;
 }
 } // namespace
@@ -1086,6 +1090,7 @@ GonkGPSGeolocationProvider::SetReferenceLocation()
     NS_WARNING("Cannot get mobile connection info.");
     return;
   }
+  DBG("AGpsRilInterface->set_ref_location()");
   mAGpsRilInterface->set_ref_location(&location, sizeof(location));
 }
 
@@ -1096,9 +1101,7 @@ GonkGPSGeolocationProvider::InjectLocation(double latitude,
                                            double longitude,
                                            float accuracy)
 {
-  if (gDebug_isLoggingEnabled) {
-    DBG("injecting location (%f, %f) accuracy: %f", latitude, longitude, accuracy);
-  }
+  DBG("injecting location (%f, %f) accuracy: %f", latitude, longitude, accuracy);
 
   MOZ_ASSERT(NS_IsMainThread());
   if (!mGpsInterface) {
@@ -1241,6 +1244,7 @@ GonkGPSGeolocationProvider::SetupAGPS()
   const nsAdoptingCString& suplServer = Preferences::GetCString("geo.gps.supl_server");
   int32_t suplPort = Preferences::GetInt("geo.gps.supl_port", -1);
   if (!suplServer.IsEmpty() && suplPort > 0) {
+    DBG("AGpsInterface->set_server(%s, %d)", suplServer.get(), suplPort);
     mAGpsInterface->set_server(AGPS_TYPE_SUPL, suplServer.get(), suplPort);
   } else {
     NS_WARNING("Cannot get SUPL server settings");
@@ -1318,14 +1322,10 @@ GonkGPSGeolocationProvider::NetworkLocationUpdate::Update(nsIDOMGeoPosition *pos
     if (isGPSFullyInactive ||
        (isGPSTempInactive && delta > kMinMLSCoordChangeInMeters))
     {
-      if (gDebug_isLoggingEnabled) {
-        DBG("Using MLS, GPS age:%fs, MLS Delta:%fm\n", diff_ms / 1000.0, delta);
-      }
+      DBG("Using MLS, GPS age:%fs, MLS Delta:%fm", diff_ms / 1000.0, delta);
       provider->mLocationCallback->Update(position);
     } else if (provider->mLastGPSPosition) {
-      if (gDebug_isLoggingEnabled) {
-        DBG("Using old GPS age:%fs\n", diff_ms / 1000.0);
-      }
+      DBG("Using old GPS age:%fs", diff_ms / 1000.0);
 
       // This is a fallback case so that the GPS provider responds with its last
       // location rather than waiting for a more recent GPS or network location.
@@ -1570,6 +1570,8 @@ GonkGPSGeolocationProvider::Observe(nsISupports* aSubject,
             }
           } while (0);
         }
+        DBG("AGpsRilInterface->update_network_state(%d, %d, %d)", connected,
+          gpsNetworkType, roaming);
         mAGpsRilInterface->update_network_state(
           connected,
           gpsNetworkType,
@@ -1594,22 +1596,19 @@ GonkGPSGeolocationProvider::Observe(nsISupports* aSubject,
     }
 
     if (setting.mKey.EqualsASCII(kSettingDebugGpsIgnored)) {
-      LOG("received mozsettings-changed: ignoring\n");
       gDebug_isGPSLocationIgnored =
         setting.mValue.isBoolean() ? setting.mValue.toBoolean() : false;
-      if (gDebug_isLoggingEnabled) {
-        DBG("GPS ignored %d\n", gDebug_isGPSLocationIgnored);
-      }
+      LOG("received mozsettings-changed: ignoring: %d", gDebug_isGPSLocationIgnored);
       return NS_OK;
     } else if (setting.mKey.EqualsASCII(kSettingDebugEnabled)) {
-      LOG("received mozsettings-changed: logging\n");
       gDebug_isLoggingEnabled =
         setting.mValue.isBoolean() ? setting.mValue.toBoolean() : false;
+      LOG("received mozsettings-changed: logging: %d", gDebug_isLoggingEnabled);
       return NS_OK;
     } else if (setting.mKey.EqualsASCII(kSettingGeolocationEnabled)) {
-      LOG("received mozsettings-changed: geolocation-enabled\n");
       bool isGeolocationEnabled =
         setting.mValue.isBoolean() ? setting.mValue.toBoolean() : false;
+      LOG("received mozsettings-changed: geolocation-enabled: %d", isGeolocationEnabled);
 
       if (!isGeolocationEnabled) {
         if (mInitialized && mGpsInterface &&
