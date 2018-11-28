@@ -996,8 +996,13 @@ var WifiManager = (function() {
           wifiInfo.reset();
       }
 
-      if (manager.wpsStarted && manager.state !== "COMPLETED") {
-        return true;
+      if (manager.wpsStarted) {
+        if (fields.state === "ASSOCIATED" && fields.id != INVALID_NETWORK_ID) {
+          notify("wpsassociated", {id: fields.id});
+        }
+        if (manager.state !== "COMPLETED") {
+          return true;
+        }
       }
 
       if (manager.state === "COMPLETED" && fields.state === "ASSOCIATED") {
@@ -1957,6 +1962,7 @@ var WifiManager = (function() {
   manager.handleScreenStateChanged = handleScreenStateChanged;
   manager.setCountryCode = wifiCommand.setCountryCode;
   manager.postDhcpSetup = postDhcpSetup;
+  manager.setNetworkVariable = wifiCommand.setNetworkVariable;
 
   manager.ensureSupplicantDetached = aCallback => {
     if (!manager.enabled) {
@@ -3156,6 +3162,18 @@ function WifiWorker() {
       self._fireEvent("onconnect", { network: netToDOM(self.currentNetwork) });
     }
     WifiManager.postDhcpSetup(function(){});
+  };
+
+  WifiManager.onwpsassociated = function() {
+    let priority = ++self._highestPriority;
+
+    WifiManager.setNetworkVariable(this.id, "priority", priority, function(ok) {
+      if (!ok) {
+        self._reprioritizeNetworks(function(){
+          self._enableAllNetworks(function(){});
+        });
+      }
+    });
   };
 
   WifiManager.onenableAllNetworks = function() {
