@@ -1439,6 +1439,18 @@ BluetoothServiceBluedroid::ConnectDisconnect(
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(aRunnable);
 
+  // If the previos connection/disconnection request targets on the same device
+  // and profile, we just ignore this request.
+  // Apps should not send a duplicate or conflicted request within a short
+  // period of time. For example, two Connect() in row doesn't make sense.
+  RefPtr<BluetoothProfileController> prev =
+    sControllerArray.SafeLastElement(nullptr);
+  if (prev && prev->GetAddress() == aDeviceAddress
+           && prev->GetServiceUuid() == aServiceUuid) {
+    BT_WARNING("Ignore this request since it conflicts with the previous one.");
+    return;
+  }
+
   BluetoothProfileController* controller =
     new BluetoothProfileController(aConnect, aDeviceAddress, aRunnable,
                                    NextBluetoothProfileController,

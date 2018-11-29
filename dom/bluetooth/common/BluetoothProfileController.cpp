@@ -60,6 +60,7 @@ BluetoothProfileController::BluetoothProfileController(
   , mDeviceAddress(aDeviceAddress)
   , mRunnable(aRunnable)
   , mCallback(aCallback)
+  , mServiceUuid(aServiceUuid)
   , mCurrentProfileFinished(false)
   , mSuccess(false)
   , mProfilesIndex(-1)

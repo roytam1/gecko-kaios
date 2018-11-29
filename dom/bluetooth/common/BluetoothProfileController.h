@@ -121,6 +121,16 @@ public:
    */
   void GiveupAndContinue();
 
+  /**
+   * Return the remote device address of the connection/disconnection
+   */
+  BluetoothAddress GetAddress() { return mDeviceAddress; }
+
+  /**
+   * Return the service UUID of the specified profile.
+   */
+  uint16_t GetServiceUuid() { return mServiceUuid; }
+
 private:
   // Setup data member mProfiles
   void SetupProfiles(bool aAssignServiceClass);
@@ -142,6 +152,7 @@ private:
   BluetoothAddress mDeviceAddress;
   RefPtr<BluetoothReplyRunnable> mRunnable;
   BluetoothProfileControllerCallback mCallback;
+  uint16_t mServiceUuid;
 
   bool mCurrentProfileFinished;
   bool mSuccess;
