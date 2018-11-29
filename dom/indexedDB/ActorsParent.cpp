@@ -10520,6 +10520,10 @@ DatabaseConnection::DisableQuotaChecks()
     MOZ_ASSERT(mJournalQuotaObject);
   }
 
+  if (!mQuotaObject || !mJournalQuotaObject) {
+    return NS_ERROR_FAILURE;
+  }
+
   mQuotaObject->DisableQuotaCheck();
   mJournalQuotaObject->DisableQuotaCheck();
 
@@ -10535,6 +10539,10 @@ DatabaseConnection::EnableQuotaChecks()
 
 
   if (NS_WARN_IF(IndexedDatabaseManager::InLowDiskSpaceMode())) {
+    return;
+  }
+
+  if (!mQuotaObject || !mJournalQuotaObject) {
     return;
   }
 
