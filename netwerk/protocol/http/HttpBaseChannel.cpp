@@ -2616,6 +2616,20 @@ HttpBaseChannel::SetLoadGroupUserAgentOverride()
   }
 }
 
+void
+HttpBaseChannel::AddCustomHeadersToRequest()
+{
+  nsCOMPtr<nsIURI> uri;
+  GetURI(getter_AddRefs(uri));
+  bool isHttps = false;
+  if (uri) {
+    uri->SchemeIs("https", &isHttps);
+  }
+  if (isHttps) {
+    gHttpHandler->OnCustomHeaderInjectRequest(this);
+  }
+}
+
 //-----------------------------------------------------------------------------
 // nsHttpChannel::nsITraceableChannel
 //-----------------------------------------------------------------------------

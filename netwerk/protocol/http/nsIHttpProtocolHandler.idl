@@ -5,7 +5,7 @@
 
 #include "nsIProxiedProtocolHandler.idl"
 
-[scriptable, uuid(c48126d9-2ddd-485b-a51a-378e917e75f8)]
+[scriptable, uuid(96869ac3-3d1a-4865-8624-f1982ad326ab)]
 interface nsIHttpProtocolHandler : nsIProxiedProtocolHandler
 {
     /**
@@ -122,5 +122,11 @@ interface nsIHttpProtocolHandler : nsIProxiedProtocolHandler
  */
 #define NS_HTTP_ON_USERAGENT_REQUEST_TOPIC "http-on-useragent-request"
 
+/**
+ * This observer topic is notified when a connection is about to begin. The
+ * observer of this topic can then choose to inject custom headers for this
+ * request, before the request is actually sent to server.
+ */
+#define NS_HTTP_ON_CUSTOM_HEADER_INJECT_REQUEST_TOPIC "http-on-custom-header-inject-request"
 
 %}

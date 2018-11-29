@@ -97,6 +97,7 @@ IPDL_SOURCES += [
 ]
 
 EXTRA_JS_MODULES += [
+    'CustomHeaderInjector.jsm',
     'UserAgentOverrides.jsm',
     'UserAgentUpdates.jsm',
 ]

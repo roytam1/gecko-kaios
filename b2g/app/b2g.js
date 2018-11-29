@@ -99,6 +99,8 @@ pref("network.cookie.cookieBehavior", 0);
 // spdy
 pref("network.http.spdy.push-allowance", 32768);
 
+pref("network.http.customheader.hosts", "ssp.kaiads.com,kaios-analytics.com,kaios-wallet.com");
+
 // See bug 545869 for details on why these are set the way they are
 pref("network.buffer.cache.count", 24);
 pref("network.buffer.cache.size",  16384);

@@ -470,6 +470,7 @@ var shell = {
     ppmm.removeMessageListener("content-handler", this);
 
     UserAgentOverrides.uninit();
+    CustomHeaderInjector.uninit();
   },
 
   // If this key event represents a hardware button which needs to be send as
@@ -829,6 +830,9 @@ var shell = {
     }
 
     UserAgentOverrides.init();
+
+    Cu.import('resource://gre/modules/CustomHeaderInjector.jsm');
+    CustomHeaderInjector.init();
   }
 };
 

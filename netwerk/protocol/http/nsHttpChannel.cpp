@@ -5355,6 +5355,8 @@ nsHttpChannel::BeginConnect()
 
     HttpBaseChannel::AppendAppSpecificUserAgentInfo();
 
+    HttpBaseChannel::AddCustomHeadersToRequest();
+
     // Check to see if we should redirect this channel elsewhere by
     // nsIHttpChannel.redirectTo API request
     if (mAPIRedirectToURI) {

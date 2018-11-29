@@ -280,6 +280,11 @@ public:
       NotifyObservers(chan, NS_HTTP_ON_USERAGENT_REQUEST_TOPIC);
     }
 
+    void OnCustomHeaderInjectRequest(nsIHttpChannel *chan)
+    {
+      NotifyObservers(chan, NS_HTTP_ON_CUSTOM_HEADER_INJECT_REQUEST_TOPIC);
+    }
+
     // Called by the channel once headers are available
     void OnExamineResponse(nsIHttpChannel *chan)
     {

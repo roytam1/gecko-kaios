@@ -357,6 +357,8 @@ protected:
 
   void AppendAppSpecificUserAgentInfo();
 
+  void AddCustomHeadersToRequest();
+
   friend class PrivateBrowsingChannel<HttpBaseChannel>;
   friend class InterceptFailedOnStop;
 
