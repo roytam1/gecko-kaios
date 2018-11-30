@@ -9,6 +9,7 @@
 dictionary ClientInfo {
   DOMString token;
   DOMString identity;
+  sequence<DOMString> permissions;
 };
 
 [Exposed=(Window,Worker)]
