@@ -176,15 +176,7 @@ RilObject.prototype = {
      */
     this.deviceIdentities = null;
 
-    /**
-     * ICC information that is not exposed to Gaia.
-     */
-    this.iccInfoPrivate = {};
-
-    /**
-     * ICC information, such as MSISDN, MCC, MNC, SPN...etc.
-     */
-    this.iccInfo = {};
+    this._initIccInfo();
 
     /**
      * CDMA specific information. ex. CDMA Network ID, CDMA System ID... etc.
@@ -4001,6 +3993,26 @@ RilObject.prototype = {
 
     if (this.simAuthRequestQueue.isValidRequest(request_type)) {
       this.simAuthRequestQueue.pop(request_type);
+    }
+  },
+
+  _initIccInfo: function() {
+    /**
+     * ICC information that is not exposed to Gaia.
+     */
+    this.iccInfoPrivate = {};
+
+    /**
+     * ICC information, such as MSISDN, MCC, MNC, SPN...etc.
+     */
+    let iccInfoReseted = false;
+    if (this.iccInfo && Object.keys(this.iccInfo).length > 0) {
+      iccInfoReseted = true;
+    }
+
+    this.iccInfo = {};
+    if (iccInfoReseted) {
+      this.context.ICCUtilsHelper.handleICCInfoChange();
     }
   }
 };
