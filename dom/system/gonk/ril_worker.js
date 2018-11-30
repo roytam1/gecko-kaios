@@ -2991,7 +2991,7 @@ RilObject.prototype = {
       this.operator.shortName = shortName;
 
       let ICCUtilsHelper = this.context.ICCUtilsHelper;
-      if (ICCUtilsHelper.updateDisplayCondition() && this.iccInfo.iccid) {
+      if (ICCUtilsHelper.updateDisplayCondition()) {
         ICCUtilsHelper.handleICCInfoChange();
       }
 
