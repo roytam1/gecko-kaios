@@ -18,6 +18,7 @@
 #include <binder/ProcessState.h>
 #include <binder/IServiceManager.h>
 #include <binder/IPermissionController.h>
+#include <cutils/properties.h>
 #include <private/android_filesystem_config.h>
 #include "GonkPermission.h"
 
@@ -118,6 +119,23 @@ GonkPermissionService::checkPermission(const String16& permission, int32_t pid,
   // root can do anything.
   if (0 == uid) {
     return true;
+  }
+
+  // Check if this the external media process spawned from the api daemon.
+  char prop[PROPERTY_VALUE_MAX];
+  int length = property_get("kaios.media-daemon.pid", prop, NULL);
+  if (length > 0) {
+    long mpid = strtol(prop, nullptr, 10);
+    if ((errno == ERANGE && (mpid == LONG_MAX || mpid == LONG_MIN))
+          || (errno != 0 && mpid == 0)) {
+        ALOGE("Failed to parse pid value: kaios.media-daemon.pid=%s", prop);
+    } else {
+      if (pid == mpid) {
+        ALOGI("Granting media permissions to pid %d", pid);
+        return true;
+      }
+    }
+
   }
 
   String8 perm8(permission);
