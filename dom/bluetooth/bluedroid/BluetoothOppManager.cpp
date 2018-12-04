@@ -1534,6 +1534,7 @@ BluetoothOppManager::FileTransferComplete()
   BT_ENSURE_TRUE_VOID_BROADCAST_SYSMSG(type, parameters);
 
   mTransferCompleteFlag = true;
+  mContentType = EmptyString();
 }
 
 void
