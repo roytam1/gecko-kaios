@@ -636,7 +636,7 @@ TelephonyService.prototype = {
 
       for (let i in response.calls) {
         let call = this._currentCalls[aClientId][i] = new Call(aClientId, i);
-        this._updateCallFromRil(call, response.calls[i]);
+        this._updateCallFromRil(call, response.calls[i], aClientId);
       }
     });
   },
@@ -826,7 +826,7 @@ TelephonyService.prototype = {
       return;
     }
 
-    let isEmergencyNumber = DialNumberUtils.isEmergency(aNumber);
+    let isEmergencyNumber = DialNumberUtils.isEmergency(aNumber, aClientId);
 
     // DialEmergency accepts only emergency number.
     if (aIsDialEmergency && !isEmergencyNumber) {
@@ -933,7 +933,7 @@ TelephonyService.prototype = {
       return;
     }
 
-    let isEmergency = DialNumberUtils.isEmergency(aNumber);
+    let isEmergency = DialNumberUtils.isEmergency(aNumber, aClientId);
 
     if (!isEmergency) {
       if (!this._isRadioOn(aClientId)) {
@@ -1797,7 +1797,7 @@ TelephonyService.prototype = {
    *
    * @return Boolean to indicate whether the data is changed.
    */
-  _updateCallFromRil: function(aCall, aRilCall) {
+  _updateCallFromRil: function(aCall, aRilCall, aClientId) {
     aRilCall.state = this._convertRILCallState(aRilCall.state);
     aRilCall.number = this._formatInternationalNumber(aRilCall.number,
                                                       aRilCall.toa);
@@ -1816,7 +1816,7 @@ TelephonyService.prototype = {
     }
 
     aCall.isOutgoing = !aRilCall.isMT;
-    aCall.isEmergency = DialNumberUtils.isEmergency(aCall.number);
+    aCall.isEmergency = DialNumberUtils.isEmergency(aCall.number, aClientId);
 
     if (!aCall.started &&
         aCall.state == nsITelephonyService.CALL_STATE_CONNECTED) {
@@ -2468,12 +2468,12 @@ TelephonyService.prototype = {
       if (call && !rilCall) {  // removed.
         removedCalls.add(call);
       } else if (call && rilCall) {  // changed.
-        if (this._updateCallFromRil(call, rilCall)) {
+        if (this._updateCallFromRil(call, rilCall, aClientId)) {
           changedCalls.add(call);
         }
       } else {  // !call && rilCall. added.
         this._currentCalls[aClientId][i] = call = new Call(aClientId, i);
-        this._updateCallFromRil(call, rilCall);
+        this._updateCallFromRil(call, rilCall, aClientId);
         changedCalls.add(call);
 
         // Handle ongoingDial.

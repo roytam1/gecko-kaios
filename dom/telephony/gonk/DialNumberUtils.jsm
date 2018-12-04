@@ -25,11 +25,20 @@ this.DialNumberUtils = {
   /**
    * Check a given number against the list of emergency numbers provided by the
    * RIL.
+   *
+   * @param aClientId [optional] If provided, check ril.ecclist[aClientId].
    */
-  isEmergency: function(aNumber) {
+  isEmergency: function(aNumber, aClientId) {
     // Check ril provided numbers first.
-    let numbers = libcutils.property_get("ril.ecclist") ||
+
+    let property = "ril.ecclist";
+    if (aClientId !== undefined && aClientId !== 0) {
+      property = "ril.ecclist" + aClientId;
+    }
+
+    let numbers = libcutils.property_get(property) ||
                   libcutils.property_get("ro.ril.ecclist");
+
     if (numbers) {
       numbers = numbers.split(",");
     } else {
