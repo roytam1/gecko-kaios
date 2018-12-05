@@ -536,11 +536,19 @@ CertBlocklist::IsCertRevoked(const uint8_t* aIssuer,
                              uint32_t aPubKeyLength,
                              bool* _retval)
 {
+  // NSS is initilized on main thread only. If we lock on other threads, then
+  // the main thread is blocked on the same lock (same location or different
+  // one). Move do_CreateInstance for nsCrypto Hash out of the lock to avoid
+  // deadlock.
+  nsresult rv;
+  nsCOMPtr<nsICryptoHash> crypto;
+  crypto = do_CreateInstance(NS_CRYPTO_HASH_CONTRACTID, &rv);
+
   MutexAutoLock lock(mMutex);
 
   MOZ_LOG(gCertBlockPRLog, LogLevel::Warning,
           ("CertBlocklist::IsCertRevoked?"));
-  nsresult rv = EnsureBackingFileInitialized(lock);
+  rv = EnsureBackingFileInitialized(lock);
   if (NS_FAILED(rv)) {
     return rv;
   }
@@ -577,8 +585,6 @@ CertBlocklist::IsCertRevoked(const uint8_t* aIssuer,
     return NS_OK;
   }
 
-  nsCOMPtr<nsICryptoHash> crypto;
-  crypto = do_CreateInstance(NS_CRYPTO_HASH_CONTRACTID, &rv);
 
   rv = crypto->Init(nsICryptoHash::SHA256);
   if (NS_FAILED(rv)) {
