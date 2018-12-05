@@ -614,13 +614,12 @@ WebappsApplication.prototype = {
     return request;
   },
 
-  clearStorage: function(aType) {
+  clearStorage: function() {
     this.addMessageListeners(["Webapps:ClearStorage:Return:OK",
                               "Webapps:ClearStorage:Return:KO"]);
     let request = this.createRequest();
     cpmm.sendAsyncMessage("Webapps:ClearStorage", {
       manifestURL: this.manifestURL,
-      storageType: aType,
       oid: this._id,
       topId: this._topId,
       requestID: this.getRequestId(request)

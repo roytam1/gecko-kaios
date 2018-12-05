@@ -87,9 +87,9 @@ interface DOMApplication : EventTarget {
 
   DOMRequest clearBrowserData();
   DOMRequest checkForUpdate(optional boolean allowedAuto = true);
-  // Clear idb storage depends on StorageType. Clear all types of storage if no
-  // argument provided.
-  DOMRequest clearStorage(optional StorageType type);
+  // Clear all types of idb storage (default and temporary), DataStore, and
+  // localStoreage per app.
+  DOMRequest clearStorage();
 
   /**
    * Inter-App Communication APIs.

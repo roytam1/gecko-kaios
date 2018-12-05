@@ -1763,8 +1763,8 @@ this.DOMApplicationRegistry = {
   },
 
   clearStorage: function (aData, aMm) {
-    let storageType = aData.storageType;
     let app = this.getAppByManifestURL(aData.manifestURL);
+    this._clearPrivateData(app.localId, false, aData);
     let appURI = NetUtil.newURI(app.origin, null, null);
     let principal =
       Services.scriptSecurityManager.createCodebasePrincipal(appURI,
@@ -1772,7 +1772,7 @@ this.DOMApplicationRegistry = {
     let qms = Cc["@mozilla.org/dom/quota-manager-service;1"]
                 .getService(Ci.nsIQuotaManagerService);
     let request;
-    request = qms.clearStoragesForPrincipal(principal, storageType);
+    request = qms.clearStoragesForPrincipal(principal);
 
     aMm.sendAsyncMessage("Webapps:ClearStorage:Return:OK", this.formatMessage(aData));
     // TODO we should handle error status of QuotaRequest in the future
