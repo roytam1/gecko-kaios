@@ -717,8 +717,8 @@ this.NetworkStatsService = {
                   networkId:      this._networks[aNetId].network.id,
                   networkType:    this._networks[aNetId].network.type,
                   date:           new Date(aTimestamp),
-                  rxBytes:        aTxBytes,
-                  txBytes:        aRxBytes,
+                  rxBytes:        aRxBytes,
+                  txBytes:        aTxBytes,
                   isAccumulative: true };
 
     debug("Update stats for: " + JSON.stringify(stats));
