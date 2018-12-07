@@ -255,6 +255,9 @@ function BrowserElementParent() {
   this._pendingDOMFullscreen = false;
 
   Services.obs.addObserver(this, 'oop-frameloader-crashed', /* ownsWeak = */ true);
+  Services.obs.addObserver(this,
+                           'spatial-navigation-changed-per-content-navigator',
+                           /* ownsWeak = */ true);
   // This observer is required only when AccessibleCaret is enabled.
   try {
     if (Services.prefs.getBoolPref("layout.accessiblecaret.enabled")) {
@@ -1369,6 +1372,14 @@ BrowserElementParent.prototype = {
         this._sendAsyncMsg('copypaste-do-command', { command: data });
       }
       break;
+    case 'spatial-navigation-changed-per-content-navigator':
+      if (this._isAlive() && subject == this._frameLoader) {
+        let evt = this._createEvent('spatialnavigationchanged',
+                                    { enabled: data === 'enabled' },
+                                    /* cancelable = */ false);
+        this._frameElement.dispatchEvent(evt);
+      }
+    break;
     default:
       debug('Unknown topic: ' + topic);
       break;

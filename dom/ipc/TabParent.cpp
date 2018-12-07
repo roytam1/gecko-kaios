@@ -2717,7 +2717,19 @@ TabParent::RecvSetSpatialNavigationEnabled(const bool& aEnabled)
 {
   RefPtr<nsFrameLoader> frameLoader = GetFrameLoader();
   NS_ENSURE_TRUE(frameLoader, false);
-  frameLoader->SetSpatialNavigationEnabled(aEnabled);
+  nsresult rv = frameLoader->SetSpatialNavigationEnabled(aEnabled);
+  // Return successed when the request value(aEnable) is different from the
+  // previous value, meaning there is truely a change to spatial navigation.
+  if (NS_SUCCEEDED(rv)) {
+    nsCOMPtr<nsIObserverService> os = services::GetObserverService();
+    if (os) {
+      // Inform BrowserElementParent to dispatch a
+      // "mozbrowserspatialnavigationchanged" event.
+      os->NotifyObservers(NS_ISUPPORTS_CAST(nsIFrameLoader*, frameLoader),
+        "spatial-navigation-changed-per-content-navigator",
+        aEnabled ? MOZ_UTF16("enabled") : MOZ_UTF16("disabled"));
+    }
+  }
 
   return true;
 }

@@ -567,6 +567,9 @@ partial interface Navigator {
   // 3. Spatial navigation do not prevent default or stop propagation on key
   //    event of RSK, but in non-TPS mode, spatial navigation will trigger
   //    contextmenu event on key event of RSK.
+  // 4. If status of spatial navigation is successfully changed by this method,
+  //    a 'mozbrowserspatialnavigationchanged' event will be dispatched to
+  //    System App (or app with browser permission).
 
 partial interface Navigator {
   [Pref="dom.spatialnavigation.enabled", CheckAnyPermissions="spatialnavigation-app-manage", AvailableIn=PrivilegedApps]

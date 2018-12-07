@@ -3091,7 +3091,7 @@ nsFrameLoader::GetVisible(bool* aVisible)
 nsFrameLoader::SetSpatialNavigationEnabled(bool aSpatialNavigationEnabled)
 {
   if (mSpatialNavigationEnabled == aSpatialNavigationEnabled) {
-    return NS_OK;
+    return NS_ERROR_FAILURE;
   }
 
   mSpatialNavigationEnabled = aSpatialNavigationEnabled;
@@ -3118,7 +3118,7 @@ nsFrameLoader::SetTouchPanningSimulationEnabled(bool aEnabled)
     "SetTouchPanningSimulationEnabled: %d", aEnabled);
 #endif //MOZ_WIDGET_GONK
   if (mTouchPanningSimulationEnabled == aEnabled) {
-    return NS_OK;
+    return NS_ERROR_FAILURE;
   }
 
   mTouchPanningSimulationEnabled = aEnabled;
