@@ -233,7 +233,7 @@ proxy.AsyncMessageChannel = class {
     }
 
     let l = this.listeners_.get(path);
-    this.mm.removeMessageListener(path, l[1]);
+    this.mm.removeMessageListener(path, l);
     return this.listeners_.delete(path);
   }
 
