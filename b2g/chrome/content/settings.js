@@ -729,10 +729,7 @@ var settingsToObserve = {
     resetToPref: true
   },
   'wap.UAProf.tagname': 'x-wap-profile',
-  'wap.UAProf.url': '',
-  // Try to use setting from gaia build if it does exist.
-  'apps.serviceCenter.use_test_key': false,
-  'apps.serviceCenter.manifest': 'https://kaios-plus.kaiostech.com/update.webapp'
+  'wap.UAProf.url': ''
 };
 
 function settingObserver(setPref, prefName, setting) {
