@@ -2310,6 +2310,7 @@ this.DOMApplicationRegistry = {
     function onload(xhr, oldManifest) {
       debug("Got http status=" + xhr.status + " for " + aData.manifestURL);
       let oldHash = app.manifestHash;
+      let oldVersion = oldManifest.version ? oldManifest.version : 0;
       let isPackage = app.kind == DOMApplicationRegistry.kPackaged;
 
       if (xhr.status == 200) {
@@ -2328,6 +2329,7 @@ this.DOMApplicationRegistry = {
         } else {
 
           let hash = this.computeManifestHash(manifest);
+          let version = manifest.version ? manifest.version : 0;
           debug("Manifest hash = " + hash);
           if (isPackage) {
             if (!app.staged) {
@@ -2340,9 +2342,16 @@ this.DOMApplicationRegistry = {
             app.etag = xhr.getResponseHeader("Etag");
           }
 
+          let vc = Cc["@mozilla.org/xpcom/version-comparator;1"]
+                     .getService(Ci.nsIVersionComparator);
+
           app.lastCheckedUpdate = Date.now();
           if (isPackage) {
-            if (oldHash != hash) {
+
+            // If app defines vesion number check version number,
+            // otherwise use manifest hash to check for update.
+            if ((version == 0 && oldVersion == 0 && oldHash != hash ) ||
+                 vc.compare(version, oldVersion) > 0) {
               this.updatePackagedApp(aData, id, app, manifest);
             } else {
               this._saveApps().then(() => {
@@ -2362,9 +2371,11 @@ this.DOMApplicationRegistry = {
               });
             }
           } else {
-            // Update only the appcache if the manifest has not changed
-            // based on the hash value.
-            if (oldHash == hash) {
+            // Update only the appcache if the manifest has not changed.
+            // If app defines vesion number check version number,
+            // otherwise use manifest hash to check for update.
+            if ((version == 0 && oldVersion == 0 && oldHash == hash ) ||
+                 vc.compare(version, oldVersion) == 0) {
               debug("Update - oldhash");
               this.updateHostedApp(aData, id, app, oldManifest, null);
               return;
