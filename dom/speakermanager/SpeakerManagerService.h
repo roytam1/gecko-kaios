@@ -58,6 +58,31 @@ public:
   }
 
 protected:
+  struct SpeakerManagerData final
+  {
+    SpeakerManagerData(uint64_t aChildID, uint64_t aWindowID, bool aForceSpeaker)
+      : mChildID(aChildID)
+      , mWindowID(aWindowID)
+      , mForceSpeaker(aForceSpeaker)
+    {
+    }
+
+    uint64_t mChildID;
+    uint64_t mWindowID;
+    bool mForceSpeaker;
+  };
+
+  class SpeakerManagerList : protected nsTArray<SpeakerManagerData>
+  {
+  public:
+    void InsertData(const SpeakerManagerData& aData);
+    void RemoveData(const SpeakerManagerData& aData);
+    void RemoveChild(uint64_t aChildID);
+
+    using nsTArray<SpeakerManagerData>::IsEmpty;
+    using nsTArray<SpeakerManagerData>::LastElement;
+  };
+
   SpeakerManagerService();
 
   virtual ~SpeakerManagerService();
@@ -65,6 +90,8 @@ protected:
   virtual void Notify();
 
   void TurnOnSpeaker(bool aEnable);
+  // Update global speaker status
+  void UpdateSpeakerStatus();
 
   /**
    * Shutdown the singleton.
@@ -72,11 +99,11 @@ protected:
   static void Shutdown();
   // Hash map between window ID and registered SpeakerManager
   nsDataHashtable<nsUint64HashKey, RefPtr<SpeakerManager>> mRegisteredSpeakerManagers;
-  // Set for remember all the child speaker status
-  nsCheapSet<nsUint64HashKey> mSpeakerStatusSet;
   // The Speaker status assign by UA
   bool mOrgSpeakerStatus;
 
+  SpeakerManagerList mVisibleSpeakerManagers;
+  SpeakerManagerList mActiveSpeakerManagers;
   // This is needed for IPC communication between
   // SpeakerManagerServiceChild and this class.
   friend class ContentParent;
