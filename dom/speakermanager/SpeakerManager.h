@@ -62,10 +62,13 @@ protected:
   // system APP, and stores it in mWindow.
   nsresult FindCorrectWindow(nsPIDOMWindowInner* aWindow);
 
+  void UpdateStatus();
+
   nsCOMPtr<nsPIDOMWindowOuter> mWindow;
   // This api's force speaker setting
   bool mForcespeaker;
   bool mVisible;
+  bool mAudioChannelActive;
 };
 
 } // namespace dom

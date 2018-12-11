@@ -4279,13 +4279,16 @@ ContentParent::RecvSpeakerManagerGetSpeakerStatus(bool* aValue)
 }
 
 bool
-ContentParent::RecvSpeakerManagerForceSpeaker(const bool& aEnable)
+ContentParent::RecvSpeakerManagerForceSpeaker(const bool& aEnable,
+                                              const bool& aVisible,
+                                              const bool& aAudioChannelActive,
+                                              const uint64_t& aWindowID)
 {
 #ifdef MOZ_WIDGET_GONK
   RefPtr<SpeakerManagerService> service =
   SpeakerManagerService::GetOrCreateSpeakerManagerService();
   MOZ_ASSERT(service);
-  service->ForceSpeaker(aEnable, mChildID);
+  service->ForceSpeaker(aEnable, aVisible, aAudioChannelActive, aWindowID, mChildID);
 
   return true;
 #endif

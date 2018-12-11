@@ -31,6 +31,7 @@ NS_IMPL_RELEASE_INHERITED(SpeakerManager, DOMEventTargetHelper)
 SpeakerManager::SpeakerManager()
   : mForcespeaker(false)
   , mVisible(false)
+  , mAudioChannelActive(false)
 {
 }
 
@@ -39,6 +40,7 @@ SpeakerManager::~SpeakerManager()
   SpeakerManagerService *service = SpeakerManagerService::GetOrCreateSpeakerManagerService();
   MOZ_ASSERT(service);
 
+  service->ForceSpeaker(false, false, false, WindowID());
   service->UnRegisterSpeakerManager(this);
   nsCOMPtr<EventTarget> target = do_QueryInterface(GetOwner());
   NS_ENSURE_TRUE_VOID(target);
@@ -51,11 +53,6 @@ SpeakerManager::~SpeakerManager()
 bool
 SpeakerManager::Speakerforced()
 {
-  // If a background app calls forcespeaker=true that doesn't change anything.
-  // 'speakerforced' remains false everywhere.
-  if (mForcespeaker && !mVisible) {
-    return false;
-  }
   SpeakerManagerService *service = SpeakerManagerService::GetOrCreateSpeakerManagerService();
   MOZ_ASSERT(service);
   return service->GetSpeakerStatus();
@@ -71,11 +68,10 @@ SpeakerManager::Forcespeaker()
 void
 SpeakerManager::SetForcespeaker(bool aEnable)
 {
-  SpeakerManagerService *service = SpeakerManagerService::GetOrCreateSpeakerManagerService();
-  MOZ_ASSERT(service);
-
-  service->ForceSpeaker(aEnable, mVisible);
-  mForcespeaker = aEnable;
+  if (mForcespeaker != aEnable) {
+    mForcespeaker = aEnable;
+    UpdateStatus();
+  }
 }
 
 void
@@ -258,28 +254,12 @@ SpeakerManager::HandleEvent(nsIDOMEvent* aEvent)
 
   nsCOMPtr<nsIDocShell> docshell = do_GetInterface(GetOwner());
   NS_ENSURE_TRUE(docshell, NS_ERROR_FAILURE);
-  docshell->GetIsActive(&mVisible);
 
-  // If an app that has called forcespeaker=true is switched
-  // from the background to the foreground 'speakerforced'
-  // switches to true in all apps. I.e. the app doesn't have to
-  // call forcespeaker=true again when it comes into foreground.
-  SpeakerManagerService *service =
-    SpeakerManagerService::GetOrCreateSpeakerManagerService();
-  MOZ_ASSERT(service);
-
-  if (mVisible && mForcespeaker) {
-    service->ForceSpeaker(mForcespeaker, mVisible);
-  }
-  // If an application that has called forcespeaker=true, but no audio is
-  // currently playing in the app itself, if application switch to
-  // the background, we switch 'speakerforced' to false.
-  if (!mVisible && mForcespeaker) {
-    RefPtr<AudioChannelService> audioChannelService =
-      AudioChannelService::GetOrCreate();
-    if (audioChannelService && !audioChannelService->AnyAudioChannelIsActive()) {
-      service->ForceSpeaker(false, mVisible);
-    }
+  bool visible = false;
+  docshell->GetIsActive(&visible);
+  if (mVisible != visible) {
+    mVisible = visible;
+    UpdateStatus();
   }
   return NS_OK;
 }
@@ -287,19 +267,17 @@ SpeakerManager::HandleEvent(nsIDOMEvent* aEvent)
 void
 SpeakerManager::SetAudioChannelActive(bool isActive)
 {
-  // - When |mVisible| is true:
-  //   It should always respect |mForcespeaker|, no matter what
-  //   audio channel state is. So no need to call ForceSpeaker()
-  //   here and just let HandleEvent() handle visibility change.
-  // - When |mVisible| is false:
-  //   Only need to disable ForceSpeaker when our audio channel
-  //   is interrupted by others.
-  if (mForcespeaker && !mVisible && !isActive) {
-    SpeakerManagerService *service =
-      SpeakerManagerService::GetOrCreateSpeakerManagerService();
-    MOZ_ASSERT(service);
-    service->ForceSpeaker(isActive, mVisible);
+  if (mAudioChannelActive != isActive) {
+    mAudioChannelActive = isActive;
+    UpdateStatus();
   }
+}
+
+void SpeakerManager::UpdateStatus()
+{
+  SpeakerManagerService *service = SpeakerManagerService::GetOrCreateSpeakerManagerService();
+  MOZ_ASSERT(service);
+  service->ForceSpeaker(mForcespeaker, mVisible, mAudioChannelActive, WindowID());
 }
 
 } // namespace dom

@@ -49,12 +49,16 @@ SpeakerManagerServiceChild::GetSpeakerManagerService()
 }
 
 void
-SpeakerManagerServiceChild::ForceSpeaker(bool aEnable, bool aVisible)
+SpeakerManagerServiceChild::ForceSpeaker(bool aEnable,
+                                         bool aVisible,
+                                         bool aChannelActive,
+                                         uint64_t aWindowID,
+                                         uint64_t aChildID)
 {
   mOrgSpeakerStatus = aEnable;
   ContentChild *cc = ContentChild::GetSingleton();
   if (cc) {
-    cc->SendSpeakerManagerForceSpeaker(aEnable && aVisible);
+    cc->SendSpeakerManagerForceSpeaker(aEnable, aVisible, aChannelActive, aWindowID);
   }
 }
 

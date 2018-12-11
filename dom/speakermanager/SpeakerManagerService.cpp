@@ -74,7 +74,11 @@ SpeakerManagerService::Shutdown()
 NS_IMPL_ISUPPORTS(SpeakerManagerService, nsIObserver)
 
 void
-SpeakerManagerService::ForceSpeaker(bool aEnable, uint64_t aChildId)
+SpeakerManagerService::ForceSpeaker(bool aEnable,
+                                    bool aVisible,
+                                    bool aAudioChannelActive,
+                                    uint64_t aWindowID,
+                                    uint64_t aChildID)
 {
   TurnOnSpeaker(aEnable);
   if (aEnable) {
@@ -82,15 +86,6 @@ SpeakerManagerService::ForceSpeaker(bool aEnable, uint64_t aChildId)
   }
   Notify();
   return;
-}
-
-void
-SpeakerManagerService::ForceSpeaker(bool aEnable, bool aVisible)
-{
-  // b2g main process without oop
-  TurnOnSpeaker(aEnable && aVisible);
-  mOrgSpeakerStatus = aEnable;
-  Notify();
 }
 
 void

@@ -1036,7 +1036,10 @@ parent:
         returns (uint64_t id);
     async DeallocateLayerTreeId(uint64_t id);
 
-    sync SpeakerManagerForceSpeaker(bool aEnable);
+    sync SpeakerManagerForceSpeaker(bool aEnable,
+                                    bool aVisible,
+                                    bool aAudioChannelActive,
+                                    uint64_t aWindowID);
 
     sync SpeakerManagerGetSpeakerStatus()
         returns (bool value);

@@ -1030,7 +1030,10 @@ private:
 
   virtual bool RecvSpeakerManagerGetSpeakerStatus(bool* aValue) override;
 
-  virtual bool RecvSpeakerManagerForceSpeaker(const bool& aEnable) override;
+  virtual bool RecvSpeakerManagerForceSpeaker(const bool& aEnable,
+                                              const bool& aVisible,
+                                              const bool& aAudioChannelActive,
+                                              const uint64_t& aWindowID) override;
 
   virtual bool RecvSystemMessageHandled() override;
 

@@ -32,11 +32,15 @@ public:
    * If SpeakerManagerService is not exist, create and return new one.
    */
   static SpeakerManagerService* GetOrCreateSpeakerManagerService();
-  virtual void ForceSpeaker(bool aEnable, bool aVisible);
   virtual bool GetSpeakerStatus();
   virtual void SetAudioChannelActive(bool aIsActive);
-  // Called by child
-  void ForceSpeaker(bool enable, uint64_t aChildid);
+  // Child ID of chrome process should be 0.
+  virtual void ForceSpeaker(bool aEnable,
+                            bool aVisible,
+                            bool aAudioChannelActive,
+                            uint64_t aWindowID,
+                            uint64_t aChildID = 0);
+
   // Register the SpeakerManager to service for notify the speakerforcedchange event
   nsresult RegisterSpeakerManager(SpeakerManager* aSpeakerManager)
   {

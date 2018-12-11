@@ -29,7 +29,11 @@ public:
    */
   static SpeakerManagerService* GetOrCreateSpeakerManagerService();
   static void Shutdown();
-  virtual void ForceSpeaker(bool aEnable, bool aVisible) override;
+  virtual void ForceSpeaker(bool aEnable,
+                            bool aVisible,
+                            bool aChannelActive,
+                            uint64_t aWindowID,
+                            uint64_t aChildID = 0) override;
   virtual bool GetSpeakerStatus() override;
   virtual void SetAudioChannelActive(bool aIsActive) override;
   virtual void Notify() override;
