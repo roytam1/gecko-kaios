@@ -189,6 +189,13 @@ SpeakerManager::Init(nsPIDOMWindowInner* aWindow)
   MOZ_ASSERT(service);
   rv = service->RegisterSpeakerManager(this);
   NS_WARN_IF(NS_FAILED(rv));
+
+  // APP may want to keep its forceSpeaker setting same as current global forceSpeaker
+  // state, so sync |mForcespeaker| with the global state by default. This can prevent
+  // the global state from being disabled and enabled again if APP wants to enable
+  // forceSpeaker, and the global state is already on.
+  mForcespeaker = Speakerforced();
+  UpdateStatus();
   return NS_OK;
 }
 
