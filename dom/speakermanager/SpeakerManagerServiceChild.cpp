@@ -51,7 +51,6 @@ SpeakerManagerServiceChild::GetSpeakerManagerService()
 void
 SpeakerManagerServiceChild::ForceSpeaker(bool aEnable, bool aVisible)
 {
-  mVisible = aVisible;
   mOrgSpeakerStatus = aEnable;
   ContentChild *cc = ContentChild::GetSingleton();
   if (cc) {

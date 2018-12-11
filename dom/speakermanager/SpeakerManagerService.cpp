@@ -89,7 +89,6 @@ SpeakerManagerService::ForceSpeaker(bool aEnable, bool aVisible)
 {
   // b2g main process without oop
   TurnOnSpeaker(aEnable && aVisible);
-  mVisible = aVisible;
   mOrgSpeakerStatus = aEnable;
   Notify();
 }
@@ -200,8 +199,7 @@ SpeakerManagerService::Observe(nsISupports* aSubject,
 }
 
 SpeakerManagerService::SpeakerManagerService()
-  : mOrgSpeakerStatus(false),
-    mVisible(false)
+  : mOrgSpeakerStatus(false)
 {
   MOZ_COUNT_CTOR(SpeakerManagerService);
   if (XRE_IsParentProcess()) {

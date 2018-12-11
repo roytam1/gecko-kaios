@@ -67,7 +67,6 @@ protected:
   // The Speaker status assign by UA
   bool mOrgSpeakerStatus;
 
-  bool mVisible;
   // This is needed for IPC communication between
   // SpeakerManagerServiceChild and this class.
   friend class ContentParent;
