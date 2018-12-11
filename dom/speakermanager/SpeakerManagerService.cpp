@@ -135,17 +135,18 @@ SpeakerManagerService::Notify()
     Unused << children[i]->SendSpeakerManagerNotify();
   }
 
-  for (uint32_t i = 0; i < mRegisteredSpeakerManagers.Length(); i++) {
-    mRegisteredSpeakerManagers[i]->
-      DispatchSimpleEvent(NS_LITERAL_STRING("speakerforcedchange"));
+  for (auto iter = mRegisteredSpeakerManagers.Iter(); !iter.Done(); iter.Next()) {
+    RefPtr<SpeakerManager> sm = iter.Data();
+    sm->DispatchSimpleEvent(NS_LITERAL_STRING("speakerforcedchange"));
   }
 }
 
 void
 SpeakerManagerService::SetAudioChannelActive(bool aIsActive)
 {
-  for (uint32_t i = 0; i < mRegisteredSpeakerManagers.Length(); i++) {
-    mRegisteredSpeakerManagers[i]->SetAudioChannelActive(aIsActive);
+  for (auto iter = mRegisteredSpeakerManagers.Iter(); !iter.Done(); iter.Next()) {
+    RefPtr<SpeakerManager> sm = iter.Data();
+    sm->SetAudioChannelActive(aIsActive);
   }
 }
 

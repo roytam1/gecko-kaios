@@ -87,8 +87,9 @@ SpeakerManagerServiceChild::SetAudioChannelActive(bool aIsActive)
 {
   // Content process and switch to background with no audio and speaker forced.
   // Then disable speaker
-  for (uint32_t i = 0; i < mRegisteredSpeakerManagers.Length(); i++) {
-    mRegisteredSpeakerManagers[i]->SetAudioChannelActive(aIsActive);
+  for (auto iter = mRegisteredSpeakerManagers.Iter(); !iter.Done(); iter.Next()) {
+    RefPtr<SpeakerManager> sm = iter.Data();
+    sm->SetAudioChannelActive(aIsActive);
   }
 }
 
@@ -114,7 +115,8 @@ SpeakerManagerServiceChild::~SpeakerManagerServiceChild()
 void
 SpeakerManagerServiceChild::Notify()
 {
-  for (uint32_t i = 0; i < mRegisteredSpeakerManagers.Length(); i++) {
-    mRegisteredSpeakerManagers[i]->DispatchSimpleEvent(NS_LITERAL_STRING("speakerforcedchange"));
+  for (auto iter = mRegisteredSpeakerManagers.Iter(); !iter.Done(); iter.Next()) {
+    RefPtr<SpeakerManager> sm = iter.Data();
+    sm->DispatchSimpleEvent(NS_LITERAL_STRING("speakerforcedchange"));
   }
 }

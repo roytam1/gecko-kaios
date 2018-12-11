@@ -38,13 +38,19 @@ public:
   // Called by child
   void ForceSpeaker(bool enable, uint64_t aChildid);
   // Register the SpeakerManager to service for notify the speakerforcedchange event
-  void RegisterSpeakerManager(SpeakerManager* aSpeakerManager)
+  nsresult RegisterSpeakerManager(SpeakerManager* aSpeakerManager)
   {
-    mRegisteredSpeakerManagers.AppendElement(aSpeakerManager);
+    // One APP can only have one SpeakerManager, so return error if it already exists.
+    if (mRegisteredSpeakerManagers.Contains(aSpeakerManager->WindowID())) {
+      return NS_ERROR_FAILURE;
+    }
+    mRegisteredSpeakerManagers.Put(aSpeakerManager->WindowID(), aSpeakerManager);
+    return NS_OK;
   }
-  void UnRegisterSpeakerManager(SpeakerManager* aSpeakerManager)
+  nsresult UnRegisterSpeakerManager(SpeakerManager* aSpeakerManager)
   {
-    mRegisteredSpeakerManagers.RemoveElement(aSpeakerManager);
+    mRegisteredSpeakerManagers.Remove(aSpeakerManager->WindowID());
+    return NS_OK;
   }
 
 protected:
@@ -60,8 +66,8 @@ protected:
    * Shutdown the singleton.
    */
   static void Shutdown();
-
-  nsTArray<RefPtr<SpeakerManager> > mRegisteredSpeakerManagers;
+  // Hash map between window ID and registered SpeakerManager
+  nsDataHashtable<nsUint64HashKey, RefPtr<SpeakerManager>> mRegisteredSpeakerManagers;
   // Set for remember all the child speaker status
   nsCheapSet<nsUint64HashKey> mSpeakerStatusSet;
   // The Speaker status assign by UA

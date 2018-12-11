@@ -28,7 +28,7 @@ class SpeakerManager final
   NS_DECL_NSIDOMEVENTLISTENER
 
 public:
-  void Init(nsPIDOMWindowInner* aWindow);
+  nsresult Init(nsPIDOMWindowInner* aWindow);
 
   nsPIDOMWindowInner* GetParentObject() const;
 
@@ -46,6 +46,9 @@ public:
   bool Speakerforced();
 
   void SetAudioChannelActive(bool aIsActive);
+
+  uint64_t WindowID() { return mWindow ? mWindow->WindowID() : 0; }
+
   IMPL_EVENT_HANDLER(speakerforcedchange)
 
   static already_AddRefed<SpeakerManager>
@@ -55,6 +58,11 @@ protected:
   SpeakerManager();
   ~SpeakerManager();
   void DispatchSimpleEvent(const nsAString& aStr);
+  // Borrowed from AudioChannelAgent. This function finds the top window controlled by
+  // system APP, and stores it in mWindow.
+  nsresult FindCorrectWindow(nsPIDOMWindowInner* aWindow);
+
+  nsCOMPtr<nsPIDOMWindowOuter> mWindow;
   // This api's force speaker setting
   bool mForcespeaker;
   bool mVisible;

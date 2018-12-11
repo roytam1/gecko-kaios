@@ -6,11 +6,13 @@
 
 #include "SpeakerManager.h"
 
+#include "mozilla/Preferences.h"
 #include "mozilla/Services.h"
 
 #include "mozilla/dom/Event.h"
 
 #include "AudioChannelService.h"
+#include "nsIAppsService.h"
 #include "nsIDocShell.h"
 #include "nsIDOMClassInfo.h"
 #include "nsIDOMEventListener.h"
@@ -30,10 +32,6 @@ SpeakerManager::SpeakerManager()
   : mForcespeaker(false)
   , mVisible(false)
 {
-  SpeakerManagerService *service =
-    SpeakerManagerService::GetOrCreateSpeakerManagerService();
-  MOZ_ASSERT(service);
-  service->RegisterSpeakerManager(this);
 }
 
 SpeakerManager::~SpeakerManager()
@@ -100,22 +98,102 @@ SpeakerManager::DispatchSimpleEvent(const nsAString& aStr)
   }
 }
 
-void
+nsresult
+SpeakerManager::FindCorrectWindow(nsPIDOMWindowInner* aWindow)
+{
+  MOZ_ASSERT(aWindow->IsInnerWindow());
+
+  mWindow = aWindow->GetScriptableTop();
+  if (NS_WARN_IF(!mWindow)) {
+    return NS_OK;
+  }
+
+  // From here we do an hack for nested iframes.
+  // The system app doesn't have access to the nested iframe objects so it
+  // cannot control the volume of the agents running in nested apps. What we do
+  // here is to assign those Agents to the top scriptable window of the parent
+  // iframe (what is controlled by the system app).
+  // For doing this we go recursively back into the chain of windows until we
+  // find apps that are not the system one.
+  nsCOMPtr<nsPIDOMWindowOuter> outerParent = mWindow->GetParent();
+  if (!outerParent || outerParent == mWindow) {
+    return NS_OK;
+  }
+
+  nsCOMPtr<nsPIDOMWindowInner> parent = outerParent->GetCurrentInnerWindow();
+  if (!parent) {
+    return NS_OK;
+  }
+
+  nsCOMPtr<nsIDocument> doc = parent->GetExtantDoc();
+  if (!doc) {
+    return NS_OK;
+  }
+
+  nsCOMPtr<nsIPrincipal> principal = doc->NodePrincipal();
+
+  uint32_t appId;
+  nsresult rv = principal->GetAppId(&appId);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+
+  if (appId == nsIScriptSecurityManager::NO_APP_ID ||
+      appId == nsIScriptSecurityManager::UNKNOWN_APP_ID) {
+    return NS_OK;
+  }
+
+  nsCOMPtr<nsIAppsService> appsService = do_GetService(APPS_SERVICE_CONTRACTID);
+  if (NS_WARN_IF(!appsService)) {
+    return NS_ERROR_FAILURE;
+  }
+
+  nsAdoptingString systemAppManifest =
+    mozilla::Preferences::GetString("b2g.system_manifest_url");
+  if (!systemAppManifest) {
+    return NS_OK;
+  }
+
+  uint32_t systemAppId;
+  rv = appsService->GetAppLocalIdByManifestURL(systemAppManifest, &systemAppId);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+
+  if (systemAppId == appId) {
+    return NS_OK;
+  }
+
+  return FindCorrectWindow(parent);
+}
+
+nsresult
 SpeakerManager::Init(nsPIDOMWindowInner* aWindow)
 {
   BindToOwner(aWindow);
 
   nsCOMPtr<nsIDocShell> docshell = do_GetInterface(GetOwner());
-  NS_ENSURE_TRUE_VOID(docshell);
+  NS_ENSURE_TRUE(docshell, NS_ERROR_FAILURE);
   docshell->GetIsActive(&mVisible);
 
   nsCOMPtr<nsIDOMEventTarget> target = do_QueryInterface(GetOwner());
-  NS_ENSURE_TRUE_VOID(target);
+  NS_ENSURE_TRUE(target, NS_ERROR_FAILURE);
 
   target->AddSystemEventListener(NS_LITERAL_STRING("visibilitychange"),
                                  this,
                                  /* useCapture = */ true,
                                  /* wantsUntrusted = */ false);
+
+  nsresult rv = FindCorrectWindow(aWindow);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+
+  SpeakerManagerService *service = SpeakerManagerService::GetOrCreateSpeakerManagerService();
+  MOZ_ASSERT(service);
+  rv = service->RegisterSpeakerManager(this);
+  NS_WARN_IF(NS_FAILED(rv));
+  return NS_OK;
 }
 
 nsPIDOMWindowInner*
@@ -154,7 +232,11 @@ SpeakerManager::Constructor(const GlobalObject& aGlobal, ErrorResult& aRv)
   }
 
   RefPtr<SpeakerManager> object = new SpeakerManager();
-  object->Init(ownerWindow);
+  rv = object->Init(ownerWindow);
+  if (NS_FAILED(rv)) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return nullptr;
+  }
   return object.forget();
 }
 
