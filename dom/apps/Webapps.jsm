@@ -1764,8 +1764,20 @@ this.DOMApplicationRegistry = {
 
   clearStorage: function (aData, aMm) {
     let app = this.getAppByManifestURL(aData.manifestURL);
-    this._clearPrivateData(app.localId, false, aData);
     let appURI = NetUtil.newURI(app.origin, null, null);
+
+    // Clear localStorage
+    Services.obs.notifyObservers(null, "browser:purge-domain-data", appURI.host);
+
+    // Clear dataStore & alarm
+    let subject = {
+      appId: app.localId,
+      browserOnly: false,
+      QueryInterface: XPCOMUtils.generateQI([Ci.mozIApplicationClearPrivateDataParams])
+    };
+    this._notifyCategoryAndObservers(subject, "webapps-clear-data", null, aData);
+
+    // Clear indexedDB files
     let principal =
       Services.scriptSecurityManager.createCodebasePrincipal(appURI,
                                                              {appId: app.localId});
