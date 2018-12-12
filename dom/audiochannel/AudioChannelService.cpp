@@ -613,12 +613,6 @@ AudioChannelService::RefreshAgentsVolume(nsPIDOMWindowOuter* aWindow)
     return;
   }
 
-  nsTObserverArray<AudioChannelAgent*>::ForwardIterator
-    iter(winData->mAgents);
-  while (iter.HasMore()) {
-    iter.GetNext()->WindowVolumeChanged();
-  }
-
 #ifdef MOZ_WIDGET_GONK
   //Refresh all SpeakerManagers when Agents volume updated.
   bool active = AnyAudioChannelIsActive();
@@ -626,6 +620,12 @@ AudioChannelService::RefreshAgentsVolume(nsPIDOMWindowOuter* aWindow)
     mSpeakerManager[i]->SetAudioChannelActive(active);
   }
 #endif
+
+  nsTObserverArray<AudioChannelAgent*>::ForwardIterator
+    iter(winData->mAgents);
+  while (iter.HasMore()) {
+    iter.GetNext()->WindowVolumeChanged();
+  }
 }
 
 void
