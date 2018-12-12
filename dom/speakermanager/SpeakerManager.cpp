@@ -69,6 +69,8 @@ void
 SpeakerManager::SetForcespeaker(bool aEnable)
 {
   if (mForcespeaker != aEnable) {
+    MOZ_LOG(SpeakerManagerService::GetSpeakerManagerLog(), LogLevel::Debug,
+           ("SpeakerManager, SetForcespeaker, enable %d", aEnable));
     mForcespeaker = aEnable;
     UpdateStatus();
   }
@@ -185,6 +187,9 @@ SpeakerManager::Init(nsPIDOMWindowInner* aWindow)
     return rv;
   }
 
+  MOZ_LOG(SpeakerManagerService::GetSpeakerManagerLog(), LogLevel::Debug,
+         ("SpeakerManager, Init, window ID %llu", WindowID()));
+
   SpeakerManagerService *service = SpeakerManagerService::GetOrCreateSpeakerManagerService();
   MOZ_ASSERT(service);
   rv = service->RegisterSpeakerManager(this);
@@ -265,6 +270,8 @@ SpeakerManager::HandleEvent(nsIDOMEvent* aEvent)
   bool visible = false;
   docshell->GetIsActive(&visible);
   if (mVisible != visible) {
+    MOZ_LOG(SpeakerManagerService::GetSpeakerManagerLog(), LogLevel::Debug,
+           ("SpeakerManager, HandleEvent, visible %d", visible));
     mVisible = visible;
     UpdateStatus();
   }
@@ -275,6 +282,8 @@ void
 SpeakerManager::SetAudioChannelActive(bool isActive)
 {
   if (mAudioChannelActive != isActive) {
+    MOZ_LOG(SpeakerManagerService::GetSpeakerManagerLog(), LogLevel::Debug,
+           ("SpeakerManager, SetAudioChannelActive, active %d", isActive));
     mAudioChannelActive = isActive;
     UpdateStatus();
   }

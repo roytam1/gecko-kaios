@@ -59,6 +59,16 @@ SpeakerManagerService::GetSpeakerManagerService()
   return gSpeakerManagerService;
 }
 
+/* static */ PRLogModuleInfo*
+SpeakerManagerService::GetSpeakerManagerLog()
+{
+  static PRLogModuleInfo *gSpeakerManagerLog;
+  if (!gSpeakerManagerLog) {
+    gSpeakerManagerLog = PR_NewLogModule("SpeakerManager");
+  }
+  return gSpeakerManagerLog;
+}
+
 void
 SpeakerManagerService::Shutdown()
 {
@@ -144,6 +154,10 @@ SpeakerManagerService::ForceSpeaker(bool aEnable,
                                     uint64_t aWindowID,
                                     uint64_t aChildID)
 {
+  MOZ_LOG(GetSpeakerManagerLog(), LogLevel::Debug,
+         ("SpeakerManagerService, ForceSpeaker, enable %d, visible %d, active %d, child %llu, "
+          "window %llu", aEnable, aVisible, aAudioChannelActive, aChildID, aWindowID));
+
   SpeakerManagerData data(aChildID, aWindowID, aEnable);
 
   // Update list of visible SpeakerManagers.
@@ -174,6 +188,8 @@ SpeakerManagerService::TurnOnSpeaker(bool aOn)
   int32_t forceuse = (phoneState == nsIAudioManager::PHONE_STATE_IN_CALL ||
                       phoneState == nsIAudioManager::PHONE_STATE_IN_COMMUNICATION)
                         ? nsIAudioManager::USE_COMMUNICATION : nsIAudioManager::USE_MEDIA;
+  MOZ_LOG(GetSpeakerManagerLog(), LogLevel::Debug,
+         ("SpeakerManagerService, TurnOnSpeaker, forceuse %d, enable %d", forceuse, aOn));
   if (aOn) {
     audioManager->SetForceForUse(forceuse, nsIAudioManager::FORCE_SPEAKER);
   } else {
@@ -237,6 +253,8 @@ SpeakerManagerService::Observe(nsISupports* aSubject,
     nsresult rv = props->GetPropertyAsUint64(NS_LITERAL_STRING("childID"),
                                              &childID);
     if (NS_SUCCEEDED(rv)) {
+      MOZ_LOG(GetSpeakerManagerLog(), LogLevel::Debug,
+             ("SpeakerManagerService, Observe, remove child %llu", childID));
       mVisibleSpeakerManagers.RemoveChild(childID);
       mActiveSpeakerManagers.RemoveChild(childID);
       UpdateSpeakerStatus();

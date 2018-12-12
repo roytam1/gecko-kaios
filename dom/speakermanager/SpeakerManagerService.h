@@ -32,6 +32,9 @@ public:
    * If SpeakerManagerService is not exist, create and return new one.
    */
   static SpeakerManagerService* GetOrCreateSpeakerManagerService();
+
+  static PRLogModuleInfo* GetSpeakerManagerLog();
+
   virtual bool GetSpeakerStatus();
   virtual void SetAudioChannelActive(bool aIsActive);
   // Child ID of chrome process should be 0.
