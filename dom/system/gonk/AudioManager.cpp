@@ -275,7 +275,6 @@ AudioManager::HandleAudioFlingerDied()
 
   // Enable volume change notification
   mIsVolumeInited = true;
-  mAudioOutDevicesUpdated = 0;
   MaybeUpdateVolumeSettingToDatabase(true);
 }
 
@@ -399,13 +398,6 @@ AudioManager::IsFmOutConnected()
 }
 
 NS_IMPL_ISUPPORTS(AudioManager, nsIAudioManager, nsIObserver)
-
-void
-AudioManager::AudioOutDeviceUpdated(uint32_t aDevice)
-{
-  MOZ_ASSERT(audio_is_output_device(aDevice));
-  mAudioOutDevicesUpdated |= aDevice;
-}
 
 void
 AudioManager::UpdateHeadsetConnectionState(hal::SwitchState aState)
@@ -766,7 +758,6 @@ AudioManager::ReleaseWakeLock()
 AudioManager::AudioManager()
   : mPhoneState(PHONE_STATE_CURRENT)
   , mIsVolumeInited(false)
-  , mAudioOutDevicesUpdated(0)
   , mSwitchDone(true)
 #if defined(MOZ_B2G_BT) || ANDROID_VERSION >= 17
   , mBluetoothA2dpEnabled(false)
@@ -1362,11 +1353,7 @@ AudioManager::MaybeUpdateVolumeSettingToDatabase(bool aForce)
     int32_t  streamType = gVolumeData[idx].mStreamType;
     VolumeStreamState* streamState = mStreamStates[streamType].get();
 
-    if(!streamState->IsVolumeIndexesChanged()) {
-        continue;
-    }
-
-    uint32_t remainingDevices = mAudioOutDevicesUpdated;
+    uint32_t remainingDevices = streamState->GetDevicesWithVolumeChange();
     for (uint32_t i = 0; remainingDevices != 0; i++) {
       uint32_t device = (1 << i);
       if ((device & remainingDevices) == 0) {
@@ -1388,10 +1375,8 @@ AudioManager::MaybeUpdateVolumeSettingToDatabase(bool aForce)
   for (uint32_t idx = 0; idx < MOZ_ARRAY_LENGTH(gVolumeData); ++idx) {
     int32_t  streamType = gVolumeData[idx].mStreamType;
     mStreamStates[streamType]->ClearDevicesChanged();
-    mStreamStates[streamType]->ClearVolumeIndexesChanged();
+    mStreamStates[streamType]->ClearDevicesWithVolumeChange();
   }
-  // Clear mAudioOutDevicesUpdated
-  mAudioOutDevicesUpdated = 0;
 }
 
 void
@@ -1483,8 +1468,8 @@ AudioManager::VolumeStreamState::VolumeStreamState(AudioManager& aManager,
   : mManager(aManager)
   , mStreamType(aStreamType)
   , mLastDevices(0)
+  , mDevicesWithVolumeChange(0)
   , mIsDevicesChanged(true)
-  , mIsVolumeIndexesChanged(true)
 {
   InitStreamVolume();
 }
@@ -1506,16 +1491,16 @@ AudioManager::VolumeStreamState::ClearDevicesChanged()
   mIsDevicesChanged = false;
 }
 
-bool
-AudioManager::VolumeStreamState::IsVolumeIndexesChanged()
+void
+AudioManager::VolumeStreamState::ClearDevicesWithVolumeChange()
 {
-  return mIsVolumeIndexesChanged;
+  mDevicesWithVolumeChange = 0;
 }
 
-void
-AudioManager::VolumeStreamState::ClearVolumeIndexesChanged()
+uint32_t
+AudioManager::VolumeStreamState::GetDevicesWithVolumeChange()
 {
-  mIsVolumeIndexesChanged = false;
+  return mDevicesWithVolumeChange;
 }
 
 void
@@ -1641,8 +1626,7 @@ AudioManager::VolumeStreamState::SetVolumeIndex(uint32_t aIndex,
 #if ANDROID_VERSION >= 17
   if (aUpdateCache) {
     mVolumeIndexes.Put(aDevice, aIndex);
-    mIsVolumeIndexesChanged = true;
-    mManager.AudioOutDeviceUpdated(aDevice);
+    mDevicesWithVolumeChange |= aDevice;
   }
 
   rv = AudioSystem::setStreamVolumeIndex(
@@ -1669,8 +1653,7 @@ AudioManager::VolumeStreamState::SetVolumeIndex(uint32_t aIndex,
     // Per audio out device volume is not supported.
     // Use AUDIO_DEVICE_OUT_SPEAKER just to store audio volume to DB.
     mVolumeIndexes.Put(AUDIO_DEVICE_OUT_SPEAKER, aIndex);
-    mIsVolumeIndexesChanged = true;
-    mManager.AudioOutDeviceUpdated(AUDIO_DEVICE_OUT_SPEAKER);
+    mDevicesWithVolumeChange |= aDevice;
   }
   rv = AudioSystem::setStreamVolumeIndex(
          static_cast<audio_stream_type_t>(mStreamType),

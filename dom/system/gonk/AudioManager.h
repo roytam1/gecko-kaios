@@ -71,12 +71,12 @@ public:
     }
     bool IsDevicesChanged(bool aFromCache = true);
     void ClearDevicesChanged();
+    void ClearDevicesWithVolumeChange();
+    uint32_t GetDevicesWithVolumeChange();
     uint32_t GetLastDevices()
     {
       return mLastDevices;
     }
-    bool IsVolumeIndexesChanged();
-    void ClearVolumeIndexesChanged();
     void InitStreamVolume();
     uint32_t GetMaxIndex();
     uint32_t GetDefaultIndex();
@@ -96,8 +96,8 @@ public:
     AudioManager& mManager;
     const int32_t mStreamType;
     uint32_t mLastDevices;
+    uint32_t mDevicesWithVolumeChange;
     bool mIsDevicesChanged;
-    bool mIsVolumeIndexesChanged;
     nsDataHashtable<nsUint32HashKey, uint32_t> mVolumeIndexes;
   };
 
@@ -165,8 +165,6 @@ private:
   // Promise functions.
   void InitDeviceVolumeSucceeded();
   void InitDeviceVolumeFailed(const char* aError);
-
-  void AudioOutDeviceUpdated(uint32_t aDevice);
 
   void UpdateHeadsetConnectionState(hal::SwitchState aState);
   void UpdateDeviceConnectionState(bool aIsConnected, uint32_t aDevice, const nsCString& aDeviceName);
