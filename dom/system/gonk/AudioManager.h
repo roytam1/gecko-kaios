@@ -70,6 +70,15 @@ public:
       return mStreamType;
     }
     bool IsDevicesChanged(bool aFromCache = true);
+    // Returns true if this stream stores separate volume index for each output device.
+    // For example, speaker volume of media stream is different from headset volume of
+    // media stream.
+    // Returns false if this stream shares one volume setting among all output devices,
+    // e.g., notification and alarm streams.
+    bool IsDeviceSpecificVolume()
+    {
+      return mIsDeviceSpecificVolume;
+    }
     void ClearDevicesChanged();
     void ClearDevicesWithVolumeChange();
     uint32_t GetDevicesWithVolumeChange();
@@ -98,6 +107,7 @@ public:
     uint32_t mLastDevices;
     uint32_t mDevicesWithVolumeChange;
     bool mIsDevicesChanged;
+    bool mIsDeviceSpecificVolume;
     nsDataHashtable<nsUint32HashKey, uint32_t> mVolumeIndexes;
   };
 

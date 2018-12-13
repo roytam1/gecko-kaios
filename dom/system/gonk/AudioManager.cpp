@@ -1335,7 +1335,9 @@ AudioManager::MaybeUpdateVolumeSettingToDatabase(bool aForce)
   for (uint32_t idx = 0; idx < MOZ_ARRAY_LENGTH(gVolumeData); ++idx) {
     int32_t streamType = gVolumeData[idx].mStreamType;
     VolumeStreamState* streamState = mStreamStates[streamType].get();
-    if(!aForce && !streamState->IsDevicesChanged()) {
+
+    bool isVolumeUpdated = streamState->IsDevicesChanged() && streamState->IsDeviceSpecificVolume();
+    if (!aForce && !isVolumeUpdated) {
       continue;
     }
     // Get volume index of active device.
@@ -1470,7 +1472,20 @@ AudioManager::VolumeStreamState::VolumeStreamState(AudioManager& aManager,
   , mLastDevices(0)
   , mDevicesWithVolumeChange(0)
   , mIsDevicesChanged(true)
+  , mIsDeviceSpecificVolume(true)
 {
+  switch (mStreamType) {
+    case AUDIO_STREAM_SYSTEM:
+    case AUDIO_STREAM_RING:
+    case AUDIO_STREAM_NOTIFICATION:
+    case AUDIO_STREAM_ALARM:
+    case AUDIO_STREAM_ENFORCED_AUDIBLE:
+      mIsDeviceSpecificVolume = false;
+      break;
+    default:
+      break;
+  }
+
   InitStreamVolume();
 }
 
@@ -1600,7 +1615,10 @@ nsresult
 AudioManager::VolumeStreamState::SetVolumeIndexToConsistentDeviceIfNeeded(uint32_t aIndex, uint32_t aDevice)
 {
   nsresult rv;
-  if (aDevice == AUDIO_DEVICE_OUT_SPEAKER || aDevice == AUDIO_DEVICE_OUT_EARPIECE) {
+
+  if (!IsDeviceSpecificVolume()) {
+    rv = SetVolumeIndex(aIndex, AUDIO_DEVICE_OUT_DEFAULT);
+  } else if (aDevice == AUDIO_DEVICE_OUT_SPEAKER || aDevice == AUDIO_DEVICE_OUT_EARPIECE) {
     // Set AUDIO_DEVICE_OUT_SPEAKER and AUDIO_DEVICE_OUT_EARPIECE to same volume.
     rv = SetVolumeIndex(aIndex, AUDIO_DEVICE_OUT_SPEAKER);
     if (NS_WARN_IF(NS_FAILED(rv))) {
