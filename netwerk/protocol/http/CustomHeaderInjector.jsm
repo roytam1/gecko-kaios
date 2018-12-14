@@ -63,12 +63,12 @@ this.CustomHeaderInjector = {
       gCustomHeaderValue = this.buildCustomHeader();
     });
     Services.obs.addObserver(this, "http-on-custom-header-inject-request", false);
-    Services.obs.addObserver(this, "network:offline-status-changed", false);
+    Services.obs.addObserver(this, "network-active-changed", false);
   },
 
   uninit: function() {
     Services.obs.removeObserver(this, "http-on-custom-header-inject-request");
-    Services.obs.removeObserver(this, "network:offline-status-changed");
+    Services.obs.removeObserver(this, "network-active-changed");
   },
 
   buildKaiServiceHosts: function() {
@@ -198,7 +198,7 @@ this.CustomHeaderInjector = {
         }
         break;
       }
-      case "network:offline-status-changed": {
+      case "network-active-changed": {
         this.updateCustomHeaderValue();
         break;
       }
