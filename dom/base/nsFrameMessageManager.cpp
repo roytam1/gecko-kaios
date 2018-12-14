@@ -490,6 +490,23 @@ nsFrameMessageManager::RemoveWeakMessageListener(const nsAString& aMessage,
   return NS_OK;
 }
 
+NS_IMETHODIMP
+nsFrameMessageManager::RemoveMessageListenerHashEntry(const nsAString& aMessage)
+{
+  nsAutoTObserverArray<nsMessageListenerInfo, 1>* listeners =
+    mListeners.Get(aMessage);
+  if (!listeners) {
+    return NS_OK;
+  }
+
+  // Remove the message entry from hash table when its listener length is 0.
+  if (!listeners->Length()) {
+    mListeners.Remove(aMessage);
+  }
+
+  return NS_OK;
+}
+
 // nsIFrameScriptLoader
 
 NS_IMETHODIMP

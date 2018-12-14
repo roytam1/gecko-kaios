@@ -251,6 +251,12 @@ interface nsIMessageListenerManager : nsISupports
   void removeWeakMessageListener(in AString messageName,
                                  in nsIMessageListener listener);
 
+  /**
+   * Remove message entry from hash table to save memory usage if no more
+   * listeners will be added to the message in the future.
+   */
+  void removeMessageListenerHashEntry(in AString messageName);
+
   [notxpcom] boolean markForCC();
 };
 
