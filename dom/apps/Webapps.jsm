@@ -2480,7 +2480,7 @@ this.DOMApplicationRegistry = {
     // Read the current app manifest file
     // read account for hawk token
     Promise.all([ this._readManifests([{ id: id }]),
-      this._prepareKaiHeaders(aData.manifestURL) ])
+      this._prepareKaiHeaders(aData.manifestURL, aData.allowedAuto) ])
     .then((aResult) => {
       doRequest.call(this, aResult[0][0].manifest, aResult[1]);
     })
@@ -2573,7 +2573,7 @@ this.DOMApplicationRegistry = {
     return new Promise((resolve) => setTimeout(resolve, time));
   },
 
-  _prepareKaiHeaders: function(url){
+  _prepareKaiHeaders: function(url, autoMode = false){
     // Prepare KaiHeaders if the URL is hosted by KaiOS
     let kaiApiURLs;
     try {
@@ -2617,6 +2617,31 @@ this.DOMApplicationRegistry = {
 
     kaiHeaders.push({ 'name' : KAIAPIDEVICEINFO,
       'value' : 'imei="' + this.imei + '", curef="' + this.cuRef + '"'});
+
+    if (!this.mnc || !this.mcc) {
+      let iccInfo = DeviceUtils.iccInfo;
+      if (iccInfo) {
+        this.mnc = iccInfo.mnc;
+        this.mcc = iccInfo.mcc;
+      }
+    }
+    let networkType = DeviceUtils.networkType;
+    let downloadMode = autoMode ? 'auto' : 'manual';
+    let netMnc = DeviceUtils.networkMnc;
+    let netMcc = DeviceUtils.networkMcc;
+    let utc  = Date.now();
+    let utcOff = - (new Date()).getTimezoneOffset()/60;
+
+    kaiHeaders.push({ 'name' : 'Kai-Request-Info',
+                      'value' : 'ct="' + networkType
+                              + '", rt="' + downloadMode
+                              + '", utc="' + utc
+                              + '", utc_off="' + utcOff
+                              + '", mnc="' + this.mnc
+                              + '", mcc="' + this.mcc
+                              + '", net_mnc="' + netMnc
+                              + '", net_mcc="' + netMcc
+                              + '"'});
 
     this._hawkHeader(url).then( hawkHeader => {
       kaiHeaders.push(hawkHeader);
