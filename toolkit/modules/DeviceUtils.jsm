@@ -24,6 +24,10 @@ XPCOMUtils.defineLazyServiceGetter(this, "gMobileConnectionService",
                                    "@mozilla.org/mobileconnection/mobileconnectionservice;1",
                                    "nsIMobileConnectionService");
 
+XPCOMUtils.defineLazyServiceGetter(this, "gNetworkManager",
+                                   "@mozilla.org/network/manager;1",
+                                   "nsINetworkManager");
+
 XPCOMUtils.defineLazyServiceGetter(this, "gIccService",
                                    "@mozilla.org/icc/iccservice;1",
                                    "nsIIccService");
@@ -69,6 +73,56 @@ this.DeviceUtils = {
       dump("DeviceUtils.getRefNumber error=" + e);
     }
     return cuRefStr;
+  },
+
+  get iccInfo() {
+    let icc = gIccService.getIccByServiceId(0);
+    let iccInfo = icc && icc.iccInfo;
+    return iccInfo;
+  },
+
+  get imei() {
+    let mobile = gMobileConnectionService.getItemByServiceId(0);
+    if (mobile && mobile.deviceIdentities) {
+      return mobile.deviceIdentities.imei;
+    }
+    // return a dummy imei when failed to get from mobile connection.
+    return '123456789012345';
+  },
+
+  get networkType() {
+    if (!gNetworkManager.activeNetworkInfo ||
+        (gNetworkManager.activeNetworkInfo.type === Ci.nsINetworkInfo.NETWORK_TYPE_UNKNOWN)) {
+      return "unknown";
+    }
+
+    if (gNetworkManager.activeNetworkInfo.type === Ci.nsINetworkInfo.NETWORK_TYPE_WIFI) {
+      return "wifi";
+    } else {
+      return "mobile";
+    }
+  },
+
+  get networkMcc() {
+    let connection = gMobileConnectionService.getItemByServiceId(0);
+    let voice = connection && connection.voice;
+    let netMcc;
+    if (voice && voice.network) {
+      netMcc = voice.network.mcc;
+    }
+
+    return (!netMcc) ? "" : netMcc;
+  },
+
+  get networkMnc() {
+    let connection = gMobileConnectionService.getItemByServiceId(0);
+    let voice = connection && connection.voice;
+    let netMnc;
+    if (voice && voice.network) {
+      netMnc = voice.network.mnc;
+    }
+
+    return (!netMnc) ? "" : netMnc;
   },
 
   getDeviceId: function DeviceUtils_getDeviceId() {

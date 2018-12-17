@@ -20,18 +20,6 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
 Cu.import("resource://gre/modules/DeviceUtils.jsm");
 
-XPCOMUtils.defineLazyServiceGetter(this, "gMobileConnectionService",
-                                   "@mozilla.org/mobileconnection/mobileconnectionservice;1",
-                                   "nsIMobileConnectionService");
-
-XPCOMUtils.defineLazyServiceGetter(this, "gIccService",
-                                   "@mozilla.org/icc/iccservice;1",
-                                   "nsIIccService");
-
-XPCOMUtils.defineLazyServiceGetter(this, "gNetworkManager",
-                                   "@mozilla.org/network/manager;1",
-                                   "nsINetworkManager");
-
 const DEBUG = false;
 function debug(msg) {
   dump("-* CustomHeaderInjector *- " + msg + "\n");
@@ -93,45 +81,9 @@ this.CustomHeaderInjector = {
     return value;
   },
 
-  getNetworkType: function() {
-    if (!gNetworkManager.activeNetworkInfo ||
-        (gNetworkManager.activeNetworkInfo.type === Ci.nsINetworkInfo.NETWORK_TYPE_UNKNOWN)) {
-      return "unknown";
-    }
-
-    if (gNetworkManager.activeNetworkInfo.type === Ci.nsINetworkInfo.NETWORK_TYPE_WIFI) {
-      return "wifi";
-    } else {
-      return "mobile";
-    }
-  },
-
-  getNetworkMcc: function() {
-    let connection = gMobileConnectionService.getItemByServiceId(0);
-    let voice = connection && connection.voice;
-    let netMcc;
-    if (voice && voice.network) {
-      netMcc = voice.network.mcc;
-    }
-
-    return (!netMcc) ? "" : netMcc;
-  },
-
-  getNetworkMnc: function() {
-    let connection = gMobileConnectionService.getItemByServiceId(0);
-    let voice = connection && connection.voice;
-    let netMnc;
-    if (voice && voice.network) {
-      netMnc = voice.network.mnc;
-    }
-
-    return (!netMnc) ? "" : netMnc;
-  },
-
   initCustomHeaderValue: function() {
     // Get SIM mnc and mcc.
-    let icc = gIccService.getIccByServiceId(0);
-    let iccInfo = icc && icc.iccInfo;
+    let iccInfo = DeviceUtils.iccInfo;
     if (iccInfo) {
       gMnc = iccInfo.mnc;
       gMcc = iccInfo.mcc;
@@ -142,11 +94,11 @@ this.CustomHeaderInjector = {
     gMcc = (!gMcc) ? "" : gMcc;
 
     // Get Network mnc and mcc.
-    gNetMnc = this.getNetworkMnc();
-    gNetMcc = this.getNetworkMcc();
+    gNetMnc = DeviceUtils.networkMnc;
+    gNetMcc = DeviceUtils.networkMcc;
 
     // Get Network connection type.
-    gNetType = this.getNetworkType();
+    gNetType = DeviceUtils.networkType;
 
     // Get commercial reference.
     gComRef = DeviceUtils.cuRef;
@@ -165,9 +117,9 @@ this.CustomHeaderInjector = {
   updateCustomHeaderValue: function() {
     // Network mnc, network mcc, network connection type may varies.
     // Otherwise, no need to rebuild the custom header.
-    let net_mnc = this.getNetworkMnc();
-    let net_mcc = this.getNetworkMcc();
-    let net_type = this.getNetworkType();
+    let net_mnc = DeviceUtils.networkMnc;
+    let net_mcc = DeviceUtils.networkMcc;
+    let net_type = DeviceUtils.networkType;
     if (gNetMnc != net_mnc || gNetMcc != net_mcc || gNetType != net_type) {
       gNetMnc = net_mnc;
       gNetMcc = net_mcc;
