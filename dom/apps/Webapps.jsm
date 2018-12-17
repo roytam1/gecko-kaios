@@ -2608,27 +2608,15 @@ this.DOMApplicationRegistry = {
     kaiHeaders.push({ 'name' : KAIAPIVERSION, 'value' : kaiapiVer});
 
     let KAIAPIDEVICEINFO = 'Kai-Device-Info';
+    // imei and cuRef are static info once they are get,
+    // do not need to get them again.
     if (!this.imei) {
-      let mobileConnectionService = Cc["@mozilla.org/mobileconnection/mobileconnectionservice;1"]
-            .createInstance(Ci.nsIMobileConnectionService);
-      let defaultProvider = 0;
-      let mobile = mobileConnectionService.getItemByServiceId(defaultProvider);
-      if (mobile && mobile.deviceIdentities) {
-        this.imei = mobile.deviceIdentities.imei;
-      }
+      this.imei = DeviceUtils.imei;
+      this.cuRef = DeviceUtils.cuRef || '40440-2AJIIN1';
     }
-    let imei = this.imei || '123456789012345';
-    let cuRef;
-    try {
-      cuRef = Services.prefs.getCharPref("device.commercial.ref");
-    } catch (e) {
-      debug("get Commercial Unit Reference error: " + e);
-    };
-    cuRef = cuRef || '40440-2AJIIN1';
-    function formatDeviceInfoHeader(imei, cuRef) {
-      return 'imei="' + imei + '", curef="' + cuRef + '"';
-    };
-    kaiHeaders.push({ 'name' : KAIAPIDEVICEINFO, 'value' : formatDeviceInfoHeader(imei, cuRef) });
+
+    kaiHeaders.push({ 'name' : KAIAPIDEVICEINFO,
+      'value' : 'imei="' + this.imei + '", curef="' + this.cuRef + '"'});
 
     this._hawkHeader(url).then( hawkHeader => {
       kaiHeaders.push(hawkHeader);
