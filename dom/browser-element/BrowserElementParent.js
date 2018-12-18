@@ -1224,9 +1224,7 @@ BrowserElementParent.prototype = {
   },
 
   setTouchPanningSimulationEnabled: defineNoReturnMethod(function(enabled) {
-    if (!this._mm.assertAppHasPermission("spatialnavigation-app-manage")) {
-      this._frameLoader.touchPanningSimulationEnabled = enabled;
-    }
+    this._frameLoader.touchPanningSimulationEnabled = enabled;
   }),
 
   getTouchPanningSimulationEnabled: function() {
