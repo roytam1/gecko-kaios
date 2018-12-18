@@ -56,7 +56,7 @@
 #include <algorithm>
 #include "private/pprio.h"
 #include "nsContentPermissionHelper.h"
-
+#include "nsIDiskSpaceWatcher.h"
 #include "mozilla/dom/DeviceStorageBinding.h"
 
 // Microsoft's API Name hackery sucks
@@ -415,6 +415,7 @@ DeviceStorageTypeChecker::GetAccessIndexForRequest(
     case DEVICE_STORAGE_REQUEST_WATCH:
     case DEVICE_STORAGE_REQUEST_FREE_SPACE:
     case DEVICE_STORAGE_REQUEST_USED_SPACE:
+    case DEVICE_STORAGE_REQUEST_IS_DISK_FULL:
     case DEVICE_STORAGE_REQUEST_AVAILABLE:
     case DEVICE_STORAGE_REQUEST_STATUS:
     case DEVICE_STORAGE_REQUEST_CURSOR:
@@ -1277,6 +1278,16 @@ DeviceStorageFile::GetStorageFreeSpace(int64_t* aSoFar)
   if (NS_SUCCEEDED(rv)) {
     *aSoFar += storageAvail;
   }
+}
+
+void
+DeviceStorageFile::GetStorageIsDiskFull(bool* aIsDiskFull)
+{
+  nsCOMPtr<nsIDiskSpaceWatcher> diskSpaceWatcher = do_GetService("@mozilla.org/toolkit/disk-space-watcher;1");
+  if (!diskSpaceWatcher) {
+    return;
+  }
+  diskSpaceWatcher->GetIsDiskFull(aIsDiskFull);
 }
 
 bool
@@ -2291,6 +2302,36 @@ protected:
   }
 };
 
+class DeviceStorageIsDiskFullRequest final
+  : public DeviceStorageRequest
+{
+public:
+  DeviceStorageIsDiskFullRequest()
+  {
+    mAccess = DEVICE_STORAGE_ACCESS_READ;
+    mUseStreamTransport = true;
+  }
+
+  NS_IMETHOD Run() override
+  {
+    bool isDiskFull = false;
+    if (mFile) {
+      mFile->GetStorageIsDiskFull(&isDiskFull);
+    }
+
+    return Resolve(isDiskFull);
+  }
+
+protected:
+  nsresult CreateSendParams(DeviceStorageParams& aParams) override
+  {
+    DeviceStorageIsDiskFullParams params(mFile->mStorageType,
+                                         mFile->mStorageName);
+    aParams = params;
+    return NS_OK;
+  }
+};
+
 class DeviceStorageAvailableRequest final
   : public DeviceStorageRequest
 {
@@ -3279,6 +3320,27 @@ nsDOMDeviceStorage::UsedSpace(ErrorResult& aRv)
 }
 
 already_AddRefed<DOMRequest>
+nsDOMDeviceStorage::IsDiskFull(ErrorResult& aRv)
+{
+  MOZ_ASSERT(IsOwningThread());
+
+  RefPtr<DeviceStorageFile> dsf = new DeviceStorageFile(mStorageType,
+                                                        mStorageName);
+
+  RefPtr<DOMRequest> domRequest;
+  uint32_t id = CreateDOMRequest(getter_AddRefs(domRequest), aRv);
+  if (aRv.Failed()) {
+    return nullptr;
+  }
+
+  RefPtr<DeviceStorageRequest> request = new DeviceStorageIsDiskFullRequest();
+  request->Initialize(mManager, dsf.forget(), id);
+
+  aRv = CheckPermission(request.forget());
+  return domRequest.forget();
+}
+
+already_AddRefed<DOMRequest>
 nsDOMDeviceStorage::Available(ErrorResult& aRv)
 {
   MOZ_ASSERT(IsOwningThread());
@@ -3981,6 +4043,39 @@ DeviceStorageRequestManager::Resolve(uint32_t aId, const nsString& aResult,
   }
 
   return ResolveInternal(i, rvalue);
+}
+
+nsresult
+DeviceStorageRequestManager::Resolve(uint32_t aId, bool aValue,
+                                     bool aForceDispatch)
+{
+  if (aForceDispatch || !IsOwningThread()) {
+    DS_LOG_DEBUG("recv %u %s", aId, aValue ? "true" : "false");
+    RefPtr<DeviceStorageRequestManager> self = this;
+    nsCOMPtr<nsIRunnable> r
+      = NS_NewRunnableFunction([self, aId, aValue] () -> void
+    {
+      self->Resolve(aId, aValue, false);
+    });
+    return DispatchOrAbandon(aId, r.forget());
+  }
+
+  DS_LOG_INFO("posted %u %s", aId, aValue ? "true" : "false");
+
+  if (NS_WARN_IF(aId == INVALID_ID)) {
+    DS_LOG_ERROR("invalid");
+    MOZ_ASSERT_UNREACHABLE("resolve invalid request");
+    return NS_OK;
+  }
+
+  ListIndex i = Find(aId);
+  if (NS_WARN_IF(i == mPending.Length())) {
+    return NS_OK;
+  }
+
+  JS::RootedValue value(nsContentUtils::RootingCxForThread(),
+                        JS::BooleanValue(aValue));
+  return ResolveInternal(i, value);
 }
 
 nsresult

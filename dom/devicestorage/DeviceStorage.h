@@ -124,6 +124,7 @@ public:
                       uint64_t* aMusicSoFar, uint64_t* aTotalSoFar);
 
   void GetStorageFreeSpace(int64_t* aSoFar);
+  void GetStorageIsDiskFull(bool* aIsDiskFull);
   void GetStatus(nsAString& aStatus);
   void GetStorageStatus(nsAString& aStatus);
   void DoFormat(nsAString& aStatus);
@@ -244,6 +245,7 @@ public:
 
   already_AddRefed<DOMRequest> FreeSpace(ErrorResult& aRv);
   already_AddRefed<DOMRequest> UsedSpace(ErrorResult& aRv);
+  already_AddRefed<DOMRequest> IsDiskFull(ErrorResult& aRv);
   already_AddRefed<DOMRequest> Available(ErrorResult& aRv);
   already_AddRefed<DOMRequest> Format(ErrorResult& aRv);
   already_AddRefed<DOMRequest> StorageStatus(ErrorResult& aRv);

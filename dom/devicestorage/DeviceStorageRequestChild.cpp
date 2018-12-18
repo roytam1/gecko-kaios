@@ -95,6 +95,14 @@ DeviceStorageRequestChild::
       break;
     }
 
+    case DeviceStorageResponseValue::TIsDiskFullStorageResponse:
+    {
+      DS_LOG_INFO("full %u", mRequest->GetId());
+      IsDiskFullStorageResponse r = aValue;
+      mRequest->Resolve(r.isDiskFull());
+      break;
+    }
+
     case DeviceStorageResponseValue::TFormatStorageResponse:
     {
       DS_LOG_INFO("format %u", mRequest->GetId());

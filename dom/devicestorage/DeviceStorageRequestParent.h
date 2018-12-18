@@ -198,6 +198,16 @@ private:
       virtual nsresult CancelableRun();
   };
 
+  class IsDiskFullFileEvent : public CancelableFileEvent
+  {
+    public:
+      IsDiskFullFileEvent(DeviceStorageRequestParent* aParent,
+                          already_AddRefed<DeviceStorageFile>&& aFile)
+        : CancelableFileEvent(aParent, Move(aFile)) {}
+      virtual ~IsDiskFullFileEvent() {}
+      virtual nsresult CancelableRun();
+  };
+
   class ReadFileEvent : public CancelableFileEvent
   {
     public:
@@ -274,6 +284,17 @@ private:
     private:
       nsString mType;
       uint64_t mUsedSpace;
+ };
+
+ class PostIsDiskFullResultEvent : public CancelableRunnable
+ {
+    public:
+      PostIsDiskFullResultEvent(DeviceStorageRequestParent* aParent,
+                                bool aIsDiskFull);
+      virtual ~PostIsDiskFullResultEvent();
+      virtual nsresult CancelableRun();
+    private:
+      bool mIsDiskFull;
  };
 
  class PostFormatResultEvent : public CancelableFileEvent

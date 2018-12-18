@@ -53,6 +53,11 @@ struct UsedSpaceStorageResponse
   uint64_t usedBytes;
 };
 
+struct IsDiskFullStorageResponse
+{
+  bool isDiskFull;
+};
+
 struct FormatStorageResponse
 {
   nsString mountState;
@@ -77,6 +82,7 @@ union DeviceStorageResponseValue
   EnumerationResponse;
   FreeSpaceStorageResponse;
   UsedSpaceStorageResponse;
+  IsDiskFullStorageResponse;
   FormatStorageResponse;
   MountStorageResponse;
   UnmountStorageResponse;

@@ -52,6 +52,14 @@ interface DeviceStorage : EventTarget {
   DOMRequest freeSpace();
   [Throws]
   DOMRequest usedSpace();
+
+  // This method reads the value of isDiskFull from nsIDiskSpaceWatcher, which monitors
+  // the disk space pointing to "/data". That is, its return value is the same across
+  // different types of DeviceStorage. DOMRequest.result returns a boolean value, true
+  // if the free space of "/data" is less than 30MB.
+  // By default 30MB, or set by pref("disk_space_watcher.low_threshold");
+  [Throws]
+  DOMRequest isDiskFull();
   [Throws]
   DOMRequest available();
   [Throws]
@@ -91,6 +99,7 @@ interface DeviceStorage : EventTarget {
   readonly attribute boolean isRemovable;
 
   // True if the storage area is close to being full
+  // This value is only updated in chrome process. For content process, use isDiskFull instead.
   readonly attribute boolean lowDiskSpace;
 
   [NewObject]

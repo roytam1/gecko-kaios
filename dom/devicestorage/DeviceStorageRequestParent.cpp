@@ -134,6 +134,16 @@ DeviceStorageRequestParent::Dispatch()
       return;
     }
 
+    case DeviceStorageParams::TDeviceStorageIsDiskFullParams:
+    {
+      DeviceStorageIsDiskFullParams p = mParams;
+
+      RefPtr<DeviceStorageFile> dsf =
+        new DeviceStorageFile(p.type(), p.storageName());
+      r = new IsDiskFullFileEvent(this, dsf.forget());
+      break;
+    }
+
     case DeviceStorageParams::TDeviceStorageFormatParams:
     {
       DeviceStorageFormatParams p = mParams;
@@ -260,6 +270,14 @@ DeviceStorageRequestParent::EnsureRequiredPermissions(
       DeviceStorageUsedSpaceParams p = mParams;
       type = p.type();
       requestType = DEVICE_STORAGE_REQUEST_FREE_SPACE;
+      break;
+    }
+
+    case DeviceStorageParams::TDeviceStorageIsDiskFullParams:
+    {
+      DeviceStorageIsDiskFullParams p = mParams;
+      type = p.type();
+      requestType = DEVICE_STORAGE_REQUEST_IS_DISK_FULL;
       break;
     }
 
@@ -397,6 +415,26 @@ DeviceStorageRequestParent::PostUsedSpaceResultEvent::CancelableRun() {
   MOZ_ASSERT(NS_IsMainThread());
 
   UsedSpaceStorageResponse response(mUsedSpace);
+  Unused << mParent->Send__delete__(mParent, response);
+  return NS_OK;
+}
+
+DeviceStorageRequestParent::PostIsDiskFullResultEvent::PostIsDiskFullResultEvent(
+  DeviceStorageRequestParent* aParent,
+  bool aIsDiskFull)
+  : CancelableRunnable(aParent)
+  , mIsDiskFull(aIsDiskFull)
+{
+}
+
+DeviceStorageRequestParent::PostIsDiskFullResultEvent::
+  ~PostIsDiskFullResultEvent() {}
+
+nsresult
+DeviceStorageRequestParent::PostIsDiskFullResultEvent::CancelableRun() {
+  MOZ_ASSERT(NS_IsMainThread());
+
+  IsDiskFullStorageResponse response(mIsDiskFull);
   Unused << mParent->Send__delete__(mParent, response);
   return NS_OK;
 }
@@ -611,6 +649,20 @@ DeviceStorageRequestParent::ReadFileEvent::
       mMimeType.Truncate();
     }
   }
+}
+
+nsresult
+DeviceStorageRequestParent::IsDiskFullFileEvent::CancelableRun()
+{
+  MOZ_ASSERT(!NS_IsMainThread());
+
+  bool isDiskFull = false;
+  if (mFile) {
+    mFile->GetStorageIsDiskFull(&isDiskFull);
+  }
+
+  return NS_DispatchToMainThread(
+    new PostIsDiskFullResultEvent(mParent, isDiskFull));
 }
 
 nsresult

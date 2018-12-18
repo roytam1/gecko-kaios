@@ -139,6 +139,12 @@ struct DeviceStorageUsedSpaceParams
   nsString storageName;
 };
 
+struct DeviceStorageIsDiskFullParams
+{
+  nsString type;
+  nsString storageName;
+};
+
 struct DeviceStorageAvailableParams
 {
   nsString type;
@@ -225,6 +231,7 @@ union DeviceStorageParams
   DeviceStorageEnumerationParams;
   DeviceStorageFreeSpaceParams;
   DeviceStorageUsedSpaceParams;
+  DeviceStorageIsDiskFullParams;
   DeviceStorageAvailableParams;
   DeviceStorageStatusParams;
   DeviceStorageFormatParams;
