@@ -173,6 +173,10 @@ XPCOMUtils.defineLazyServiceGetter(this, "gNetworkService",
                                    "@mozilla.org/network/service;1",
                                    "nsINetworkService");
 
+XPCOMUtils.defineLazyServiceGetter(this, "gDiskWatcher",
+                                   "@mozilla.org/toolkit/disk-space-watcher;1",
+                                   "nsIDiskSpaceWatcher");
+
 XPCOMUtils.defineLazyGetter(this, "MMS", function() {
   let MMS = {};
   Cu.import("resource://gre/modules/MmsPduHelper.jsm", MMS);
@@ -1982,15 +1986,23 @@ MmsService.prototype = {
         retrievalMode = Services.prefs.getCharPref(kPrefRetrievalMode);
       } catch (e) {}
 
+      // Calculate the free space to see whether the data space is low.
+      let lowDataSpace = false;
+      if (gDiskWatcher) {
+        lowDataSpace = gDiskWatcher.isDiskFull;
+      }
+
       // Under the "automatic"/"automatic-home" retrieval mode, we switch to
-      // the "manual" retrieval mode to download MMS for non-active SIM.
+      // the "manual" retrieval mode to download MMS for non-active SIM or
+      // to confirm the low space protection.
       if ((retrievalMode == RETRIEVAL_MODE_AUTOMATIC ||
            retrievalMode == RETRIEVAL_MODE_AUTOMATIC_HOME) &&
-          serviceId != this.mmsDefaultServiceId) {
+          (serviceId != this.mmsDefaultServiceId || lowDataSpace)) {
         if (DEBUG) {
           debug("Switch to 'manual' mode to download MMS for non-active SIM: " +
                 "serviceId = " + serviceId + " doesn't equal to " +
-                "mmsDefaultServiceId = " + this.mmsDefaultServiceId);
+                "mmsDefaultServiceId = " + this.mmsDefaultServiceId +
+                " or switch to 'manual' mode because the low data space limit");
         }
 
         retrievalMode = RETRIEVAL_MODE_MANUAL;
