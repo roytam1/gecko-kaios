@@ -1022,6 +1022,18 @@ WebappsApplicationMgmt.prototype = {
                             enabled: aValue }, null, principal);
   },
 
+  getActivities: function(aName) {
+    this.addMessageListeners(["Activities:Get:OK",
+                              "Activities:Get:KO"]);
+    return this.createPromiseWithId((aResolverId) => {
+      cpmm.sendAsyncMessage("Activities:Get", {
+        activityName: aName,
+        oid: this._id,
+        requestID: aResolverId
+      });
+    });
+  },
+
   get oninstall() {
     return this.__DOM_IMPL__.getEventHandler("oninstall");
   },
@@ -1060,7 +1072,9 @@ WebappsApplicationMgmt.prototype = {
 
     if (["Webapps:GetIcon:Return",
          "Webapps:Import:Return",
-         "Webapps:ExtractManifest:Return"]
+         "Webapps:ExtractManifest:Return",
+         "Activities:Get:OK",
+         "Activities:Get:KO"]
          .indexOf(aMessage.name) != -1) {
       req = this.takePromiseResolver(msg.requestID);
     } else {
@@ -1142,6 +1156,23 @@ WebappsApplicationMgmt.prototype = {
         } else {
           req.reject(new this._window.DOMError(msg.error || ""));
         }
+        break;
+      case "Activities:Get:OK":
+        {
+          this.removeMessageListeners(["Activities:Get:OK",
+                                       "Activities:Get:KO"]);
+          let activities = [];
+          let results = msg.results.options;
+          for (let i in results) {
+            activities.push(results[i].manifest);
+          }
+          req.resolve(activities);
+        }
+        break;
+      case "Activities:Get:KO":
+        this.removeMessageListeners(["Activities:Get:OK",
+                                     "Activities:Get:KO"]);
+        req.reject("Fail at requesting activities.");
         break;
     }
 

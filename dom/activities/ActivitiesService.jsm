@@ -228,6 +228,9 @@ var Activities = {
     "Activities:UnregisterAll",
     "Activities:GetContentTypes",
 
+    // Webapps.js
+    "Activities:Get",
+
     "child-process-shutdown"
   ],
 
@@ -513,6 +516,30 @@ var Activities = {
             break;
           }
         }
+        break;
+      case "Activities:Get":
+        debug("Activities:Get");
+        let obj = { options: {
+                      name: msg.activityName
+                    }
+                  };
+        this.db.find(obj,
+          function onSuccess(aResults) {
+            mm.sendAsyncMessage("Activities:Get:OK",
+                                { results: aResults,
+                                  oid: msg.oid,
+                                  requestID: msg.requestID });
+          },
+          function onError(aEvent) {
+            mm.sendAsyncMessage("Activities:Get:KO",
+                                { oid: msg.oid,
+                                  requestID: msg.requestID });
+          },
+          function matchFunc(aResult) {
+            return ActivitiesServiceFilter.match(obj.options.data,
+                                                 aResult.description.filters);
+          }
+        );
         break;
     }
   },

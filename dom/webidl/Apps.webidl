@@ -117,6 +117,8 @@ interface DOMApplication : EventTarget {
                                        optional DOMString entryPoint);
 };
 
+enum ActivityName { "voice-input", "voice-assistant" };
+
 [JSImplementation="@mozilla.org/webapps/manager;1",
  ChromeOnly,
  CheckAnyPermissions="webapps-manage homescreen-webapps-manage"]
@@ -136,6 +138,10 @@ interface DOMApplicationsManager : EventTarget {
   void setEnabled(DOMApplication app, boolean state);
   Promise<Blob> getIcon(DOMApplication app, DOMString iconID,
                         optional DOMString entryPoint);
+
+  // Return a list of activities' manifestURL with given activity name.
+  [CheckAnyPermissions="webapps-manage"]
+  Promise<sequence<DOMString>> getActivities(ActivityName name);
 
   attribute EventHandler oninstall;
   attribute EventHandler onuninstall;
