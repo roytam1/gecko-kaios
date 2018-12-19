@@ -887,7 +887,11 @@ pref("dom.ipc.processPrelaunch.enabled", true);
 // Wait this long before pre-launching a new subprocess.
 pref("dom.ipc.processPrelaunch.delayMs", 5000);
 
+#ifdef KAIOS_256MB_SUPPORT
+pref("dom.ipc.reuse_parent_app", true);
+#else
 pref("dom.ipc.reuse_parent_app", false);
+#endif
 
 // When a process receives a system message, we hold a CPU wake lock on its
 // behalf for this many seconds, or until it handles the system message,
