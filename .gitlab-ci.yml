@@ -1,0 +1,98 @@
+# (c) 2017 KAI OS TECHNOLOGIES (HONG KONG) LIMITED All rights reserved. This
+# file or any portion thereof may not be reproduced or used in any manner
+# whatsoever without the express written permission of KAI OS TECHNOLOGIES
+# (HONG KONG) LIMITED. KaiOS is the trademark of KAI OS TECHNOLOGIES (HONG KONG)
+# LIMITED or its affiliate company and may be registered in some jurisdictions.
+# All other trademarks are the property of their respective owners.
+
+image: quay.io/kaici/b2g
+
+variables:
+  TERM: 'dumb'
+  CACHE_DIR: '/cache'
+  KAIOS_DIR: 'KaiOS'
+  KAIOS_KK_DIR: 'KaiOS_KK'
+  # Point to the current project
+  GECKO_PATH: "$CI_PROJECT_DIR"
+
+before_script:
+  # Install ssh-agent if not already installed, it is required by Docker.
+  # (change apt-get to yum if you use a CentOS-based image)
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+
+  # Run ssh-agent (inside the build environment)
+  - eval $(ssh-agent -s)
+
+  # Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
+  - ssh-add <(echo "$SSH_PRIVATE_KEY")
+
+  # For Docker builds disable host key checking. Be aware that by adding that
+  # you are suspectible to man-in-the-middle attacks.
+  # WARNING: Use this only with the Docker executor, if you use it with shell
+  # you will overwrite your user's SSH config.
+  - mkdir -p ~/.ssh
+  - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+
+build:
+  stage: build
+  tags:
+  - gecko
+  only:
+  - master
+  script:
+  - cd $CACHE_DIR
+  - '[[ -d "$CACHE_DIR/$KAIOS_DIR" ]] || git clone --depth 1 git@git.kaiostech.com:KaiOS/KaiOS.git $KAIOS_DIR'
+  - cd "$CACHE_DIR/$KAIOS_DIR"
+  # do git reset and clean to prevent local changes cause repo sync error
+  - ./repo forall -c 'git reset --hard && git clean -fdx'
+  # QRD device build
+  - REPO_SYNC_FLAGS='-c --no-tags --force-sync' ./config.sh quoin
+  # Clobber all to do a clean build
+  - rm -rf out
+  - rm -rf objdir-gecko
+  - find gecko -name "*.pyc" | xargs rm -rf
+  # Create links to koost and propietary code
+  - ln -s "$CACHE_DIR/$KAIOS_DIR/gecko/koost" "$GECKO_PATH"
+  - ln -s "$CACHE_DIR/$KAIOS_DIR/gecko/proprietary" "$GECKO_PATH"
+  # XXX: hack to create symbolic for external libraries, this is because 
+  # koost would depend on them.
+  - '[[ -d "$GECKO_PATH/../external" ]] || ln -s "$CACHE_DIR/$KAIOS_DIR/external" "$GECKO_PATH"/../'
+  - ./build.sh gecko
+
+build-kk:
+  stage: build
+  tags:
+  - gecko
+  only:
+  - v2.5 
+  script:
+  - cd $CACHE_DIR
+  - '[[ -d "$CACHE_DIR/$KAIOS_KK_DIR" ]] || git clone --depth 1 git@git.kaiostech.com:KaiOS/KaiOS.git $KAIOS_KK_DIR'
+  - cd "$CACHE_DIR/$KAIOS_KK_DIR"
+  # do git reset and clean to prevent local changes cause repo sync error
+  - ./repo forall -c 'git reset --hard && git clean -fdx'
+  # KK device build
+  - BRANCH=v2.5 REPO_SYNC_FLAGS='-c --no-tags --force-sync' REPO_INIT_FLAGS='--depth=1' ./config.sh pier2_kk
+  # Clobber all to do a clean build
+  - rm -rf out
+  - rm -rf objdir-gecko
+  - find gecko -name "*.pyc" | xargs rm -rf
+  # Create links to koost and propietary code
+  - ln -s "$CACHE_DIR/$KAIOS_KK_DIR/gecko/koost" "$GECKO_PATH"
+  - ln -s "$CACHE_DIR/$KAIOS_KK_DIR/gecko/proprietary" "$GECKO_PATH"
+  # XXX: hack to create symbolic for external libraries, this is because
+  # koost would depend on them.
+  - '[[ -d "$GECKO_PATH/../external" ]] || ln -s "$CACHE_DIR/$KAIOS_KK_DIR/external" "$GECKO_PATH"/../'
+  - ./build.sh gecko
+
+build-b2g-desktop:
+  stage: build
+  tags:
+  - gecko
+  only:
+  - master
+  script:
+  - git clone --depth 1 git@git.kaiostech.com:KaiOS/koost.git
+  - git clone --depth 1 git@git.kaiostech.com:KaiOS/proprietary.git
+  - export MOZCONFIG="$CI_PROJECT_DIR/build/mozconfig.b2g-desktop"
+  - make -f client.mk
