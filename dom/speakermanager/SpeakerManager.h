@@ -69,6 +69,8 @@ protected:
   bool mForcespeaker;
   bool mVisible;
   bool mAudioChannelActive;
+  bool mIsSystemApp;
+  uint32_t mSystemAppId;
 };
 
 } // namespace dom

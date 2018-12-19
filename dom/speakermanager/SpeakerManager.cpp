@@ -32,6 +32,8 @@ SpeakerManager::SpeakerManager()
   : mForcespeaker(false)
   , mVisible(false)
   , mAudioChannelActive(false)
+  , mIsSystemApp(false)
+  , mSystemAppId(nsIScriptSecurityManager::NO_APP_ID)
 {
 }
 
@@ -96,6 +98,38 @@ SpeakerManager::DispatchSimpleEvent(const nsAString& aStr)
   }
 }
 
+static nsresult
+GetAppId(nsPIDOMWindowInner* aWindow, uint32_t* aAppId)
+{
+  *aAppId = nsIScriptSecurityManager::NO_APP_ID;
+
+  nsCOMPtr<nsIDocument> doc = aWindow->GetExtantDoc();
+  NS_ENSURE_TRUE(doc, NS_ERROR_FAILURE);
+
+  nsCOMPtr<nsIPrincipal> principal = doc->NodePrincipal();
+
+  nsresult rv = principal->GetAppId(aAppId);
+  NS_ENSURE_SUCCESS(rv, rv);
+  return NS_OK;
+}
+
+static nsresult
+GetSystemAppId(uint32_t* aSystemAppId)
+{
+  *aSystemAppId = nsIScriptSecurityManager::NO_APP_ID;
+
+  nsCOMPtr<nsIAppsService> appsService = do_GetService(APPS_SERVICE_CONTRACTID);
+  NS_ENSURE_TRUE(appsService, NS_ERROR_FAILURE);
+
+  nsAdoptingString systemAppManifest =
+    mozilla::Preferences::GetString("b2g.system_manifest_url");
+  NS_ENSURE_TRUE(systemAppManifest, NS_ERROR_FAILURE);
+
+  nsresult rv = appsService->GetAppLocalIdByManifestURL(systemAppManifest, aSystemAppId);
+  NS_ENSURE_SUCCESS(rv, rv);
+  return NS_OK;
+}
+
 nsresult
 SpeakerManager::FindCorrectWindow(nsPIDOMWindowInner* aWindow)
 {
@@ -123,42 +157,15 @@ SpeakerManager::FindCorrectWindow(nsPIDOMWindowInner* aWindow)
     return NS_OK;
   }
 
-  nsCOMPtr<nsIDocument> doc = parent->GetExtantDoc();
-  if (!doc) {
-    return NS_OK;
-  }
-
-  nsCOMPtr<nsIPrincipal> principal = doc->NodePrincipal();
-
   uint32_t appId;
-  nsresult rv = principal->GetAppId(&appId);
+  nsresult rv = GetAppId(parent, &appId);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
 
   if (appId == nsIScriptSecurityManager::NO_APP_ID ||
-      appId == nsIScriptSecurityManager::UNKNOWN_APP_ID) {
-    return NS_OK;
-  }
-
-  nsCOMPtr<nsIAppsService> appsService = do_GetService(APPS_SERVICE_CONTRACTID);
-  if (NS_WARN_IF(!appsService)) {
-    return NS_ERROR_FAILURE;
-  }
-
-  nsAdoptingString systemAppManifest =
-    mozilla::Preferences::GetString("b2g.system_manifest_url");
-  if (!systemAppManifest) {
-    return NS_OK;
-  }
-
-  uint32_t systemAppId;
-  rv = appsService->GetAppLocalIdByManifestURL(systemAppManifest, &systemAppId);
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return rv;
-  }
-
-  if (systemAppId == appId) {
+      appId == nsIScriptSecurityManager::UNKNOWN_APP_ID ||
+      appId == mSystemAppId) {
     return NS_OK;
   }
 
@@ -182,13 +189,28 @@ SpeakerManager::Init(nsPIDOMWindowInner* aWindow)
                                  /* useCapture = */ true,
                                  /* wantsUntrusted = */ false);
 
-  nsresult rv = FindCorrectWindow(aWindow);
+  // Cache System APP ID
+  nsresult rv = GetSystemAppId(&mSystemAppId);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+
+  // Get our APP ID
+  uint32_t appId;
+  rv = GetAppId(aWindow, &appId);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+
+  mIsSystemApp = (appId == mSystemAppId);
+
+  rv = FindCorrectWindow(aWindow);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
 
   MOZ_LOG(SpeakerManagerService::GetSpeakerManagerLog(), LogLevel::Debug,
-         ("SpeakerManager, Init, window ID %llu", WindowID()));
+         ("SpeakerManager, Init, window ID %llu, is system APP %d", WindowID(), mIsSystemApp));
 
   SpeakerManagerService *service = SpeakerManagerService::GetOrCreateSpeakerManagerService();
   MOZ_ASSERT(service);
@@ -293,7 +315,10 @@ void SpeakerManager::UpdateStatus()
 {
   SpeakerManagerService *service = SpeakerManagerService::GetOrCreateSpeakerManagerService();
   MOZ_ASSERT(service);
-  service->ForceSpeaker(mForcespeaker, mVisible, mAudioChannelActive, WindowID());
+  // System APP uses SpeakerManager to query speakerforced status, and its window
+  // may always be visible. Therefore force its visibility to be false so it won't
+  // compete with other APPs.
+  service->ForceSpeaker(mForcespeaker, mVisible && !mIsSystemApp, mAudioChannelActive, WindowID());
 }
 
 } // namespace dom
