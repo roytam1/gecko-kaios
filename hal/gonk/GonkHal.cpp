@@ -1894,6 +1894,7 @@ OomVictimLogger::Observe(
     ".*select.*to kill.*",
     ".*send sigkill to.*",
     ".*lowmem_shrink.*",
+    ".*lowmemorykiller.*",
     ".*[Oo]ut of [Mm]emory.*",
     ".*[Kk]ill [Pp]rocess.*",
     ".*[Kk]illed [Pp]rocess.*",
