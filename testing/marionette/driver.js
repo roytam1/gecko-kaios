@@ -2267,6 +2267,12 @@ GeckoDriver.prototype.sessionTearDown = function(cmd, resp) {
  * the session and responding "ok".
  */
 GeckoDriver.prototype.deleteSession = function(cmd, resp) {
+  // Clean all entries of the messages started with "Marionette:asyncReply:"
+  // in global message manager.
+  if (this.listener) {
+    this.listener.cleanmsg();
+  }
+
   this.sessionTearDown();
 };
 

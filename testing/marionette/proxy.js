@@ -98,6 +98,17 @@ proxy.AsyncMessageChannel = class {
    *     If an error is returned over the channel.
    */
   send(name, args = []) {
+    // "cleanmsg" means that current test case goes to the end. So, remove
+    // all messages started with "Marionette:asyncReply:" from global message
+    // manager and listeners_.
+    if (name == "cleanmsg") {
+      for (let path of this.listeners_.keys()) {
+        globalMessageManager.removeMessageListenerHashEntry(path);
+        this.listeners_.delete(path);
+      }
+      return;
+    }
+
     let uuid = uuidgen.generateUUID().toString();
     // TODO(ato): Bug 1242595
     this.activeMessageId = uuid;
@@ -234,7 +245,7 @@ proxy.AsyncMessageChannel = class {
 
     let l = this.listeners_.get(path);
     globalMessageManager.removeMessageListener(path, l);
-    return this.listeners_.delete(path);
+    return;
   }
 
   removeAllListeners_() {
