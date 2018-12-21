@@ -1771,13 +1771,20 @@ this.DOMApplicationRegistry = {
     // Clear localStorage
     Services.obs.notifyObservers(null, "browser:purge-domain-data", appURI.host);
 
-    // Clear dataStore & alarm
+    // Delete dataStore & alarm & IAC connection
     let subject = {
       appId: app.localId,
       browserOnly: false,
       QueryInterface: XPCOMUtils.generateQI([Ci.mozIApplicationClearPrivateDataParams])
     };
     this._notifyCategoryAndObservers(subject, "webapps-clear-data", null, aData);
+
+    // Create DataStore entries per app
+    this.updateDataStoreEntriesFromLocalId(app.localId);
+    // Update IAC connection
+    this.getManifestFor(aData.manifestURL).then((aManifest) => {
+      this.updateAppHandlers(null, aManifest, app);
+    });
 
     // Clear indexedDB files
     let principal =
