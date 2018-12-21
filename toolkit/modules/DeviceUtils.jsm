@@ -182,7 +182,7 @@ this.DeviceUtils = {
     let netInfoArray = this.getMobileNetworkInfoArray();
     let net_mcc = netInfoArray.length ? parseInt(netInfoArray[0].mcc, 10)
                                       : undefined;
-    let net_mnc = netInfoArray.length ? parseInt(netInfoArray[0].mcc, 10)
+    let net_mnc = netInfoArray.length ? parseInt(netInfoArray[0].mnc, 10)
                                       : undefined;
     let language = Services.prefs.getPrefType("general.useragent.locale") == Ci.nsIPrefBranch.PREF_STRING
                  ? Services.prefs.getCharPref("general.useragent.locale")
