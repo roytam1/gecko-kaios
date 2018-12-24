@@ -1069,6 +1069,18 @@ AudioManager::GetFmRadioAudioEnabled(bool *aFmRadioAudioEnabled)
   return NS_OK;
 }
 
+void
+AudioManager::SetVendorFmVolumeIndex()
+{
+#if defined(PRODUCT_MANUFACTURER_SPRD)
+  uint32_t volIndex = mStreamStates[AUDIO_STREAM_MUSIC]->GetVolumeIndex();
+  String8 cmd;
+  cmd.appendFormat("FM_Volume=%d", volIndex);
+  LOG("At %d, cmd %s", __LINE__, cmd.string());
+  SetAudioSystemParameters(0, cmd);
+#endif
+}
+
 NS_IMETHODIMP
 AudioManager::SetFmRadioAudioEnabled(bool aFmRadioAudioEnabled)
 {
@@ -1084,15 +1096,11 @@ AudioManager::SetFmRadioAudioEnabled(bool aFmRadioAudioEnabled)
   UpdateDeviceConnectionState(aFmRadioAudioEnabled,
                               AUDIO_DEVICE_OUT_FM_SPEAKER,
                               NS_LITERAL_CSTRING(""));
-  if(aFmRadioAudioEnabled) {
-    String8 cmd;
-    char strTmp[13]={0};
-    uint32_t volIndex = mStreamStates[AUDIO_STREAM_MUSIC]->GetVolumeIndex();
-    snprintf(strTmp, sizeof(strTmp),"FM_Volume=%d", volIndex);
-    cmd.setTo(strTmp);
-    SetAudioSystemParameters(0, cmd);
-  }
 #endif
+
+  if(aFmRadioAudioEnabled) {
+    SetVendorFmVolumeIndex();
+  }
 
 #ifdef PRODUCT_MANUFACTURER_MTK
   if(aFmRadioAudioEnabled) {
@@ -1223,18 +1231,10 @@ AudioManager::SetStreamVolumeIndex(int32_t aStream, uint32_t aIndex)
   }
 #endif
 
-#ifdef PRODUCT_MANUFACTURER_SPRD
   // Bug 17613, Sync FM volume with MUSIC volume for SPRD.
   if(streamAlias == AUDIO_STREAM_MUSIC && IsFmOutConnected()) {
-      String8 cmd;
-      char strTmp[13]={0};
-      uint32_t volIndex = mStreamStates[AUDIO_STREAM_MUSIC]->GetVolumeIndex();
-      LOG("Sync FM volume with MUSIC %d", volIndex);
-      snprintf(strTmp, sizeof(strTmp),"FM_Volume=%d", volIndex);
-      cmd.setTo(strTmp);
-      SetAudioSystemParameters(0, cmd);
+    SetVendorFmVolumeIndex();
   }
-#endif
 
   MaybeUpdateVolumeSettingToDatabase();
   return NS_OK;
@@ -1653,17 +1653,10 @@ AudioManager::VolumeStreamState::SetVolumeIndex(uint32_t aIndex,
          aDevice);
 
   //when changing music volume,  also set FMradio volume.Just for SPRD FMradio.
-  #ifdef PRODUCT_MANUFACTURER_SPRD
   if( (AUDIO_STREAM_MUSIC == mStreamType) && mManager.IsFmOutConnected() )
   {
-    String8 cmd;
-    char strTmp[15]={0};
-    uint32_t volIndex = mManager.mStreamStates[AUDIO_STREAM_MUSIC]->GetVolumeIndex();
-    snprintf(strTmp, sizeof(strTmp),"FM_Volume=%d", volIndex);
-    cmd.setTo(strTmp);
-    SetAudioSystemParameters(0, cmd);
+    mManager.SetVendorFmVolumeIndex();
   }
-  #endif
 
   return rv ? NS_ERROR_FAILURE : NS_OK;
 #else
