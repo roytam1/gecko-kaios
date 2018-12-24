@@ -81,7 +81,7 @@ static const uint32_t sMaxStreamVolumeTbl[AUDIO_STREAM_CNT] = {
   15,  // enforced audible
   15,  // DTMF
   15,  // TTS
-#if ANDROID_VERSION < 19
+#if ANDROID_VERSION < 19 || defined(PRODUCT_MANUFACTURER_MTK)
   15,  // FM
 #endif
 };
@@ -97,7 +97,7 @@ static const uint32_t sDefaultStreamVolumeTbl[AUDIO_STREAM_CNT] = {
   15, // enforced audible  // XXX Handle as fixed maximum audio setting
   8,  // DTMF
   8,  // TTS
-#if ANDROID_VERSION < 19
+#if ANDROID_VERSION < 19 || defined(PRODUCT_MANUFACTURER_MTK)
   8,  // FM
 #endif
 };
@@ -113,7 +113,7 @@ static const int32_t sStreamVolumeAliasTbl[AUDIO_STREAM_CNT] = {
   AUDIO_STREAM_ENFORCED_AUDIBLE,// enforced audible
   AUDIO_STREAM_DTMF,            // DTMF
   AUDIO_STREAM_TTS,             // TTS
-#if ANDROID_VERSION < 19
+#if ANDROID_VERSION < 19 || defined(PRODUCT_MANUFACTURER_MTK)
   AUDIO_STREAM_MUSIC,           // FM
 #endif
 };
@@ -390,10 +390,13 @@ static void SetAudioSystemParameters(audio_io_handle_t ioHandle,
 bool
 AudioManager::IsFmOutConnected()
 {
-#ifndef PRODUCT_MANUFACTURER_SPRD
-  return mConnectedDevices.Get(AUDIO_DEVICE_OUT_FM, nullptr);
+#if defined(PRODUCT_MANUFACTURER_SPRD)
+  return mConnectedDevices.Get(AUDIO_DEVICE_OUT_FM_HEADSET, nullptr) ||
+         mConnectedDevices.Get(AUDIO_DEVICE_OUT_FM_SPEAKER, nullptr);
+#elif defined(PRODUCT_MANUFACTURER_MTK)
+  return mConnectedDevices.Get(AUDIO_DEVICE_IN_FM, nullptr);
 #else
-  return mConnectedDevices.Get(AUDIO_DEVICE_OUT_FM_HEADSET, nullptr) ||mConnectedDevices.Get(AUDIO_DEVICE_OUT_FM_SPEAKER, nullptr);
+  return mConnectedDevices.Get(AUDIO_DEVICE_OUT_FM, nullptr);
 #endif
 }
 
@@ -1022,6 +1025,13 @@ AudioManager::SetForceForUse(int32_t aUsage, int32_t aForce)
                AUDIO_POLICY_FORCE_FOR_FM,
                (audio_policy_forced_cfg_t)aForce);
   }
+#elif defined(PRODUCT_MANUFACTURER_MTK)
+  // Sync force use between MEDIA and FM
+  if (aUsage == USE_MEDIA && status == NO_ERROR) {
+    status = AudioSystem::setForceUse(
+               AUDIO_POLICY_FORCE_FOR_PROPRIETARY,
+               (audio_policy_forced_cfg_t)aForce);
+  }
 #endif
 
   bool enableRadio = false;
@@ -1084,11 +1094,7 @@ AudioManager::SetVendorFmVolumeIndex()
 NS_IMETHODIMP
 AudioManager::SetFmRadioAudioEnabled(bool aFmRadioAudioEnabled)
 {
-#ifndef PRODUCT_MANUFACTURER_SPRD
-  UpdateDeviceConnectionState(aFmRadioAudioEnabled,
-                              AUDIO_DEVICE_OUT_FM,
-                              NS_LITERAL_CSTRING(""));
-#else
+#if defined(PRODUCT_MANUFACTURER_SPRD)
   UpdateDeviceConnectionState(aFmRadioAudioEnabled,
                               AUDIO_DEVICE_OUT_FM_HEADSET,
                               NS_LITERAL_CSTRING(""));
@@ -1096,27 +1102,20 @@ AudioManager::SetFmRadioAudioEnabled(bool aFmRadioAudioEnabled)
   UpdateDeviceConnectionState(aFmRadioAudioEnabled,
                               AUDIO_DEVICE_OUT_FM_SPEAKER,
                               NS_LITERAL_CSTRING(""));
+#elif defined(PRODUCT_MANUFACTURER_MTK)
+  UpdateDeviceConnectionState(aFmRadioAudioEnabled,
+                              AUDIO_DEVICE_IN_FM,
+                              NS_LITERAL_CSTRING(""));
+#else
+  UpdateDeviceConnectionState(aFmRadioAudioEnabled,
+                              AUDIO_DEVICE_OUT_FM,
+                              NS_LITERAL_CSTRING(""));
 #endif
 
   if(aFmRadioAudioEnabled) {
     SetVendorFmVolumeIndex();
   }
 
-#ifdef PRODUCT_MANUFACTURER_MTK
-  if(aFmRadioAudioEnabled) {
-    String8 cmd;
-    uint32_t volIndex = mStreamStates[AUDIO_STREAM_MUSIC]->GetVolumeIndex();
-    cmd.appendFormat("SetFmVolume=%d", volIndex);
-    LOG("At %d,cmd %s,", __LINE__,cmd.string());
-    SetAudioSystemParameters(0, cmd);
-
-    LOG("At %d,setParameters FM_Volume=%d,add more here for FM?", __LINE__,volIndex);
-    cmd.clear();
-    cmd.appendFormat("AudioSetFmDigitalEnable=%d",1);
-    LOG("At %d,cmd %s,", __LINE__,cmd.string());
-    SetAudioSystemParameters(0, cmd);
-  }
-#endif
   // AUDIO_STREAM_FM is not used on recent gonk.
   // AUDIO_STREAM_MUSIC is used for FM radio volume control.
 #if ANDROID_VERSION < 19

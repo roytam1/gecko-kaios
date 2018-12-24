@@ -58,11 +58,13 @@ typedef enum {
     AUDIO_POLICY_FORCE_FOR_RECORD,
     AUDIO_POLICY_FORCE_FOR_DOCK,
 #ifdef PRODUCT_MANUFACTURER_SPRD
-#if ANDROID_VERSION < 21
+    #if ANDROID_VERSION < 21
     AUDIO_POLICY_FORCE_FOR_FM            = 5,
-#else
+    #else
     AUDIO_POLICY_FORCE_FOR_FM            = 6,
-#endif
+    #endif
+#elif defined(PRODUCT_MANUFACTURER_MTK)
+    AUDIO_POLICY_FORCE_FOR_PROPRIETARY   = 5, // FM
 #endif
 
     AUDIO_POLICY_FORCE_USE_CNT,
@@ -81,7 +83,7 @@ typedef enum {
     AUDIO_STREAM_ENFORCED_AUDIBLE = 7, /* Sounds that cannot be muted by user and must be routed to speaker */
     AUDIO_STREAM_DTMF             = 8,
     AUDIO_STREAM_TTS              = 9,
-#if ANDROID_VERSION < 19
+#if ANDROID_VERSION < 19 || defined(PRODUCT_MANUFACTURER_MTK)
     AUDIO_STREAM_FM               = 10,
 #endif
 
@@ -409,6 +411,9 @@ enum {
     AUDIO_DEVICE_IN_PROXY                 = AUDIO_DEVICE_BIT_IN | 0x4000,
     AUDIO_DEVICE_IN_FM_RX                 = AUDIO_DEVICE_BIT_IN | 0x8000,
     AUDIO_DEVICE_IN_FM_RX_A2DP            = AUDIO_DEVICE_BIT_IN | 0x10000,
+#ifdef PRODUCT_MANUFACTURER_MTK
+    AUDIO_DEVICE_IN_FM                    = AUDIO_DEVICE_BIT_IN | 0x1000000, // FM   (analog or digital)
+#endif
     AUDIO_DEVICE_IN_DEFAULT               = AUDIO_DEVICE_BIT_IN | AUDIO_DEVICE_BIT_DEFAULT,
 
     AUDIO_DEVICE_IN_ALL     = (AUDIO_DEVICE_IN_COMMUNICATION |
