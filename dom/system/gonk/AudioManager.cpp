@@ -791,7 +791,7 @@ AudioManager::AudioManager()
     mStreamStates.AppendElement(streamState);
   }
   // Initialize stream volumes with default values
-  for (int32_t streamType = 0; streamType < AUDIO_STREAM_MAX; streamType++) {
+  for (int32_t streamType = 0; streamType < AUDIO_STREAM_CNT; streamType++) {
       uint32_t volIndex = sDefaultStreamVolumeTbl[streamType];
       SetStreamVolumeForDevice(streamType, volIndex, AUDIO_DEVICE_OUT_DEFAULT);
   }
@@ -1167,7 +1167,7 @@ AudioManager::GetMaxAudioChannelVolume(uint32_t aChannel, uint32_t* aMaxIndex)
 nsresult
 AudioManager::ValidateVolumeIndex(int32_t aStream, uint32_t aIndex) const
 {
-  if (aStream <= AUDIO_STREAM_DEFAULT || aStream >= AUDIO_STREAM_MAX) {
+  if (aStream <= AUDIO_STREAM_DEFAULT || aStream >= AUDIO_STREAM_CNT) {
     return NS_ERROR_INVALID_ARG;
   }
 
@@ -1183,7 +1183,7 @@ AudioManager::SetStreamVolumeForDevice(int32_t aStream,
                                        uint32_t aIndex,
                                        uint32_t aDevice)
 {
-  if (aStream <= AUDIO_STREAM_DEFAULT || aStream >= AUDIO_STREAM_MAX) {
+  if (aStream <= AUDIO_STREAM_DEFAULT || aStream >= AUDIO_STREAM_CNT) {
     return NS_ERROR_INVALID_ARG;
   }
 
@@ -1195,14 +1195,14 @@ AudioManager::SetStreamVolumeForDevice(int32_t aStream,
 nsresult
 AudioManager::SetStreamVolumeIndex(int32_t aStream, uint32_t aIndex)
 {
-  if (aStream <= AUDIO_STREAM_DEFAULT || aStream >= AUDIO_STREAM_MAX) {
+  if (aStream <= AUDIO_STREAM_DEFAULT || aStream >= AUDIO_STREAM_CNT) {
     return NS_ERROR_INVALID_ARG;
   }
 
   int32_t streamAlias = sStreamVolumeAliasTbl[aStream];
 
   nsresult rv;
-  for (int32_t streamType = 0; streamType < AUDIO_STREAM_MAX; streamType++) {
+  for (int32_t streamType = 0; streamType < AUDIO_STREAM_CNT; streamType++) {
     if (streamAlias == sStreamVolumeAliasTbl[streamType]) {
       rv = mStreamStates[streamType]->SetVolumeIndexToActiveDevices(aIndex);
       if (NS_WARN_IF(NS_FAILED(rv))) {
@@ -1247,7 +1247,7 @@ AudioManager::GetStreamVolumeIndex(int32_t aStream, uint32_t *aIndex)
     return NS_ERROR_INVALID_ARG;
   }
 
-  if (aStream <= AUDIO_STREAM_DEFAULT || aStream >= AUDIO_STREAM_MAX) {
+  if (aStream <= AUDIO_STREAM_DEFAULT || aStream >= AUDIO_STREAM_CNT) {
     return NS_ERROR_INVALID_ARG;
   }
 
@@ -1393,7 +1393,7 @@ AudioManager::UpdateCachedActiveDevicesForStreams()
   // Before L, onAudioPortListUpdate() does not exist and GetDevicesForStream()
   // does not use the cache. Therefore this function do nothing.
 #if ANDROID_VERSION >= 21
-  for (int32_t streamType = 0; streamType < AUDIO_STREAM_MAX; streamType++) {
+  for (int32_t streamType = 0; streamType < AUDIO_STREAM_CNT; streamType++) {
     // Update cached active devices of stream
     mStreamStates[streamType]->IsDevicesChanged(false /* aFromCache */);
   }
@@ -1596,7 +1596,7 @@ AudioManager::VolumeStreamState::SetVolumeIndexToAliasStreams(uint32_t aIndex,
     return rv;
   }
 
-  for (int32_t streamType = 0; streamType < AUDIO_STREAM_MAX; streamType++) {
+  for (int32_t streamType = 0; streamType < AUDIO_STREAM_CNT; streamType++) {
     if ((streamType != mStreamType) &&
          sStreamVolumeAliasTbl[streamType] == mStreamType) {
       // Rescaling of index is not necessary.
