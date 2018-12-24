@@ -102,11 +102,13 @@ this.CustomHeaderInjector = {
 
     // Get commercial reference.
     gComRef = DeviceUtils.cuRef;
+    gComRef = (!gComRef) ? "" : gComRef;
     gComRef = gComRef.replace(/;/g, "\\u003B");
 
     // Get Device Id.
     return DeviceUtils.getDeviceId().then((deviceid) => {
       gDeviceUid = deviceid;
+      gDeviceUid = (!gDeviceUid) ? "" : gDeviceUid;
       gDeviceUid = gDeviceUid.replace(/;/g, "\\u003B");
       return Promise.resolve();
     }, (reason) => {
