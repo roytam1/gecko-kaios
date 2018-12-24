@@ -44,7 +44,7 @@ build:
   - '[[ -d "$CACHE_DIR/$KAIOS_DIR" ]] || git clone --depth 1 git@git.kaiostech.com:KaiOS/KaiOS.git $KAIOS_DIR'
   - cd "$CACHE_DIR/$KAIOS_DIR"
   # do git reset and clean to prevent local changes cause repo sync error
-  - ./repo forall -c 'git reset --hard && git clean -fdx'
+  - '[[ -d .repo ]] && ./repo forall -c "git reset --hard && git clean -fdx"'
   # QRD device build
   - REPO_SYNC_FLAGS='-c --no-tags --force-sync' ./config.sh quoin
   # Clobber all to do a clean build
@@ -70,7 +70,7 @@ build-kk:
   - '[[ -d "$CACHE_DIR/$KAIOS_KK_DIR" ]] || git clone --depth 1 git@git.kaiostech.com:KaiOS/KaiOS.git $KAIOS_KK_DIR'
   - cd "$CACHE_DIR/$KAIOS_KK_DIR"
   # do git reset and clean to prevent local changes cause repo sync error
-  - ./repo forall -c 'git reset --hard && git clean -fdx'
+  - '[[ -d .repo ]] && ./repo forall -c "git reset --hard && git clean -fdx"'
   # KK device build
   - BRANCH=v2.5 REPO_SYNC_FLAGS='-c --no-tags --force-sync' REPO_INIT_FLAGS='--depth=1' ./config.sh pier2_kk
   # Clobber all to do a clean build
