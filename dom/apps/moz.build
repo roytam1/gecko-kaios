@@ -36,7 +36,6 @@ EXTRA_JS_MODULES += [
     'AppDownloadManager.jsm',
     'AppsServiceCenter.jsm',
     'AppsServiceChild.jsm',
-    'AppsUpdater.jsm',
     'FreeSpaceWatcher.jsm',
     'Langpacks.jsm',
     'MessageBroadcaster.jsm',

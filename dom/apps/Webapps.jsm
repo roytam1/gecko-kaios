@@ -43,7 +43,6 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/FileUtils.jsm");
 Cu.import('resource://gre/modules/ActivitiesService.jsm');
-Cu.import("resource://gre/modules/AppsUpdater.jsm");
 Cu.import("resource://gre/modules/AppsUtils.jsm");
 Cu.import("resource://gre/modules/AppDownloadManager.jsm");
 Cu.import("resource://gre/modules/osfile.jsm");
@@ -269,7 +268,6 @@ this.DOMApplicationRegistry = {
 
     // whether this module is currently fetching for restricted access token
     this.isFetchingToken = false;
-    AppsUpdater.register();
   },
 
   // loads the current registry, that could be empty on first run.
@@ -2320,64 +2318,7 @@ this.DOMApplicationRegistry = {
       debug("Got http status=" + xhr.status + " for " + aData.manifestURL);
       let oldHash = app.manifestHash;
       let oldVersion = oldManifest.version ? oldManifest.version : 0;
-
-      let updateApp = (function(manifest, app) {
-        let hash = this.computeManifestHash(manifest);
-        let version = manifest.version ? manifest.version : 0;
-        let oldHash = app.manifestHash;
-        let isPackage = app.kind == DOMApplicationRegistry.kPackaged;
-        debug("Manifest hash = " + hash);
-        if (isPackage) {
-          if (!app.staged) {
-            app.staged = { };
-          }
-          app.staged.manifestHash = hash;
-          app.staged.etag = xhr.getResponseHeader("Etag");
-        } else {
-          app.manifestHash = hash;
-          app.etag = xhr.getResponseHeader("Etag");
-        }
-
-        app.lastCheckedUpdate = Date.now();
-        if (isPackage) {
-          // If app defines vesion number check version number,
-          // otherwise use manifest hash to check for update.
-          if ((version == 0 && oldVersion == 0 && oldHash != hash ) ||
-               vc.compare(version, oldVersion) > 0) {
-            this.updatePackagedApp(aData, id, app, manifest);
-          } else {
-            this._saveApps().then(() => {
-              // Like if we got a 304, just send a 'downloadapplied'
-              // or downloadavailable event.
-              let eventType = app.downloadAvailable ? "downloadavailable"
-                                                    : "downloadapplied";
-              aMm.sendAsyncMessage("Webapps:UpdateState", {
-                app: app,
-                id: app.id
-              });
-              aMm.sendAsyncMessage("Webapps:FireEvent", {
-                eventType: eventType,
-                manifestURL: app.manifestURL,
-                requestID: aData.requestID
-              });
-            });
-          }
-        } else {
-          // Update only the appcache if the manifest has not changed.
-          // If app defines vesion number check version number,
-          // otherwise use manifest hash to check for update.
-          if ((version == 0 && oldVersion == 0 && oldHash == hash ) ||
-               vc.compare(version, oldVersion) == 0) {
-            debug("Update - oldhash");
-            this.updateHostedApp(aData, id, app, oldManifest, null);
-            return;
-          }
-
-          // For hosted apps and hosted apps with appcache, use the
-          // manifest "as is".
-          this.updateHostedApp(aData, id, app, oldManifest, manifest);
-        }
-      }).bind(this);
+      let isPackage = app.kind == DOMApplicationRegistry.kPackaged;
 
       if (xhr.status == 200) {
         let manifest = xhr.response;
@@ -2393,16 +2334,63 @@ this.DOMApplicationRegistry = {
           sendError("INSTALL_FROM_DENIED");
           return;
         } else {
-          if (manifest.dependencies) {
-            AppsUpdater.checkDependencies(manifest.dependencies)
-            .then( result => {
-              updateApp(manifest, app);
-            })
-            .catch(error => {
-              sendError("CHECK_DEPENDENCIES_ERROR");
-            });
+
+          let hash = this.computeManifestHash(manifest);
+          let version = manifest.version ? manifest.version : 0;
+          debug("Manifest hash = " + hash);
+          if (isPackage) {
+            if (!app.staged) {
+              app.staged = { };
+            }
+            app.staged.manifestHash = hash;
+            app.staged.etag = xhr.getResponseHeader("Etag");
           } else {
-            updateApp(manifest, app);
+            app.manifestHash = hash;
+            app.etag = xhr.getResponseHeader("Etag");
+          }
+
+          let vc = Cc["@mozilla.org/xpcom/version-comparator;1"]
+                     .getService(Ci.nsIVersionComparator);
+
+          app.lastCheckedUpdate = Date.now();
+          if (isPackage) {
+
+            // If app defines vesion number check version number,
+            // otherwise use manifest hash to check for update.
+            if ((version == 0 && oldVersion == 0 && oldHash != hash ) ||
+                 vc.compare(version, oldVersion) > 0) {
+              this.updatePackagedApp(aData, id, app, manifest);
+            } else {
+              this._saveApps().then(() => {
+                // Like if we got a 304, just send a 'downloadapplied'
+                // or downloadavailable event.
+                let eventType = app.downloadAvailable ? "downloadavailable"
+                                                      : "downloadapplied";
+                aMm.sendAsyncMessage("Webapps:UpdateState", {
+                  app: app,
+                  id: app.id
+                });
+                aMm.sendAsyncMessage("Webapps:FireEvent", {
+                  eventType: eventType,
+                  manifestURL: app.manifestURL,
+                  requestID: aData.requestID
+                });
+              });
+            }
+          } else {
+            // Update only the appcache if the manifest has not changed.
+            // If app defines vesion number check version number,
+            // otherwise use manifest hash to check for update.
+            if ((version == 0 && oldVersion == 0 && oldHash == hash ) ||
+                 vc.compare(version, oldVersion) == 0) {
+              debug("Update - oldhash");
+              this.updateHostedApp(aData, id, app, oldManifest, null);
+              return;
+            }
+
+            // For hosted apps and hosted apps with appcache, use the
+            // manifest "as is".
+            this.updateHostedApp(aData, id, app, oldManifest, manifest);
           }
         }
       } else if (xhr.status == 304) {
@@ -2900,17 +2888,7 @@ this.DOMApplicationRegistry = {
     if (app.manifest) {
       if (checkManifest()) {
         debug("Installed manifest check OK");
-        if (app.manifest.dependencies) {
-          AppsUpdater.checkDependencies(app.manifest.dependencies)
-          .then( msg => {
-            installApp();
-          })
-          .catch(e => {
-            sendError("CHECK_DEPENDENCIES_ERROR");
-          });
-        } else {
-          installApp();
-        }
+        installApp();
       } else {
         debug("Installed manifest check failed");
         // checkManifest() sends error before return
@@ -2930,17 +2908,7 @@ this.DOMApplicationRegistry = {
         if (checkManifest()) {
           debug("Downloaded manifest check OK");
           app.etag = xhr.getResponseHeader("Etag");
-          if (app.manifest.dependencies) {
-            AppsUpdater.checkDependencies(app.manifest.dependencies)
-            .then( result => {
-              installApp();
-            })
-            .catch(error => {
-              sendError("CHECK_DEPENDENCIES_ERROR");
-            });
-          } else {
-            installApp();
-          }
+          installApp();
           return;
         } else {
           debug("Downloaded manifest check failed");
@@ -3057,18 +3025,7 @@ this.DOMApplicationRegistry = {
     // in which case we don't need to load it.
     if (app.updateManifest) {
       if (checkUpdateManifest()) {
-        debug("at install package got app etag=" + app.etag);
-        if (app.updateManifest.dependencies) {
-          AppsUpdater.checkDependencies(app.updateManifest.dependencies)
-          .then( result => {
-            installApp();
-          })
-          .catch(error => {
-            sendError("CHECK_DEPENDENCIES_ERROR");
-          });
-        } else {
-          installApp();
-        }
+        installApp();
       }
       return;
     }
@@ -3088,17 +3045,7 @@ this.DOMApplicationRegistry = {
         if (checkUpdateManifest()) {
           app.etag = xhr.getResponseHeader("Etag");
           debug("at install package got app etag=" + app.etag);
-          if (app.updateManifest.dependencies) {
-            AppsUpdater.checkDependencies(app.updateManifest.dependencies)
-            .then( result => {
-              installApp();
-            })
-            .catch(error => {
-              sendError("CHECK_DEPENDENCIES_ERROR");
-            });
-          } else {
-            installApp();
-          }
+          installApp();
         }
       }
       else {
