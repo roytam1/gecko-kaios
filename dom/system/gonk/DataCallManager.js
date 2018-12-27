@@ -106,10 +106,13 @@ updateDebugFlag();
 
 function DataCallManager() {
   this._connectionHandlers = [];
-  this.hasGetIccid = false;
+  this.hasUpdateApn = false;
   let numRadioInterfaces = gMobileConnectionService.numItems;
   for (let clientId = 0; clientId < numRadioInterfaces; clientId++) {
     this._connectionHandlers.push(new DataCallHandler(clientId));
+
+    let icc = gIccService.getIccByServiceId(clientId);
+    icc.registerListener(this);
   }
 
   let lock = gSettingsService.createLock();
@@ -132,6 +135,7 @@ DataCallManager.prototype = {
 
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIDataCallManager,
                                          Ci.nsIObserver,
+                                         Ci.nsIIccListener,
                                          Ci.nsISettingsServiceCallback]),
 
   _connectionHandlers: null,
@@ -191,8 +195,8 @@ DataCallManager.prototype = {
        return;
     }
     this._dataDefaultClientId = aNewClientId;
-    //Reset the hasGetIccid due to _dataDefaultClientId change.
-    this.hasGetIccid = false;
+    //Reset the hasUpdateApn due to _dataDefaultClientId change.
+    this.hasUpdateApn = false;
 
     // This is to handle boot up stage.
     if (this._currentDataClientId == -1) {
@@ -272,6 +276,32 @@ DataCallManager.prototype = {
   },
 
   /**
+   * nsIIccListener interface methods.
+   */
+  notifyStkCommand: function() {},
+
+  notifyStkSessionEnd: function() {},
+
+  notifyIsimInfoChanged: function() {},
+
+  notifyCardStateChanged: function() {},
+
+  notifyIccInfoChanged: function () {
+    let handler = this._connectionHandlers[this._dataDefaultClientId];
+    let icc = gIccService.getIccByServiceId(this._dataDefaultClientId);
+    let iccInfo = icc && icc.iccInfo;
+    handler.newIccid = iccInfo && iccInfo.iccid;
+
+    if (this.hasUpdateApn === true) {
+      return;
+    }
+    let lock = gSettingsService.createLock();
+    if (handler.newIccid && handler.oldIccid && (handler.newIccid === handler.oldIccid)) {
+      lock.get("ril.data.apnSettings", this);
+      this.hasUpdateApn = true;
+    }
+  },
+  /**
    * nsISettingsServiceCallback
    */
   handle: function(aName, aResult) {
@@ -346,19 +376,22 @@ DataCallManager.prototype = {
       // After modem gives us the hot swap event, we will get operatorvariant.iccId
       // as old iccid and decide whether to get apn or not.
       case "operatorvariant.iccId":
-        if (this.hasGetIccid === true) {
-          break;
-        }
+
         aResult = aResult || 0;
-        let lock = gSettingsService.createLock();
         let oldIccid = aResult[this._dataDefaultClientId];
         let connectionHandler = this._connectionHandlers[this._dataDefaultClientId];
         let newIccid = connectionHandler.newIccid;
+
+        if (this.hasUpdateApn === true) {
+          break;
+        }
+
+        let lock = gSettingsService.createLock();
         connectionHandler.oldIccid = oldIccid;
         if (oldIccid && newIccid && (oldIccid === newIccid)) {
           lock.get("ril.data.apnSettings", this);
+          this.hasUpdateApn = true;
         }
-        this.hasGetIccid = true;
         break;
     }
   },
@@ -450,8 +483,6 @@ function DataCallHandler(aClientId) {
 
   let mobileConnection = gMobileConnectionService.getItemByServiceId(aClientId);
   mobileConnection.registerListener(this);
-  let icc = gIccService.getIccByServiceId(aClientId);
-  icc.registerListener(this);
 
   this._dataInfo = {
     state: mobileConnection.data.state,
@@ -470,7 +501,6 @@ DataCallHandler.prototype = {
 
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIDataCallHandler,
                                          Ci.nsIDataCallInterfaceListener,
-                                         Ci.nsIIccListener,
                                          Ci.nsIMobileConnectionListener]),
 
   clientId: 0,
@@ -1073,31 +1103,6 @@ DataCallHandler.prototype = {
           state: NETWORK_STATE_DISCONNECTED
         });
       }
-    }
-  },
-
-  /**
-   * nsIIccListener interface methods.
-   */
-  notifyStkCommand: function() {},
-
-  notifyStkSessionEnd: function() {},
-
-  notifyIsimInfoChanged: function() {},
-
-  notifyCardStateChanged: function() {},
-
-  notifyIccInfoChanged: function () {
-    let lock = gSettingsService.createLock();
-    let icc = gIccService.getIccByServiceId(this.clientId);
-    let iccInfo = icc && icc.iccInfo;
-    this.newIccid = iccInfo && iccInfo.iccid;
-    if (this.newIccid && this.oldIccid && (this.newIccid === this.oldIccid)) {
-      lock.get("ril.data.apnSettings", this);
-    }
-
-    if (this.newIccid) {
-      icc.unregisterListener(this);
     }
   },
 
