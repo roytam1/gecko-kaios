@@ -1572,9 +1572,15 @@ MobileConnectionProvider.prototype = {
     }).bind(this));
   },
 
-  getCallForwarding: function(aReason, aCallback) {
+  getCallForwarding: function(aReasonNClass, aCallback) {
+    // a workaround to avoid IDL interface change.
+    // bit 0 ~ 2 is resverd for reason.
+    // higher bits reserved for service class.
+    let reason = aReasonNClass & 7; // 0000111
+    let serviceClass = aReasonNClass >> 3;
     this._radioInterface.sendWorkerMessage("queryCallForwardStatus",
-                                           {reason: aReason},
+                                           {reason: reason,
+                                            serviceClass: serviceClass},
                                            (function(aResponse) {
       if (aResponse.errorMsg) {
         aCallback.notifyError(aResponse.errorMsg);

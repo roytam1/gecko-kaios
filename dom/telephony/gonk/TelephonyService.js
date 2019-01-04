@@ -1194,9 +1194,14 @@ TelephonyService.prototype = {
     let connection = gGonkMobileConnectionService.getItemByServiceId(aClientId);
     let action = MMI_PROC_TO_CF_ACTION[aMmi.procedure];
     let reason = MMI_SC_TO_CF_REASON[aMmi.serviceCode];
+    let serviceClass = this._siToServiceClass(aMmi.sib);
 
     if (action === Ci.nsIMobileConnection.CALL_FORWARD_ACTION_QUERY_STATUS) {
-      connection.getCallForwarding(reason, {
+      // a workaround to avoid IDL interface change.
+      // reason max value is 5, reserved 3 bits.
+      // higher bits reserved for service class.
+      let reasonNClass = serviceClass << 3 | reason;
+      connection.getCallForwarding(reasonNClass, {
         QueryInterface: XPCOMUtils.generateQI([Ci.nsIMobileConnectionCallback]),
         notifyGetCallForwardingSuccess: function(aCount, aResults) {
           aCallback.notifyDialMMISuccessWithCallForwardingOptions(
@@ -1208,7 +1213,6 @@ TelephonyService.prototype = {
       });
     } else {
       let number = aMmi.sia;
-      let serviceClass = this._siToServiceClass(aMmi.sib);
       let timeSeconds = aMmi.sic;
       connection.setCallForwarding(action, reason, number, timeSeconds,
         serviceClass, {
