@@ -944,12 +944,10 @@ TelephonyService.prototype = {
     }
 
     if (isEmergency) {
-      // Automatically select a proper clientId for emergency call.
-      aClientId = this._getClientIdForEmergencyCall() ;
       if (aClientId === -1) {
-        if (DEBUG) debug("Error: No client is avaialble for emergency call.");
-        aCallback.notifyError(DIAL_ERROR_INVALID_STATE_ERROR);
-        return;
+        // Automatically select a proper clientId for emergency call.
+        if (DEBUG) debug("Error: No client has been assigned.");
+        aClientId = this._getClientIdForEmergencyCall() ;
       }
 
       // Radio is off. Turn it on first.
