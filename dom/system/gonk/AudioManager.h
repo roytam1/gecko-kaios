@@ -164,7 +164,6 @@ private:
                                     const char* aTopic,
                                     const nsCString aAddress);
 
-  void SetVendorFmVolumeIndex();
   // Append the audio output device to the volume setting string.
   nsAutoCString AppendDeviceToVolumeSetting(const char* aName,
                                             uint32_t aDevice);
