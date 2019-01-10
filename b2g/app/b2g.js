@@ -1293,10 +1293,10 @@ pref("apps.serviceCenter.devOrigins", "https://api.test.kaiostech.com,https://ap
 pref("apps.serviceCenter.serverURL", "https://api.kaiostech.com/v2.0/apps?cu=%DEVICE_REF%");
 
 // Those api URLs are hosted by KaiOS which needs Kai specific header for sending request
-pref("apps.serviceCenter.kaiApiURLs", "api.kaiostech.com/,api.test.kaiostech.com/,api.stage.kaiostech.com/,api.prod.kaiostech.com/");
+pref("apps.serviceCenter.kaiApiURLs", "api.kaiostech.com/,api.test.kaiostech.com/,api.stage.kaiostech.com/,api.prod.kaiostech.com/,api.preprod.kaiostech.com/");
 
 // Those storage URLs are hosted by KaiOS which needs Kai specific header for sending request
-pref("apps.serviceCenter.kaiStorageURLs", "storage.kaiostech.com/,storage.test.kaiostech.com/,storage.stage.kaiostech.com/,storage.prod.kaiostech.com/");
+pref("apps.serviceCenter.kaiStorageURLs", "storage.kaiostech.com/,storage.test.kaiostech.com/,storage.stage.kaiostech.com/,storage.prod.kaiostech.com/,storage.preprod.kaiostech.com/");
 
 // The end point to get a access token for KaiOS apps service
 pref("apps.token.uri", "https://api.kaiostech.com/v3.0/applications/ZW8svGSlaw1ZLCxWZPQA/tokens");
