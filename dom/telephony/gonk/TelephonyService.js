@@ -906,7 +906,7 @@ TelephonyService.prototype = {
       aCallback.notifyDialMMI(MMI_KS_SC_CALL);
       this._explicitCallTransfer(aClientId, mmiCallback);
     } else {
-      this._dialCall(aClientId, aNumber, undefined, aCallback);
+      this._dialMMI(aClientId, { fullMMI: aNumber }, aCallback);
     }
   },
 
