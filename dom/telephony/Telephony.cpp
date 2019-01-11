@@ -553,8 +553,11 @@ Telephony::GetEccList(const Optional<uint32_t>& aServiceId,
   }
 
   if (property_get(propKey, propValue, "") == 0) {
-    promise->MaybeReject(NS_ERROR_DOM_DATA_ERR);
-    return promise.forget();
+    strcpy(propKey, "ro.ril.ecclist");
+    if (property_get(propKey, propValue, "") == 0) {
+      promise->MaybeReject(NS_ERROR_DOM_DATA_ERR);
+      return promise.forget();
+    }
   }
 
   promise->MaybeResolve(NS_ConvertASCIItoUTF16(propValue));
